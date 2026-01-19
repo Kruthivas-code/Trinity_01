@@ -35,11 +35,12 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
         assignee_id: ticket.assignee_id || null,
         priority: ticket.priority || 'medium'
       });
+      setShowDeleteConfirm(false); // Reset delete confirmation when opening drawer
     }
   }, [ticket]);
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault();\n    setShowDeleteConfirm(false); // Reset after save
     if (ticket) {
       onUpdate(ticket.id, formData);
     }
