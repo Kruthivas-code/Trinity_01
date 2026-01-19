@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-01-19T22:53:55.879048",
+  "timestamp": "2026-01-19T23:04:21.000405",
   "total_tests": 16,
   "passed_tests": 16,
   "failed_tests": 0,
@@ -11,7 +11,7 @@
       "message": "",
       "response": {
         "status": "healthy",
-        "timestamp": "2026-01-19T22:53:54.484018"
+        "timestamp": "2026-01-19T23:04:19.698838"
       }
     },
     {
@@ -19,7 +19,7 @@
       "passed": true,
       "message": "",
       "response": {
-        "user_id": "696eb602df0af48678c58bd8"
+        "user_id": "696eb873df0af48678c58be0"
       }
     },
     {
@@ -33,12 +33,12 @@
       "passed": true,
       "message": "",
       "response": {
-        "id": "696eb602df0af48678c58bd8",
-        "email": "test_225354487791@tickflow.com",
-        "password": "$2b$12$9OETjOkxg2pL3yo5ceXPc.gitUmFWJC4GTthE0QLRAfCc36XYfNUO",
-        "name": "Test User 225354487791",
+        "id": "696eb873df0af48678c58be0",
+        "email": "test_230419702047@tickflow.com",
+        "password": "$2b$12$J5P1BQgudvNaWYMMnGzn6Ol8xpw08qfQIod07YgLvshUEfymugHy2",
+        "name": "Test User 230419702047",
         "role": "user",
-        "created_at": "2026-01-19T22:53:54.796000"
+        "created_at": "2026-01-19T23:04:19.956000"
       }
     },
     {
@@ -46,7 +46,7 @@
       "passed": true,
       "message": "",
       "response": {
-        "count": 25
+        "count": 29
       }
     },
     {
@@ -54,7 +54,7 @@
       "passed": true,
       "message": "",
       "response": {
-        "ticket_id": "696eb603df0af48678c58bda"
+        "ticket_id": "696eb874df0af48678c58be2"
       }
     },
     {
@@ -74,7 +74,7 @@
       "passed": true,
       "message": "",
       "response": {
-        "count": 31
+        "count": 34
       }
     },
     {
@@ -83,13 +83,21 @@
       "message": "",
       "response": {
         "by_status": {
-          "backlog": 9,
-          "todo": 5,
+          "backlog": 10,
+          "todo": 7,
           "in_progress": 12,
           "review": 2,
           "done": 3
         },
         "by_assignee": [
+          {
+            "assignee_id": "696eb602df0af48678c58bd8",
+            "count": 1
+          },
+          {
+            "assignee_id": "696eb873df0af48678c58be0",
+            "count": 1
+          },
           {
             "assignee_id": "696ea1c3def2ba636382b0a6",
             "count": 1
@@ -97,14 +105,10 @@
           {
             "assignee_id": "696e9c95def2ba636382b087",
             "count": 1
-          },
-          {
-            "assignee_id": "696eb602df0af48678c58bd8",
-            "count": 1
           }
         ],
         "my_tickets": 1,
-        "total": 31
+        "total": 34
       }
     },
     {
@@ -112,7 +116,7 @@
       "passed": true,
       "message": "",
       "response": {
-        "count": 31
+        "count": 34
       }
     },
     {
@@ -144,7 +148,7 @@
       "passed": true,
       "message": "",
       "response": {
-        "ticket_id": "696eb603df0af48678c58bdd"
+        "ticket_id": "696eb874df0af48678c58be5"
       }
     },
     {
