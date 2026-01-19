@@ -213,21 +213,43 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
             {!showDeleteConfirm ? (
               <button
                 type="button"
-                onClick={() => setShowDeleteConfirm(true)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
                 className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 transition-interactive"
                 data-testid="drawer-delete-button"
               >
                 <Trash2 size={16} />
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive text-destructive-foreground font-medium transition-interactive"
-                data-testid="drawer-delete-confirm-button"
-              >
-                Confirm
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowDeleteConfirm(false);
+                  }}
+                  className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-secondary/70 text-secondary-foreground border border-white/10 hover:bg-secondary/90 transition-interactive text-sm"
+                  data-testid="drawer-delete-cancel-button"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDelete();
+                  }}
+                  className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive text-destructive-foreground font-medium transition-interactive"
+                  data-testid="drawer-delete-confirm-button"
+                >
+                  Delete
+                </button>
+              </>
             )}
           </div>
         </form>

@@ -4,11 +4,15 @@
     "status": "in_progress"
   },
   {
-    "content": "Phase 2: Fix critical z-index/pointer-events issue in TicketDrawer",
+    "content": "Phase 2: Re-test after fixing drawer overlay issue",
     "status": "completed"
   },
   {
-    "content": "Phase 2: Re-test after fixing drawer overlay issue",
+    "content": "Phase 2: Fix delete confirmation button not appearing",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 2: Final comprehensive test",
     "status": "pending"
   },
   {
