@@ -5,7 +5,7 @@ const Header = ({ user, analytics, onLogout, onCreateTicket, onExport, onImport 
   const [showExportMenu, setShowExportMenu] = React.useState(false);
 
   return (
-    <header className="sticky top-0 z-40 glass border-b border-border/60 backdrop-saturate-150">
+    <header className="sticky top-0 z-[70] glass border-b border-border/60 backdrop-saturate-150">
       <div className="mx-auto max-w-[1600px] px-4 h-16 flex items-center justify-between">
         {/* Left side - Brand and analytics */}
         <div className="flex items-center gap-4">
