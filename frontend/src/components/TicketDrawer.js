@@ -65,7 +65,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
 
       {/* Drawer */}
       <div
-        className="fixed right-0 top-0 bottom-0 w-full max-w-md glass-elevated border-l border-border/60 z-50 overflow-y-auto pointer-events-auto"
+        className="fixed right-0 top-0 bottom-0 w-full max-w-md glass-elevated border-l border-border/60 z-[60] overflow-y-auto pointer-events-auto"
         data-testid="ticket-drawer"
         style={{ pointerEvents: 'auto' }}
       >
