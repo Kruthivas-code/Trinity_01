@@ -40,7 +40,8 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
   }, [ticket]);
 
   const handleSubmit = (e) => {
-    e.preventDefault();\n    setShowDeleteConfirm(false); // Reset after save
+    e.preventDefault();
+    setShowDeleteConfirm(false); // Reset after save
     if (ticket) {
       onUpdate(ticket.id, formData);
     }
