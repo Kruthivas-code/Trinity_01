@@ -201,7 +201,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-border/40 flex items-center gap-3">
+          <div className="px-6 py-4 border-t border-border/40 flex items-center gap-3 sticky bottom-0 bg-transparent backdrop-blur\">
             <button
               type="submit"
               className="flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-cyan-400/90 transition-interactive"
@@ -211,47 +211,52 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
               Save Changes
             </button>
             
-            {!showDeleteConfirm ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowDeleteConfirm(true);
-                }}
-                className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 transition-interactive"
-                data-testid="drawer-delete-button"
-              >
-                <Trash2 size={16} />
-              </button>
-            ) : (
-              <>
+            <div className="flex items-center gap-2">
+              {!showDeleteConfirm ? (
                 <button
                   type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    setShowDeleteConfirm(false);
+                    console.log('Delete button clicked, showing confirm');
+                    setShowDeleteConfirm(true);
                   }}
-                  className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-secondary/70 text-secondary-foreground border border-white/10 hover:bg-secondary/90 transition-interactive text-sm"
-                  data-testid="drawer-delete-cancel-button"
+                  className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 transition-interactive"
+                  data-testid="drawer-delete-button"
                 >
-                  Cancel
+                  <Trash2 size={16} />
                 </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleDelete();
-                  }}
-                  className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive text-destructive-foreground font-medium transition-interactive"
-                  data-testid="drawer-delete-confirm-button"
-                >
-                  Delete
-                </button>
-              </>
-            )}
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Cancel delete clicked');
+                      setShowDeleteConfirm(false);
+                    }}
+                    className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-secondary/70 text-secondary-foreground border border-white/10 hover:bg-secondary/90 transition-interactive text-sm"
+                    data-testid="drawer-delete-cancel-button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Confirm delete clicked');
+                      handleDelete();
+                    }}
+                    className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive text-destructive-foreground font-medium transition-interactive"
+                    data-testid="drawer-delete-confirm-button"
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </form>
       </div>
