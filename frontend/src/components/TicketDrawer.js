@@ -53,6 +53,21 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
     }
   };
 
+  const handleDeleteClick = () => {
+    console.log('Delete button clicked, showing confirm');
+    setShowDeleteConfirm(true);
+  };
+
+  const handleCancelDelete = () => {
+    console.log('Cancel delete clicked');
+    setShowDeleteConfirm(false);
+  };
+
+  const handleConfirmDelete = () => {
+    console.log('Confirm delete clicked');
+    handleDelete();
+  };
+
   if (!isOpen || !ticket) return null;
 
   return (
@@ -215,13 +230,8 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
               {!showDeleteConfirm ? (
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Delete button clicked, showing confirm');
-                    setShowDeleteConfirm(true);
-                  }}
-                  className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 transition-interactive"
+                  onClick={handleDeleteClick}
+                  className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 transition-interactive relative z-10"
                   data-testid="drawer-delete-button"
                 >
                   <Trash2 size={16} />
@@ -230,26 +240,16 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                 <>
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('Cancel delete clicked');
-                      setShowDeleteConfirm(false);
-                    }}
-                    className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-secondary/70 text-secondary-foreground border border-white/10 hover:bg-secondary/90 transition-interactive text-sm"
+                    onClick={handleCancelDelete}
+                    className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-secondary/70 text-secondary-foreground border border-white/10 hover:bg-secondary/90 transition-interactive text-sm relative z-10"
                     data-testid="drawer-delete-cancel-button"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('Confirm delete clicked');
-                      handleDelete();
-                    }}
-                    className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive text-destructive-foreground font-medium transition-interactive"
+                    onClick={handleConfirmDelete}
+                    className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive text-destructive-foreground font-medium transition-interactive relative z-10"
                     data-testid="drawer-delete-confirm-button"
                   >
                     Delete
