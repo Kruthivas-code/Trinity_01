@@ -64,6 +64,7 @@ const Dashboard = ({ user, token, onLogout }) => {
       setLoading(false);
     };
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTicketClick = (ticket) => {
