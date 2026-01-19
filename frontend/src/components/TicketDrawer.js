@@ -54,8 +54,11 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
   };
 
   const handleDeleteClick = () => {
-    console.log('Delete button clicked, showing confirm');
-    setShowDeleteConfirm(true);
+    console.log('Delete button clicked, current showDeleteConfirm:', showDeleteConfirm);
+    setShowDeleteConfirm(prev => {
+      console.log('Setting showDeleteConfirm from', prev, 'to true');
+      return true;
+    });
   };
 
   const handleCancelDelete = () => {
@@ -227,6 +230,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
             </button>
             
             <div className="flex items-center gap-2">
+              {console.log('Rendering delete section, showDeleteConfirm:', showDeleteConfirm)}
               {!showDeleteConfirm ? (
                 <button
                   type="button"
@@ -235,6 +239,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                   data-testid="drawer-delete-button"
                 >
                   <Trash2 size={16} />
+                  <span className="ml-1 text-xs">Delete</span>
                 </button>
               ) : (
                 <>
@@ -252,7 +257,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                     className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive text-destructive-foreground font-medium transition-interactive relative z-10"
                     data-testid="drawer-delete-confirm-button"
                   >
-                    Delete
+                    Confirm Delete
                   </button>
                 </>
               )}
