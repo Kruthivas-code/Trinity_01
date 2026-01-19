@@ -201,7 +201,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-border/40 flex items-center gap-3 sticky bottom-0 bg-transparent backdrop-blur\">
+          <div className="px-6 py-4 border-t border-border/40 flex items-center gap-3 sticky bottom-0 bg-transparent backdrop-blur">
             <button
               type="submit"
               className="flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-cyan-400/90 transition-interactive"
