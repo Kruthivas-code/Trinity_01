@@ -57,15 +57,17 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 pointer-events-auto"
         onClick={onClose}
         data-testid="drawer-backdrop"
+        style={{ pointerEvents: 'auto' }}
       />
 
       {/* Drawer */}
       <div
-        className="fixed right-0 top-0 bottom-0 w-full max-w-md glass-elevated border-l border-border/60 z-50 overflow-y-auto"
+        className="fixed right-0 top-0 bottom-0 w-full max-w-md glass-elevated border-l border-border/60 z-50 overflow-y-auto pointer-events-auto"
         data-testid="ticket-drawer"
+        style={{ pointerEvents: 'auto' }}
       >
         <form onSubmit={handleSubmit} className="h-full flex flex-col">
           {/* Header */}

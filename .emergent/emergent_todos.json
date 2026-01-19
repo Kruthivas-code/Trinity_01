@@ -1,11 +1,15 @@
 [
   {
-    "content": "Phase 2: Check service logs and verify startup",
+    "content": "Phase 2: End to End Testing using Testing Agent",
+    "status": "in_progress"
+  },
+  {
+    "content": "Phase 2: Fix critical z-index/pointer-events issue in TicketDrawer",
     "status": "completed"
   },
   {
-    "content": "Phase 2: End to End Testing using Testing Agent",
-    "status": "in_progress"
+    "content": "Phase 2: Re-test after fixing drawer overlay issue",
+    "status": "pending"
   },
   {
     "content": "Phase 2: All user stories covered in Development and testing",
