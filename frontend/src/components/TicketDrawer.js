@@ -1,0 +1,236 @@
+import React, { useState, useEffect } from 'react';
+import { X, Trash2, Save } from 'lucide-react';
+
+const STATUSES = [
+  { value: 'backlog', label: 'Backlog' },
+  { value: 'todo', label: 'To Do' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'review', label: 'Review' },
+  { value: 'done', label: 'Done' }
+];
+
+const PRIORITIES = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'urgent', label: 'Urgent' }
+];
+
+const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    status: 'backlog',
+    assignee_id: null,
+    priority: 'medium'
+  });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  useEffect(() => {
+    if (ticket) {
+      setFormData({
+        title: ticket.title || '',
+        description: ticket.description || '',
+        status: ticket.status || 'backlog',
+        assignee_id: ticket.assignee_id || null,
+        priority: ticket.priority || 'medium'
+      });
+    }
+  }, [ticket]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (ticket) {
+      onUpdate(ticket.id, formData);
+    }
+  };
+
+  const handleDelete = () => {
+    if (ticket) {
+      onDelete(ticket.id);
+    }
+  };
+
+  if (!isOpen || !ticket) return null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+        onClick={onClose}
+        data-testid="drawer-backdrop"
+      />
+
+      {/* Drawer */}
+      <div
+        className="fixed right-0 top-0 bottom-0 w-full max-w-md glass-elevated border-l border-border/60 z-50 overflow-y-auto"
+        data-testid="ticket-drawer"
+      >
+        <form onSubmit={handleSubmit} className="h-full flex flex-col">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-border/40 flex items-center justify-between sticky top-0 bg-transparent backdrop-blur">
+            <h2 className="text-lg font-semibold" data-testid="drawer-title">
+              Edit Ticket
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/5 transition-interactive"
+              data-testid="drawer-close-button"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 px-6 py-6 space-y-5">
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium mb-2" htmlFor="drawer-title-input">
+                Title
+              </label>
+              <input
+                id="drawer-title-input"
+                type="text"
+                className="w-full h-10 px-4 rounded-lg bg-secondary/70 border border-white/10 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-interactive"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+                data-testid="drawer-title-input"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium mb-2" htmlFor="drawer-description-input">
+                Description
+              </label>
+              <textarea
+                id="drawer-description-input"
+                className="w-full min-h-[120px] px-4 py-3 rounded-lg bg-secondary/70 border border-white/10 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-interactive resize-none"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Add a description..."
+                data-testid="drawer-description-input"
+              />
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="block text-sm font-medium mb-2" htmlFor="drawer-status-select">
+                Status
+              </label>
+              <select
+                id="drawer-status-select"
+                className="w-full h-10 px-4 rounded-lg bg-secondary/70 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-interactive"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                data-testid="drawer-status-select"
+              >
+                {STATUSES.map(status => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Priority */}
+            <div>
+              <label className="block text-sm font-medium mb-2" htmlFor="drawer-priority-select">
+                Priority
+              </label>
+              <select
+                id="drawer-priority-select"
+                className="w-full h-10 px-4 rounded-lg bg-secondary/70 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-interactive"
+                value={formData.priority}
+                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                data-testid="drawer-priority-select"
+              >
+                {PRIORITIES.map(priority => (
+                  <option key={priority.value} value={priority.value}>
+                    {priority.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Assignee */}
+            <div>
+              <label className="block text-sm font-medium mb-2" htmlFor="drawer-assignee-select">
+                Assignee
+              </label>
+              <select
+                id="drawer-assignee-select"
+                className="w-full h-10 px-4 rounded-lg bg-secondary/70 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-interactive"
+                value={formData.assignee_id || ''}
+                onChange={(e) => setFormData({ ...formData, assignee_id: e.target.value || null })}
+                data-testid="drawer-assignee-select"
+              >
+                <option value="">Unassigned</option>
+                {users.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Metadata */}
+            <div className="pt-4 border-t border-border/40">
+              <div className="space-y-2 text-xs text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Created:</span>
+                  <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Updated:</span>
+                  <span>{new Date(ticket.updated_at).toLocaleDateString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>ID:</span>
+                  <span>#{ticket.id.slice(-8)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 border-t border-border/40 flex items-center gap-3">
+            <button
+              type="submit"
+              className="flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-cyan-400/90 transition-interactive"
+              data-testid="drawer-save-button"
+            >
+              <Save size={16} />
+              Save Changes
+            </button>
+            
+            {!showDeleteConfirm ? (
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(true)}
+                className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 transition-interactive"
+                data-testid="drawer-delete-button"
+              >
+                <Trash2 size={16} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive text-destructive-foreground font-medium transition-interactive"
+                data-testid="drawer-delete-confirm-button"
+              >
+                Confirm
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+    </>
+  );
+};
+
+export default TicketDrawer;
