@@ -218,52 +218,53 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="px-6 py-4 border-t border-border/40 flex items-center gap-3 sticky bottom-0 bg-transparent backdrop-blur">
+          {/* Footer - Save Button */}
+          <div className="px-6 py-4 border-t border-border/40">
             <button
               type="submit"
-              className="flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-cyan-400/90 transition-interactive"
+              className="w-full h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-cyan-400/90 transition-interactive"
               data-testid="drawer-save-button"
             >
               <Save size={16} />
               Save Changes
             </button>
-            
-            <div className="flex items-center gap-2">
-              {console.log('Rendering delete section, showDeleteConfirm:', showDeleteConfirm)}
-              {!showDeleteConfirm ? (
-                <button
-                  type="button"
-                  onClick={handleDeleteClick}
-                  className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 transition-interactive relative z-10"
-                  data-testid="drawer-delete-button"
-                >
-                  <Trash2 size={16} />
-                  <span className="ml-1 text-xs">Delete</span>
-                </button>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleCancelDelete}
-                    className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-secondary/70 text-secondary-foreground border border-white/10 hover:bg-secondary/90 transition-interactive text-sm relative z-10"
-                    data-testid="drawer-delete-cancel-button"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleConfirmDelete}
-                    className="h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive text-destructive-foreground font-medium transition-interactive relative z-10"
-                    data-testid="drawer-delete-confirm-button"
-                  >
-                    Confirm Delete
-                  </button>
-                </>
-              )}
-            </div>
           </div>
         </form>
+
+        {/* Delete Section - Outside Form */}
+        <div className="px-6 py-4 border-t border-border/40">
+          {console.log('Rendering delete section, showDeleteConfirm:', showDeleteConfirm)}
+          {!showDeleteConfirm ? (
+            <button
+              type="button"
+              onClick={handleDeleteClick}
+              className="w-full h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive/20 text-destructive hover:bg-destructive/30 transition-interactive"
+              data-testid="drawer-delete-button"
+            >
+              <Trash2 size={16} />
+              <span className="ml-1">Delete Ticket</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleCancelDelete}
+                className="flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-secondary/70 text-secondary-foreground border border-white/10 hover:bg-secondary/90 transition-interactive"
+                data-testid="drawer-delete-cancel-button"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="flex-1 h-10 px-4 flex items-center justify-center gap-2 rounded-lg bg-destructive text-destructive-foreground font-medium transition-interactive"
+                data-testid="drawer-delete-confirm-button"
+              >
+                Confirm Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </>
   );

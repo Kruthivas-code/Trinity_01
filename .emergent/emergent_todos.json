@@ -8,7 +8,7 @@
     "status": "in_progress"
   },
   {
-    "content": "Phase 2: Fix Cancel button in delete confirmation",
+    "content": "Phase 2: Moved delete section outside form to fix event handling",
     "status": "completed"
   },
   {
