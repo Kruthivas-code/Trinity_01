@@ -25,8 +25,8 @@ const LoginPage = () => {
 
         <div className="space-y-4">
           <div className="glass rounded-lg p-4 text-sm text-muted-foreground">
-            <p className="mb-2">Access restricted to @emergent.sh emails</p>
-            <p className="text-xs">Sign in with your Emergent Google account</p>
+            <p className="mb-2">Secure ticket management platform</p>
+            <p className="text-xs">Sign in with your Google account to continue</p>
           </div>
 
           <button
