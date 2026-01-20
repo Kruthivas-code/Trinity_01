@@ -1,58 +1,30 @@
 [
   {
     "content": "Phase 3A: Create collapsible sidebar navigation",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Phase 3A: Update kanban columns to lifecycle statuses",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 3A: Create All Tickets list view with infinite scroll",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 3A: Add routing for dashboard and all-tickets",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 3A: Mobile responsive design",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 3A: Add automation hooks for status changes",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 3A: Test new navigation and views",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
-    "content": "Phase 3: Update ticket model for email fields",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 3: Build Gmail OAuth flow",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 3: Build webhook endpoint for Gmail push notifications",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 3: Build email to ticket conversion with threading",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 3: Build Gmail reply functionality",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 3: Update UI drawer for long email content",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 3: Add reply composer in drawer",
+    "content": "Phase 3A: Add automation hooks for status changes",
     "status": "pending"
   }
 ]
