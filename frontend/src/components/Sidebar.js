@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Menu, X } from 'lucide-react';
+import { LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Menu, X, Mail } from 'lucide-react';
 
 const Sidebar = ({ user }) => {
   const navigate = useNavigate();
@@ -17,6 +17,7 @@ const Sidebar = ({ user }) => {
   ];
 
   const otherItems = [
+    { id: 'emails', label: 'Emails', icon: Mail, path: '/emails' },
     { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
   ];
