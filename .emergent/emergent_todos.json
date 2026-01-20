@@ -1,14 +1,42 @@
 [
   {
-    "content": "Phase 2: End to End Testing using Testing Agent",
-    "status": "completed"
+    "content": "Phase 3: Provide Gmail Push Notification setup instructions to user",
+    "status": "in_progress"
   },
   {
-    "content": "Phase 2: Final comprehensive test",
-    "status": "completed"
+    "content": "Phase 3: Get Gmail integration playbook",
+    "status": "pending"
   },
   {
-    "content": "Phase 2: All user stories covered in Development and testing",
-    "status": "completed"
+    "content": "Phase 3: Update ticket model for email fields",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3: Build Gmail OAuth flow",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3: Build webhook endpoint for Gmail push notifications",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3: Build email to ticket conversion with threading",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3: Build Gmail reply functionality",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3: Update UI drawer for long email content",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3: Add reply composer in drawer",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3: Test email ingestion and reply flow",
+    "status": "pending"
   }
 ]
