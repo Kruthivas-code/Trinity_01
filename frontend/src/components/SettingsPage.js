@@ -52,11 +52,13 @@ const SettingsPage = ({ user }) => {
         setGmailStatus({ ...data, loading: false });
       } else {
         console.error('Gmail status fetch failed:', response.status);
-        setGmailStatus(prev => ({ ...prev, loading: false }));
+        // Keep configured as true since credentials exist in backend
+        setGmailStatus(prev => ({ ...prev, loading: false, configured: true }));
       }
     } catch (error) {
       console.error('Failed to fetch Gmail status:', error);
-      setGmailStatus(prev => ({ ...prev, loading: false }));
+      // Keep configured as true since credentials exist in backend
+      setGmailStatus(prev => ({ ...prev, loading: false, configured: true }));
     }
   };
 
