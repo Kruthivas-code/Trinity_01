@@ -1,11 +1,11 @@
 [
   {
-    "content": "Phase 3: Check logs and verify services running",
-    "status": "completed"
+    "content": "Phase 3: Test Emergent Auth flow and light/dark mode",
+    "status": "in_progress"
   },
   {
-    "content": "Phase 3: Test Emergent Auth flow and light/dark mode",
-    "status": "pending"
+    "content": "Phase 3: Fixed body disturbed error in AuthCallback",
+    "status": "completed"
   },
   {
     "content": "Phase 3: Update ticket model for email fields",
