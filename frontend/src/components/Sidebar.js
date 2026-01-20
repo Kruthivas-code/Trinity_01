@@ -55,9 +55,9 @@ const Sidebar = ({ user }) => {
             {/* Logo/Brand */}
             <div className="h-16 flex items-center justify-between px-4 border-b border-border/40">
               {isExpanded ? (
-                <h2 className="text-lg font-semibold">TickFlow</h2>
+                <h2 className="text-lg font-semibold brand">TickFlow</h2>
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
+                <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center text-white font-bold text-sm brand">
                   TF
                 </div>
               )}
@@ -136,7 +136,7 @@ const Sidebar = ({ user }) => {
         <div className="flex flex-col h-full">
           {/* Logo/Brand */}
           <div className="h-16 flex items-center justify-between px-4 border-b border-border/40">
-            <h2 className="text-lg font-semibold">TickFlow</h2>
+            <h2 className="text-lg font-semibold brand">TickFlow</h2>
           </div>
 
           {/* Navigation Items */}

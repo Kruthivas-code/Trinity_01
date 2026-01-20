@@ -15,7 +15,7 @@ const LoginPage = () => {
       
       <div className="glass max-w-md w-full mx-auto rounded-2xl p-6 md:p-8 border border-border/60 relative z-10 animate-fade-in-up">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-semibold tracking-tight mb-2" data-testid="auth-title">
+          <h1 className="text-4xl font-semibold tracking-tight brand mb-2" data-testid="auth-title">
             TickFlow
           </h1>
           <p className="text-sm text-muted-foreground">
