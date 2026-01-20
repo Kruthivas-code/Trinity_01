@@ -16,6 +16,10 @@ import base64
 import re
 from email.utils import parseaddr
 from html import unescape
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Gmail API imports
 from google.oauth2.credentials import Credentials
