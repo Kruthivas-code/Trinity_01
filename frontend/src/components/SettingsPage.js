@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Sun, Moon, Mail, CheckCircle, XCircle, Loader2, RefreshCw, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Mail, CheckCircle, XCircle, Loader2, RefreshCw, ExternalLink, LogOut } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { toast } from 'sonner';
@@ -20,9 +20,12 @@ const SettingsPage = ({ user }) => {
   });
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
-    fetchGmailStatus();
+    if (user) {
+      fetchGmailStatus();
+    }
     
     // Check URL params for OAuth callback result
     const gmailConnected = searchParams.get('gmail_connected');
@@ -30,13 +33,13 @@ const SettingsPage = ({ user }) => {
     
     if (gmailConnected === 'true') {
       toast.success('Gmail connected successfully!');
-      // Clean URL
       window.history.replaceState({}, '', '/settings');
+      fetchGmailStatus();
     } else if (gmailError) {
       toast.error(`Gmail connection failed: ${gmailError}`);
       window.history.replaceState({}, '', '/settings');
     }
-  }, [searchParams]);
+  }, [searchParams, user]);
 
   const fetchGmailStatus = async () => {
     try {
@@ -45,7 +48,11 @@ const SettingsPage = ({ user }) => {
       });
       if (response.ok) {
         const data = await response.json();
+        console.log('Gmail status:', data);
         setGmailStatus({ ...data, loading: false });
+      } else {
+        console.error('Gmail status fetch failed:', response.status);
+        setGmailStatus(prev => ({ ...prev, loading: false }));
       }
     } catch (error) {
       console.error('Failed to fetch Gmail status:', error);
@@ -61,14 +68,16 @@ const SettingsPage = ({ user }) => {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to initiate Gmail connection');
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to initiate Gmail connection');
       }
       
       const data = await response.json();
-      // Redirect to Google OAuth
+      console.log('Redirecting to:', data.authorization_url);
       window.location.href = data.authorization_url;
     } catch (error) {
-      toast.error('Failed to connect Gmail');
+      console.error('Gmail connect error:', error);
+      toast.error(error.message || 'Failed to connect Gmail');
       setConnecting(false);
     }
   };
@@ -114,16 +123,38 @@ const SettingsPage = ({ user }) => {
     }
   };
 
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch(`${BACKEND_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      // Clear any local storage
+      localStorage.removeItem('theme');
+      
+      toast.success('Logged out successfully');
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still redirect even if logout API fails
+      navigate('/login', { replace: true });
+    }
+  };
+
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-primary" />
+      </div>
+    );
   }
 
   const handleThemeChange = async (newTheme) => {
     try {
-      // Update theme in UI
       setThemeMode(newTheme);
 
-      // Save to backend
       const response = await fetch(`${BACKEND_URL}/api/users/me/preferences`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -251,9 +282,11 @@ const SettingsPage = ({ user }) => {
                     <span>{connecting ? 'Connecting...' : 'Connect Gmail'}</span>
                   </button>
                 ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Gmail integration is not configured. Please contact your administrator.
-                  </p>
+                  <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                    <p className="text-sm text-yellow-500">
+                      Gmail integration is not configured. Please ensure Gmail API credentials are set in the backend.
+                    </p>
+                  </div>
                 )}
               </div>
             )}
@@ -352,9 +385,38 @@ const SettingsPage = ({ user }) => {
           {/* Account Section */}
           <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
             <h3 className="text-lg font-medium mb-4">Account</h3>
-            <div className="glass rounded-lg p-4 bg-secondary/30">
-              <p className="text-sm text-muted-foreground mb-2">Signed in as</p>
-              <p className="font-medium">{user.email}</p>
+            
+            <div className="space-y-4">
+              <div className="glass rounded-lg p-4 bg-secondary/30">
+                <p className="text-sm text-muted-foreground mb-2">Signed in as</p>
+                <div className="flex items-center gap-3">
+                  {user.picture ? (
+                    <img src={user.picture} alt={user.name} className="w-10 h-10 rounded-full" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium">
+                      {user.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-medium">{user.name}</p>
+                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-interactive disabled:opacity-50"
+                data-testid="logout-button"
+              >
+                {loggingOut ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <LogOut size={16} />
+                )}
+                <span>{loggingOut ? 'Logging out...' : 'Sign Out'}</span>
+              </button>
             </div>
           </div>
         </div>
