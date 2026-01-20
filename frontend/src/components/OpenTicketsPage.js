@@ -1,0 +1,16 @@
+import React from 'react';
+import TicketsListView from './TicketsListView';
+
+const OpenTicketsPage = ({ user, onTicketClick }) => {
+  return (
+    <TicketsListView
+      title="Open Tickets"
+      subtitle="Active tickets being worked on"
+      filterStatuses={['todo', 'in_progress', 'review']}
+      user={user}
+      onTicketClick={onTicketClick}
+    />
+  );
+};
+
+export default OpenTicketsPage;
