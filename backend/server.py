@@ -186,16 +186,16 @@ async def create_session(session_data: SessionCreate, response: Response):
         user_data = auth_response.json()
         print(f"[AUTH] Got user data: {user_data.get('email')}")
         
-        # Verify email domain
+        # Verify email domain (skip if ALLOWED_DOMAIN is None)
         email = user_data.get("email", "")
-        if not email.endswith(f"@{ALLOWED_DOMAIN}"):
+        if ALLOWED_DOMAIN and not email.endswith(f"@{ALLOWED_DOMAIN}"):
             print(f"[AUTH] Domain mismatch: {email} vs @{ALLOWED_DOMAIN}")
             raise HTTPException(
                 status_code=403,
                 detail=f"Access restricted to @{ALLOWED_DOMAIN} emails only"
             )
         
-        print(f"[AUTH] Email domain verified: {email}")
+        print(f"[AUTH] Email verified: {email}")
         session_token = user_data["session_token"]
         
         # Generate user_id if new user
