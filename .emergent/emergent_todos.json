@@ -1,11 +1,19 @@
 [
   {
-    "content": "Phase 3: Provide Gmail Push Notification setup instructions to user",
-    "status": "completed"
+    "content": "Phase 3: Implement light/dark mode theme system",
+    "status": "in_progress"
   },
   {
-    "content": "Phase 3: Get Gmail integration playbook",
-    "status": "completed"
+    "content": "Phase 3: Implement Emergent Auth with domain restriction",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3: Build Profile page",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3: Build Settings page with theme toggle",
+    "status": "pending"
   },
   {
     "content": "Phase 3: Update ticket model for email fields",
