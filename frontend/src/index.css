@@ -5,6 +5,7 @@
 @tailwind utilities;
 
 @layer base {
+  /* Dark theme (default) */
   :root {
     --background: 222 28% 6%;
     --foreground: 210 25% 96%;
@@ -32,6 +33,35 @@
     --glass-border: hsla(195, 25%, 85%, 0.18);
     --glass-ring: hsla(194, 85%, 56%, 0.45);
     --glass-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+  }
+
+  /* Light theme */
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 194 85% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 46%;
+    --accent: 188 72% 40%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 3 83% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 190 90% 55%;
+
+    --glass-bg: hsla(0, 0%, 100%, 0.75);
+    --glass-elevated-bg: hsla(0, 0%, 100%, 0.85);
+    --glass-border: hsla(215, 25%, 27%, 0.18);
+    --glass-ring: hsla(194, 85%, 56%, 0.45);
+    --glass-shadow: 0 8px 32px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.5);
   }
 
   * {
