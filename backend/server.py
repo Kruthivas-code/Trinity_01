@@ -836,6 +836,7 @@ async def create_ticket_from_email(
 @app.post("/api/gmail/sync")
 async def sync_emails_to_tickets(
     max_emails: int = 10,
+    unread_only: bool = False,
     current_user: dict = Depends(get_current_user)
 ):
     """Sync recent unprocessed emails to tickets"""
@@ -846,14 +847,16 @@ async def sync_emails_to_tickets(
     try:
         service = get_gmail_service(token_doc)
         
-        # Get unread messages
+        # Get messages from inbox (optionally only unread)
+        label_ids = ['INBOX', 'UNREAD'] if unread_only else ['INBOX']
         results = service.users().messages().list(
             userId='me',
             maxResults=max_emails,
-            labelIds=['INBOX', 'UNREAD']
+            labelIds=label_ids
         ).execute()
         
         messages = results.get('messages', [])
+        print(f"[GMAIL] Found {len(messages)} emails to process")
         created_tickets = []
         skipped = 0
         
