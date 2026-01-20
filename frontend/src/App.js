@@ -78,6 +78,14 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/emails"
+        element={
+          <ProtectedRoute>
+            <EmailsPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
