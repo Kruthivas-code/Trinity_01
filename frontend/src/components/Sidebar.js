@@ -145,52 +145,59 @@ const Sidebar = ({ user }) => {
           )}
         </div>
       ) : (
-        // When collapsed, show icon that opens submenu on hover
-        <div className="relative group">
+        // When collapsed, show icon that opens submenu on click
+        <div className="relative" ref={collapsedMenuRef}>
           <button
+            onClick={() => setIsCollapsedMenuOpen(!isCollapsedMenuOpen)}
             className={`
               w-full flex items-center justify-center px-3 h-11 rounded-lg
               transition-interactive
-              ${isTicketViewActive ? 'bg-primary/10 text-primary' : 'hover:bg-white/10 text-foreground'}
+              ${isTicketViewActive || isCollapsedMenuOpen ? 'bg-primary/10 text-primary' : 'hover:bg-white/10 text-foreground'}
             `}
             title="Tickets"
+            data-testid="collapsed-tickets-toggle"
           >
-            <List size={20} className="opacity-70" />
+            <List size={20} className={isCollapsedMenuOpen ? 'opacity-100' : 'opacity-70'} />
           </button>
           
-          {/* Hover submenu for collapsed state */}
-          <div className="absolute left-full top-0 ml-2 hidden group-hover:block z-50">
-            <div 
-              className="rounded-lg border border-border/60 p-2 min-w-[200px] shadow-xl backdrop-blur-xl backdrop-saturate-150"
-              style={{
-                background: 'var(--glass-elevated-bg)',
-                backgroundColor: 'hsl(var(--card))',
-              }}
-            >
-              {ticketViews.map(view => {
-                const Icon = view.icon;
-                const active = isActive(view.path);
-                return (
-                  <button
-                    key={view.id}
-                    onClick={() => handleNavigate(view.path)}
-                    className={`
-                      w-full flex items-center gap-3 px-3 h-10 rounded-lg
-                      transition-interactive text-left
-                      ${active 
-                        ? 'bg-gradient-primary text-white' 
-                        : 'hover:bg-white/10 text-foreground'
-                      }
-                    `}
-                    data-testid={`collapsed-nav-${view.id}`}
-                  >
-                    <Icon size={18} />
-                    <span className="text-sm font-medium">{view.label}</span>
-                  </button>
-                );
-              })}
+          {/* Click submenu for collapsed state */}
+          {isCollapsedMenuOpen && (
+            <div className="absolute left-full top-0 ml-2 z-50">
+              <div 
+                className="rounded-lg border border-border/60 p-2 min-w-[200px] shadow-xl backdrop-blur-xl backdrop-saturate-150"
+                style={{
+                  background: 'var(--glass-elevated-bg)',
+                  backgroundColor: 'hsl(var(--card))',
+                }}
+              >
+                <div className="px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border/40 mb-2">
+                  Tickets
+                </div>
+                {ticketViews.map(view => {
+                  const Icon = view.icon;
+                  const active = isActive(view.path);
+                  return (
+                    <button
+                      key={view.id}
+                      onClick={() => handleNavigate(view.path)}
+                      className={`
+                        w-full flex items-center gap-3 px-3 h-10 rounded-lg
+                        transition-interactive text-left
+                        ${active 
+                          ? 'bg-gradient-primary text-white' 
+                          : 'hover:bg-white/10 text-foreground'
+                        }
+                      `}
+                      data-testid={`collapsed-nav-${view.id}`}
+                    >
+                      <Icon size={18} />
+                      <span className="text-sm font-medium">{view.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
