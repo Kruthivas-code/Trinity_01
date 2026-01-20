@@ -119,7 +119,13 @@ const Sidebar = ({ user }) => {
           
           {/* Hover submenu for collapsed state */}
           <div className="absolute left-full top-0 ml-2 hidden group-hover:block z-50">
-            <div className="glass rounded-lg border border-border/60 p-2 min-w-[200px] shadow-xl">
+            <div 
+              className="rounded-lg border border-border/60 p-2 min-w-[200px] shadow-xl backdrop-blur-xl backdrop-saturate-150"
+              style={{
+                background: 'var(--glass-elevated-bg)',
+                backgroundColor: 'hsl(var(--card))',
+              }}
+            >
               {ticketViews.map(view => {
                 const Icon = view.icon;
                 const active = isActive(view.path);
@@ -132,9 +138,10 @@ const Sidebar = ({ user }) => {
                       transition-interactive text-left
                       ${active 
                         ? 'bg-gradient-primary text-white' 
-                        : 'hover:bg-white/5 text-foreground'
+                        : 'hover:bg-white/10 text-foreground'
                       }
                     `}
+                    data-testid={`collapsed-nav-${view.id}`}
                   >
                     <Icon size={18} />
                     <span className="text-sm font-medium">{view.label}</span>
