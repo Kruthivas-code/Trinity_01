@@ -1,15 +1,22 @@
 import React from 'react';
-import { LogOut, Plus, Download, Upload } from 'lucide-react';
+import { LogOut, Plus, Download, Upload, User, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Header = ({ user, analytics, onLogout, onCreateTicket, onExport, onImport }) => {
   const [showExportMenu, setShowExportMenu] = React.useState(false);
+  const [showUserMenu, setShowUserMenu] = React.useState(false);
+  const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-[70] glass border-b border-border/60 backdrop-saturate-150">
+    <header className="sticky top-0 z-40 glass border-b border-border/60 backdrop-saturate-150">
       <div className="mx-auto max-w-[1600px] px-4 h-16 flex items-center justify-between">
         {/* Left side - Brand and analytics */}
         <div className="flex items-center gap-4">
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight" data-testid="app-brand">
+          <h1 
+            className="text-xl md:text-2xl font-semibold tracking-tight cursor-pointer" 
+            data-testid="app-brand"
+            onClick={() => navigate('/dashboard')}
+          >
             TickFlow
           </h1>
           
@@ -83,20 +90,65 @@ const Header = ({ user, analytics, onLogout, onCreateTicket, onExport, onImport 
 
           <div className="h-6 w-px bg-border mx-1" />
 
-          <div className="flex items-center gap-2">
-            <div className="hidden md:block text-right">
-              <p className="text-sm font-medium" data-testid="user-name">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
-            </div>
-            
+          {/* User Menu */}
+          <div className="relative">
             <button
-              onClick={onLogout}
-              className="h-9 w-9 flex items-center justify-center rounded-lg bg-transparent hover:bg-white/5 border border-transparent transition-interactive"
-              data-testid="logout-button"
-              title="Logout"
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 h-9 px-3 rounded-lg hover:bg-white/5 transition-interactive"
+              data-testid="user-menu-button"
             >
-              <LogOut size={16} />
+              {user.picture ? (
+                <img
+                  src={user.picture}
+                  alt={user.name}
+                  className="w-6 h-6 rounded-full"
+                />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-medium">
+                  {user.name?.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span className="hidden md:inline text-sm">{user.name}</span>
             </button>
+
+            {showUserMenu && (
+              <div className="absolute right-0 top-12 glass rounded-lg border border-border/60 p-2 min-w-[180px]">
+                <button
+                  onClick={() => {
+                    navigate('/profile');
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/5 transition-interactive flex items-center gap-2"
+                  data-testid="profile-menu-button"
+                >
+                  <User size={16} />
+                  Profile
+                </button>
+                <button
+                  onClick={() => {
+                    navigate('/settings');
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/5 transition-interactive flex items-center gap-2"
+                  data-testid="settings-menu-button"
+                >
+                  <Settings size={16} />
+                  Settings
+                </button>
+                <div className="h-px bg-border my-2" />
+                <button
+                  onClick={() => {
+                    onLogout();
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/5 transition-interactive flex items-center gap-2 text-destructive"
+                  data-testid="logout-menu-button"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
