@@ -111,7 +111,7 @@ class SessionCreate(BaseModel):
 class TicketCreate(BaseModel):
     title: str
     description: Optional[str] = ""
-    status: str = "backlog"
+    status: str = "todo"
     assignee_id: Optional[str] = None
     priority: Optional[str] = "medium"
 
@@ -407,8 +407,8 @@ async def reorder_tickets(
 @app.get("/api/analytics/summary")
 async def get_analytics_summary(current_user: dict = Depends(get_current_user)):
     status_counts = {}
-    for status in ["backlog", "todo", "in_progress", "review", "done"]:
-        count = tickets_collection.count_documents({"status": status})
+    for status in ["todo", "in_progress", "waiting", "review", "resolved"]:
+        count = tickets_collection.count_documents({" status": status})
         status_counts[status] = count
     
     pipeline = [
