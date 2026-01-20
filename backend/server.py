@@ -132,32 +132,41 @@ async def health():
 async def create_session(session_data: SessionCreate, response: Response):
     """Exchange session_id for session_token"""
     try:
+        print(f"[AUTH] Received session_id: {session_data.session_id[:20]}...")
+        
         # Call Emergent Auth API to get user data
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            print(f"[AUTH] Calling Emergent Auth API: {EMERGENT_AUTH_URL}")
             auth_response = await client.get(
                 EMERGENT_AUTH_URL,
                 headers={"X-Session-ID": session_data.session_id}
             )
+            print(f"[AUTH] Emergent Auth response status: {auth_response.status_code}")
         
         if auth_response.status_code != 200:
+            print(f"[AUTH] Invalid session_id, status: {auth_response.status_code}")
             raise HTTPException(status_code=401, detail="Invalid session_id")
         
         user_data = auth_response.json()
+        print(f"[AUTH] Got user data: {user_data.get('email')}")
         
         # Verify email domain
         email = user_data.get("email", "")
         if not email.endswith(f"@{ALLOWED_DOMAIN}"):
+            print(f"[AUTH] Domain mismatch: {email} vs @{ALLOWED_DOMAIN}")
             raise HTTPException(
                 status_code=403,
                 detail=f"Access restricted to @{ALLOWED_DOMAIN} emails only"
             )
         
+        print(f"[AUTH] Email domain verified: {email}")
         session_token = user_data["session_token"]
         
         # Generate user_id if new user
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         
         # Create or update user in database
+        print(f"[AUTH] Upserting user: {email}")
         users_collection.update_one(
             {"email": email},
             {
@@ -177,10 +186,16 @@ async def create_session(session_data: SessionCreate, response: Response):
         )
         
         # Get the user document to get the actual user_id
+        print(f"[AUTH] Fetching user document")
         user_doc = users_collection.find_one({"email": email}, {"_id": 0})
+        if not user_doc:
+            raise Exception(f"User document not found after upsert: {email}")
+        
         actual_user_id = user_doc["user_id"]
+        print(f"[AUTH] User ID: {actual_user_id}")
         
         # Store session
+        print(f"[AUTH] Storing session")
         sessions_collection.update_one(
             {"session_token": session_token},
             {
@@ -195,6 +210,7 @@ async def create_session(session_data: SessionCreate, response: Response):
         )
         
         # Set httpOnly cookie
+        print(f"[AUTH] Setting cookie")
         response.set_cookie(
             key="session_token",
             value=session_token,
@@ -205,11 +221,15 @@ async def create_session(session_data: SessionCreate, response: Response):
             path="/"
         )
         
+        print(f"[AUTH] Success! Returning user data")
         return serialize_doc(user_doc)
     
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[AUTH] ERROR: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/auth/me")
