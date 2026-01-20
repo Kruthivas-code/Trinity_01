@@ -218,14 +218,14 @@ async def create_session(session_data: SessionCreate, response: Response):
         )
         
         # Get the user document to get the actual user_id
-        print(f"[AUTH] Fetching user document")
+        print("[AUTH] Fetching user document")
         user_doc = users_collection.find_one({"email": email}, {"_id": 0})
         if not user_doc:
             raise Exception(f"User document not found after upsert: {email}")
         
         # If user_id doesn't exist (old user from previous auth system), add it
         if "user_id" not in user_doc:
-            print(f"[AUTH] Old user detected, adding user_id field")
+            print("[AUTH] Old user detected, adding user_id field")
             new_user_id = f"user_{uuid.uuid4().hex[:12]}"
             users_collection.update_one(
                 {"email": email},
@@ -237,7 +237,7 @@ async def create_session(session_data: SessionCreate, response: Response):
         print(f"[AUTH] User ID: {actual_user_id}")
         
         # Store session
-        print(f"[AUTH] Storing session")
+        print("[AUTH] Storing session")
         sessions_collection.update_one(
             {"session_token": session_token},
             {
@@ -252,7 +252,7 @@ async def create_session(session_data: SessionCreate, response: Response):
         )
         
         # Set httpOnly cookie
-        print(f"[AUTH] Setting cookie")
+        print("[AUTH] Setting cookie")
         response.set_cookie(
             key="session_token",
             value=session_token,
@@ -263,7 +263,7 @@ async def create_session(session_data: SessionCreate, response: Response):
             path="/"
         )
         
-        print(f"[AUTH] Success! Returning user data")
+        print("[AUTH] Success! Returning user data")
         return serialize_doc(user_doc)
     
     except HTTPException:
@@ -471,13 +471,13 @@ async def export_tickets(
         return Response(
             content=output.getvalue(),
             media_type="text/csv",
-            headers={"Content-Disposition": f"attachment; filename=tickets.csv"}
+            headers={"Content-Disposition": "attachment; filename=tickets.csv"}
         )
     else:
         return Response(
             content=json.dumps(tickets_data, indent=2),
             media_type="application/json",
-            headers={"Content-Disposition": f"attachment; filename=tickets.json"}
+            headers={"Content-Disposition": "attachment; filename=tickets.json"}
         )
 
 # Import endpoint
@@ -659,7 +659,7 @@ async def gmail_callback(code: str = None, state: str = None, error: str = None)
             upsert=True
         )
         
-        print(f"[GMAIL] OAuth tokens stored successfully")
+        print("[GMAIL] OAuth tokens stored successfully")
         return RedirectResponse(url=f"{frontend_url}/settings?gmail_connected=true")
     
     except Exception as e:
