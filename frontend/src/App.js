@@ -1,59 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './App.css';
-import AuthPage from './components/AuthPage';
-import Dashboard from './components/Dashboard';
+import { ThemeProvider } from './contexts/ThemeContext';
+import LoginPage from './components/LoginPage';
+import AuthCallback from './components/AuthCallback';
+import ProtectedRoute from './components/ProtectedRoute';
+import DashboardContainer from './components/DashboardContainer';
+import ProfilePage from './components/ProfilePage';
+import SettingsPage from './components/SettingsPage';
 import { Toaster } from 'sonner';
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check for stored token
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, []);
-
-  const handleLogin = (token, user) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    setToken(token);
-    setUser(user);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setToken(null);
-    setUser(null);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="glass rounded-xl p-6">
-          <div className="animate-pulse text-foreground">Loading...</div>
-        </div>
-      </div>
-    );
+function AppRouter() {
+  const location = useLocation();
+  
+  // Check URL fragment for session_id BEFORE rendering routes
+  // This synchronous check prevents race conditions
+  if (location.hash?.includes('session_id=')) {
+    return <AuthCallback />;
   }
 
   return (
-    <div className="App min-h-screen bg-background">
-      {!user ? (
-        <AuthPage onLogin={handleLogin} />
-      ) : (
-        <Dashboard user={user} token={token} onLogout={handleLogout} />
-      )}
-      <Toaster position="top-right" richColors />
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardContainer />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <Router>
+        <div className="App min-h-screen bg-background">
+          <AppRouter />
+          <Toaster position="top-right" richColors />
+        </div>
+      </Router>
+    </ThemeProvider>
   );
 }
 
