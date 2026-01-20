@@ -13,11 +13,11 @@ import KanbanColumn from './KanbanColumn';
 import TicketCard from './TicketCard';
 
 const COLUMNS = [
-  { id: 'backlog', title: 'Backlog' },
   { id: 'todo', title: 'To Do' },
   { id: 'in_progress', title: 'In Progress' },
+  { id: 'waiting', title: 'Waiting on Customer' },
   { id: 'review', title: 'Review' },
-  { id: 'done', title: 'Done' }
+  { id: 'resolved', title: 'Resolved' }
 ];
 
 const KanbanBoard = ({ tickets, users, onTicketClick, onDragEnd, onCreateTicket }) => {
@@ -46,11 +46,11 @@ const KanbanBoard = ({ tickets, users, onTicketClick, onDragEnd, onCreateTicket 
   // Group tickets by status
   const ticketsByStatus = useMemo(() => {
     const grouped = {
-      backlog: [],
       todo: [],
       in_progress: [],
+      waiting: [],
       review: [],
-      done: []
+      resolved: []
     };
 
     tickets.forEach(ticket => {
