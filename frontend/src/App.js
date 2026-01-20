@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './App.css';
 import { ThemeProvider } from './contexts/ThemeContext';
 import LoginPage from './components/LoginPage';
 import AuthCallback from './components/AuthCallback';
 import ProtectedRoute from './components/ProtectedRoute';
-import DashboardContainer from './components/DashboardContainer';
+import MainLayout from './components/MainLayout';
 import ProfilePage from './components/ProfilePage';
 import SettingsPage from './components/SettingsPage';
 import { Toaster } from 'sonner';
@@ -14,7 +14,6 @@ function AppRouter() {
   const location = useLocation();
   
   // Check URL fragment for session_id BEFORE rendering routes
-  // This synchronous check prevents race conditions
   if (location.hash?.includes('session_id=')) {
     return <AuthCallback />;
   }
@@ -26,7 +25,15 @@ function AppRouter() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <DashboardContainer />
+            <MainLayout view="dashboard" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/all-tickets"
+        element={
+          <ProtectedRoute>
+            <MainLayout view="all-tickets" />
           </ProtectedRoute>
         }
       />
