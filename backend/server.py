@@ -58,6 +58,14 @@ def serialize_doc(doc):
                 serialized[key] = [serialize_doc(item) if isinstance(item, dict) else item for item in value]
             else:
                 serialized[key] = value
+        
+        # For backward compatibility: if ticket_id exists, also set id
+        if "ticket_id" in serialized:
+            serialized["id"] = serialized["ticket_id"]
+        # For backward compatibility: if user_id exists, also set id
+        if "user_id" in serialized and "id" not in serialized:
+            serialized["id"] = serialized["user_id"]
+        
         return serialized
     return doc
 
