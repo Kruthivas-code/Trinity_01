@@ -33,12 +33,13 @@ const AuthCallback = () => {
           body: JSON.stringify({ session_id: sessionId })
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.detail || 'Authentication failed');
+          throw new Error(data.detail || 'Authentication failed');
         }
 
-        const userData = await response.json();
+        const userData = data;
 
         // Navigate to dashboard with user data
         navigate('/dashboard', {
