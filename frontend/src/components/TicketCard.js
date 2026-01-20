@@ -11,6 +11,10 @@ const getPriorityColor = (priority) => {
 };
 
 const TicketCard = ({ ticket, users, onClick, isDragging }) => {
+  if (!ticket || !ticket.id) {
+    return null; // Safety check for undefined tickets
+  }
+  
   const assignee = users.find(u => u.id === ticket.assignee_id);
   const priorityColor = getPriorityColor(ticket.priority);
 
