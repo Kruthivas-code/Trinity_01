@@ -1,11 +1,31 @@
 [
   {
-    "content": "Phase 3: Test Emergent Auth flow and light/dark mode",
-    "status": "completed"
+    "content": "Phase 3A: Create collapsible sidebar navigation",
+    "status": "in_progress"
   },
   {
-    "content": "Phase 3: Fixed runtime errors with ticket.id",
-    "status": "completed"
+    "content": "Phase 3A: Update kanban columns to lifecycle statuses",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3A: Create All Tickets list view with infinite scroll",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3A: Add routing for dashboard and all-tickets",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3A: Mobile responsive design",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3A: Add automation hooks for status changes",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3A: Test new navigation and views",
+    "status": "pending"
   },
   {
     "content": "Phase 3: Update ticket model for email fields",
@@ -33,10 +53,6 @@
   },
   {
     "content": "Phase 3: Add reply composer in drawer",
-    "status": "pending"
-  },
-  {
-    "content": "Phase 3: Test email ingestion and reply flow",
     "status": "pending"
   }
 ]
