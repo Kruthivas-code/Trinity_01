@@ -19,6 +19,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [analytics, setAnalytics] = useState(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const fetchTickets = async () => {
     try {
