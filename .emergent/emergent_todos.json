@@ -1,26 +1,26 @@
 [
   {
-    "content": "Phase 3A: Migrate old ticket statuses to new lifecycle",
+    "content": "Phase 3A: Create navigation dropdown with ticket view submenus",
     "status": "completed"
   },
   {
-    "content": "Phase 3A: Create navigation dropdown with ticket view submenus",
-    "status": "in_progress"
-  },
-  {
     "content": "Phase 3A: Create Open Tickets view",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 3A: Create Waiting on Customer view",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 3A: Create Closed Tickets view",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "Phase 3A: Add automation hooks for status changes",
+    "content": "Phase 3A: Update routing for all ticket views",
+    "status": "completed"
+  },
+  {
+    "content": "Phase 3A: Test navigation and ticket views",
     "status": "pending"
   }
 ]
