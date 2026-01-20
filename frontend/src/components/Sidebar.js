@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Menu, X, Mail, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,6 +11,8 @@ const Sidebar = ({ user }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isTicketsExpanded, setIsTicketsExpanded] = useState(true);
+  const [isCollapsedMenuOpen, setIsCollapsedMenuOpen] = useState(false);
+  const collapsedMenuRef = useRef(null);
 
   const ticketViews = [
     { id: 'all-tickets', label: 'All Tickets', icon: List, path: '/all-tickets' },
@@ -25,12 +27,32 @@ const Sidebar = ({ user }) => {
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
   ];
 
+  // Close collapsed menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (collapsedMenuRef.current && !collapsedMenuRef.current.contains(event.target)) {
+        setIsCollapsedMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close collapsed menu when sidebar expands
+  useEffect(() => {
+    if (isExpanded) {
+      setIsCollapsedMenuOpen(false);
+    }
+  }, [isExpanded]);
+
   const isActive = (path) => location.pathname === path;
   const isTicketViewActive = ticketViews.some(view => isActive(view.path));
 
   const handleNavigate = (path) => {
     navigate(path);
     setIsMobileOpen(false);
+    setIsCollapsedMenuOpen(false);
   };
 
   const handleLogout = async () => {
