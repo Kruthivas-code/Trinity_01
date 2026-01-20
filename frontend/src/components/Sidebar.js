@@ -316,7 +316,7 @@ const Sidebar = ({ user }) => {
             <div className="border-t border-border/40 p-2">
               {isExpanded && user && (
                 <div className="px-3 py-2 mb-2">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-2">
                     {user.picture ? (
                       <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
                     ) : (
@@ -329,7 +329,28 @@ const Sidebar = ({ user }) => {
                       <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                     </div>
                   </div>
+                  {/* Logout Button */}
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-3 h-9 rounded-lg text-destructive hover:bg-destructive/10 transition-interactive text-sm"
+                    data-testid="logout-button-sidebar"
+                  >
+                    <LogOut size={16} />
+                    <span>Sign Out</span>
+                  </button>
                 </div>
+              )}
+              
+              {/* Collapsed state - show logout icon */}
+              {!isExpanded && (
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center h-10 rounded-lg text-destructive hover:bg-destructive/10 transition-interactive mb-1"
+                  data-testid="logout-button-collapsed"
+                  title="Sign Out"
+                >
+                  <LogOut size={18} />
+                </button>
               )}
               
               {/* Desktop Toggle Button */}
