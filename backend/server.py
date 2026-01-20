@@ -45,6 +45,21 @@ sessions_collection = db.user_sessions
 EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
 ALLOWED_DOMAIN = "emergent.sh"
 
+# Gmail OAuth Configuration
+GMAIL_CLIENT_ID = os.environ.get("GMAIL_CLIENT_ID", "")
+GMAIL_CLIENT_SECRET = os.environ.get("GMAIL_CLIENT_SECRET", "")
+GMAIL_REDIRECT_URI = os.environ.get("GMAIL_REDIRECT_URI", "")
+GMAIL_WATCH_EMAIL = os.environ.get("GMAIL_WATCH_EMAIL", "")
+GMAIL_SCOPES = [
+    'https://www.googleapis.com/auth/gmail.readonly',
+    'https://www.googleapis.com/auth/gmail.send',
+    'https://www.googleapis.com/auth/gmail.modify'
+]
+
+# Gmail tokens collection
+gmail_tokens_collection = db.gmail_tokens
+email_threads_collection = db.email_threads
+
 # Helper functions
 def serialize_doc(doc):
     """Convert MongoDB document to JSON-serializable format"""
