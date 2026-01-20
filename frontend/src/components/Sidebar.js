@@ -86,7 +86,7 @@ const Sidebar = ({ user }) => {
               w-full flex items-center justify-between px-3 h-11 rounded-lg
               transition-interactive
               ${isTicketViewActive ? 'text-primary' : 'text-foreground'}
-              hover:bg-white/5
+              hover:bg-white/10
             `}
             data-testid="nav-tickets-toggle"
           >
