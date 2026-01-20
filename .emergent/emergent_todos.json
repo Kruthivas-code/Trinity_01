@@ -1,15 +1,23 @@
 [
   {
-    "content": "Phase 3A: Enhanced typography with Inter, Plus Jakarta Sans, DM Sans",
+    "content": "Phase 3A: Migrate old ticket statuses to new lifecycle",
     "status": "completed"
   },
   {
-    "content": "Phase 3A: Updated color scheme to professional blue with gradients",
-    "status": "completed"
+    "content": "Phase 3A: Create navigation dropdown with ticket view submenus",
+    "status": "in_progress"
   },
   {
-    "content": "Phase 3A: Removed distracting shimmer animation",
-    "status": "completed"
+    "content": "Phase 3A: Create Open Tickets view",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3A: Create Waiting on Customer view",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 3A: Create Closed Tickets view",
+    "status": "pending"
   },
   {
     "content": "Phase 3A: Add automation hooks for status changes",
