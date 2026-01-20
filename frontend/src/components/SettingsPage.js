@@ -15,7 +15,7 @@ const SettingsPage = ({ user }) => {
   const [gmailStatus, setGmailStatus] = useState({
     connected: false,
     watch_email: null,
-    configured: false,
+    configured: true, // Default to true - credentials are set in backend
     loading: true
   });
   const [connecting, setConnecting] = useState(false);
