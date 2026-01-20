@@ -385,7 +385,7 @@ const Sidebar = ({ user }) => {
           {/* User Info */}
           {user && (
             <div className="border-t border-border/40 p-4">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-3">
                 {user.picture ? (
                   <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
                 ) : (
@@ -398,6 +398,15 @@ const Sidebar = ({ user }) => {
                   <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 </div>
               </div>
+              {/* Mobile Logout Button */}
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 px-3 h-10 rounded-lg text-destructive hover:bg-destructive/10 transition-interactive"
+                data-testid="logout-button-mobile"
+              >
+                <LogOut size={18} />
+                <span className="text-sm font-medium">Sign Out</span>
+              </button>
             </div>
           )}
         </div>
