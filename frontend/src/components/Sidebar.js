@@ -66,7 +66,7 @@ const Sidebar = ({ user }) => {
           transition-interactive
           ${isActive('/dashboard')
             ? 'bg-gradient-primary text-white shadow-lg shadow-primary/25' 
-            : 'hover:bg-white/5 text-foreground'
+            : 'hover:bg-white/10 text-foreground'
           }
           ${!isExpanded && 'justify-center'}
         `}
@@ -170,7 +170,7 @@ const Sidebar = ({ user }) => {
           transition-interactive
           ${isActive('/dashboard')
             ? 'bg-gradient-primary text-white shadow-lg shadow-primary/25' 
-            : 'hover:bg-white/5 text-foreground'
+            : 'hover:bg-white/10 text-foreground'
           }
         `}
       >
