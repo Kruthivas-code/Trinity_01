@@ -1,27 +1,15 @@
 [
   {
-    "content": "Phase 3A: Create collapsible sidebar navigation",
+    "content": "Phase 3A: Fixed sidebar overlap issue with proper flex spacing",
     "status": "completed"
   },
   {
-    "content": "Phase 3A: Update kanban columns to lifecycle statuses",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 3A: Create All Tickets list view with infinite scroll",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 3A: Add routing for dashboard and all-tickets",
-    "status": "completed"
-  },
-  {
-    "content": "Phase 3A: Mobile responsive design",
+    "content": "Phase 3A: Enhanced dark mode for glossy, sophisticated metallic finish",
     "status": "completed"
   },
   {
     "content": "Phase 3A: Test new navigation and views",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Phase 3A: Add automation hooks for status changes",
