@@ -921,10 +921,12 @@ async def sync_emails_to_tickets(
 async def get_email_settings(current_user: dict = Depends(get_current_user)):
     """Get email integration settings"""
     token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+    watch_doc = gmail_tokens_collection.find_one({"type": "gmail_watch"})
     return {
         "gmail_connected": token_doc is not None and "access_token" in token_doc,
         "watch_email": GMAIL_WATCH_EMAIL,
-        "configured": bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET)
+        "configured": bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET),
+        "watch_active": watch_doc is not None and watch_doc.get("expiration", 0) > datetime.now(timezone.utc).timestamp() * 1000
     }
 
 @app.put("/api/settings/email")
@@ -936,6 +938,205 @@ async def update_email_settings(
     # In production, this would update env vars or a config collection
     # For now, just return success as the email is set via env var
     return {"message": "Email settings updated"}
+
+# ==================== Gmail Push Notifications (Webhooks) ====================
+
+@app.post("/api/gmail/webhook")
+async def gmail_webhook(request: Request):
+    """
+    Receive Gmail push notifications via Google Cloud Pub/Sub.
+    This endpoint is called by Google when new emails arrive.
+    """
+    try:
+        body = await request.json()
+        print(f"[GMAIL WEBHOOK] Received notification: {body}")
+        
+        # Decode the Pub/Sub message
+        if 'message' in body:
+            import base64
+            message_data = body['message'].get('data', '')
+            if message_data:
+                decoded = base64.urlsafe_b64decode(message_data).decode('utf-8')
+                notification = json.loads(decoded)
+                print(f"[GMAIL WEBHOOK] Decoded notification: {notification}")
+                
+                # Get the history ID to fetch new messages
+                history_id = notification.get('historyId')
+                email_address = notification.get('emailAddress')
+                
+                if history_id:
+                    # Trigger background sync
+                    await process_gmail_notification(history_id, email_address)
+        
+        # Always return 200 to acknowledge receipt
+        return {"status": "ok"}
+    
+    except Exception as e:
+        print(f"[GMAIL WEBHOOK] Error processing notification: {str(e)}")
+        # Still return 200 to prevent retries
+        return {"status": "error", "message": str(e)}
+
+async def process_gmail_notification(history_id: str, email_address: str):
+    """Process a Gmail push notification by fetching new messages"""
+    token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+    if not token_doc or "access_token" not in token_doc:
+        print("[GMAIL WEBHOOK] No Gmail tokens found")
+        return
+    
+    try:
+        service = get_gmail_service(token_doc)
+        
+        # Get the stored history ID
+        watch_doc = gmail_tokens_collection.find_one({"type": "gmail_watch"})
+        stored_history_id = watch_doc.get("history_id") if watch_doc else None
+        
+        if stored_history_id:
+            # Get history since last check
+            history = service.users().history().list(
+                userId='me',
+                startHistoryId=stored_history_id,
+                historyTypes=['messageAdded']
+            ).execute()
+            
+            messages_added = []
+            for record in history.get('history', []):
+                for msg in record.get('messagesAdded', []):
+                    messages_added.append(msg['message']['id'])
+            
+            print(f"[GMAIL WEBHOOK] Found {len(messages_added)} new messages")
+            
+            # Create tickets for new messages
+            for msg_id in messages_added:
+                existing = tickets_collection.find_one({"email_message_id": msg_id})
+                if existing:
+                    continue
+                
+                msg_detail = service.users().messages().get(
+                    userId='me',
+                    id=msg_id,
+                    format='full'
+                ).execute()
+                
+                # Only process inbox messages
+                if 'INBOX' not in msg_detail.get('labelIds', []):
+                    continue
+                
+                metadata = extract_email_metadata(msg_detail.get('payload', {}).get('headers', []))
+                body = parse_email_body(msg_detail.get('payload', {}))
+                _, sender_email = parseaddr(metadata['from'])
+                
+                ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+                max_order_ticket = tickets_collection.find_one(
+                    {"status": "todo"},
+                    sort=[("order", DESCENDING)]
+                )
+                next_order = (max_order_ticket["order"] + 1) if max_order_ticket and "order" in max_order_ticket else 0
+                
+                ticket_doc = {
+                    "ticket_id": ticket_id,
+                    "title": metadata['subject'] or "No Subject",
+                    "description": body,
+                    "status": "todo",
+                    "priority": "medium",
+                    "order": next_order,
+                    "created_by": "system",
+                    "assignee_id": None,
+                    "created_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(timezone.utc),
+                    "source": "email",
+                    "email_message_id": msg_id,
+                    "email_thread_id": msg_detail.get('threadId'),
+                    "email_from": metadata['from'],
+                    "email_sender": sender_email,
+                    "email_date": metadata['date']
+                }
+                
+                tickets_collection.insert_one(ticket_doc)
+                print(f"[GMAIL WEBHOOK] Created ticket {ticket_id} from email {msg_id}")
+        
+        # Update stored history ID
+        gmail_tokens_collection.update_one(
+            {"type": "gmail_watch"},
+            {"$set": {"history_id": history_id}},
+            upsert=True
+        )
+        
+    except Exception as e:
+        print(f"[GMAIL WEBHOOK] Error processing: {str(e)}")
+
+@app.post("/api/gmail/watch/start")
+async def start_gmail_watch(current_user: dict = Depends(get_current_user)):
+    """
+    Start watching Gmail inbox for new messages.
+    Requires Cloud Pub/Sub topic to be configured.
+    """
+    token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+    if not token_doc or "access_token" not in token_doc:
+        raise HTTPException(status_code=400, detail="Gmail not connected")
+    
+    # Get Pub/Sub topic from env
+    pubsub_topic = os.environ.get("GMAIL_PUBSUB_TOPIC", "")
+    if not pubsub_topic:
+        raise HTTPException(
+            status_code=400, 
+            detail="GMAIL_PUBSUB_TOPIC not configured. Please set up Cloud Pub/Sub first."
+        )
+    
+    try:
+        service = get_gmail_service(token_doc)
+        
+        # Start watching
+        watch_response = service.users().watch(
+            userId='me',
+            body={
+                'topicName': pubsub_topic,
+                'labelIds': ['INBOX']
+            }
+        ).execute()
+        
+        print(f"[GMAIL] Watch started: {watch_response}")
+        
+        # Store watch info
+        gmail_tokens_collection.update_one(
+            {"type": "gmail_watch"},
+            {
+                "$set": {
+                    "history_id": watch_response.get('historyId'),
+                    "expiration": watch_response.get('expiration'),
+                    "started_at": datetime.now(timezone.utc)
+                }
+            },
+            upsert=True
+        )
+        
+        return {
+            "status": "watching",
+            "history_id": watch_response.get('historyId'),
+            "expiration": watch_response.get('expiration')
+        }
+    
+    except Exception as e:
+        print(f"[GMAIL] Error starting watch: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to start watch: {str(e)}")
+
+@app.post("/api/gmail/watch/stop")
+async def stop_gmail_watch(current_user: dict = Depends(get_current_user)):
+    """Stop watching Gmail inbox"""
+    token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+    if not token_doc or "access_token" not in token_doc:
+        raise HTTPException(status_code=400, detail="Gmail not connected")
+    
+    try:
+        service = get_gmail_service(token_doc)
+        service.users().stop(userId='me').execute()
+        
+        gmail_tokens_collection.delete_one({"type": "gmail_watch"})
+        
+        return {"status": "stopped"}
+    
+    except Exception as e:
+        print(f"[GMAIL] Error stopping watch: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to stop watch: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
