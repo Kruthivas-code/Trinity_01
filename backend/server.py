@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Response, Request, Cookie
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from datetime import datetime, timedelta, timezone
@@ -12,6 +12,15 @@ import csv
 import io
 import uuid
 import httpx
+import base64
+import re
+from email.utils import parseaddr
+from html import unescape
+
+# Gmail API imports
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
 
 app = FastAPI()
 
