@@ -42,7 +42,7 @@ const Sidebar = ({ user }) => {
           transition-interactive
           ${active 
             ? 'bg-gradient-primary text-white shadow-lg shadow-primary/25' 
-            : 'hover:bg-white/5 text-foreground opacity-100'
+            : 'hover:bg-white/10 text-foreground opacity-100'
           }
           ${!isExpanded && !isNested && 'justify-center'}
           ${isNested ? 'px-3 ml-8' : 'px-3'}
