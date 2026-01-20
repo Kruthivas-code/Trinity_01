@@ -212,7 +212,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                 </div>
                 <div className="flex justify-between">
                   <span>ID:</span>
-                  <span>#{ticket.id.slice(-8)}</span>
+                  <span>#{ticket.id?.slice(-8) || 'N/A'}</span>
                 </div>
               </div>
             </div>
