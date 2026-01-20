@@ -47,7 +47,7 @@ sessions_collection = db.user_sessions
 
 # Emergent Auth Configuration
 EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
-ALLOWED_DOMAIN = "emergent.sh"
+ALLOWED_DOMAIN = None  # Allow any email domain for testing
 
 # Gmail OAuth Configuration
 GMAIL_CLIENT_ID = os.environ.get("GMAIL_CLIENT_ID", "")
