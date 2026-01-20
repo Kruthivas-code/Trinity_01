@@ -1,17 +1,17 @@
-from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Response
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Response, Request, Cookie
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+from datetime import datetime, timedelta, timezone
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from bson import ObjectId
 import os
 import json
 import csv
 import io
+import uuid
+import httpx
 
 app = FastAPI()
 
@@ -30,13 +30,11 @@ client = MongoClient(MONGO_URL)
 db = client.tickflow
 users_collection = db.users
 tickets_collection = db.tickets
+sessions_collection = db.user_sessions
 
-# Security
-SECRET_KEY = "tickflow-secret-key-change-in-production"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBearer()
+# Emergent Auth Configuration
+EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+ALLOWED_DOMAIN = "emergent.sh"
 
 # Helper functions
 def serialize_doc(doc):
@@ -48,8 +46,8 @@ def serialize_doc(doc):
     if isinstance(doc, dict):
         serialized = {}
         for key, value in doc.items():
-            if key == "_id" and isinstance(value, ObjectId):
-                serialized["id"] = str(value)
+            if key == "_id":
+                continue  # Skip MongoDB's _id
             elif isinstance(value, ObjectId):
                 serialized[key] = str(value)
             elif isinstance(value, datetime):
@@ -63,119 +61,194 @@ def serialize_doc(doc):
         return serialized
     return doc
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+async def get_current_user(request: Request, session_token: Optional[str] = Cookie(None)):
+    """Get current user from session token (cookie or header)"""
+    # Try cookie first, then Authorization header
+    token = session_token
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "")
     
-    user = users_collection.find_one({"_id": ObjectId(user_id)})
-    if user is None:
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    # Find session in database
+    session_doc = sessions_collection.find_one({"session_token": token}, {"_id": 0})
+    if not session_doc:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    
+    # Check if session expired
+    expires_at = session_doc["expires_at"]
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if expires_at < datetime.now(timezone.utc):
+        sessions_collection.delete_one({"session_token": token})
+        raise HTTPException(status_code=401, detail="Session expired")
+    
+    # Get user data
+    user_doc = users_collection.find_one({"user_id": session_doc["user_id"]}, {"_id": 0})
+    if not user_doc:
         raise HTTPException(status_code=401, detail="User not found")
-    return serialize_doc(user)
+    
+    return serialize_doc(user_doc)
 
 # Models
-class UserRegister(BaseModel):
-    email: EmailStr
-    password: str
-    name: str
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
+class SessionCreate(BaseModel):
+    session_id: str
 
 class TicketCreate(BaseModel):
     title: str
     description: Optional[str] = ""
     status: str = "backlog"
     assignee_id: Optional[str] = None
+    priority: Optional[str] = "medium"
 
 class TicketUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     status: Optional[str] = None
     assignee_id: Optional[str] = None
+    priority: Optional[str] = None
 
 class TicketReorder(BaseModel):
     ticket_id: str
     new_status: str
     new_order: int
 
+class UserPreferences(BaseModel):
+    theme: Optional[str] = "dark"
+
 # Routes
 @app.get("/api/health")
 async def health():
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
-# Auth endpoints
-@app.post("/api/auth/register")
-async def register(user_data: UserRegister):
-    # Check if user exists
-    existing_user = users_collection.find_one({"email": user_data.email})
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+# Emergent Auth endpoints
+@app.post("/api/auth/session")
+async def create_session(session_data: SessionCreate, response: Response):
+    """Exchange session_id for session_token"""
+    try:
+        # Call Emergent Auth API to get user data
+        async with httpx.AsyncClient() as client:
+            auth_response = await client.get(
+                EMERGENT_AUTH_URL,
+                headers={"X-Session-ID": session_data.session_id}
+            )
+        
+        if auth_response.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid session_id")
+        
+        user_data = auth_response.json()
+        
+        # Verify email domain
+        email = user_data.get("email", "")
+        if not email.endswith(f"@{ALLOWED_DOMAIN}"):
+            raise HTTPException(
+                status_code=403,
+                detail=f"Access restricted to @{ALLOWED_DOMAIN} emails only"
+            )
+        
+        session_token = user_data["session_token"]
+        
+        # Generate user_id if new user
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        
+        # Create or update user in database
+        users_collection.update_one(
+            {"email": email},
+            {
+                "$set": {
+                    "email": email,
+                    "name": user_data.get("name", ""),
+                    "picture": user_data.get("picture", ""),
+                    "updated_at": datetime.now(timezone.utc)
+                },
+                "$setOnInsert": {
+                    "user_id": user_id,
+                    "created_at": datetime.now(timezone.utc),
+                    "preferences": {"theme": "dark"}
+                }
+            },
+            upsert=True
+        )
+        
+        # Get the user document to get the actual user_id
+        user_doc = users_collection.find_one({"email": email}, {"_id": 0})
+        actual_user_id = user_doc["user_id"]
+        
+        # Store session
+        sessions_collection.update_one(
+            {"session_token": session_token},
+            {
+                "$set": {
+                    "user_id": actual_user_id,
+                    "session_token": session_token,
+                    "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
+                    "created_at": datetime.now(timezone.utc)
+                }
+            },
+            upsert=True
+        )
+        
+        # Set httpOnly cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=True,
+            samesite="none",
+            max_age=7 * 24 * 60 * 60,  # 7 days
+            path="/"
+        )
+        
+        return serialize_doc(user_doc)
     
-    # Create user
-    user_doc = {
-        "email": user_data.email,
-        "password": get_password_hash(user_data.password),
-        "name": user_data.name,
-        "role": "user",
-        "created_at": datetime.utcnow()
-    }
-    result = users_collection.insert_one(user_doc)
-    
-    # Create token
-    access_token = create_access_token(data={"sub": str(result.inserted_id)})
-    
-    user_doc["_id"] = result.inserted_id
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": serialize_doc(user_doc)
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/auth/login")
-async def login(user_data: UserLogin):
-    user = users_collection.find_one({"email": user_data.email})
-    if not user or not verify_password(user_data.password, user["password"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    
-    access_token = create_access_token(data={"sub": str(user["_id"])})
-    
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": serialize_doc(user)
-    }
-
-# User endpoints
-@app.get("/api/users/me")
+@app.get("/api/auth/me")
 async def get_me(current_user: dict = Depends(get_current_user)):
+    """Get current user data"""
     return current_user
+
+@app.post("/api/auth/logout")
+async def logout(response: Response, session_token: Optional[str] = Cookie(None)):
+    """Logout user and clear session"""
+    if session_token:
+        sessions_collection.delete_one({"session_token": session_token})
+    
+    response.delete_cookie(key="session_token", path="/")
+    return {"message": "Logged out successfully"}
+
+# User profile endpoints
+@app.get("/api/users/me")
+async def get_current_user_profile(current_user: dict = Depends(get_current_user)):
+    return current_user
+
+@app.put("/api/users/me/preferences")
+async def update_preferences(
+    preferences: UserPreferences,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update user preferences (theme, etc.)"""
+    users_collection.update_one(
+        {"user_id": current_user["user_id"]},
+        {"$set": {"preferences": preferences.dict(), "updated_at": datetime.now(timezone.utc)}}
+    )
+    return {"message": "Preferences updated"}
 
 @app.get("/api/users")
 async def get_users(current_user: dict = Depends(get_current_user)):
-    users = list(users_collection.find({}))
+    users = list(users_collection.find({}, {"_id": 0}))
     return [serialize_doc(user) for user in users]
 
-# Ticket endpoints
+# Ticket endpoints (protected)
 @app.get("/api/tickets")
 async def get_tickets(
     status: Optional[str] = None,
@@ -196,27 +269,27 @@ async def create_ticket(
     ticket_data: TicketCreate,
     current_user: dict = Depends(get_current_user)
 ):
-    # Get max order for the status
     max_order_ticket = tickets_collection.find_one(
         {"status": ticket_data.status},
         sort=[("order", DESCENDING)]
     )
     next_order = (max_order_ticket["order"] + 1) if max_order_ticket and "order" in max_order_ticket else 0
     
+    ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
     ticket_doc = {
+        "ticket_id": ticket_id,
         "title": ticket_data.title,
         "description": ticket_data.description,
         "status": ticket_data.status,
         "assignee_id": ticket_data.assignee_id,
+        "priority": ticket_data.priority,
         "order": next_order,
-        "created_by": current_user["id"],
+        "created_by": current_user["user_id"],
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     }
     
-    result = tickets_collection.insert_one(ticket_doc)
-    ticket_doc["_id"] = result.inserted_id
-    
+    tickets_collection.insert_one(ticket_doc)
     return serialize_doc(ticket_doc)
 
 @app.get("/api/tickets/{ticket_id}")
@@ -224,7 +297,7 @@ async def get_ticket(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    ticket = tickets_collection.find_one({"_id": ObjectId(ticket_id)})
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     return serialize_doc(ticket)
@@ -242,14 +315,14 @@ async def update_ticket(
     update_data["updated_at"] = datetime.utcnow()
     
     result = tickets_collection.update_one(
-        {"_id": ObjectId(ticket_id)},
+        {"ticket_id": ticket_id},
         {"$set": update_data}
     )
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
-    ticket = tickets_collection.find_one({"_id": ObjectId(ticket_id)})
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     return serialize_doc(ticket)
 
 @app.delete("/api/tickets/{ticket_id}")
@@ -257,7 +330,7 @@ async def delete_ticket(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    result = tickets_collection.delete_one({"_id": ObjectId(ticket_id)})
+    result = tickets_collection.delete_one({"ticket_id": ticket_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Ticket not found")
     return {"message": "Ticket deleted successfully"}
@@ -267,28 +340,26 @@ async def reorder_tickets(
     reorder_data: TicketReorder,
     current_user: dict = Depends(get_current_user)
 ):
-    ticket = tickets_collection.find_one({"_id": ObjectId(reorder_data.ticket_id)})
+    ticket = tickets_collection.find_one({"ticket_id": reorder_data.ticket_id}, {"_id": 0})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
     old_status = ticket["status"]
     new_status = reorder_data.new_status
     
-    # Update the ticket's status and order
     tickets_collection.update_one(
-        {"_id": ObjectId(reorder_data.ticket_id)},
+        {"ticket_id": reorder_data.ticket_id},
         {"$set": {"status": new_status, "order": reorder_data.new_order, "updated_at": datetime.utcnow()}}
     )
     
-    # Reorder other tickets in the new status
     tickets_in_new_status = list(tickets_collection.find(
-        {"status": new_status, "_id": {"$ne": ObjectId(reorder_data.ticket_id)}}
+        {"status": new_status, "ticket_id": {"$ne": reorder_data.ticket_id}}
     ).sort("order", ASCENDING))
     
     for idx, t in enumerate(tickets_in_new_status):
         new_order = idx if idx < reorder_data.new_order else idx + 1
         tickets_collection.update_one(
-            {"_id": t["_id"]},
+            {"ticket_id": t["ticket_id"]},
             {"$set": {"order": new_order}}
         )
     
@@ -297,21 +368,18 @@ async def reorder_tickets(
 # Analytics endpoint
 @app.get("/api/analytics/summary")
 async def get_analytics_summary(current_user: dict = Depends(get_current_user)):
-    # Count by status
     status_counts = {}
     for status in ["backlog", "todo", "in_progress", "review", "done"]:
         count = tickets_collection.count_documents({"status": status})
         status_counts[status] = count
     
-    # Count by assignee
     pipeline = [
         {"$match": {"assignee_id": {"$ne": None}}},
         {"$group": {"_id": "$assignee_id", "count": {"$sum": 1}}}
     ]
     assignee_counts = list(tickets_collection.aggregate(pipeline))
     
-    # My tickets
-    my_tickets_count = tickets_collection.count_documents({"assignee_id": current_user["id"]})
+    my_tickets_count = tickets_collection.count_documents({"assignee_id": current_user["user_id"]})
     
     return {
         "by_status": status_counts,
@@ -326,13 +394,13 @@ async def export_tickets(
     format: str = "json",
     current_user: dict = Depends(get_current_user)
 ):
-    tickets = list(tickets_collection.find({}))
+    tickets = list(tickets_collection.find({}, {"_id": 0}))
     tickets_data = [serialize_doc(ticket) for ticket in tickets]
     
     if format == "csv":
         output = io.StringIO()
         if tickets_data:
-            fieldnames = ["id", "title", "description", "status", "assignee_id", "order", "created_at", "updated_at"]
+            fieldnames = ["ticket_id", "title", "description", "status", "assignee_id", "priority", "order", "created_at", "updated_at"]
             writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
             writer.writeheader()
             for ticket in tickets_data:
@@ -371,13 +439,16 @@ async def import_tickets(
         
         imported_count = 0
         for item in data:
+            ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
             ticket_doc = {
+                "ticket_id": ticket_id,
                 "title": item.get("title", "Imported Ticket"),
                 "description": item.get("description", ""),
                 "status": item.get("status", "backlog"),
                 "assignee_id": item.get("assignee_id"),
+                "priority": item.get("priority", "medium"),
                 "order": int(item.get("order", 0)),
-                "created_by": current_user["id"],
+                "created_by": current_user["user_id"],
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow()
             }
