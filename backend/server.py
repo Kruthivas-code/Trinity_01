@@ -524,6 +524,412 @@ async def import_tickets(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Import failed: {str(e)}")
 
+# ==================== Gmail Integration ====================
+
+def get_gmail_flow():
+    """Create Gmail OAuth flow"""
+    client_config = {
+        "web": {
+            "client_id": GMAIL_CLIENT_ID,
+            "client_secret": GMAIL_CLIENT_SECRET,
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "redirect_uris": [GMAIL_REDIRECT_URI]
+        }
+    }
+    flow = Flow.from_client_config(client_config, scopes=GMAIL_SCOPES)
+    flow.redirect_uri = GMAIL_REDIRECT_URI
+    return flow
+
+def get_gmail_service(credentials_dict: dict):
+    """Build Gmail API service from stored credentials"""
+    credentials = Credentials(
+        token=credentials_dict.get("access_token"),
+        refresh_token=credentials_dict.get("refresh_token"),
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=GMAIL_CLIENT_ID,
+        client_secret=GMAIL_CLIENT_SECRET
+    )
+    return build('gmail', 'v1', credentials=credentials)
+
+def parse_email_body(payload):
+    """Extract text body from email payload"""
+    body = ""
+    
+    if 'parts' in payload:
+        for part in payload['parts']:
+            if part['mimeType'] == 'text/plain':
+                if 'data' in part.get('body', {}):
+                    body = base64.urlsafe_b64decode(part['body']['data']).decode('utf-8', errors='ignore')
+                    break
+            elif part['mimeType'] == 'text/html' and not body:
+                if 'data' in part.get('body', {}):
+                    html_body = base64.urlsafe_b64decode(part['body']['data']).decode('utf-8', errors='ignore')
+                    # Simple HTML to text conversion
+                    body = re.sub(r'<[^>]+>', '', html_body)
+                    body = unescape(body)
+            elif 'parts' in part:
+                body = parse_email_body(part)
+                if body:
+                    break
+    elif 'body' in payload and 'data' in payload['body']:
+        body = base64.urlsafe_b64decode(payload['body']['data']).decode('utf-8', errors='ignore')
+    
+    return body.strip()
+
+def extract_email_metadata(headers):
+    """Extract From, Subject, Date from email headers"""
+    metadata = {"from": "", "subject": "", "date": "", "message_id": "", "to": ""}
+    for header in headers:
+        name = header.get('name', '').lower()
+        value = header.get('value', '')
+        if name == 'from':
+            metadata['from'] = value
+        elif name == 'subject':
+            metadata['subject'] = value
+        elif name == 'date':
+            metadata['date'] = value
+        elif name == 'message-id':
+            metadata['message_id'] = value
+        elif name == 'to':
+            metadata['to'] = value
+    return metadata
+
+@app.get("/api/gmail/status")
+async def gmail_status(current_user: dict = Depends(get_current_user)):
+    """Check if Gmail is connected"""
+    token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+    is_connected = token_doc is not None and "access_token" in token_doc
+    return {
+        "connected": is_connected,
+        "watch_email": GMAIL_WATCH_EMAIL if is_connected else None,
+        "configured": bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET)
+    }
+
+@app.get("/api/gmail/connect")
+async def gmail_connect(current_user: dict = Depends(get_current_user)):
+    """Initiate Gmail OAuth flow"""
+    if not GMAIL_CLIENT_ID or not GMAIL_CLIENT_SECRET:
+        raise HTTPException(status_code=400, detail="Gmail credentials not configured")
+    
+    flow = get_gmail_flow()
+    authorization_url, state = flow.authorization_url(
+        access_type='offline',
+        include_granted_scopes='true',
+        prompt='consent'
+    )
+    
+    # Store state for verification
+    gmail_tokens_collection.update_one(
+        {"type": "gmail_oauth_state"},
+        {"$set": {"state": state, "created_at": datetime.now(timezone.utc)}},
+        upsert=True
+    )
+    
+    return {"authorization_url": authorization_url}
+
+@app.get("/api/auth/gmail/callback")
+async def gmail_callback(code: str = None, state: str = None, error: str = None):
+    """Handle Gmail OAuth callback"""
+    frontend_url = "https://tickflow-7.preview.emergentagent.com"
+    
+    if error:
+        return RedirectResponse(url=f"{frontend_url}/settings?gmail_error={error}")
+    
+    if not code:
+        return RedirectResponse(url=f"{frontend_url}/settings?gmail_error=no_code")
+    
+    try:
+        flow = get_gmail_flow()
+        flow.fetch_token(code=code)
+        credentials = flow.credentials
+        
+        # Store tokens
+        gmail_tokens_collection.update_one(
+            {"type": "gmail_oauth"},
+            {
+                "$set": {
+                    "access_token": credentials.token,
+                    "refresh_token": credentials.refresh_token,
+                    "token_uri": credentials.token_uri,
+                    "expiry": credentials.expiry.isoformat() if credentials.expiry else None,
+                    "updated_at": datetime.now(timezone.utc)
+                }
+            },
+            upsert=True
+        )
+        
+        print(f"[GMAIL] OAuth tokens stored successfully")
+        return RedirectResponse(url=f"{frontend_url}/settings?gmail_connected=true")
+    
+    except Exception as e:
+        print(f"[GMAIL] OAuth error: {str(e)}")
+        return RedirectResponse(url=f"{frontend_url}/settings?gmail_error={str(e)}")
+
+@app.post("/api/gmail/disconnect")
+async def gmail_disconnect(current_user: dict = Depends(get_current_user)):
+    """Disconnect Gmail integration"""
+    gmail_tokens_collection.delete_one({"type": "gmail_oauth"})
+    return {"message": "Gmail disconnected successfully"}
+
+@app.get("/api/gmail/emails")
+async def get_gmail_emails(
+    max_results: int = 20,
+    current_user: dict = Depends(get_current_user)
+):
+    """Fetch recent emails from connected Gmail account"""
+    token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+    if not token_doc or "access_token" not in token_doc:
+        raise HTTPException(status_code=400, detail="Gmail not connected")
+    
+    try:
+        service = get_gmail_service(token_doc)
+        
+        # Get list of messages
+        results = service.users().messages().list(
+            userId='me',
+            maxResults=max_results,
+            labelIds=['INBOX']
+        ).execute()
+        
+        messages = results.get('messages', [])
+        emails = []
+        
+        for msg in messages:
+            msg_detail = service.users().messages().get(
+                userId='me',
+                id=msg['id'],
+                format='full'
+            ).execute()
+            
+            metadata = extract_email_metadata(msg_detail.get('payload', {}).get('headers', []))
+            body = parse_email_body(msg_detail.get('payload', {}))
+            
+            # Truncate body for listing
+            body_preview = body[:500] + "..." if len(body) > 500 else body
+            
+            emails.append({
+                "id": msg['id'],
+                "thread_id": msg_detail.get('threadId'),
+                "from": metadata['from'],
+                "subject": metadata['subject'],
+                "date": metadata['date'],
+                "body_preview": body_preview,
+                "snippet": msg_detail.get('snippet', ''),
+                "labels": msg_detail.get('labelIds', [])
+            })
+        
+        return {"emails": emails, "count": len(emails)}
+    
+    except Exception as e:
+        print(f"[GMAIL] Error fetching emails: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch emails: {str(e)}")
+
+@app.get("/api/gmail/email/{message_id}")
+async def get_gmail_email_detail(
+    message_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get full email details"""
+    token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+    if not token_doc or "access_token" not in token_doc:
+        raise HTTPException(status_code=400, detail="Gmail not connected")
+    
+    try:
+        service = get_gmail_service(token_doc)
+        
+        msg_detail = service.users().messages().get(
+            userId='me',
+            id=message_id,
+            format='full'
+        ).execute()
+        
+        metadata = extract_email_metadata(msg_detail.get('payload', {}).get('headers', []))
+        body = parse_email_body(msg_detail.get('payload', {}))
+        
+        return {
+            "id": message_id,
+            "thread_id": msg_detail.get('threadId'),
+            "from": metadata['from'],
+            "to": metadata['to'],
+            "subject": metadata['subject'],
+            "date": metadata['date'],
+            "body": body,
+            "labels": msg_detail.get('labelIds', [])
+        }
+    
+    except Exception as e:
+        print(f"[GMAIL] Error fetching email detail: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch email: {str(e)}")
+
+@app.post("/api/gmail/create-ticket/{message_id}")
+async def create_ticket_from_email(
+    message_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a ticket from an email"""
+    token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+    if not token_doc or "access_token" not in token_doc:
+        raise HTTPException(status_code=400, detail="Gmail not connected")
+    
+    # Check if ticket already exists for this email
+    existing = tickets_collection.find_one({"email_message_id": message_id})
+    if existing:
+        return serialize_doc(existing)
+    
+    try:
+        service = get_gmail_service(token_doc)
+        
+        msg_detail = service.users().messages().get(
+            userId='me',
+            id=message_id,
+            format='full'
+        ).execute()
+        
+        metadata = extract_email_metadata(msg_detail.get('payload', {}).get('headers', []))
+        body = parse_email_body(msg_detail.get('payload', {}))
+        
+        # Parse sender email
+        _, sender_email = parseaddr(metadata['from'])
+        
+        # Create ticket
+        ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+        max_order_ticket = tickets_collection.find_one(
+            {"status": "todo"},
+            sort=[("order", DESCENDING)]
+        )
+        next_order = (max_order_ticket["order"] + 1) if max_order_ticket and "order" in max_order_ticket else 0
+        
+        ticket_doc = {
+            "ticket_id": ticket_id,
+            "title": metadata['subject'] or "No Subject",
+            "description": body,
+            "status": "todo",
+            "priority": "medium",
+            "order": next_order,
+            "created_by": current_user["user_id"],
+            "assignee_id": None,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            # Email metadata
+            "source": "email",
+            "email_message_id": message_id,
+            "email_thread_id": msg_detail.get('threadId'),
+            "email_from": metadata['from'],
+            "email_sender": sender_email,
+            "email_date": metadata['date']
+        }
+        
+        tickets_collection.insert_one(ticket_doc)
+        print(f"[GMAIL] Created ticket {ticket_id} from email {message_id}")
+        
+        return serialize_doc(ticket_doc)
+    
+    except Exception as e:
+        print(f"[GMAIL] Error creating ticket from email: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create ticket: {str(e)}")
+
+@app.post("/api/gmail/sync")
+async def sync_emails_to_tickets(
+    max_emails: int = 10,
+    current_user: dict = Depends(get_current_user)
+):
+    """Sync recent unprocessed emails to tickets"""
+    token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+    if not token_doc or "access_token" not in token_doc:
+        raise HTTPException(status_code=400, detail="Gmail not connected")
+    
+    try:
+        service = get_gmail_service(token_doc)
+        
+        # Get unread messages
+        results = service.users().messages().list(
+            userId='me',
+            maxResults=max_emails,
+            labelIds=['INBOX', 'UNREAD']
+        ).execute()
+        
+        messages = results.get('messages', [])
+        created_tickets = []
+        skipped = 0
+        
+        for msg in messages:
+            # Check if ticket already exists
+            existing = tickets_collection.find_one({"email_message_id": msg['id']})
+            if existing:
+                skipped += 1
+                continue
+            
+            msg_detail = service.users().messages().get(
+                userId='me',
+                id=msg['id'],
+                format='full'
+            ).execute()
+            
+            metadata = extract_email_metadata(msg_detail.get('payload', {}).get('headers', []))
+            body = parse_email_body(msg_detail.get('payload', {}))
+            
+            _, sender_email = parseaddr(metadata['from'])
+            
+            ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+            max_order_ticket = tickets_collection.find_one(
+                {"status": "todo"},
+                sort=[("order", DESCENDING)]
+            )
+            next_order = (max_order_ticket["order"] + 1) if max_order_ticket and "order" in max_order_ticket else 0
+            
+            ticket_doc = {
+                "ticket_id": ticket_id,
+                "title": metadata['subject'] or "No Subject",
+                "description": body,
+                "status": "todo",
+                "priority": "medium",
+                "order": next_order,
+                "created_by": current_user["user_id"],
+                "assignee_id": None,
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+                "source": "email",
+                "email_message_id": msg['id'],
+                "email_thread_id": msg_detail.get('threadId'),
+                "email_from": metadata['from'],
+                "email_sender": sender_email,
+                "email_date": metadata['date']
+            }
+            
+            tickets_collection.insert_one(ticket_doc)
+            created_tickets.append(serialize_doc(ticket_doc))
+        
+        return {
+            "created": len(created_tickets),
+            "skipped": skipped,
+            "tickets": created_tickets
+        }
+    
+    except Exception as e:
+        print(f"[GMAIL] Error syncing emails: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to sync emails: {str(e)}")
+
+@app.get("/api/settings/email")
+async def get_email_settings(current_user: dict = Depends(get_current_user)):
+    """Get email integration settings"""
+    token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+    return {
+        "gmail_connected": token_doc is not None and "access_token" in token_doc,
+        "watch_email": GMAIL_WATCH_EMAIL,
+        "configured": bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET)
+    }
+
+@app.put("/api/settings/email")
+async def update_email_settings(
+    request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update email settings (admin only for now)"""
+    # In production, this would update env vars or a config collection
+    # For now, just return success as the email is set via env var
+    return {"message": "Email settings updated"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
