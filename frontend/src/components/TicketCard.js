@@ -59,7 +59,7 @@ const TicketCard = ({ ticket, users, onClick, isDragging }) => {
         )}
         
         <span className="text-xs text-muted-foreground">
-          #{ticket.id.slice(-6)}
+          #{ticket.id?.slice(-6) || 'N/A'}
         </span>
       </div>
     </button>
