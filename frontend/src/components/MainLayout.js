@@ -24,7 +24,7 @@ const MainLayout = ({ user, view }) => {
       
       <Sidebar user={user} />
       
-      <main className="flex-1 relative z-10 ml-0">
+      <main className="flex-1 relative z-10">
         {view === 'dashboard' && (
           <DashboardContainer 
             user={user} 
@@ -33,6 +33,24 @@ const MainLayout = ({ user, view }) => {
         )}
         {view === 'all-tickets' && (
           <AllTicketsPage 
+            user={user} 
+            onTicketClick={handleTicketClick}
+          />
+        )}
+        {view === 'open-tickets' && (
+          <OpenTicketsPage 
+            user={user} 
+            onTicketClick={handleTicketClick}
+          />
+        )}
+        {view === 'waiting-tickets' && (
+          <WaitingTicketsPage 
+            user={user} 
+            onTicketClick={handleTicketClick}
+          />
+        )}
+        {view === 'closed-tickets' && (
+          <ClosedTicketsPage 
             user={user} 
             onTicketClick={handleTicketClick}
           />
