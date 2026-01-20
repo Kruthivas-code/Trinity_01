@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import DashboardContainer from './DashboardContainer';
 import AllTicketsPage from './AllTicketsPage';
+import OpenTicketsPage from './OpenTicketsPage';
+import WaitingTicketsPage from './WaitingTicketsPage';
+import ClosedTicketsPage from './ClosedTicketsPage';
 import TicketDrawer from './TicketDrawer';
 
 const MainLayout = ({ user, view }) => {
@@ -58,7 +61,7 @@ const MainLayout = ({ user, view }) => {
       </main>
 
       {/* Shared Ticket Drawer */}
-      {view === 'all-tickets' && (
+      {(view !== 'dashboard') && (
         <TicketDrawer
           ticket={selectedTicket}
           users={[]}
