@@ -110,7 +110,7 @@ const Sidebar = ({ user }) => {
             className={`
               w-full flex items-center justify-center px-3 h-11 rounded-lg
               transition-interactive
-              ${isTicketViewActive ? 'bg-primary/10 text-primary' : 'hover:bg-white/5 text-foreground'}
+              ${isTicketViewActive ? 'bg-primary/10 text-primary' : 'hover:bg-white/10 text-foreground'}
             `}
             title="Tickets"
           >
@@ -186,7 +186,7 @@ const Sidebar = ({ user }) => {
             w-full flex items-center justify-between px-3 h-11 rounded-lg
             transition-interactive
             ${isTicketViewActive ? 'text-primary' : 'text-foreground'}
-            hover:bg-white/5
+            hover:bg-white/10
           `}
         >
           <div className="flex items-center gap-3">
@@ -210,7 +210,7 @@ const Sidebar = ({ user }) => {
                     transition-interactive
                     ${active 
                       ? 'bg-gradient-primary text-white shadow-lg shadow-primary/25' 
-                      : 'hover:bg-white/5 text-foreground'
+                      : 'hover:bg-white/10 text-foreground'
                     }
                   `}
                 >
@@ -237,7 +237,7 @@ const Sidebar = ({ user }) => {
                 transition-interactive
                 ${active 
                   ? 'bg-gradient-primary text-white shadow-lg shadow-primary/25' 
-                  : 'hover:bg-white/5 text-foreground'
+                  : 'hover:bg-white/10 text-foreground'
                 }
               `}
             >
@@ -255,7 +255,7 @@ const Sidebar = ({ user }) => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 h-10 w-10 flex items-center justify-center rounded-lg glass border border-border/60 hover:bg-white/5 transition-interactive"
+        className="lg:hidden fixed top-4 left-4 z-50 h-10 w-10 flex items-center justify-center rounded-lg glass border border-border/60 hover:bg-white/10 transition-interactive"
         data-testid="mobile-menu-button"
       >
         {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -316,7 +316,7 @@ const Sidebar = ({ user }) => {
               {/* Desktop Toggle Button */}
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full flex items-center justify-center h-10 rounded-lg hover:bg-white/5 transition-interactive"
+                className="w-full flex items-center justify-center h-10 rounded-lg hover:bg-white/10 transition-interactive"
                 data-testid="sidebar-toggle"
               >
                 {isExpanded ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
