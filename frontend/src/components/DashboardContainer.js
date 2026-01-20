@@ -9,7 +9,7 @@ import ImportModal from './ImportModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-const DashboardContainer = ({ user }) => {
+const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [users, setUsers] = useState([]);
