@@ -2,18 +2,18 @@ import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
 const STATUSES = [
-  { value: 'backlog', label: 'Backlog' },
   { value: 'todo', label: 'To Do' },
   { value: 'in_progress', label: 'In Progress' },
+  { value: 'waiting', label: 'Waiting on Customer' },
   { value: 'review', label: 'Review' },
-  { value: 'done', label: 'Done' }
+  { value: 'resolved', label: 'Resolved' }
 ];
 
 const CreateTicketModal = ({ isOpen, users, onClose, onCreate }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    status: 'backlog',
+    status: 'todo',
     assignee_id: null
   });
 
@@ -32,7 +32,7 @@ const CreateTicketModal = ({ isOpen, users, onClose, onCreate }) => {
     setFormData({
       title: '',
       description: '',
-      status: 'backlog',
+      status: 'todo',
       assignee_id: null
     });
     onClose();

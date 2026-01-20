@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { X, Trash2, Save } from 'lucide-react';
 
 const STATUSES = [
-  { value: 'backlog', label: 'Backlog' },
   { value: 'todo', label: 'To Do' },
   { value: 'in_progress', label: 'In Progress' },
+  { value: 'waiting', label: 'Waiting on Customer' },
   { value: 'review', label: 'Review' },
-  { value: 'done', label: 'Done' }
+  { value: 'resolved', label: 'Resolved' }
 ];
 
 const PRIORITIES = [
