@@ -33,6 +33,21 @@ const Sidebar = ({ user }) => {
     setIsMobileOpen(false);
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch(`${BACKEND_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      localStorage.removeItem('theme');
+      toast.success('Logged out successfully');
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('Logout error:', error);
+      navigate('/login', { replace: true });
+    }
+  };
+
   const renderNavItem = (item, isNested = false) => {
     const Icon = item.icon;
     const active = isActive(item.path);
