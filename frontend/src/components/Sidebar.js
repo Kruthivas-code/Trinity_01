@@ -42,7 +42,7 @@ const Sidebar = ({ user }) => {
           transition-interactive
           ${active 
             ? 'bg-gradient-primary text-white shadow-lg shadow-primary/25' 
-            : 'hover:bg-white/5 text-foreground'
+            : 'hover:bg-white/5 text-foreground opacity-100'
           }
           ${!isExpanded && !isNested && 'justify-center'}
           ${isNested ? 'px-3 ml-8' : 'px-3'}
@@ -50,7 +50,7 @@ const Sidebar = ({ user }) => {
         data-testid={`nav-${item.id}`}
         title={!isExpanded ? item.label : undefined}
       >
-        <Icon size={18} className={active ? 'opacity-100' : 'opacity-70'} />
+        <Icon size={18} className="shrink-0" />
         {(isExpanded || isNested) && <span className="text-sm font-medium">{item.label}</span>}
       </button>
     );
