@@ -38,6 +38,30 @@ function AppRouter() {
         }
       />
       <Route
+        path="/open-tickets"
+        element={
+          <ProtectedRoute>
+            <MainLayout view="open-tickets" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/waiting-tickets"
+        element={
+          <ProtectedRoute>
+            <MainLayout view="waiting-tickets" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/closed-tickets"
+        element={
+          <ProtectedRoute>
+            <MainLayout view="closed-tickets" />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/profile"
         element={
           <ProtectedRoute>
