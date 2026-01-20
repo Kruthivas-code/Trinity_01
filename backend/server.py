@@ -167,7 +167,7 @@ async def create_session(session_data: SessionCreate, response: Response):
         
         # Create or update user in database
         print(f"[AUTH] Upserting user: {email}")
-        users_collection.update_one(
+        result = users_collection.update_one(
             {"email": email},
             {
                 "$set": {
@@ -190,6 +190,16 @@ async def create_session(session_data: SessionCreate, response: Response):
         user_doc = users_collection.find_one({"email": email}, {"_id": 0})
         if not user_doc:
             raise Exception(f"User document not found after upsert: {email}")
+        
+        # If user_id doesn't exist (old user from previous auth system), add it
+        if "user_id" not in user_doc:
+            print(f"[AUTH] Old user detected, adding user_id field")
+            new_user_id = f"user_{uuid.uuid4().hex[:12]}"
+            users_collection.update_one(
+                {"email": email},
+                {"$set": {"user_id": new_user_id}}
+            )
+            user_doc["user_id"] = new_user_id
         
         actual_user_id = user_doc["user_id"]
         print(f"[AUTH] User ID: {actual_user_id}")
