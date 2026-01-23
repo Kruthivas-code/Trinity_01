@@ -220,11 +220,28 @@ const SettingsPage = ({ user }) => {
                     <p className="font-medium text-green-500">Gmail Connected</p>
                     {gmailStatus.watch_email && (
                       <p className="text-sm text-muted-foreground">
-                        Monitoring: {gmailStatus.watch_email}
+                        Account: {gmailStatus.watch_email}
                       </p>
                     )}
                   </div>
                 </div>
+
+                {/* Mock Mode Indicator */}
+                {gmailStatus.mock_mode && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                    <span className="text-yellow-500 text-sm">
+                      📧 <strong>Mock Mode:</strong> Replies are saved but not actually sent
+                    </span>
+                  </div>
+                )}
+
+                {/* Sync Query Info */}
+                {gmailStatus.sync_query && (
+                  <div className="p-3 rounded-lg bg-secondary/30 border border-border/40">
+                    <p className="text-xs text-muted-foreground mb-1">Sync Filter:</p>
+                    <code className="text-xs text-primary break-all">{gmailStatus.sync_query}</code>
+                  </div>
+                )}
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-3">
