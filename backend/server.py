@@ -1083,6 +1083,153 @@ async def get_ticket_replies(
     ))
     return {"replies": [serialize_doc(r) for r in replies]}
 
+# ==================== Email Simulator (For Testing) ====================
+
+class SimulatedEmail(BaseModel):
+    from_email: str
+    from_name: Optional[str] = None
+    to_email: str = "support@emergent.sh"
+    subject: str
+    body: str
+    
+@app.post("/api/email/simulate")
+async def simulate_incoming_email(
+    email: SimulatedEmail,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Simulate an incoming email for testing purposes.
+    Creates a ticket as if the email came through Gmail.
+    """
+    # Generate IDs
+    message_id = f"sim_{uuid.uuid4().hex[:16]}"
+    thread_id = f"thread_{uuid.uuid4().hex[:12]}"
+    ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+    
+    # Get next order
+    max_order_ticket = tickets_collection.find_one(
+        {"status": "todo"},
+        sort=[("order", DESCENDING)]
+    )
+    next_order = (max_order_ticket["order"] + 1) if max_order_ticket and "order" in max_order_ticket else 0
+    
+    # Create ticket from simulated email
+    ticket_doc = {
+        "ticket_id": ticket_id,
+        "title": email.subject or "No Subject",
+        "description": email.body,
+        "status": "todo",
+        "priority": "medium",
+        "order": next_order,
+        "created_by": "email_simulator",
+        "assignee_id": None,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+        # Email metadata
+        "source": "email",
+        "email_message_id": message_id,
+        "email_thread_id": thread_id,
+        "email_from": f"{email.from_name} <{email.from_email}>" if email.from_name else email.from_email,
+        "email_sender": email.from_email,
+        "email_to": email.to_email,
+        "email_date": datetime.now(timezone.utc).isoformat(),
+        "simulated": True
+    }
+    
+    tickets_collection.insert_one(ticket_doc)
+    print(f"[EMAIL SIM] Created ticket {ticket_id} from simulated email")
+    
+    return {
+        "status": "created",
+        "ticket_id": ticket_id,
+        "message": "Simulated email converted to ticket",
+        "ticket": serialize_doc(ticket_doc)
+    }
+
+@app.post("/api/email/webhook")
+async def inbound_email_webhook(request: Request):
+    """
+    Generic inbound email webhook.
+    Accepts POST data from email forwarding services (Mailgun, SendGrid, etc.)
+    Can also be used for manual testing.
+    """
+    try:
+        # Try to parse as JSON first
+        try:
+            data = await request.json()
+        except:
+            # Fall back to form data (common for email webhooks)
+            form = await request.form()
+            data = dict(form)
+        
+        print(f"[EMAIL WEBHOOK] Received: {data}")
+        
+        # Extract email fields (handles multiple formats)
+        from_email = data.get('from') or data.get('sender') or data.get('from_email', 'unknown@example.com')
+        to_email = data.get('to') or data.get('recipient') or data.get('to_email', 'support@emergent.sh')
+        subject = data.get('subject', 'No Subject')
+        body = data.get('body') or data.get('text') or data.get('body-plain') or data.get('stripped-text', '')
+        
+        # Parse from_email if it contains name
+        if '<' in str(from_email):
+            import re
+            match = re.match(r'([^<]*)<([^>]+)>', str(from_email))
+            if match:
+                from_name = match.group(1).strip()
+                from_email = match.group(2).strip()
+            else:
+                from_name = None
+        else:
+            from_name = data.get('from_name')
+        
+        # Generate IDs
+        message_id = data.get('Message-Id') or data.get('message_id') or f"webhook_{uuid.uuid4().hex[:16]}"
+        thread_id = f"thread_{uuid.uuid4().hex[:12]}"
+        ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+        
+        # Check for duplicate
+        existing = tickets_collection.find_one({"email_message_id": message_id})
+        if existing:
+            return {"status": "duplicate", "ticket_id": existing.get("ticket_id")}
+        
+        # Get next order
+        max_order_ticket = tickets_collection.find_one(
+            {"status": "todo"},
+            sort=[("order", DESCENDING)]
+        )
+        next_order = (max_order_ticket["order"] + 1) if max_order_ticket and "order" in max_order_ticket else 0
+        
+        # Create ticket
+        ticket_doc = {
+            "ticket_id": ticket_id,
+            "title": subject,
+            "description": body,
+            "status": "todo",
+            "priority": "medium",
+            "order": next_order,
+            "created_by": "email_webhook",
+            "assignee_id": None,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            "source": "email",
+            "email_message_id": message_id,
+            "email_thread_id": thread_id,
+            "email_from": f"{from_name} <{from_email}>" if from_name else from_email,
+            "email_sender": from_email,
+            "email_to": to_email,
+            "email_date": data.get('date') or datetime.now(timezone.utc).isoformat(),
+            "webhook_source": True
+        }
+        
+        tickets_collection.insert_one(ticket_doc)
+        print(f"[EMAIL WEBHOOK] Created ticket {ticket_id}")
+        
+        return {"status": "created", "ticket_id": ticket_id}
+        
+    except Exception as e:
+        print(f"[EMAIL WEBHOOK] Error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
 # ==================== Gmail Push Notifications (Webhooks) ====================
 
 @app.post("/api/gmail/webhook")
