@@ -840,11 +840,11 @@ async def create_ticket_from_email(
 
 @app.post("/api/gmail/sync")
 async def sync_emails_to_tickets(
-    max_emails: int = 10,
-    unread_only: bool = False,
+    max_emails: int = 20,
+    query: str = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Sync recent unprocessed emails to tickets"""
+    """Sync emails matching query to tickets"""
     token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
     if not token_doc or "access_token" not in token_doc:
         raise HTTPException(status_code=400, detail="Gmail not connected")
@@ -852,16 +852,18 @@ async def sync_emails_to_tickets(
     try:
         service = get_gmail_service(token_doc)
         
-        # Get messages from inbox (optionally only unread)
-        label_ids = ['INBOX', 'UNREAD'] if unread_only else ['INBOX']
+        # Use provided query or default support query
+        search_query = query if query else GMAIL_SYNC_QUERY
+        print(f"[GMAIL] Syncing with query: {search_query}")
+        
         results = service.users().messages().list(
             userId='me',
             maxResults=max_emails,
-            labelIds=label_ids
+            q=search_query
         ).execute()
         
         messages = results.get('messages', [])
-        print(f"[GMAIL] Found {len(messages)} emails to process")
+        print(f"[GMAIL] Found {len(messages)} emails matching query")
         created_tickets = []
         skipped = 0
         
