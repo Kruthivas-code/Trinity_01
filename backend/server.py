@@ -933,7 +933,9 @@ async def get_email_settings(current_user: dict = Depends(get_current_user)):
         "gmail_connected": token_doc is not None and "access_token" in token_doc,
         "watch_email": GMAIL_WATCH_EMAIL,
         "configured": bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET),
-        "watch_active": watch_doc is not None and watch_doc.get("expiration", 0) > datetime.now(timezone.utc).timestamp() * 1000
+        "watch_active": watch_doc is not None and watch_doc.get("expiration", 0) > datetime.now(timezone.utc).timestamp() * 1000,
+        "mock_mode": EMAIL_MOCK_MODE,
+        "sync_query": GMAIL_SYNC_QUERY
     }
 
 @app.put("/api/settings/email")
@@ -945,6 +947,141 @@ async def update_email_settings(
     # In production, this would update env vars or a config collection
     # For now, just return success as the email is set via env var
     return {"message": "Email settings updated"}
+
+# ==================== Email Reply (with Mock Mode) ====================
+
+# Collection for storing email replies
+email_replies_collection = db.email_replies
+
+class EmailReplyRequest(BaseModel):
+    ticket_id: str
+    to_email: str
+    subject: str
+    body: str
+    
+@app.post("/api/tickets/{ticket_id}/reply")
+async def reply_to_ticket(
+    ticket_id: str,
+    reply: EmailReplyRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Reply to a ticket via email.
+    In mock mode, stores the reply but doesn't actually send.
+    """
+    # Get the ticket
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Create reply record
+    reply_id = f"reply_{uuid.uuid4().hex[:12]}"
+    reply_doc = {
+        "reply_id": reply_id,
+        "ticket_id": ticket_id,
+        "to_email": reply.to_email,
+        "subject": reply.subject,
+        "body": reply.body,
+        "sent_by": current_user["user_id"],
+        "sent_by_email": current_user.get("email"),
+        "sent_by_name": current_user.get("name"),
+        "created_at": datetime.now(timezone.utc),
+        "mock_mode": EMAIL_MOCK_MODE,
+        "actually_sent": False
+    }
+    
+    if EMAIL_MOCK_MODE:
+        # Mock mode - just store the reply
+        print(f"[EMAIL MOCK] Would send email to {reply.to_email}: {reply.subject}")
+        reply_doc["status"] = "mocked"
+        email_replies_collection.insert_one(reply_doc)
+        
+        # Update ticket status to "waiting" (waiting on customer)
+        tickets_collection.update_one(
+            {"ticket_id": ticket_id},
+            {
+                "$set": {
+                    "status": "waiting",
+                    "updated_at": datetime.now(timezone.utc),
+                    "last_reply_at": datetime.now(timezone.utc)
+                }
+            }
+        )
+        
+        return {
+            "status": "mocked",
+            "message": "Reply saved (mock mode - email not actually sent)",
+            "reply_id": reply_id
+        }
+    else:
+        # Real mode - send via Gmail API
+        token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+        if not token_doc or "access_token" not in token_doc:
+            raise HTTPException(status_code=400, detail="Gmail not connected")
+        
+        try:
+            service = get_gmail_service(token_doc)
+            
+            # Build the email
+            from email.mime.text import MIMEText
+            message = MIMEText(reply.body)
+            message['to'] = reply.to_email
+            message['subject'] = reply.subject
+            
+            # If replying to a thread, add references
+            if ticket.get('email_thread_id'):
+                message['In-Reply-To'] = ticket.get('email_message_id', '')
+                message['References'] = ticket.get('email_message_id', '')
+            
+            raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
+            
+            send_result = service.users().messages().send(
+                userId='me',
+                body={'raw': raw_message, 'threadId': ticket.get('email_thread_id')}
+            ).execute()
+            
+            reply_doc["status"] = "sent"
+            reply_doc["actually_sent"] = True
+            reply_doc["gmail_message_id"] = send_result.get('id')
+            email_replies_collection.insert_one(reply_doc)
+            
+            # Update ticket status
+            tickets_collection.update_one(
+                {"ticket_id": ticket_id},
+                {
+                    "$set": {
+                        "status": "waiting",
+                        "updated_at": datetime.now(timezone.utc),
+                        "last_reply_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            
+            return {
+                "status": "sent",
+                "message": "Email sent successfully",
+                "reply_id": reply_id,
+                "gmail_message_id": send_result.get('id')
+            }
+            
+        except Exception as e:
+            print(f"[EMAIL] Error sending: {str(e)}")
+            reply_doc["status"] = "failed"
+            reply_doc["error"] = str(e)
+            email_replies_collection.insert_one(reply_doc)
+            raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+@app.get("/api/tickets/{ticket_id}/replies")
+async def get_ticket_replies(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all replies for a ticket"""
+    replies = list(email_replies_collection.find(
+        {"ticket_id": ticket_id},
+        sort=[("created_at", ASCENDING)]
+    ))
+    return {"replies": [serialize_doc(r) for r in replies]}
 
 # ==================== Gmail Push Notifications (Webhooks) ====================
 
