@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, Save } from 'lucide-react';
+import { X, Trash2, Save, MessageSquare, Send, ChevronDown, ChevronUp, Loader2, StickyNote, Clock, User } from 'lucide-react';
+import { toast } from 'sonner';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const STATUSES = [
   { value: 'todo', label: 'To Do' },
