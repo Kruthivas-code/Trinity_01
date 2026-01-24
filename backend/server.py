@@ -311,10 +311,35 @@ class UserRoleUpdate(BaseModel):
 class InternalNoteCreate(BaseModel):
     content: str
     mentions: Optional[List[str]] = []  # List of user_ids to mention
+    type: Optional[str] = "internal_note"  # internal_note or reply
 
 class TicketAssign(BaseModel):
     assignee_id: Optional[str] = None
     team_id: Optional[str] = None
+
+# Phase 4: Shift & Escalation Models
+class ShiftCreate(BaseModel):
+    team_id: str
+    name: str
+    start_time: str  # HH:MM format in IST
+    end_time: str    # HH:MM format in IST
+    days_of_week: List[int] = [1, 2, 3, 4, 5]  # 1=Monday, 7=Sunday
+
+class ShiftUpdate(BaseModel):
+    name: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    days_of_week: Optional[List[int]] = None
+    is_active: Optional[bool] = None
+
+class UserShiftAssign(BaseModel):
+    shift_id: str
+    is_primary: bool = True
+    effective_from: Optional[str] = None  # ISO date string
+
+class TicketEscalate(BaseModel):
+    escalation_level: str  # L1, L2, L3
+    reason: Optional[str] = None
 
 # Routes
 @app.get("/api/health")
