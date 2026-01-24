@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Save, Trash2, Send, ChevronDown, ChevronRight,
-  Loader2, Clock, User, Link2, Star, MoreHorizontal, 
-  Mail, AlertCircle, Sparkles, MessageSquare, PenLine,
-  Command
+  Loader2, Star, MoreHorizontal, Mail, AlertCircle, 
+  Sparkles, PenLine, Command, Link2, User
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,6 +23,66 @@ const PRIORITIES = [
   { value: 'urgent', label: 'Urgent', color: 'text-red-400' }
 ];
 
+// Email-style message component
+const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, isFirst }) => {
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  const isNote = type === 'internal_note';
+  
+  return (
+    <div className={`${isNote ? 'bg-amber-500/5 border-l-2 border-l-amber-400' : 'bg-secondary/20'} rounded-lg p-4`}>
+      {/* Email Header */}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start gap-3">
+          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium shrink-0 ${
+            isNote 
+              ? 'bg-amber-400/20 text-amber-400' 
+              : 'bg-gradient-to-br from-primary/40 to-accent/40 text-white'
+          }`}>
+            {sender?.charAt(0).toUpperCase() || 'U'}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-sm">{sender || 'Unknown'}</span>
+              {isNote && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-400 font-medium">
+                  Internal Note
+                </span>
+              )}
+            </div>
+            {senderEmail && (
+              <p className="text-xs text-muted-foreground">{senderEmail}</p>
+            )}
+            {subject && isFirst && (
+              <p className="text-xs text-muted-foreground mt-0.5">Subject: {subject}</p>
+            )}
+          </div>
+        </div>
+        <span className="text-[11px] text-muted-foreground shrink-0">
+          {formatDate(timestamp)}
+        </span>
+      </div>
+      
+      {/* Email Body */}
+      <div className="pl-12">
+        <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+          {content}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -34,22 +93,22 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  // Notes and reply state
+  // Notes and conversation state
   const [notes, setNotes] = useState([]);
   const [inputText, setInputText] = useState('');
-  const [inputMode, setInputMode] = useState('note'); // 'note' or 'reply'
+  const [inputMode, setInputMode] = useState('note');
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
   // Collapsible sections
   const [sectionsExpanded, setSectionsExpanded] = useState({
-    links: true,
+    links: false,
     attributes: true
   });
   
   // Refs
   const inputRef = useRef(null);
-  const contentRef = useRef(null);
+  const conversationRef = useRef(null);
 
   useEffect(() => {
     if (ticket) {
@@ -66,7 +125,17 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
     }
   }, [ticket]);
 
-  // Keyboard shortcut for switching modes
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+      const scrollHeight = inputRef.current.scrollHeight;
+      const maxHeight = 200; // Max height in pixels
+      inputRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+    }
+  }, [inputText]);
+
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isOpen) return;
@@ -74,7 +143,6 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
         e.preventDefault();
         inputRef.current?.focus();
       }
-      // N for note, R for reply when not focused on input
       if (document.activeElement !== inputRef.current) {
         if (e.key === 'n' || e.key === 'N') {
           setInputMode('note');
@@ -113,55 +181,35 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
     
     setSubmitting(true);
     try {
-      if (inputMode === 'note') {
-        const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/notes`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ content: inputText.trim() })
-        });
-        if (!response.ok) throw new Error('Failed to add note');
-        toast.success('Note added');
-        fetchNotes(ticket.id);
-      } else {
-        // Reply mode - for now just add as a note with different type
-        const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/notes`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ content: inputText.trim(), type: 'reply' })
-        });
-        if (!response.ok) throw new Error('Failed to send reply');
-        toast.success('Reply sent');
-        fetchNotes(ticket.id);
-      }
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          content: inputText.trim(), 
+          type: inputMode === 'reply' ? 'reply' : 'internal_note' 
+        })
+      });
+      if (!response.ok) throw new Error('Failed to send');
+      toast.success(inputMode === 'note' ? 'Note added' : 'Reply sent');
       setInputText('');
+      fetchNotes(ticket.id);
+      // Scroll to bottom after adding
+      setTimeout(() => {
+        if (conversationRef.current) {
+          conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+        }
+      }, 100);
     } catch (error) {
-      toast.error(inputMode === 'note' ? 'Failed to add note' : 'Failed to send reply');
+      toast.error('Failed to send');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const formatNoteDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
-
   const handleSave = () => {
     if (ticket) {
       onUpdate(ticket.id, formData);
-      toast.success('Changes saved');
     }
   };
 
@@ -185,6 +233,26 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
   const priorityConfig = getPriorityConfig(formData.priority);
   const assignee = getAssignee();
 
+  // Build conversation thread: original ticket + notes/replies
+  const conversationThread = [
+    {
+      type: 'original',
+      sender: ticket.customer_name || ticket.created_by_name || 'Customer',
+      senderEmail: ticket.customer_email || null,
+      subject: ticket.title,
+      content: ticket.description || '(No content)',
+      timestamp: ticket.created_at
+    },
+    ...notes.map(note => ({
+      type: note.type || 'internal_note',
+      sender: note.author_name || 'Unknown',
+      senderEmail: null,
+      subject: null,
+      content: note.content,
+      timestamp: note.created_at
+    }))
+  ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
   return (
     <>
       {/* Backdrop */}
@@ -199,28 +267,22 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
         className="fixed right-0 top-0 bottom-0 w-full max-w-5xl z-[60] flex shadow-2xl"
         data-testid="ticket-drawer"
       >
-        {/* Left Panel - Content (~60%) */}
+        {/* Left Panel - Conversation */}
         <div className="flex-1 bg-[hsl(222,28%,7%)] border-l border-border/40 flex flex-col min-w-0">
           {/* Header */}
           <div className="h-12 px-4 flex items-center justify-between border-b border-border/30 shrink-0">
             <div className="flex items-center gap-2">
               <Mail size={15} className="text-primary" />
-              <span className="text-sm font-medium">Ticket</span>
+              <span className="text-sm font-medium">{ticket.title}</span>
               <span className="text-[11px] text-muted-foreground font-mono bg-secondary/40 px-1.5 py-0.5 rounded">
                 {ticket.ticket_id || `#${ticket.id?.slice(-8)}`}
               </span>
             </div>
             <div className="flex items-center gap-0.5">
-              <button 
-                className="h-7 w-7 flex items-center justify-center rounded hover:bg-white/5 transition-colors"
-                title="Star"
-              >
+              <button className="h-7 w-7 flex items-center justify-center rounded hover:bg-white/5 transition-colors" title="Star">
                 <Star size={14} className="text-muted-foreground" />
               </button>
-              <button 
-                className="h-7 w-7 flex items-center justify-center rounded hover:bg-white/5 transition-colors"
-                title="More options"
-              >
+              <button className="h-7 w-7 flex items-center justify-center rounded hover:bg-white/5 transition-colors" title="More">
                 <MoreHorizontal size={14} className="text-muted-foreground" />
               </button>
               <button
@@ -234,82 +296,26 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
             </div>
           </div>
 
-          {/* Main Content Area - Scrollable */}
-          <div ref={contentRef} className="flex-1 overflow-y-auto min-h-0">
-            {/* Title */}
-            <div className="px-5 pt-5 pb-3">
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full text-xl font-semibold bg-transparent border-0 focus:outline-none focus:ring-0 placeholder:text-muted-foreground/40"
-                placeholder="Ticket title..."
-                data-testid="drawer-title-input"
-              />
-            </div>
-
-            {/* Description / Ticket Body */}
-            <div className="px-5 pb-5">
-              <div className="bg-secondary/20 rounded-lg border border-border/20 p-4 min-h-[200px]">
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full h-full min-h-[180px] text-sm text-foreground/90 leading-relaxed bg-transparent border-0 focus:outline-none focus:ring-0 resize-none placeholder:text-muted-foreground/40"
-                  placeholder="Ticket description or customer message..."
-                  data-testid="drawer-description-input"
+          {/* Conversation Thread - Scrollable */}
+          <div ref={conversationRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+            {loadingNotes && conversationThread.length === 1 ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 size={24} className="animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              conversationThread.map((msg, idx) => (
+                <EmailMessage
+                  key={idx}
+                  type={msg.type}
+                  sender={msg.sender}
+                  senderEmail={msg.senderEmail}
+                  subject={msg.subject}
+                  content={msg.content}
+                  timestamp={msg.timestamp}
+                  isFirst={idx === 0}
                 />
-              </div>
-            </div>
-
-            {/* Activity / Notes Section */}
-            <div className="px-5 pb-5">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Activity
-                </h3>
-                {notes.length > 0 && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary">
-                    {notes.length}
-                  </span>
-                )}
-              </div>
-
-              {loadingNotes ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 size={18} className="animate-spin text-muted-foreground" />
-                </div>
-              ) : notes.length > 0 ? (
-                <div className="space-y-3">
-                  {notes.map((note) => (
-                    <div
-                      key={note.message_id || note._id}
-                      className="flex gap-3"
-                      data-testid={`note-${note.message_id}`}
-                    >
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/40 to-accent/40 flex items-center justify-center text-[10px] font-medium shrink-0 mt-0.5">
-                        {note.author_name?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">{note.author_name || 'Unknown'}</span>
-                          <span className="text-[11px] text-muted-foreground">{formatNoteDate(note.created_at)}</span>
-                          {note.type === 'internal_note' && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-400">Note</span>
-                          )}
-                        </div>
-                        <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                          {note.content}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-muted-foreground/50 text-center py-6">
-                  No activity yet
-                </p>
-              )}
-            </div>
+              ))
+            )}
           </div>
 
           {/* Input Area - Fixed at bottom */}
@@ -344,7 +350,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
               </button>
             </div>
 
-            {/* Input Box */}
+            {/* Auto-expanding Input Box */}
             <div className="px-4 pb-3">
               <div className="relative">
                 <textarea
@@ -358,12 +364,13 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                     }
                   }}
                   placeholder={inputMode === 'note' ? 'Add an internal note...' : 'Type your reply...'}
-                  className="w-full min-h-[80px] max-h-[150px] px-3 py-2.5 text-sm rounded-lg bg-secondary/30 border border-border/40 placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 resize-none transition-all"
+                  className="w-full min-h-[60px] px-3 py-2.5 text-sm rounded-lg bg-secondary/30 border border-border/40 placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 resize-none transition-all overflow-hidden"
+                  style={{ maxHeight: '200px' }}
                   data-testid="input-textarea"
                 />
                 <div className="absolute bottom-2 right-2 flex items-center gap-2">
                   <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
-                    <Command size={10} />K for shortcuts
+                    <Command size={10} />⌘+Enter to send
                   </span>
                   <button
                     onClick={handleSubmitInput}
@@ -390,9 +397,6 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
             <button className="text-sm font-medium text-foreground relative pb-0.5">
               Details
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-            </button>
-            <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Activity
             </button>
           </div>
 
@@ -424,26 +428,28 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
               )}
             </div>
 
-            {/* Status */}
-            <div>
-              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-2 block">
-                Status
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                className="w-full h-9 px-3 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                data-testid="drawer-status-select"
-              >
-                {STATUSES.map(status => (
-                  <option key={status.value} value={status.value}>{status.label}</option>
-                ))}
-              </select>
-              <div className="flex items-center gap-2 mt-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${statusConfig.color}`} />
-                <span className="text-sm">{statusConfig.label}</span>
+            {/* Status - Only show if assigned */}
+            {formData.assignee_id && (
+              <div>
+                <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-2 block">
+                  Status
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  className="w-full h-9 px-3 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  data-testid="drawer-status-select"
+                >
+                  {STATUSES.map(status => (
+                    <option key={status.value} value={status.value}>{status.label}</option>
+                  ))}
+                </select>
+                <div className="flex items-center gap-2 mt-2">
+                  <div className={`w-2.5 h-2.5 rounded-full ${statusConfig.color}`} />
+                  <span className="text-sm">{statusConfig.label}</span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Priority */}
             <div>
@@ -511,7 +517,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
               >
                 <div className="flex items-center gap-2">
                   <Sparkles size={13} className="text-muted-foreground" />
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Ticket attributes</span>
+                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Attributes</span>
                 </div>
                 {sectionsExpanded.attributes ? (
                   <ChevronDown size={13} className="text-muted-foreground" />
@@ -532,17 +538,23 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                     <span className="text-muted-foreground">Source</span>
                     <span className="capitalize text-foreground/80">{ticket.source || 'manual'}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Domain</span>
-                    <span className="text-foreground/80">{ticket.domain || '—'}</span>
-                  </div>
+                  {ticket.customer_email && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Customer</span>
+                      <span className="text-foreground/80 text-xs truncate max-w-[150px]">{ticket.customer_email}</span>
+                    </div>
+                  )}
+                  {ticket.domain && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Domain</span>
+                      <span className="text-foreground/80">{ticket.domain}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Created</span>
-                    <span className="text-foreground/80">{new Date(ticket.created_at).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Updated</span>
-                    <span className="text-foreground/80">{new Date(ticket.updated_at).toLocaleDateString()}</span>
+                    <span className="text-foreground/80 text-xs">
+                      {new Date(ticket.created_at).toLocaleDateString()}
+                    </span>
                   </div>
                   {ticket.tags && ticket.tags.length > 0 && (
                     <div className="flex items-start justify-between">
@@ -556,10 +568,6 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">CX Score</span>
-                    <span className="text-muted-foreground/50">—</span>
-                  </div>
                 </div>
               )}
             </div>
