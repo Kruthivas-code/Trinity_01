@@ -146,6 +146,11 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
+  // Related tickets (from same customer)
+  const [relatedTickets, setRelatedTickets] = useState([]);
+  const [loadingRelated, setLoadingRelated] = useState(false);
+  const [relatedExpanded, setRelatedExpanded] = useState(false);
+  
   // Collapsible sections
   const [sectionsExpanded, setSectionsExpanded] = useState({
     links: false,
@@ -167,7 +172,26 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
       setShowDeleteConfirm(false);
       setInputText('');
       fetchNotes(ticket.id);
+      fetchRelatedTickets(ticket.id);
     }
+  }, [ticket]);
+
+  const fetchRelatedTickets = async (ticketId) => {
+    setLoadingRelated(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}/related`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setRelatedTickets(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch related tickets:', error);
+    } finally {
+      setLoadingRelated(false);
+    }
+  };
   }, [ticket]);
 
   // Keyboard shortcuts
