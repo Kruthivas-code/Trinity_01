@@ -2224,6 +2224,231 @@ async def stop_gmail_watch(current_user: dict = Depends(get_current_user)):
         print(f"[GMAIL] Error stopping watch: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to stop watch: {str(e)}")
 
+# ==================== Admin Panel Endpoints ====================
+
+class CustomFieldCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    field_type: str = Field(..., description="text, number, select, date, boolean")
+    entity_type: str = Field(..., description="ticket or user")
+    options: Optional[List[str]] = None  # For select type
+    required: bool = False
+    description: Optional[str] = None
+
+class CustomFieldUpdate(BaseModel):
+    name: Optional[str] = None
+    options: Optional[List[str]] = None
+    required: Optional[bool] = None
+    description: Optional[str] = None
+
+@app.get("/api/admin/custom-fields")
+async def get_custom_fields(
+    entity_type: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all custom fields, optionally filtered by entity type"""
+    query = {}
+    if entity_type:
+        query["entity_type"] = entity_type
+    
+    fields = list(custom_fields_collection.find(query).sort("created_at", DESCENDING))
+    return [serialize_doc(f) for f in fields]
+
+@app.post("/api/admin/custom-fields")
+async def create_custom_field(
+    field_data: CustomFieldCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new custom field"""
+    # Validate field type
+    valid_types = ["text", "number", "select", "date", "boolean"]
+    if field_data.field_type not in valid_types:
+        raise HTTPException(status_code=400, detail=f"Invalid field type. Must be one of: {valid_types}")
+    
+    # Validate entity type
+    if field_data.entity_type not in ["ticket", "user"]:
+        raise HTTPException(status_code=400, detail="Entity type must be 'ticket' or 'user'")
+    
+    # Check for duplicate name
+    existing = custom_fields_collection.find_one({
+        "name": field_data.name,
+        "entity_type": field_data.entity_type
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="A field with this name already exists")
+    
+    field_id = f"field_{uuid.uuid4().hex[:12]}"
+    field_doc = {
+        "field_id": field_id,
+        "name": field_data.name,
+        "field_type": field_data.field_type,
+        "entity_type": field_data.entity_type,
+        "options": field_data.options or [],
+        "required": field_data.required,
+        "description": field_data.description,
+        "created_at": datetime.now(timezone.utc),
+        "created_by": current_user.get("user_id")
+    }
+    
+    custom_fields_collection.insert_one(field_doc)
+    return serialize_doc(field_doc)
+
+@app.put("/api/admin/custom-fields/{field_id}")
+async def update_custom_field(
+    field_id: str,
+    field_data: CustomFieldUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a custom field"""
+    field = custom_fields_collection.find_one({"field_id": field_id})
+    if not field:
+        raise HTTPException(status_code=404, detail="Field not found")
+    
+    update_data = {k: v for k, v in field_data.dict().items() if v is not None}
+    if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc)
+        custom_fields_collection.update_one(
+            {"field_id": field_id},
+            {"$set": update_data}
+        )
+    
+    updated = custom_fields_collection.find_one({"field_id": field_id})
+    return serialize_doc(updated)
+
+@app.delete("/api/admin/custom-fields/{field_id}")
+async def delete_custom_field(
+    field_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a custom field"""
+    result = custom_fields_collection.delete_one({"field_id": field_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Field not found")
+    return {"message": "Field deleted"}
+
+@app.get("/api/admin/settings")
+async def get_admin_settings(current_user: dict = Depends(get_current_user)):
+    """Get all admin settings"""
+    settings = admin_settings_collection.find_one({"type": "global"})
+    if not settings:
+        # Return defaults
+        return {
+            "company_name": "TickFlow",
+            "support_email": "",
+            "auto_assignment": True,
+            "default_priority": "medium",
+            "ticket_statuses": ["todo", "in_progress", "waiting", "review", "resolved"],
+            "ticket_priorities": ["low", "medium", "high", "urgent"]
+        }
+    return serialize_doc(settings)
+
+@app.put("/api/admin/settings")
+async def update_admin_settings(
+    settings: Dict[str, Any],
+    current_user: dict = Depends(get_current_user)
+):
+    """Update admin settings"""
+    settings["type"] = "global"
+    settings["updated_at"] = datetime.now(timezone.utc)
+    settings["updated_by"] = current_user.get("user_id")
+    
+    admin_settings_collection.update_one(
+        {"type": "global"},
+        {"$set": settings},
+        upsert=True
+    )
+    
+    return admin_settings_collection.find_one({"type": "global"})
+
+# ==================== Conversation History Endpoints ====================
+
+@app.get("/api/tickets/by-email/{email}")
+async def get_tickets_by_email(
+    email: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all tickets from a specific email address"""
+    # Normalize email
+    email_lower = email.lower().strip()
+    
+    # Find tickets with matching customer_email
+    tickets = list(tickets_collection.find({
+        "$or": [
+            {"customer_email": {"$regex": f"^{re.escape(email_lower)}$", "$options": "i"}},
+            {"email_sender": {"$regex": f"^{re.escape(email_lower)}$", "$options": "i"}},
+            {"email_from": {"$regex": re.escape(email_lower), "$options": "i"}}
+        ]
+    }).sort("created_at", DESCENDING))
+    
+    return [serialize_doc(t) for t in tickets]
+
+@app.get("/api/tickets/{ticket_id}/related")
+async def get_related_tickets(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get tickets from the same customer as this ticket"""
+    # Find the ticket
+    ticket = tickets_collection.find_one({
+        "$or": [
+            {"id": ticket_id},
+            {"ticket_id": ticket_id}
+        ]
+    })
+    
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Get customer email
+    customer_email = ticket.get("customer_email") or ticket.get("email_sender")
+    if not customer_email:
+        return []
+    
+    # Find other tickets from same customer
+    related = list(tickets_collection.find({
+        "$and": [
+            {"$or": [
+                {"customer_email": {"$regex": f"^{re.escape(customer_email)}$", "$options": "i"}},
+                {"email_sender": {"$regex": f"^{re.escape(customer_email)}$", "$options": "i"}}
+            ]},
+            {"id": {"$ne": ticket.get("id")}},
+            {"ticket_id": {"$ne": ticket.get("ticket_id")}}
+        ]
+    }).sort("created_at", DESCENDING).limit(20))
+    
+    return [serialize_doc(t) for t in related]
+
+@app.get("/api/customers")
+async def get_customers(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get unique customers from tickets"""
+    # Aggregate unique customer emails
+    pipeline = [
+        {"$match": {"customer_email": {"$exists": True, "$ne": None}}},
+        {"$group": {
+            "_id": {"$toLower": "$customer_email"},
+            "email": {"$first": "$customer_email"},
+            "name": {"$first": "$customer_name"},
+            "domain": {"$first": "$domain"},
+            "ticket_count": {"$sum": 1},
+            "last_ticket_date": {"$max": "$created_at"}
+        }},
+        {"$sort": {"last_ticket_date": -1}},
+        {"$limit": 100}
+    ]
+    
+    customers = list(tickets_collection.aggregate(pipeline))
+    return [
+        {
+            "email": c.get("email"),
+            "name": c.get("name"),
+            "domain": c.get("domain"),
+            "ticket_count": c.get("ticket_count"),
+            "last_ticket_date": c.get("last_ticket_date")
+        }
+        for c in customers
+    ]
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
