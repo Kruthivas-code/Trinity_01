@@ -208,7 +208,7 @@ const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick 
                       {/* Description */}
                       {ticket.description && (
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                          {ticket.description}
+                          {stripHtml(ticket.description)}
                         </p>
                       )}
 
