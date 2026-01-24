@@ -4,6 +4,22 @@ import {
   Link2, Quote, Code, Minus
 } from 'lucide-react';
 
+// Toolbar button component - defined outside to prevent re-creation
+const ToolbarButton = ({ onClick, children, title, disabled }) => (
+  <button
+    type="button"
+    onMouseDown={(e) => {
+      e.preventDefault(); // Prevent focus loss
+      if (!disabled) onClick();
+    }}
+    className="h-7 w-7 flex items-center justify-center rounded transition-colors text-muted-foreground hover:text-foreground hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+    title={title}
+    disabled={disabled}
+  >
+    {children}
+  </button>
+);
+
 const RichTextEditor = ({ 
   value, 
   onChange, 
@@ -21,7 +37,7 @@ const RichTextEditor = ({
       editorRef.current.innerHTML = value || '';
       isInitialMount.current = false;
     }
-  }, []);
+  }, [value]);
 
   // Sync external value changes (e.g., clearing after submit)
   useEffect(() => {
@@ -33,20 +49,18 @@ const RichTextEditor = ({
   const handleInput = useCallback(() => {
     if (editorRef.current) {
       const html = editorRef.current.innerHTML;
-      // Convert <div> to <br> for cleaner output
       const cleanHtml = html === '<br>' ? '' : html;
       onChange(cleanHtml);
     }
   }, [onChange]);
 
-  const execCommand = useCallback((command, value = null) => {
-    document.execCommand(command, false, value);
+  const execCommand = useCallback((command, cmdValue = null) => {
+    document.execCommand(command, false, cmdValue);
     editorRef.current?.focus();
     handleInput();
   }, [handleInput]);
 
   const handleKeyDown = useCallback((e) => {
-    // Submit on Cmd/Ctrl + Enter
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       onSubmit?.();
@@ -60,27 +74,6 @@ const RichTextEditor = ({
     }
   }, [execCommand]);
 
-  const ToolbarButton = ({ onClick, active, children, title }) => (
-    <button
-      type="button"
-      onMouseDown={(e) => {
-        e.preventDefault(); // Prevent focus loss
-        onClick();
-      }}
-      className={`h-7 w-7 flex items-center justify-center rounded transition-colors ${
-        active 
-          ? 'bg-primary/20 text-primary' 
-          : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
-      }`}
-      title={title}
-      disabled={disabled}
-    >
-      {children}
-    </button>
-  );
-
-  const modeColor = mode === 'note' ? 'amber-400' : 'primary';
-
   return (
     <div className={`rounded-lg border transition-all ${
       disabled ? 'opacity-50' : ''
@@ -91,37 +84,37 @@ const RichTextEditor = ({
     }`}>
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border/30 bg-secondary/20 rounded-t-lg">
-        <ToolbarButton onClick={() => execCommand('bold')} title="Bold (⌘B)">
+        <ToolbarButton onClick={() => execCommand('bold')} title="Bold (⌘B)" disabled={disabled}>
           <Bold size={14} />
         </ToolbarButton>
-        <ToolbarButton onClick={() => execCommand('italic')} title="Italic (⌘I)">
+        <ToolbarButton onClick={() => execCommand('italic')} title="Italic (⌘I)" disabled={disabled}>
           <Italic size={14} />
         </ToolbarButton>
-        <ToolbarButton onClick={() => execCommand('underline')} title="Underline (⌘U)">
+        <ToolbarButton onClick={() => execCommand('underline')} title="Underline (⌘U)" disabled={disabled}>
           <Underline size={14} />
         </ToolbarButton>
         
         <div className="w-px h-4 bg-border/40 mx-1" />
         
-        <ToolbarButton onClick={() => execCommand('insertUnorderedList')} title="Bullet list">
+        <ToolbarButton onClick={() => execCommand('insertUnorderedList')} title="Bullet list" disabled={disabled}>
           <List size={14} />
         </ToolbarButton>
-        <ToolbarButton onClick={() => execCommand('insertOrderedList')} title="Numbered list">
+        <ToolbarButton onClick={() => execCommand('insertOrderedList')} title="Numbered list" disabled={disabled}>
           <ListOrdered size={14} />
         </ToolbarButton>
         
         <div className="w-px h-4 bg-border/40 mx-1" />
         
-        <ToolbarButton onClick={() => execCommand('formatBlock', 'blockquote')} title="Quote">
+        <ToolbarButton onClick={() => execCommand('formatBlock', 'blockquote')} title="Quote" disabled={disabled}>
           <Quote size={14} />
         </ToolbarButton>
-        <ToolbarButton onClick={() => execCommand('formatBlock', 'pre')} title="Code block">
+        <ToolbarButton onClick={() => execCommand('formatBlock', 'pre')} title="Code block" disabled={disabled}>
           <Code size={14} />
         </ToolbarButton>
-        <ToolbarButton onClick={insertLink} title="Insert link">
+        <ToolbarButton onClick={insertLink} title="Insert link" disabled={disabled}>
           <Link2 size={14} />
         </ToolbarButton>
-        <ToolbarButton onClick={() => execCommand('insertHorizontalRule')} title="Divider">
+        <ToolbarButton onClick={() => execCommand('insertHorizontalRule')} title="Divider" disabled={disabled}>
           <Minus size={14} />
         </ToolbarButton>
       </div>
@@ -140,9 +133,7 @@ const RichTextEditor = ({
           [&_ol]:list-decimal [&_ol]:pl-4
           [&_hr]:border-border/40 [&_hr]:my-2"
         data-placeholder={placeholder}
-        style={{
-          minHeight: '80px'
-        }}
+        style={{ minHeight: '80px' }}
         data-testid="rich-text-editor"
         suppressContentEditableWarning
       />
