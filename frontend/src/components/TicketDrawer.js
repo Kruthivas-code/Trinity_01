@@ -288,7 +288,10 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
 
   const handleSave = () => {
     if (ticket) {
-      onUpdate(ticket.id, formData);
+      onUpdate(ticket.id, {
+        ...formData,
+        custom_fields: customFieldValues
+      });
     }
   };
 
