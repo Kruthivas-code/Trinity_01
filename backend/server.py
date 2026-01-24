@@ -257,6 +257,7 @@ class TicketUpdate(BaseModel):
     assignee_id: Optional[str] = None
     priority: Optional[str] = None
     tags: Optional[List[str]] = None
+    custom_fields: Optional[Dict[str, Any]] = None
 
 class TicketReorder(BaseModel):
     ticket_id: str
