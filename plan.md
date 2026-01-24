@@ -53,7 +53,7 @@ Key deliverables:
 ### API Key Usage
 ```bash
 # Use API key in header
-curl -H "X-API-Key: tk_live_xxxxx" https://tickflow-7.preview.emergentagent.com/api/tickets
+curl -H "X-API-Key: tk_live_xxxxx" https://tixmaster.preview.emergentagent.com/api/tickets
 ```
 
 ### Ticket ID Format

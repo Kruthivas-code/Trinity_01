@@ -5,7 +5,7 @@ import io
 from datetime import datetime
 
 class TickFlowAPITester:
-    def __init__(self, base_url="https://tickflow-7.preview.emergentagent.com"):
+    def __init__(self, base_url="https://tixmaster.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
         self.user_id = None
