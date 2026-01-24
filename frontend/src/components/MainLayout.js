@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import DashboardContainer from './DashboardContainer';
 import AllTicketsPage from './AllTicketsPage';
@@ -6,10 +6,33 @@ import OpenTicketsPage from './OpenTicketsPage';
 import WaitingTicketsPage from './WaitingTicketsPage';
 import ClosedTicketsPage from './ClosedTicketsPage';
 import TicketDrawer from './TicketDrawer';
+import { toast } from 'sonner';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const MainLayout = ({ user, view }) => {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Fetch users on mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/users`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const handleTicketClick = (ticket) => {
     setSelectedTicket(ticket);
@@ -19,6 +42,43 @@ const MainLayout = ({ user, view }) => {
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false);
     setSelectedTicket(null);
+  };
+
+  const handleUpdateTicket = async (ticketId, updatedData) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updatedData)
+      });
+      
+      if (!response.ok) throw new Error('Failed to update ticket');
+      
+      const updated = await response.json();
+      setSelectedTicket(updated);
+      setRefreshKey(prev => prev + 1); // Trigger list refresh
+      toast.success('Ticket updated');
+    } catch (error) {
+      toast.error('Failed to update ticket');
+    }
+  };
+
+  const handleDeleteTicket = async (ticketId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) throw new Error('Failed to delete ticket');
+      
+      handleCloseDrawer();
+      setRefreshKey(prev => prev + 1); // Trigger list refresh
+      toast.success('Ticket deleted');
+    } catch (error) {
+      toast.error('Failed to delete ticket');
+    }
   };
 
   return (
@@ -36,24 +96,28 @@ const MainLayout = ({ user, view }) => {
         )}
         {view === 'all-tickets' && (
           <AllTicketsPage 
+            key={refreshKey}
             user={user} 
             onTicketClick={handleTicketClick}
           />
         )}
         {view === 'open-tickets' && (
           <OpenTicketsPage 
+            key={refreshKey}
             user={user} 
             onTicketClick={handleTicketClick}
           />
         )}
         {view === 'waiting-tickets' && (
           <WaitingTicketsPage 
+            key={refreshKey}
             user={user} 
             onTicketClick={handleTicketClick}
           />
         )}
         {view === 'closed-tickets' && (
           <ClosedTicketsPage 
+            key={refreshKey}
             user={user} 
             onTicketClick={handleTicketClick}
           />
@@ -64,11 +128,11 @@ const MainLayout = ({ user, view }) => {
       {(view !== 'dashboard') && (
         <TicketDrawer
           ticket={selectedTicket}
-          users={[]}
+          users={users}
           isOpen={isDrawerOpen}
           onClose={handleCloseDrawer}
-          onUpdate={() => {}} 
-          onDelete={() => {}}
+          onUpdate={handleUpdateTicket}
+          onDelete={handleDeleteTicket}
         />
       )}
     </div>
