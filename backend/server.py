@@ -403,6 +403,79 @@ async def logout(response: Response, session_token: Optional[str] = Cookie(None)
     response.delete_cookie(key="session_token", path="/")
     return {"message": "Logged out successfully"}
 
+# ==================== API Key Management ====================
+
+@app.post("/api/auth/api-keys")
+async def create_api_key(
+    key_data: APIKeyCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Generate a new API key"""
+    key, key_hash = generate_api_key()
+    key_id = f"key_{uuid.uuid4().hex[:12]}"
+    
+    api_key_doc = {
+        "key_id": key_id,
+        "key_hash": key_hash,
+        "key_prefix": key[:12],  # Store prefix for identification
+        "name": key_data.name,
+        "description": key_data.description,
+        "created_by": current_user["user_id"],
+        "created_by_email": current_user.get("email"),
+        "created_at": datetime.now(timezone.utc),
+        "last_used_at": None,
+        "usage_count": 0,
+        "revoked": False
+    }
+    
+    api_keys_collection.insert_one(api_key_doc)
+    
+    # Return the key only once - it won't be retrievable later
+    return {
+        "key_id": key_id,
+        "name": key_data.name,
+        "key": key,  # Only shown once!
+        "created_at": api_key_doc["created_at"].isoformat(),
+        "message": "Save this key securely - it won't be shown again!"
+    }
+
+@app.get("/api/auth/api-keys")
+async def list_api_keys(current_user: dict = Depends(get_current_user)):
+    """List all API keys for the current user"""
+    keys = list(api_keys_collection.find(
+        {"created_by": current_user["user_id"], "revoked": {"$ne": True}},
+        {"key_hash": 0}  # Don't return the hash
+    ))
+    
+    return [
+        {
+            "key_id": k["key_id"],
+            "name": k["name"],
+            "key_prefix": k.get("key_prefix", "***"),
+            "description": k.get("description", ""),
+            "created_at": k["created_at"].isoformat() if isinstance(k["created_at"], datetime) else k["created_at"],
+            "last_used_at": k["last_used_at"].isoformat() if k.get("last_used_at") else None,
+            "usage_count": k.get("usage_count", 0)
+        }
+        for k in keys
+    ]
+
+@app.delete("/api/auth/api-keys/{key_id}")
+async def revoke_api_key(
+    key_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Revoke an API key"""
+    result = api_keys_collection.update_one(
+        {"key_id": key_id, "created_by": current_user["user_id"]},
+        {"$set": {"revoked": True, "revoked_at": datetime.now(timezone.utc)}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="API key not found")
+    
+    return {"message": "API key revoked"}
+
 # User profile endpoints
 @app.get("/api/users/me")
 async def get_current_user_profile(current_user: dict = Depends(get_current_user)):
@@ -424,6 +497,48 @@ async def update_preferences(
 async def get_users(current_user: dict = Depends(get_current_user)):
     users = list(users_collection.find({}, {"_id": 0}))
     return [serialize_doc(user) for user in users]
+
+# ==================== Tag Management ====================
+
+@app.post("/api/tickets/{ticket_id}/tags")
+async def add_tags(
+    ticket_id: str,
+    tags: List[str],
+    current_user: dict = Depends(get_current_user)
+):
+    """Add tags to a ticket"""
+    result = tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {
+            "$addToSet": {"tags": {"$each": tags}},
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    return {"tags": ticket.get("tags", [])}
+
+@app.delete("/api/tickets/{ticket_id}/tags/{tag}")
+async def remove_tag(
+    ticket_id: str,
+    tag: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Remove a tag from a ticket"""
+    result = tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {
+            "$pull": {"tags": tag},
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    return {"tags": ticket.get("tags", [])}
 
 # Ticket endpoints (protected)
 @app.get("/api/tickets")
