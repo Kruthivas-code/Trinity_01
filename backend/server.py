@@ -292,12 +292,12 @@ class APIKeyResponse(BaseModel):
 # Phase 2: Team Models
 class TeamCreate(BaseModel):
     name: str
-    type: str = "l1"  # l1, l2, specialist
+    escalation_level: str = "L1"  # L1, L2, L3
     description: Optional[str] = ""
 
 class TeamUpdate(BaseModel):
     name: Optional[str] = None
-    type: Optional[str] = None
+    escalation_level: Optional[str] = None  # L1, L2, L3
     description: Optional[str] = None
     lead_id: Optional[str] = None
 
