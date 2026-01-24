@@ -67,7 +67,7 @@ Key deliverables:
 For automated testing, use:
 ```bash
 # Create test session
-curl -X POST https://tixmaster.preview.emergentagent.com/api/auth/test-login
+curl -X POST https://helpflow-14.preview.emergentagent.com/api/auth/test-login
 
 # Response includes session_token cookie for authenticated requests
 ```
@@ -76,7 +76,7 @@ curl -X POST https://tixmaster.preview.emergentagent.com/api/auth/test-login
 
 #### API Key Usage
 ```bash
-curl -H "X-API-Key: tk_live_xxxxx" https://tixmaster.preview.emergentagent.com/api/tickets
+curl -H "X-API-Key: tk_live_xxxxx" https://helpflow-14.preview.emergentagent.com/api/tickets
 ```
 
 #### Ticket ID Format
