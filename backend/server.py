@@ -741,7 +741,7 @@ async def import_tickets(
         
         imported_count = 0
         for item in data:
-            ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+            ticket_id = generate_ticket_id()
             ticket_doc = {
                 "ticket_id": ticket_id,
                 "title": item.get("title", "Imported Ticket"),
@@ -1033,7 +1033,7 @@ async def create_ticket_from_email(
         _, sender_email = parseaddr(metadata['from'])
         
         # Create ticket
-        ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+        ticket_id = generate_ticket_id()
         max_order_ticket = tickets_collection.find_one(
             {"status": "todo"},
             sort=[("order", DESCENDING)]
@@ -1116,7 +1116,7 @@ async def sync_emails_to_tickets(
             
             _, sender_email = parseaddr(metadata['from'])
             
-            ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+            ticket_id = generate_ticket_id()
             max_order_ticket = tickets_collection.find_one(
                 {"status": "todo"},
                 sort=[("order", DESCENDING)]
@@ -1335,7 +1335,7 @@ async def simulate_incoming_email(
     # Generate IDs
     message_id = f"sim_{uuid.uuid4().hex[:16]}"
     thread_id = f"thread_{uuid.uuid4().hex[:12]}"
-    ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+    ticket_id = generate_ticket_id()
     
     # Get next order
     max_order_ticket = tickets_collection.find_one(
@@ -1416,7 +1416,7 @@ async def inbound_email_webhook(request: Request):
         # Generate IDs
         message_id = data.get('Message-Id') or data.get('message_id') or f"webhook_{uuid.uuid4().hex[:16]}"
         thread_id = f"thread_{uuid.uuid4().hex[:12]}"
-        ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+        ticket_id = generate_ticket_id()
         
         # Check for duplicate
         existing = tickets_collection.find_one({"email_message_id": message_id})
@@ -1547,7 +1547,7 @@ async def process_gmail_notification(history_id: str, email_address: str):
                 body = parse_email_body(msg_detail.get('payload', {}))
                 _, sender_email = parseaddr(metadata['from'])
                 
-                ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+                ticket_id = generate_ticket_id()
                 max_order_ticket = tickets_collection.find_one(
                     {"status": "todo"},
                     sort=[("order", DESCENDING)]
