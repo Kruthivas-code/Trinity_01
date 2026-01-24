@@ -437,6 +437,74 @@ async def logout(response: Response, session_token: Optional[str] = Cookie(None)
     response.delete_cookie(key="session_token", path="/")
     return {"message": "Logged out successfully"}
 
+# ==================== Test Authentication (Development Only) ====================
+
+@app.post("/api/auth/test-login")
+async def test_login(response: Response):
+    """
+    Create a test session for automated testing.
+    This endpoint should be disabled in production.
+    """
+    import os
+    
+    # Create or get test user
+    test_user_id = "test_user_automation"
+    test_email = "test@tickflow.local"
+    test_name = "Test User"
+    
+    # Upsert test user
+    users_collection.update_one(
+        {"user_id": test_user_id},
+        {"$set": {
+            "user_id": test_user_id,
+            "email": test_email,
+            "name": test_name,
+            "picture": None,
+            "role": "admin",
+            "created_at": datetime.now(timezone.utc),
+            "last_login": datetime.now(timezone.utc)
+        }},
+        upsert=True
+    )
+    
+    # Create session token
+    session_token = f"test_session_{uuid.uuid4().hex}"
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+    
+    # Store session
+    sessions_collection.update_one(
+        {"session_token": session_token},
+        {"$set": {
+            "session_token": session_token,
+            "user_id": test_user_id,
+            "created_at": datetime.now(timezone.utc),
+            "expires_at": expires_at
+        }},
+        upsert=True
+    )
+    
+    # Set cookie
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=False,  # Allow non-HTTPS for testing
+        samesite="lax",
+        max_age=86400,
+        path="/"
+    )
+    
+    return {
+        "message": "Test session created",
+        "user": {
+            "user_id": test_user_id,
+            "email": test_email,
+            "name": test_name,
+            "role": "admin"
+        },
+        "session_token": session_token
+    }
+
 # ==================== API Key Management ====================
 
 @app.post("/api/auth/api-keys")
