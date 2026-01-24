@@ -166,8 +166,35 @@ def serialize_doc(doc):
         return serialized
     return doc
 
-async def get_current_user(request: Request, session_token: Optional[str] = Cookie(None)):
-    """Get current user from session token (cookie or header)"""
+async def get_api_key_user(api_key: str = Security(API_KEY_HEADER)) -> Optional[dict]:
+    """Authenticate via API key - returns None if no key provided"""
+    if not api_key:
+        return None
+    api_key_doc = verify_api_key(api_key)
+    if api_key_doc:
+        # Return a user-like object for API key auth
+        return {
+            "user_id": api_key_doc.get("created_by", "api"),
+            "email": api_key_doc.get("created_by_email", "api@system"),
+            "name": api_key_doc.get("name", "API Key"),
+            "auth_type": "api_key",
+            "api_key_id": api_key_doc.get("key_id")
+        }
+    return None
+
+async def get_current_user(
+    request: Request, 
+    session_token: Optional[str] = Cookie(None),
+    api_key: str = Security(API_KEY_HEADER)
+):
+    """Get current user from session token or API key"""
+    # Try API key first
+    if api_key:
+        api_user = await get_api_key_user(api_key)
+        if api_user:
+            return api_user
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    
     # Try cookie first, then Authorization header
     token = session_token
     if not token:
