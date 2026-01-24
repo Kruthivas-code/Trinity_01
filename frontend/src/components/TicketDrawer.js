@@ -704,6 +704,115 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                 </div>
               )}
             </div>
+
+            {/* Custom Fields Section */}
+            {customFields.length > 0 && (
+              <>
+                {/* Divider */}
+                <div className="h-px bg-border/30" />
+
+                <div>
+                  <button
+                    onClick={() => toggleSection('customFields')}
+                    className="w-full flex items-center justify-between py-1 group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Settings size={12} className="text-muted-foreground" />
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Custom Fields</span>
+                    </div>
+                    {sectionsExpanded.customFields ? (
+                      <ChevronDown size={12} className="text-muted-foreground" />
+                    ) : (
+                      <ChevronRight size={12} className="text-muted-foreground" />
+                    )}
+                  </button>
+                  
+                  {sectionsExpanded.customFields && (
+                    <div className="mt-2 space-y-3">
+                      {customFields.map(field => (
+                        <div key={field.field_id}>
+                          <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 block">
+                            {field.name}
+                            {field.required && <span className="text-destructive ml-0.5">*</span>}
+                          </label>
+                          {field.field_type === 'text' && (
+                            <input
+                              type="text"
+                              value={customFieldValues[field.field_id] || ''}
+                              onChange={(e) => setCustomFieldValues(prev => ({ 
+                                ...prev, 
+                                [field.field_id]: e.target.value 
+                              }))}
+                              className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                              placeholder={field.description || `Enter ${field.name.toLowerCase()}`}
+                              data-testid={`custom-field-${field.field_id}`}
+                            />
+                          )}
+                          {field.field_type === 'number' && (
+                            <input
+                              type="number"
+                              value={customFieldValues[field.field_id] || ''}
+                              onChange={(e) => setCustomFieldValues(prev => ({ 
+                                ...prev, 
+                                [field.field_id]: e.target.value 
+                              }))}
+                              className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                              placeholder={field.description || `Enter ${field.name.toLowerCase()}`}
+                              data-testid={`custom-field-${field.field_id}`}
+                            />
+                          )}
+                          {field.field_type === 'select' && (
+                            <select
+                              value={customFieldValues[field.field_id] || ''}
+                              onChange={(e) => setCustomFieldValues(prev => ({ 
+                                ...prev, 
+                                [field.field_id]: e.target.value 
+                              }))}
+                              className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                              data-testid={`custom-field-${field.field_id}`}
+                            >
+                              <option value="">Select {field.name.toLowerCase()}</option>
+                              {field.options?.map((opt, idx) => (
+                                <option key={idx} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          )}
+                          {field.field_type === 'date' && (
+                            <input
+                              type="date"
+                              value={customFieldValues[field.field_id] || ''}
+                              onChange={(e) => setCustomFieldValues(prev => ({ 
+                                ...prev, 
+                                [field.field_id]: e.target.value 
+                              }))}
+                              className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                              data-testid={`custom-field-${field.field_id}`}
+                            />
+                          )}
+                          {field.field_type === 'boolean' && (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={customFieldValues[field.field_id] || false}
+                                onChange={(e) => setCustomFieldValues(prev => ({ 
+                                  ...prev, 
+                                  [field.field_id]: e.target.checked 
+                                }))}
+                                className="w-4 h-4 rounded border-border text-primary focus:ring-primary/50"
+                                data-testid={`custom-field-${field.field_id}`}
+                              />
+                              <span className="text-xs text-foreground/80">
+                                {field.description || 'Yes'}
+                              </span>
+                            </label>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Footer Actions */}
