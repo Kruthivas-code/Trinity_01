@@ -141,16 +141,81 @@ const SettingsPage = ({ user }) => {
         credentials: 'include'
       });
       
-      // Clear any local storage
       localStorage.removeItem('theme');
       
       toast.success('Logged out successfully');
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
-      // Still redirect even if logout API fails
       navigate('/login', { replace: true });
     }
+  };
+
+  // API Keys functions
+  const fetchApiKeys = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/api-keys`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setApiKeys(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch API keys:', error);
+    } finally {
+      setLoadingKeys(false);
+    }
+  };
+
+  const handleCreateApiKey = async () => {
+    if (!newKeyName.trim()) {
+      toast.error('Please enter a name for the API key');
+      return;
+    }
+    
+    setCreatingKey(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/api-keys`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: newKeyName })
+      });
+      
+      if (!response.ok) throw new Error('Failed to create API key');
+      
+      const data = await response.json();
+      setShowNewKey(data.key);
+      setNewKeyName('');
+      fetchApiKeys();
+      toast.success('API key created!');
+    } catch (error) {
+      toast.error('Failed to create API key');
+    } finally {
+      setCreatingKey(false);
+    }
+  };
+
+  const handleRevokeKey = async (keyId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/api-keys/${keyId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (!response.ok) throw new Error('Failed to revoke');
+      
+      toast.success('API key revoked');
+      fetchApiKeys();
+    } catch (error) {
+      toast.error('Failed to revoke API key');
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
   };
 
   if (!user) {
