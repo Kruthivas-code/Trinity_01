@@ -105,7 +105,6 @@ function App() {
       <Router>
         <div className="App min-h-screen bg-background">
           <AppRouter />
-          <Toaster position="top-right" richColors />
         </div>
       </Router>
     </ThemeProvider>
