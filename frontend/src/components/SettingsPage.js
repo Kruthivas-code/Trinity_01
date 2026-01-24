@@ -384,6 +384,102 @@ const SettingsPage = ({ user }) => {
             )}
           </div>
 
+          {/* API Keys Section */}
+          <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
+                <Key size={20} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-medium">API Keys</h3>
+                <p className="text-sm text-muted-foreground">
+                  Manage API keys for programmatic access
+                </p>
+              </div>
+            </div>
+
+            {/* New Key Created Alert */}
+            {showNewKey && (
+              <div className="mb-4 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                <p className="text-sm text-green-500 mb-2 font-medium">
+                  🎉 New API Key Created - Copy it now (won't be shown again!)
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 p-2 rounded bg-black/20 text-xs font-mono break-all">
+                    {showNewKey}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(showNewKey)}
+                    className="p-2 rounded hover:bg-white/10"
+                  >
+                    <Copy size={16} />
+                  </button>
+                </div>
+                <button
+                  onClick={() => setShowNewKey(null)}
+                  className="mt-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            {/* Create New Key */}
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                placeholder="Key name (e.g., Production API)"
+                className="flex-1 px-3 py-2 rounded-lg bg-secondary/30 border border-border/40 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                data-testid="api-key-name-input"
+              />
+              <button
+                onClick={handleCreateApiKey}
+                disabled={creatingKey || !newKeyName.trim()}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-primary text-white hover:opacity-90 transition-interactive disabled:opacity-50"
+                data-testid="create-api-key-button"
+              >
+                {creatingKey ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                <span>Create</span>
+              </button>
+            </div>
+
+            {/* Keys List */}
+            {loadingKeys ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 size={16} className="animate-spin" />
+                <span>Loading keys...</span>
+              </div>
+            ) : apiKeys.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No API keys created yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {apiKeys.map((key) => (
+                  <div
+                    key={key.key_id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/40"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm">{key.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {key.key_prefix}... • Used {key.usage_count || 0} times
+                        {key.last_used_at && ` • Last used ${new Date(key.last_used_at).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleRevokeKey(key.key_id)}
+                      className="p-2 rounded hover:bg-destructive/10 text-destructive"
+                      title="Revoke key"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Appearance Section */}
           <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
             <h3 className="text-lg font-medium mb-4">Appearance</h3>
