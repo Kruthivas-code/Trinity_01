@@ -257,6 +257,7 @@ class TicketCreate(BaseModel):
     tags: Optional[List[str]] = []
     customer_email: Optional[str] = None
     source: Optional[str] = "manual"  # manual, email, api, simulator
+    escalation_level: Optional[str] = "L1"  # L1, L2, L3 - default L1
 
 class TicketUpdate(BaseModel):
     title: Optional[str] = None
@@ -266,6 +267,8 @@ class TicketUpdate(BaseModel):
     priority: Optional[str] = None
     tags: Optional[List[str]] = None
     custom_fields: Optional[Dict[str, Any]] = None
+    escalation_level: Optional[str] = None  # L1, L2, L3
+    team_id: Optional[str] = None
 
 class TicketReorder(BaseModel):
     ticket_id: str
