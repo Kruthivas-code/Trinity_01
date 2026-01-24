@@ -532,6 +532,454 @@ async def get_users(current_user: dict = Depends(get_current_user)):
     users = list(users_collection.find({}, {"_id": 0}))
     return [serialize_doc(user) for user in users]
 
+# ==================== Phase 2: Team Management ====================
+
+@app.post("/api/teams")
+async def create_team(
+    team_data: TeamCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new team"""
+    team_id = f"team_{uuid.uuid4().hex[:12]}"
+    
+    team_doc = {
+        "team_id": team_id,
+        "name": team_data.name,
+        "type": team_data.type,
+        "description": team_data.description,
+        "members": [],
+        "lead_id": None,
+        "last_assigned_idx": -1,  # For round-robin
+        "created_by": current_user["user_id"],
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    teams_collection.insert_one(team_doc)
+    return serialize_doc(team_doc)
+
+@app.get("/api/teams")
+async def get_teams(current_user: dict = Depends(get_current_user)):
+    """List all teams"""
+    teams = list(teams_collection.find({}, {"_id": 0}))
+    
+    # Enrich with member count and member details
+    for team in teams:
+        team["member_count"] = len(team.get("members", []))
+        # Get member details
+        if team.get("members"):
+            members = list(users_collection.find(
+                {"user_id": {"$in": team["members"]}},
+                {"_id": 0, "user_id": 1, "name": 1, "email": 1, "role": 1}
+            ))
+            team["member_details"] = members
+    
+    return [serialize_doc(team) for team in teams]
+
+@app.get("/api/teams/{team_id}")
+async def get_team(
+    team_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get team details"""
+    team = teams_collection.find_one({"team_id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Get member details
+    if team.get("members"):
+        members = list(users_collection.find(
+            {"user_id": {"$in": team["members"]}},
+            {"_id": 0}
+        ))
+        team["member_details"] = [serialize_doc(m) for m in members]
+    
+    return serialize_doc(team)
+
+@app.put("/api/teams/{team_id}")
+async def update_team(
+    team_id: str,
+    team_data: TeamUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update team details"""
+    update_data = {k: v for k, v in team_data.dict().items() if v is not None}
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    result = teams_collection.update_one(
+        {"team_id": team_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    return teams_collection.find_one({"team_id": team_id}, {"_id": 0})
+
+@app.delete("/api/teams/{team_id}")
+async def delete_team(
+    team_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a team"""
+    # Remove team_id from all users first
+    users_collection.update_many(
+        {"team_id": team_id},
+        {"$unset": {"team_id": ""}}
+    )
+    
+    result = teams_collection.delete_one({"team_id": team_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    return {"message": "Team deleted"}
+
+@app.post("/api/teams/{team_id}/members")
+async def add_team_member(
+    team_id: str,
+    member: TeamMemberAdd,
+    current_user: dict = Depends(get_current_user)
+):
+    """Add a member to a team"""
+    # Verify team exists
+    team = teams_collection.find_one({"team_id": team_id})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Verify user exists
+    user = users_collection.find_one({"user_id": member.user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Add to team members
+    teams_collection.update_one(
+        {"team_id": team_id},
+        {
+            "$addToSet": {"members": member.user_id},
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
+    
+    # Update user's team_id
+    users_collection.update_one(
+        {"user_id": member.user_id},
+        {"$set": {"team_id": team_id, "updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    return {"message": "Member added", "team_id": team_id, "user_id": member.user_id}
+
+@app.delete("/api/teams/{team_id}/members/{user_id}")
+async def remove_team_member(
+    team_id: str,
+    user_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Remove a member from a team"""
+    # Remove from team
+    result = teams_collection.update_one(
+        {"team_id": team_id},
+        {
+            "$pull": {"members": user_id},
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Clear user's team_id
+    users_collection.update_one(
+        {"user_id": user_id},
+        {"$unset": {"team_id": ""}, "$set": {"updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    return {"message": "Member removed"}
+
+# ==================== User Role Management ====================
+
+@app.put("/api/users/{user_id}/role")
+async def update_user_role(
+    user_id: str,
+    role_data: UserRoleUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update user role and team assignment"""
+    update_data = {
+        "role": role_data.role,
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    if role_data.team_id is not None:
+        update_data["team_id"] = role_data.team_id
+    if role_data.skills is not None:
+        update_data["skills"] = role_data.skills
+    if role_data.max_tickets is not None:
+        update_data["max_tickets"] = role_data.max_tickets
+    
+    result = users_collection.update_one(
+        {"user_id": user_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # If team_id changed, update team memberships
+    if role_data.team_id:
+        # Remove from old teams
+        teams_collection.update_many(
+            {"members": user_id},
+            {"$pull": {"members": user_id}}
+        )
+        # Add to new team
+        teams_collection.update_one(
+            {"team_id": role_data.team_id},
+            {"$addToSet": {"members": user_id}}
+        )
+    
+    user = users_collection.find_one({"user_id": user_id}, {"_id": 0})
+    return serialize_doc(user)
+
+# ==================== Round Robin Assignment ====================
+
+def get_available_agents(team_id: str) -> List[dict]:
+    """Get available agents in a team for assignment"""
+    team = teams_collection.find_one({"team_id": team_id})
+    if not team or not team.get("members"):
+        return []
+    
+    agents = list(users_collection.find({
+        "user_id": {"$in": team["members"]},
+        "status": {"$ne": "offline"},
+        "on_leave": {"$ne": True}
+    }))
+    
+    # Filter by capacity
+    available = []
+    for agent in agents:
+        current_count = tickets_collection.count_documents({
+            "assignee_id": agent["user_id"],
+            "status": {"$nin": ["resolved", "closed"]}
+        })
+        max_tickets = agent.get("max_tickets", 10)
+        if current_count < max_tickets:
+            agent["current_ticket_count"] = current_count
+            available.append(agent)
+    
+    return available
+
+def round_robin_assign(team_id: str) -> Optional[str]:
+    """Get next agent for round-robin assignment"""
+    team = teams_collection.find_one({"team_id": team_id})
+    if not team:
+        return None
+    
+    available = get_available_agents(team_id)
+    if not available:
+        return None
+    
+    # Get last assigned index
+    last_idx = team.get("last_assigned_idx", -1)
+    
+    # Find next available agent
+    member_ids = [a["user_id"] for a in available]
+    all_members = team.get("members", [])
+    
+    # Start from last_idx + 1 and wrap around
+    for i in range(len(all_members)):
+        idx = (last_idx + 1 + i) % len(all_members)
+        member_id = all_members[idx]
+        
+        if member_id in member_ids:
+            # Update last assigned index
+            teams_collection.update_one(
+                {"team_id": team_id},
+                {"$set": {"last_assigned_idx": idx}}
+            )
+            return member_id
+    
+    return None
+
+@app.post("/api/tickets/{ticket_id}/assign")
+async def assign_ticket(
+    ticket_id: str,
+    assignment: TicketAssign,
+    current_user: dict = Depends(get_current_user)
+):
+    """Assign a ticket to a user or team"""
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    update_data = {"updated_at": datetime.now(timezone.utc)}
+    
+    # If team specified, use round-robin
+    if assignment.team_id:
+        update_data["team_id"] = assignment.team_id
+        
+        if not assignment.assignee_id:
+            # Auto-assign via round-robin
+            assignee = round_robin_assign(assignment.team_id)
+            if assignee:
+                update_data["assignee_id"] = assignee
+    
+    # If specific assignee provided
+    if assignment.assignee_id:
+        update_data["assignee_id"] = assignment.assignee_id
+        
+        # Update assignee's ticket count
+        users_collection.update_one(
+            {"user_id": assignment.assignee_id},
+            {"$inc": {"current_ticket_count": 1}}
+        )
+    
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$set": update_data}
+    )
+    
+    # Log assignment in messages
+    messages_collection.insert_one({
+        "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+        "ticket_id": ticket_id,
+        "type": "system",
+        "content": f"Ticket assigned to {update_data.get('assignee_id', 'team')}",
+        "author_id": current_user["user_id"],
+        "created_at": datetime.now(timezone.utc)
+    })
+    
+    updated = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    return serialize_doc(updated)
+
+@app.post("/api/routing/auto-assign")
+async def auto_assign_ticket(
+    ticket_id: str,
+    team_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Auto-assign a ticket using round-robin"""
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    assignee = round_robin_assign(team_id)
+    if not assignee:
+        raise HTTPException(status_code=400, detail="No available agents in team")
+    
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$set": {
+            "assignee_id": assignee,
+            "team_id": team_id,
+            "updated_at": datetime.now(timezone.utc)
+        }}
+    )
+    
+    return {"ticket_id": ticket_id, "assignee_id": assignee, "team_id": team_id}
+
+# ==================== Team Inbox ====================
+
+@app.get("/api/teams/{team_id}/tickets")
+async def get_team_tickets(
+    team_id: str,
+    status: Optional[str] = None,
+    unassigned_only: bool = False,
+    skip: int = 0,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get tickets for a team (team inbox)"""
+    team = teams_collection.find_one({"team_id": team_id})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    query = {"team_id": team_id}
+    
+    if status:
+        query["status"] = status
+    
+    if unassigned_only:
+        query["assignee_id"] = None
+    
+    tickets = list(tickets_collection.find(
+        query,
+        {"_id": 0}
+    ).sort("created_at", DESCENDING).skip(skip).limit(limit))
+    
+    total = tickets_collection.count_documents(query)
+    
+    return {
+        "tickets": [serialize_doc(t) for t in tickets],
+        "total": total,
+        "team_id": team_id,
+        "team_name": team["name"]
+    }
+
+# ==================== Internal Notes ====================
+
+@app.post("/api/tickets/{ticket_id}/notes")
+async def add_internal_note(
+    ticket_id: str,
+    note: InternalNoteCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Add an internal note to a ticket"""
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    message_id = f"msg_{uuid.uuid4().hex[:12]}"
+    
+    note_doc = {
+        "message_id": message_id,
+        "ticket_id": ticket_id,
+        "type": "internal_note",
+        "content": note.content,
+        "author_id": current_user["user_id"],
+        "author_name": current_user.get("name", "Unknown"),
+        "author_email": current_user.get("email"),
+        "mentions": note.mentions or [],
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    messages_collection.insert_one(note_doc)
+    
+    # Update ticket's updated_at
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$set": {"updated_at": datetime.now(timezone.utc)}}
+    )
+    
+    # TODO: Send notifications to mentioned users
+    
+    return serialize_doc(note_doc)
+
+@app.get("/api/tickets/{ticket_id}/notes")
+async def get_ticket_notes(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all internal notes for a ticket"""
+    notes = list(messages_collection.find(
+        {"ticket_id": ticket_id, "type": "internal_note"},
+        {"_id": 0}
+    ).sort("created_at", ASCENDING))
+    
+    return [serialize_doc(n) for n in notes]
+
+@app.get("/api/tickets/{ticket_id}/activity")
+async def get_ticket_activity(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all activity (notes, replies, system messages) for a ticket"""
+    messages = list(messages_collection.find(
+        {"ticket_id": ticket_id},
+        {"_id": 0}
+    ).sort("created_at", ASCENDING))
+    
+    return [serialize_doc(m) for m in messages]
+
 # ==================== Tag Management ====================
 
 @app.post("/api/tickets/{ticket_id}/tags")
