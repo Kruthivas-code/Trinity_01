@@ -182,6 +182,152 @@ def serialize_doc(doc):
         return serialized
     return doc
 
+# ==================== Shift & Timezone Utilities ====================
+
+def get_ist_now():
+    """Get current datetime in IST timezone"""
+    ist = pytz.timezone(SYSTEM_TIMEZONE)
+    return datetime.now(ist)
+
+def parse_time_str(time_str: str) -> time:
+    """Parse HH:MM string to time object"""
+    parts = time_str.split(":")
+    return time(int(parts[0]), int(parts[1]))
+
+def is_user_on_shift(user_id: str, team_id: str = None) -> bool:
+    """Check if a user is currently on shift"""
+    now = get_ist_now()
+    current_weekday = now.isoweekday()  # 1=Monday, 7=Sunday
+    current_time = now.time()
+    
+    # Find user's shift assignments
+    query = {"user_id": user_id}
+    if team_id:
+        query["team_id"] = team_id
+    
+    user_shift_docs = list(user_shifts_collection.find(query))
+    
+    for us_doc in user_shift_docs:
+        shift = shifts_collection.find_one({"shift_id": us_doc.get("shift_id"), "is_active": True})
+        if not shift:
+            continue
+        
+        # Check if today is a working day for this shift
+        if current_weekday not in shift.get("days_of_week", []):
+            continue
+        
+        # Check if current time is within shift hours
+        start = parse_time_str(shift.get("start_time", "00:00"))
+        end = parse_time_str(shift.get("end_time", "23:59"))
+        
+        # Handle overnight shifts (e.g., 22:00 to 06:00)
+        if start <= end:
+            # Normal shift (e.g., 09:00 to 17:00)
+            if start <= current_time <= end:
+                return True
+        else:
+            # Overnight shift (e.g., 22:00 to 06:00)
+            if current_time >= start or current_time <= end:
+                return True
+    
+    return False
+
+def get_on_shift_members(team_id: str) -> List[dict]:
+    """Get all members currently on shift for a team"""
+    team = teams_collection.find_one({"team_id": team_id})
+    if not team:
+        return []
+    
+    on_shift_members = []
+    for member_id in team.get("members", []):
+        if is_user_on_shift(member_id, team_id):
+            user = users_collection.find_one({"user_id": member_id}, {"_id": 0})
+            if user:
+                on_shift_members.append(serialize_doc(user))
+    
+    return on_shift_members
+
+def get_team_for_escalation_level(escalation_level: str) -> Optional[dict]:
+    """Find the team that handles a given escalation level"""
+    team = teams_collection.find_one({"escalation_level": escalation_level}, {"_id": 0})
+    return serialize_doc(team) if team else None
+
+def round_robin_assign(team_id: str) -> Optional[str]:
+    """
+    Get next assignee using round-robin within on-shift team members.
+    Returns user_id or None if no one is on shift.
+    """
+    on_shift = get_on_shift_members(team_id)
+    if not on_shift:
+        return None
+    
+    team = teams_collection.find_one({"team_id": team_id})
+    if not team:
+        return None
+    
+    # Get current index and calculate next
+    last_idx = team.get("last_assigned_idx", -1)
+    next_idx = (last_idx + 1) % len(on_shift)
+    
+    # Update the index
+    teams_collection.update_one(
+        {"team_id": team_id},
+        {"$set": {"last_assigned_idx": next_idx}}
+    )
+    
+    return on_shift[next_idx].get("user_id")
+
+def auto_assign_ticket(ticket_id: str, escalation_level: str) -> dict:
+    """
+    Auto-assign a ticket based on escalation level.
+    Returns assignment result with status.
+    """
+    # Find team for this escalation level
+    team = get_team_for_escalation_level(escalation_level)
+    if not team:
+        return {
+            "status": "no_team",
+            "message": f"No team found for escalation level {escalation_level}",
+            "team_id": None,
+            "assignee_id": None
+        }
+    
+    team_id = team.get("team_id")
+    
+    # Try round-robin assignment
+    assignee_id = round_robin_assign(team_id)
+    
+    # Update ticket
+    update_data = {
+        "team_id": team_id,
+        "escalation_level": escalation_level,
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    if assignee_id:
+        update_data["assignee_id"] = assignee_id
+        update_data["assigned_at"] = datetime.now(timezone.utc)
+        status = "assigned"
+        message = f"Ticket assigned to team {team.get('name')} and user {assignee_id}"
+    else:
+        # No one on shift - ticket goes to team queue
+        update_data["assignee_id"] = None
+        status = "queued"
+        message = f"Ticket queued for team {team.get('name')} - no agents currently on shift"
+    
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$set": update_data}
+    )
+    
+    return {
+        "status": status,
+        "message": message,
+        "team_id": team_id,
+        "team_name": team.get("name"),
+        "assignee_id": assignee_id
+    }
+
 async def get_api_key_user(api_key: str = Security(API_KEY_HEADER)) -> Optional[dict]:
     """Authenticate via API key - returns None if no key provided"""
     if not api_key:
