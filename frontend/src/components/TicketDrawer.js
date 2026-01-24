@@ -26,13 +26,23 @@ const PRIORITIES = [
 // Strip HTML for plain text display
 const stripHtml = (html) => {
   if (!html) return '';
-  let text = html.replace(/<[^>]*>/g, ' ');
+  // Remove style tags and their content
+  let text = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  // Remove script tags
+  text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+  // Remove HTML tags
+  text = text.replace(/<[^>]*>/g, ' ');
+  // Remove CSS properties that might be in text
+  text = text.replace(/[\w-]+\s*:\s*[^;]+;/g, ' ');
+  // Decode common HTML entities
   text = text.replace(/&nbsp;/g, ' ')
              .replace(/&amp;/g, '&')
              .replace(/&lt;/g, '<')
              .replace(/&gt;/g, '>')
              .replace(/&quot;/g, '"')
-             .replace(/&#39;/g, "'");
+             .replace(/&#39;/g, "'")
+             .replace(/&#\d+;/g, ' ');
+  // Remove multiple spaces and trim
   return text.replace(/\s+/g, ' ').trim();
 };
 
