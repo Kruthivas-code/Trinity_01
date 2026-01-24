@@ -192,7 +192,6 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
       setLoadingRelated(false);
     }
   };
-  }, [ticket]);
 
   // Keyboard shortcuts
   useEffect(() => {
