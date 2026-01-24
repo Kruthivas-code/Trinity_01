@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Save, Trash2, Send, ChevronDown, ChevronRight,
   Loader2, Star, MoreHorizontal, Mail, AlertCircle, 
-  Sparkles, PenLine, Command, Link2, User
+  Sparkles, PenLine, Command, Link2
 } from 'lucide-react';
-import { toast } from 'sonner';
+import RichTextEditor from './RichTextEditor';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -23,6 +23,19 @@ const PRIORITIES = [
   { value: 'urgent', label: 'Urgent', color: 'text-red-400' }
 ];
 
+// Strip HTML for plain text display
+const stripHtml = (html) => {
+  if (!html) return '';
+  let text = html.replace(/<[^>]*>/g, ' ');
+  text = text.replace(/&nbsp;/g, ' ')
+             .replace(/&amp;/g, '&')
+             .replace(/&lt;/g, '<')
+             .replace(/&gt;/g, '>')
+             .replace(/&quot;/g, '"')
+             .replace(/&#39;/g, "'");
+  return text.replace(/\s+/g, ' ').trim();
+};
+
 // Email-style message component
 const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, isFirst }) => {
   const formatDate = (dateString) => {
@@ -39,12 +52,37 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
 
   const isNote = type === 'internal_note';
   
+  // Render HTML content safely
+  const renderContent = (html) => {
+    if (!html) return <span className="text-muted-foreground/50 italic">No content</span>;
+    
+    // Check if content is HTML or plain text
+    const hasHtml = /<[^>]+>/.test(html);
+    if (hasHtml) {
+      return (
+        <div 
+          className="prose prose-sm prose-invert max-w-none
+            [&_a]:text-primary [&_a]:underline
+            [&_blockquote]:border-l-2 [&_blockquote]:border-primary/30 [&_blockquote]:pl-3 [&_blockquote]:italic
+            [&_pre]:bg-black/30 [&_pre]:rounded [&_pre]:p-2 [&_pre]:text-xs [&_pre]:overflow-x-auto
+            [&_code]:bg-black/30 [&_code]:rounded [&_code]:px-1 [&_code]:text-xs
+            [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:my-1
+            [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:my-1
+            [&_p]:my-1 [&_br]:my-0.5
+            [&_img]:max-w-full [&_img]:rounded"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      );
+    }
+    return <p className="whitespace-pre-wrap">{html}</p>;
+  };
+  
   return (
-    <div className={`${isNote ? 'bg-amber-500/5 border-l-2 border-l-amber-400' : 'bg-secondary/20'} rounded-lg p-4`}>
+    <div className={`rounded-lg ${isNote ? 'bg-amber-500/5 border-l-2 border-l-amber-400' : 'bg-secondary/20'} p-4`}>
       {/* Email Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start gap-3">
-          <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium shrink-0 ${
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium shrink-0 ${
             isNote 
               ? 'bg-amber-400/20 text-amber-400' 
               : 'bg-gradient-to-br from-primary/40 to-accent/40 text-white'
@@ -74,10 +112,8 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
       </div>
       
       {/* Email Body */}
-      <div className="pl-12">
-        <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
-          {content}
-        </div>
+      <div className="pl-11 text-sm text-foreground/90 leading-relaxed">
+        {renderContent(content)}
       </div>
     </div>
   );
@@ -107,7 +143,6 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
   });
   
   // Refs
-  const inputRef = useRef(null);
   const conversationRef = useRef(null);
 
   useEffect(() => {
@@ -125,32 +160,21 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
     }
   }, [ticket]);
 
-  // Auto-resize textarea
-  useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.style.height = 'auto';
-      const scrollHeight = inputRef.current.scrollHeight;
-      const maxHeight = 200; // Max height in pixels
-      inputRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
-    }
-  }, [inputText]);
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isOpen) return;
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        inputRef.current?.focus();
-      }
-      if (document.activeElement !== inputRef.current) {
+      // N for note, R for reply when not typing
+      const activeElement = document.activeElement;
+      const isTyping = activeElement?.isContentEditable || 
+                       activeElement?.tagName === 'INPUT' || 
+                       activeElement?.tagName === 'TEXTAREA';
+      if (!isTyping) {
         if (e.key === 'n' || e.key === 'N') {
           setInputMode('note');
-          inputRef.current?.focus();
         }
         if (e.key === 'r' || e.key === 'R') {
           setInputMode('reply');
-          inputRef.current?.focus();
         }
       }
     };
@@ -175,9 +199,10 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
     }
   };
 
-  const handleSubmitInput = async (e) => {
-    e?.preventDefault();
-    if (!inputText.trim() || !ticket) return;
+  const handleSubmitInput = async () => {
+    // Strip HTML to check if there's actual content
+    const plainText = stripHtml(inputText);
+    if (!plainText.trim() || !ticket) return;
     
     setSubmitting(true);
     try {
@@ -190,18 +215,18 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
           type: inputMode === 'reply' ? 'reply' : 'internal_note' 
         })
       });
-      if (!response.ok) throw new Error('Failed to send');
-      toast.success(inputMode === 'note' ? 'Note added' : 'Reply sent');
-      setInputText('');
-      fetchNotes(ticket.id);
-      // Scroll to bottom after adding
-      setTimeout(() => {
-        if (conversationRef.current) {
-          conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
-        }
-      }, 100);
+      if (response.ok) {
+        setInputText('');
+        fetchNotes(ticket.id);
+        // Scroll to bottom after adding
+        setTimeout(() => {
+          if (conversationRef.current) {
+            conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
+          }
+        }, 100);
+      }
     } catch (error) {
-      toast.error('Failed to send');
+      console.error('Failed to send:', error);
     } finally {
       setSubmitting(false);
     }
@@ -240,7 +265,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
       sender: ticket.customer_name || ticket.created_by_name || 'Customer',
       senderEmail: ticket.customer_email || null,
       subject: ticket.title,
-      content: ticket.description || '(No content)',
+      content: ticket.description || '',
       timestamp: ticket.created_at
     },
     ...notes.map(note => ({
@@ -271,14 +296,14 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
         <div className="flex-1 bg-[hsl(222,28%,7%)] border-l border-border/40 flex flex-col min-w-0">
           {/* Header */}
           <div className="h-12 px-4 flex items-center justify-between border-b border-border/30 shrink-0">
-            <div className="flex items-center gap-2">
-              <Mail size={15} className="text-primary" />
-              <span className="text-sm font-medium">{ticket.title}</span>
-              <span className="text-[11px] text-muted-foreground font-mono bg-secondary/40 px-1.5 py-0.5 rounded">
+            <div className="flex items-center gap-2 min-w-0">
+              <Mail size={15} className="text-primary shrink-0" />
+              <span className="text-sm font-medium truncate">{ticket.title}</span>
+              <span className="text-[11px] text-muted-foreground font-mono bg-secondary/40 px-1.5 py-0.5 rounded shrink-0">
                 {ticket.ticket_id || `#${ticket.id?.slice(-8)}`}
               </span>
             </div>
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-0.5 shrink-0">
               <button className="h-7 w-7 flex items-center justify-center rounded hover:bg-white/5 transition-colors" title="Star">
                 <Star size={14} className="text-muted-foreground" />
               </button>
@@ -297,7 +322,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
           </div>
 
           {/* Conversation Thread - Scrollable */}
-          <div ref={conversationRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div ref={conversationRef} className="flex-1 overflow-y-auto p-4 space-y-3">
             {loadingNotes && conversationThread.length === 1 ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 size={24} className="animate-spin text-muted-foreground" />
@@ -319,9 +344,9 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
           </div>
 
           {/* Input Area - Fixed at bottom */}
-          <div className="shrink-0 border-t border-border/30 bg-[hsl(222,28%,6%)]">
+          <div className="shrink-0 border-t border-border/30 bg-[hsl(222,28%,6%)] p-3">
             {/* Mode Toggle */}
-            <div className="px-4 pt-3 pb-2 flex items-center gap-1">
+            <div className="flex items-center gap-1 mb-2">
               <button
                 onClick={() => setInputMode('reply')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
@@ -333,7 +358,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
               >
                 <Mail size={13} />
                 <span>Reply</span>
-                <span className="text-[10px] opacity-60 ml-1">R</span>
+                <span className="text-[10px] opacity-60 ml-0.5">R</span>
               </button>
               <button
                 onClick={() => setInputMode('note')}
@@ -346,52 +371,44 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
               >
                 <PenLine size={13} />
                 <span>Note</span>
-                <span className="text-[10px] opacity-60 ml-1">N</span>
+                <span className="text-[10px] opacity-60 ml-0.5">N</span>
+              </button>
+              
+              <div className="flex-1" />
+              
+              <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
+                <Command size={10} />⌘+Enter to send
+              </span>
+              
+              <button
+                onClick={handleSubmitInput}
+                disabled={submitting || !stripHtml(inputText).trim()}
+                className={`h-7 px-3 flex items-center gap-1.5 rounded text-xs font-medium transition-colors ${
+                  inputMode === 'note'
+                    ? 'bg-amber-400/20 text-amber-400 hover:bg-amber-400/30'
+                    : 'bg-primary/20 text-primary hover:bg-primary/30'
+                } disabled:opacity-40 disabled:cursor-not-allowed`}
+                data-testid="submit-input"
+              >
+                {submitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                <span>Send</span>
               </button>
             </div>
 
-            {/* Auto-expanding Input Box */}
-            <div className="px-4 pb-3">
-              <div className="relative">
-                <textarea
-                  ref={inputRef}
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                      e.preventDefault();
-                      handleSubmitInput();
-                    }
-                  }}
-                  placeholder={inputMode === 'note' ? 'Add an internal note...' : 'Type your reply...'}
-                  className="w-full min-h-[60px] px-3 py-2.5 text-sm rounded-lg bg-secondary/30 border border-border/40 placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 resize-none transition-all overflow-hidden"
-                  style={{ maxHeight: '200px' }}
-                  data-testid="input-textarea"
-                />
-                <div className="absolute bottom-2 right-2 flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
-                    <Command size={10} />⌘+Enter to send
-                  </span>
-                  <button
-                    onClick={handleSubmitInput}
-                    disabled={submitting || !inputText.trim()}
-                    className={`h-7 w-7 flex items-center justify-center rounded transition-colors ${
-                      inputMode === 'note'
-                        ? 'bg-amber-400/20 text-amber-400 hover:bg-amber-400/30'
-                        : 'bg-primary/20 text-primary hover:bg-primary/30'
-                    } disabled:opacity-40 disabled:cursor-not-allowed`}
-                    data-testid="submit-input"
-                  >
-                    {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                  </button>
-                </div>
-              </div>
-            </div>
+            {/* Rich Text Editor */}
+            <RichTextEditor
+              value={inputText}
+              onChange={setInputText}
+              placeholder={inputMode === 'note' ? 'Add an internal note...' : 'Type your reply...'}
+              mode={inputMode}
+              onSubmit={handleSubmitInput}
+              disabled={submitting}
+            />
           </div>
         </div>
 
         {/* Right Panel - Details (~320px) */}
-        <div className="w-80 bg-[hsl(222,28%,8%)] border-l border-border/30 flex flex-col shrink-0">
+        <div className="w-72 bg-[hsl(222,28%,8%)] border-l border-border/30 flex flex-col shrink-0">
           {/* Tabs */}
           <div className="h-12 px-4 flex items-center gap-4 border-b border-border/30 shrink-0">
             <button className="text-sm font-medium text-foreground relative pb-0.5">
@@ -401,16 +418,16 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
           </div>
 
           {/* Details Content */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-5">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {/* Assignee */}
             <div>
-              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-2 block">
+              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 block">
                 Assignee
               </label>
               <select
                 value={formData.assignee_id || ''}
                 onChange={(e) => setFormData({ ...formData, assignee_id: e.target.value || null })}
-                className="w-full h-9 px-3 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
                 data-testid="drawer-assignee-select"
               >
                 <option value="">Unassigned</option>
@@ -419,11 +436,11 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                 ))}
               </select>
               {assignee && (
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 flex items-center justify-center text-[10px] font-medium">
+                <div className="flex items-center gap-2 mt-1.5">
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 flex items-center justify-center text-[9px] font-medium">
                     {assignee.name?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-sm">{assignee.name}</span>
+                  <span className="text-xs">{assignee.name}</span>
                 </div>
               )}
             </div>
@@ -431,44 +448,44 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
             {/* Status - Only show if assigned */}
             {formData.assignee_id && (
               <div>
-                <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-2 block">
+                <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 block">
                   Status
                 </label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full h-9 px-3 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
                   data-testid="drawer-status-select"
                 >
                   {STATUSES.map(status => (
                     <option key={status.value} value={status.value}>{status.label}</option>
                   ))}
                 </select>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${statusConfig.color}`} />
-                  <span className="text-sm">{statusConfig.label}</span>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
+                  <span className="text-xs">{statusConfig.label}</span>
                 </div>
               </div>
             )}
 
             {/* Priority */}
             <div>
-              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-2 block">
+              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 block">
                 Priority
               </label>
               <select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                className="w-full h-9 px-3 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
                 data-testid="drawer-priority-select"
               >
                 {PRIORITIES.map(priority => (
                   <option key={priority.value} value={priority.value}>{priority.label}</option>
                 ))}
               </select>
-              <div className="flex items-center gap-2 mt-2">
-                <AlertCircle size={14} className={priorityConfig.color} />
-                <span className={`text-sm ${priorityConfig.color}`}>{priorityConfig.label}</span>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <AlertCircle size={12} className={priorityConfig.color} />
+                <span className={`text-xs ${priorityConfig.color}`}>{priorityConfig.label}</span>
               </div>
             </div>
 
@@ -482,25 +499,25 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                 className="w-full flex items-center justify-between py-1 group"
               >
                 <div className="flex items-center gap-2">
-                  <Link2 size={13} className="text-muted-foreground" />
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Links</span>
+                  <Link2 size={12} className="text-muted-foreground" />
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Links</span>
                 </div>
                 {sectionsExpanded.links ? (
-                  <ChevronDown size={13} className="text-muted-foreground" />
+                  <ChevronDown size={12} className="text-muted-foreground" />
                 ) : (
-                  <ChevronRight size={13} className="text-muted-foreground" />
+                  <ChevronRight size={12} className="text-muted-foreground" />
                 )}
               </button>
               
               {sectionsExpanded.links && (
-                <div className="mt-2 space-y-1">
-                  <div className="flex items-center justify-between py-1.5 pl-5 text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                <div className="mt-1.5 space-y-1">
+                  <div className="flex items-center justify-between py-1 pl-4 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
                     <span>Related tickets</span>
-                    <span className="text-primary text-xs">+ Add</span>
+                    <span className="text-primary text-[10px]">+ Add</span>
                   </div>
-                  <div className="flex items-center justify-between py-1.5 pl-5 text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                  <div className="flex items-center justify-between py-1 pl-4 text-xs text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
                     <span>External links</span>
-                    <span className="text-primary text-xs">+ Add</span>
+                    <span className="text-primary text-[10px]">+ Add</span>
                   </div>
                 </div>
               )}
@@ -516,21 +533,21 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                 className="w-full flex items-center justify-between py-1 group"
               >
                 <div className="flex items-center gap-2">
-                  <Sparkles size={13} className="text-muted-foreground" />
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Attributes</span>
+                  <Sparkles size={12} className="text-muted-foreground" />
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Attributes</span>
                 </div>
                 {sectionsExpanded.attributes ? (
-                  <ChevronDown size={13} className="text-muted-foreground" />
+                  <ChevronDown size={12} className="text-muted-foreground" />
                 ) : (
-                  <ChevronRight size={13} className="text-muted-foreground" />
+                  <ChevronRight size={12} className="text-muted-foreground" />
                 )}
               </button>
               
               {sectionsExpanded.attributes && (
-                <div className="mt-2 space-y-2.5 text-sm">
+                <div className="mt-1.5 space-y-2 text-xs">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">ID</span>
-                    <span className="font-mono text-foreground/80 text-xs">
+                    <span className="font-mono text-foreground/80 text-[10px]">
                       {ticket.ticket_id || ticket.id?.slice(-12)}
                     </span>
                   </div>
@@ -541,7 +558,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                   {ticket.customer_email && (
                     <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Customer</span>
-                      <span className="text-foreground/80 text-xs truncate max-w-[150px]">{ticket.customer_email}</span>
+                      <span className="text-foreground/80 text-[10px] truncate max-w-[120px]">{ticket.customer_email}</span>
                     </div>
                   )}
                   {ticket.domain && (
@@ -552,16 +569,16 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                   )}
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Created</span>
-                    <span className="text-foreground/80 text-xs">
+                    <span className="text-foreground/80 text-[10px]">
                       {new Date(ticket.created_at).toLocaleDateString()}
                     </span>
                   </div>
                   {ticket.tags && ticket.tags.length > 0 && (
                     <div className="flex items-start justify-between">
                       <span className="text-muted-foreground">Tags</span>
-                      <div className="flex flex-wrap gap-1 justify-end max-w-[140px]">
+                      <div className="flex flex-wrap gap-1 justify-end max-w-[100px]">
                         {ticket.tags.map((tag, i) => (
-                          <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary">
+                          <span key={i} className="text-[9px] px-1 py-0.5 rounded bg-primary/20 text-primary">
                             {tag}
                           </span>
                         ))}
@@ -574,41 +591,41 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
           </div>
 
           {/* Footer Actions */}
-          <div className="shrink-0 px-4 py-3 border-t border-border/30 bg-[hsl(222,28%,6%)]">
+          <div className="shrink-0 px-3 py-2.5 border-t border-border/30 bg-[hsl(222,28%,6%)]">
             {!showDeleteConfirm ? (
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="h-8 px-3 flex items-center gap-1.5 text-xs text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                  className="h-7 px-2 flex items-center gap-1 text-[11px] text-destructive hover:bg-destructive/10 rounded transition-colors"
                   data-testid="drawer-delete-button"
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={12} />
                   <span>Delete</span>
                 </button>
                 <button
                   onClick={handleSave}
-                  className="flex-1 h-8 px-3 flex items-center justify-center gap-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+                  className="flex-1 h-7 px-2 flex items-center justify-center gap-1 text-[11px] font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
                   data-testid="drawer-save-button"
                 >
-                  <Save size={13} />
-                  <span>Save Changes</span>
+                  <Save size={12} />
+                  <span>Save</span>
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 h-8 px-3 text-xs border border-border/40 rounded-md hover:bg-white/5 transition-colors"
+                  className="flex-1 h-7 px-2 text-[11px] border border-border/40 rounded hover:bg-white/5 transition-colors"
                   data-testid="drawer-delete-cancel-button"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="flex-1 h-8 px-3 text-xs font-medium bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
+                  className="flex-1 h-7 px-2 text-[11px] font-medium bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 transition-colors"
                   data-testid="drawer-delete-confirm-button"
                 >
-                  Confirm Delete
+                  Delete
                 </button>
               </div>
             )}
