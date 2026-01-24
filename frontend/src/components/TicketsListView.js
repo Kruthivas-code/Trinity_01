@@ -1,9 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { toast } from 'sonner';
 import { Clock, User as UserIcon } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const ITEMS_PER_PAGE = 50;
+
+// Strip HTML tags for display
+const stripHtml = (html) => {
+  if (!html) return '';
+  let text = html.replace(/<[^>]*>/g, ' ');
+  text = text.replace(/&nbsp;/g, ' ')
+             .replace(/&amp;/g, '&')
+             .replace(/&lt;/g, '<')
+             .replace(/&gt;/g, '>')
+             .replace(/&quot;/g, '"')
+             .replace(/&#39;/g, "'");
+  return text.replace(/\s+/g, ' ').trim();
+};
 
 const getPriorityColor = (priority) => {
   switch (priority) {
