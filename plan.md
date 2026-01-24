@@ -1,10 +1,10 @@
 # TickFlow - Development Plan
 
-## Current Status: Phase 1 In Progress
+## Current Status: Phase 2 Frontend Implementation
 
 ---
 
-## Phase 1: Foundation & Stabilization ✅ MOSTLY COMPLETE
+## Phase 1: Foundation & Stabilization ✅ COMPLETE
 
 ### Completed
 - [x] Sequential ticket IDs (TKT-000001 format)
@@ -17,23 +17,32 @@
 - [x] Email simulator endpoint
 - [x] Updated Pydantic models with new fields
 - [x] Migrated existing tickets with tags/source fields
-
-### Pending
-- [ ] Rate limiting middleware
-- [ ] OpenAPI documentation improvements
-- [ ] Full testing checkpoint
+- [x] Full end-to-end testing (17 test steps passed)
 
 ---
 
 ## Phase 2: Team Structure & Basic Routing
-**Status: NOT STARTED**
+**Status: BACKEND COMPLETE, FRONTEND IN PROGRESS**
 
-Key deliverables:
-- Team CRUD (L1, L2 teams)
-- User-to-team assignment
-- Team inbox view
-- Round-robin assignment
-- Internal notes on tickets
+### Backend ✅ Complete
+- [x] Team CRUD (L1, L2, Specialist types)
+- [x] User-to-team assignment (add/remove members)
+- [x] Team inbox view endpoint
+- [x] Round-robin ticket assignment
+- [x] Internal notes on tickets (create/list)
+
+### Frontend - In Progress
+- [x] TeamsPage.js - Full implementation with:
+  - Create team modal
+  - Team cards with member list
+  - Add/remove members
+  - Delete teams
+- [x] Internal Notes in TicketDrawer - Added:
+  - Collapsible notes section
+  - Add note form with Enter key support
+  - Notes list with author and timestamp
+  - Loading states
+- [ ] Testing the new UI features
 
 ---
 
@@ -66,21 +75,31 @@ curl -H "X-API-Key: tk_live_xxxxx" https://tixmaster.preview.emergentagent.com/a
 - `domain`: extracted from customer_email
 - `customer_email`: original email address
 
+### Team Endpoints
+- `GET /api/teams` - List all teams
+- `POST /api/teams` - Create team
+- `DELETE /api/teams/{team_id}` - Delete team
+- `POST /api/teams/{team_id}/members` - Add member
+- `DELETE /api/teams/{team_id}/members/{user_id}` - Remove member
+- `GET /api/teams/{team_id}/inbox` - Team's assigned tickets
+- `POST /api/teams/{team_id}/assign-ticket` - Round-robin assign
+
+### Internal Notes Endpoints
+- `POST /api/tickets/{ticket_id}/notes` - Add internal note
+- `GET /api/tickets/{ticket_id}/notes` - Get ticket notes
+
 ---
 
-## Files Modified (Phase 1)
+## Files Modified (Phase 2)
 
 ### Backend
-- `/app/backend/server.py` - API keys, new ticket fields, utilities
+- `/app/backend/server.py` - Team CRUD, member management, notes, round-robin
 
 ### Frontend
-- `/app/frontend/src/components/SettingsPage.js` - API keys management UI
-
-### Data
-- `/app/PRD.md` - Full product requirements
-- `/app/PRD_SUMMARY.md` - Condensed PRD
-- `/app/IMPLEMENTATION_PLAN.md` - Detailed implementation plan
-- `/app/plan.md` - This file
+- `/app/frontend/src/components/TeamsPage.js` - New team management page
+- `/app/frontend/src/components/TicketDrawer.js` - Added internal notes UI
+- `/app/frontend/src/components/Sidebar.js` - Added Teams nav link
+- `/app/frontend/src/App.js` - Added /teams route
 
 ---
 
