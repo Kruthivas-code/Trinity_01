@@ -70,7 +70,7 @@ const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick 
       const data = await response.json();
       setUsers(data);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Failed to fetch users:', error);
     }
   };
 
