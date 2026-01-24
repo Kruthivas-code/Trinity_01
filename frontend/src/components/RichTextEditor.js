@@ -1,0 +1,162 @@
+import React, { useRef, useEffect, useCallback } from 'react';
+import { 
+  Bold, Italic, Underline, List, ListOrdered, 
+  Link2, Quote, Code, Minus
+} from 'lucide-react';
+
+const RichTextEditor = ({ 
+  value, 
+  onChange, 
+  placeholder = 'Type here...', 
+  mode = 'note',
+  onSubmit,
+  disabled = false 
+}) => {
+  const editorRef = useRef(null);
+  const isInitialMount = useRef(true);
+
+  // Initialize editor content
+  useEffect(() => {
+    if (editorRef.current && isInitialMount.current) {
+      editorRef.current.innerHTML = value || '';
+      isInitialMount.current = false;
+    }
+  }, []);
+
+  // Sync external value changes (e.g., clearing after submit)
+  useEffect(() => {
+    if (editorRef.current && value === '' && !isInitialMount.current) {
+      editorRef.current.innerHTML = '';
+    }
+  }, [value]);
+
+  const handleInput = useCallback(() => {
+    if (editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      // Convert <div> to <br> for cleaner output
+      const cleanHtml = html === '<br>' ? '' : html;
+      onChange(cleanHtml);
+    }
+  }, [onChange]);
+
+  const execCommand = useCallback((command, value = null) => {
+    document.execCommand(command, false, value);
+    editorRef.current?.focus();
+    handleInput();
+  }, [handleInput]);
+
+  const handleKeyDown = useCallback((e) => {
+    // Submit on Cmd/Ctrl + Enter
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      onSubmit?.();
+    }
+  }, [onSubmit]);
+
+  const insertLink = useCallback(() => {
+    const url = window.prompt('Enter URL:');
+    if (url) {
+      execCommand('createLink', url);
+    }
+  }, [execCommand]);
+
+  const ToolbarButton = ({ onClick, active, children, title }) => (
+    <button
+      type="button"
+      onMouseDown={(e) => {
+        e.preventDefault(); // Prevent focus loss
+        onClick();
+      }}
+      className={`h-7 w-7 flex items-center justify-center rounded transition-colors ${
+        active 
+          ? 'bg-primary/20 text-primary' 
+          : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+      }`}
+      title={title}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+
+  const modeColor = mode === 'note' ? 'amber-400' : 'primary';
+
+  return (
+    <div className={`rounded-lg border transition-all ${
+      disabled ? 'opacity-50' : ''
+    } ${
+      mode === 'note' 
+        ? 'border-amber-400/30 focus-within:border-amber-400/50 focus-within:ring-1 focus-within:ring-amber-400/30' 
+        : 'border-border/40 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/30'
+    }`}>
+      {/* Toolbar */}
+      <div className="flex items-center gap-0.5 px-2 py-1.5 border-b border-border/30 bg-secondary/20 rounded-t-lg">
+        <ToolbarButton onClick={() => execCommand('bold')} title="Bold (⌘B)">
+          <Bold size={14} />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => execCommand('italic')} title="Italic (⌘I)">
+          <Italic size={14} />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => execCommand('underline')} title="Underline (⌘U)">
+          <Underline size={14} />
+        </ToolbarButton>
+        
+        <div className="w-px h-4 bg-border/40 mx-1" />
+        
+        <ToolbarButton onClick={() => execCommand('insertUnorderedList')} title="Bullet list">
+          <List size={14} />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => execCommand('insertOrderedList')} title="Numbered list">
+          <ListOrdered size={14} />
+        </ToolbarButton>
+        
+        <div className="w-px h-4 bg-border/40 mx-1" />
+        
+        <ToolbarButton onClick={() => execCommand('formatBlock', 'blockquote')} title="Quote">
+          <Quote size={14} />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => execCommand('formatBlock', 'pre')} title="Code block">
+          <Code size={14} />
+        </ToolbarButton>
+        <ToolbarButton onClick={insertLink} title="Insert link">
+          <Link2 size={14} />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => execCommand('insertHorizontalRule')} title="Divider">
+          <Minus size={14} />
+        </ToolbarButton>
+      </div>
+
+      {/* Editor Area */}
+      <div
+        ref={editorRef}
+        contentEditable={!disabled}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        className="min-h-[80px] max-h-[200px] overflow-y-auto px-3 py-2.5 text-sm outline-none bg-secondary/10 rounded-b-lg prose prose-sm prose-invert max-w-none
+          [&_blockquote]:border-l-2 [&_blockquote]:border-primary/50 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-muted-foreground
+          [&_pre]:bg-black/30 [&_pre]:rounded [&_pre]:p-2 [&_pre]:text-xs [&_pre]:font-mono
+          [&_a]:text-primary [&_a]:underline
+          [&_ul]:list-disc [&_ul]:pl-4
+          [&_ol]:list-decimal [&_ol]:pl-4
+          [&_hr]:border-border/40 [&_hr]:my-2"
+        data-placeholder={placeholder}
+        style={{
+          minHeight: '80px'
+        }}
+        data-testid="rich-text-editor"
+        suppressContentEditableWarning
+      />
+
+      {/* Empty state placeholder */}
+      <style>{`
+        [data-testid="rich-text-editor"]:empty:before {
+          content: attr(data-placeholder);
+          color: hsl(var(--muted-foreground) / 0.4);
+          pointer-events: none;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default RichTextEditor;
