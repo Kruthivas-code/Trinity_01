@@ -71,11 +71,11 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
     if (hasHtml) {
       return (
         <div 
-          className="prose prose-sm prose-invert max-w-none
+          className="prose prose-sm dark:prose-invert max-w-none
             [&_a]:text-primary [&_a]:underline
             [&_blockquote]:border-l-2 [&_blockquote]:border-primary/30 [&_blockquote]:pl-3 [&_blockquote]:italic
-            [&_pre]:bg-black/30 [&_pre]:rounded [&_pre]:p-2 [&_pre]:text-xs [&_pre]:overflow-x-auto
-            [&_code]:bg-black/30 [&_code]:rounded [&_code]:px-1 [&_code]:text-xs
+            [&_pre]:bg-secondary/50 [&_pre]:rounded [&_pre]:p-2 [&_pre]:text-xs [&_pre]:overflow-x-auto
+            [&_code]:bg-secondary/50 [&_code]:rounded [&_code]:px-1 [&_code]:text-xs
             [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:my-1
             [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:my-1
             [&_p]:my-1 [&_br]:my-0.5
