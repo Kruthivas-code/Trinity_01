@@ -597,8 +597,18 @@ async def update_preferences(
 
 @app.get("/api/users")
 async def get_users(current_user: dict = Depends(get_current_user)):
-    users = list(users_collection.find({}, {"_id": 0}))
-    return [serialize_doc(user) for user in users]
+    users = list(users_collection.find({}, {"password": 0}))  # Exclude password, but keep _id for now
+    result = []
+    for user in users:
+        serialized = serialize_doc(user)
+        # Ensure id is set from user_id or _id
+        if "id" not in serialized:
+            if "user_id" in user:
+                serialized["id"] = user["user_id"]
+            elif "_id" in user:
+                serialized["id"] = str(user["_id"])
+        result.append(serialized)
+    return result
 
 # ==================== Phase 2: Team Management ====================
 
