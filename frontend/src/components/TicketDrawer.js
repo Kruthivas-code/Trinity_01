@@ -347,9 +347,9 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
         data-testid="ticket-drawer"
       >
         {/* Left Panel - Conversation */}
-        <div className="flex-1 bg-[hsl(222,28%,7%)] border-l border-border/40 flex flex-col min-w-0">
+        <div className="flex-1 bg-card border-l border-border/40 flex flex-col min-w-0">
           {/* Header */}
-          <div className="h-12 px-4 flex items-center justify-between border-b border-border/30 shrink-0">
+          <div className="h-12 px-4 flex items-center justify-between border-b border-border/30 shrink-0 bg-background/50">
             <div className="flex items-center gap-2 min-w-0">
               <Mail size={15} className="text-primary shrink-0" />
               <span className="text-sm font-medium truncate">{ticket.title}</span>
@@ -358,15 +358,15 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
               </span>
             </div>
             <div className="flex items-center gap-0.5 shrink-0">
-              <button className="h-7 w-7 flex items-center justify-center rounded hover:bg-white/5 transition-colors" title="Star">
+              <button className="h-7 w-7 flex items-center justify-center rounded hover:bg-secondary/50 transition-colors" title="Star">
                 <Star size={14} className="text-muted-foreground" />
               </button>
-              <button className="h-7 w-7 flex items-center justify-center rounded hover:bg-white/5 transition-colors" title="More">
+              <button className="h-7 w-7 flex items-center justify-center rounded hover:bg-secondary/50 transition-colors" title="More">
                 <MoreHorizontal size={14} className="text-muted-foreground" />
               </button>
               <button
                 onClick={onClose}
-                className="h-7 w-7 flex items-center justify-center rounded hover:bg-white/5 transition-colors ml-1"
+                className="h-7 w-7 flex items-center justify-center rounded hover:bg-secondary/50 transition-colors ml-1"
                 data-testid="drawer-close-button"
                 title="Close"
               >
@@ -460,7 +460,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
           </div>
 
           {/* Input Area - Fixed at bottom */}
-          <div className="shrink-0 border-t border-border/30 bg-[hsl(222,28%,6%)] p-3">
+          <div className="shrink-0 border-t border-border/30 bg-background p-3">
             {/* Mode Toggle */}
             <div className="flex items-center gap-1 mb-2">
               <button
@@ -468,7 +468,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
                   inputMode === 'reply' 
                     ? 'bg-primary/20 text-primary' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
                 }`}
                 data-testid="mode-reply"
               >
@@ -481,7 +481,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
                   inputMode === 'note' 
                     ? 'bg-amber-400/20 text-amber-400' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
                 }`}
                 data-testid="mode-note"
               >
@@ -524,7 +524,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
         </div>
 
         {/* Right Panel - Details (~320px) */}
-        <div className="w-72 bg-[hsl(222,28%,8%)] border-l border-border/30 flex flex-col shrink-0">
+        <div className="w-72 bg-card border-l border-border/30 flex flex-col shrink-0">
           {/* Tabs */}
           <div className="h-12 px-4 flex items-center gap-4 border-b border-border/30 shrink-0">
             <button className="text-sm font-medium text-foreground relative pb-0.5">
@@ -707,7 +707,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
           </div>
 
           {/* Footer Actions */}
-          <div className="shrink-0 px-3 py-2.5 border-t border-border/30 bg-[hsl(222,28%,6%)]">
+          <div className="shrink-0 px-3 py-2.5 border-t border-border/30 bg-background">
             {!showDeleteConfirm ? (
               <div className="flex items-center gap-2">
                 <button
@@ -731,7 +731,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 h-7 px-2 text-[11px] border border-border/40 rounded hover:bg-white/5 transition-colors"
+                  className="flex-1 h-7 px-2 text-[11px] border border-border/40 rounded hover:bg-secondary/50 transition-colors"
                   data-testid="drawer-delete-cancel-button"
                 >
                   Cancel
