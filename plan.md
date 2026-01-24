@@ -36,11 +36,15 @@
   - Team cards with member list
   - Add/remove members
   - Delete teams
-- [x] Internal Notes in TicketDrawer:
-  - Collapsible notes section with amber/gold styling
-  - Add note form with Enter key support
-  - Notes list with author and timestamp
-  - Loading states and empty state
+- [x] **NEW 2-Panel Ticket Drawer** (inspired by Intercom/Pylon):
+  - **Left Panel**: Title/description editing, Internal Notes section
+  - **Right Panel**: Details tab with Assignee, Status, Priority, Links, Ticket Attributes
+  - Collapsible sections with smooth animations
+  - Status indicators with colored dots
+  - Priority indicators with icons
+  - Ticket metadata (ID, Source, Domain, Created, Updated, CX Score)
+  - Note author avatars and timestamps
+  - Clean dark theme matching design guidelines
 - [x] Testing endpoint for automation (`/api/auth/test-login`)
 - [x] Full screenshot testing passed
 
