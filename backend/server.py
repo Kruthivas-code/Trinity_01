@@ -238,6 +238,9 @@ class TicketCreate(BaseModel):
     status: str = "todo"
     assignee_id: Optional[str] = None
     priority: Optional[str] = "medium"
+    tags: Optional[List[str]] = []
+    customer_email: Optional[str] = None
+    source: Optional[str] = "manual"  # manual, email, api, simulator
 
 class TicketUpdate(BaseModel):
     title: Optional[str] = None
@@ -245,6 +248,7 @@ class TicketUpdate(BaseModel):
     status: Optional[str] = None
     assignee_id: Optional[str] = None
     priority: Optional[str] = None
+    tags: Optional[List[str]] = None
 
 class TicketReorder(BaseModel):
     ticket_id: str
@@ -254,10 +258,21 @@ class TicketReorder(BaseModel):
 class UserPreferences(BaseModel):
     theme: Optional[str] = "dark"
 
+class APIKeyCreate(BaseModel):
+    name: str
+    description: Optional[str] = ""
+
+class APIKeyResponse(BaseModel):
+    key_id: str
+    name: str
+    key: Optional[str] = None  # Only returned on creation
+    created_at: str
+    last_used_at: Optional[str] = None
+
 # Routes
 @app.get("/api/health")
 async def health():
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat(), "version": "1.0.0"}
 
 # Emergent Auth endpoints
 @app.post("/api/auth/session")
