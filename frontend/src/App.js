@@ -10,7 +10,6 @@ import ProfilePage from './components/ProfilePage';
 import SettingsPage from './components/SettingsPage';
 import EmailsPage from './components/EmailsPage';
 import TeamsPage from './components/TeamsPage';
-import { Toaster } from 'sonner';
 
 function AppRouter() {
   const location = useLocation();
