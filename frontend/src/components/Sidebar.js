@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Menu, X, Mail, LogOut } from 'lucide-react';
+import { LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Menu, X, Mail, LogOut, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -22,6 +22,7 @@ const Sidebar = ({ user }) => {
   ];
 
   const otherItems = [
+    { id: 'teams', label: 'Teams', icon: Users, path: '/teams' },
     { id: 'emails', label: 'Emails', icon: Mail, path: '/emails' },
     { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
