@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Sun, Moon, Mail, CheckCircle, XCircle, Loader2, RefreshCw, ExternalLink, LogOut } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Mail, CheckCircle, XCircle, Loader2, RefreshCw, ExternalLink, LogOut, Key, Copy, Trash2, Plus } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { toast } from 'sonner';
@@ -15,16 +15,24 @@ const SettingsPage = ({ user }) => {
   const [gmailStatus, setGmailStatus] = useState({
     connected: false,
     watch_email: null,
-    configured: true, // Default to true - credentials are set in backend
+    configured: true,
     loading: true
   });
   const [connecting, setConnecting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState([]);
+  const [loadingKeys, setLoadingKeys] = useState(true);
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [showNewKey, setShowNewKey] = useState(null);
 
   useEffect(() => {
     if (user) {
       fetchGmailStatus();
+      fetchApiKeys();
     }
     
     // Check URL params for OAuth callback result
