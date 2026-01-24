@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Response, Request, Cookie
+from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Response, Request, Cookie, Header, Security
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta, timezone
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from bson import ObjectId
@@ -14,9 +15,12 @@ import uuid
 import httpx
 import base64
 import re
+import secrets
+import hashlib
 from email.utils import parseaddr
 from html import unescape
 from dotenv import load_dotenv
+from functools import wraps
 
 # Load environment variables from .env file
 load_dotenv()
@@ -26,7 +30,11 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
-app = FastAPI()
+app = FastAPI(
+    title="TickFlow API",
+    description="Enterprise ticket management platform",
+    version="1.0.0"
+)
 
 # CORS
 app.add_middleware(
@@ -44,6 +52,8 @@ db = client.tickflow
 users_collection = db.users
 tickets_collection = db.tickets
 sessions_collection = db.user_sessions
+api_keys_collection = db.api_keys
+counters_collection = db.counters
 
 # Emergent Auth Configuration
 EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
@@ -68,6 +78,60 @@ GMAIL_SCOPES = [
 # Gmail tokens collection
 gmail_tokens_collection = db.gmail_tokens
 email_threads_collection = db.email_threads
+
+# API Key Security
+API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+# ==================== Utility Functions ====================
+
+def generate_ticket_id() -> str:
+    """Generate sequential ticket ID (TKT-000001 format)"""
+    counter = counters_collection.find_one_and_update(
+        {"_id": "ticket_id"},
+        {"$inc": {"seq": 1}},
+        upsert=True,
+        return_document=True
+    )
+    return f"TKT-{counter['seq']:06d}"
+
+def extract_domain(email: str) -> Optional[str]:
+    """Extract domain from email address"""
+    if not email:
+        return None
+    try:
+        # Handle "Name <email@domain.com>" format
+        _, addr = parseaddr(email)
+        if '@' in addr:
+            return addr.split('@')[1].lower()
+    except:
+        pass
+    return None
+
+def generate_api_key() -> tuple:
+    """Generate API key and its hash"""
+    # Generate a secure random key
+    key = f"tk_live_{secrets.token_urlsafe(32)}"
+    # Hash for storage
+    key_hash = hashlib.sha256(key.encode()).hexdigest()
+    return key, key_hash
+
+def verify_api_key(key: str) -> Optional[dict]:
+    """Verify API key and return associated data"""
+    if not key:
+        return None
+    key_hash = hashlib.sha256(key.encode()).hexdigest()
+    api_key_doc = api_keys_collection.find_one({
+        "key_hash": key_hash,
+        "revoked": {"$ne": True}
+    })
+    if api_key_doc:
+        # Update last used
+        api_keys_collection.update_one(
+            {"_id": api_key_doc["_id"]},
+            {"$set": {"last_used_at": datetime.now(timezone.utc)}, "$inc": {"usage_count": 1}}
+        )
+        return api_key_doc
+    return None
 
 # Helper functions
 def serialize_doc(doc):
