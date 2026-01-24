@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Menu, X, Mail, LogOut, Users } from 'lucide-react';
-import { toast } from 'sonner';
+import { LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Menu, X, Mail, LogOut, Users, Shield } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -26,6 +25,7 @@ const Sidebar = ({ user }) => {
     { id: 'emails', label: 'Emails', icon: Mail, path: '/emails' },
     { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
+    { id: 'admin', label: 'Admin', icon: Shield, path: '/admin' },
   ];
 
   // Close collapsed menu when clicking outside
