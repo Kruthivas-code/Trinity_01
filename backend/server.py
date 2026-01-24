@@ -83,6 +83,10 @@ email_threads_collection = db.email_threads
 teams_collection = db.teams
 messages_collection = db.messages  # For internal notes and replies
 
+# Phase 3: Admin settings collections
+custom_fields_collection = db.custom_fields  # Custom fields for tickets/users
+admin_settings_collection = db.admin_settings  # General admin settings
+
 # API Key Security
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
 
