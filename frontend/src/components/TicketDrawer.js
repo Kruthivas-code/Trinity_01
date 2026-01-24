@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Save, Trash2, Send, ChevronDown, ChevronRight,
   Loader2, Star, MoreHorizontal, Mail, AlertCircle, 
-  Sparkles, PenLine, Command, Link2
+  Sparkles, PenLine, Command, Link2, Settings
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 
