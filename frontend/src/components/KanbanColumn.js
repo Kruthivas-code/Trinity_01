@@ -17,7 +17,7 @@ const KanbanColumn = ({ column, tickets, users, onTicketClick, onCreateTicket, s
   return (
     <div
       ref={setNodeRef}
-      className={`glass min-w-[320px] md:min-w-[360px] lg:min-w-[380px] rounded-xl border border-border/60 flex flex-col animate-fade-in-up stagger-${staggerIndex}`}
+      className={`glass w-72 min-w-[288px] max-w-[288px] rounded-xl border border-border/60 flex flex-col animate-fade-in-up stagger-${staggerIndex}`}
       data-testid={`kanban-column-${column.id}`}
     >
       {/* Column Header */}
