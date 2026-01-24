@@ -151,10 +151,15 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
   const [loadingRelated, setLoadingRelated] = useState(false);
   const [relatedExpanded, setRelatedExpanded] = useState(false);
   
+  // Custom fields
+  const [customFields, setCustomFields] = useState([]);
+  const [customFieldValues, setCustomFieldValues] = useState({});
+  
   // Collapsible sections
   const [sectionsExpanded, setSectionsExpanded] = useState({
     links: false,
-    attributes: true
+    attributes: true,
+    customFields: true
   });
   
   // Refs
@@ -171,10 +176,26 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
       });
       setShowDeleteConfirm(false);
       setInputText('');
+      setCustomFieldValues(ticket.custom_fields || {});
       fetchNotes(ticket.id);
       fetchRelatedTickets(ticket.id);
+      fetchCustomFields();
     }
   }, [ticket]);
+
+  const fetchCustomFields = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/custom-fields?entity_type=ticket`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCustomFields(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch custom fields:', error);
+    }
+  };
 
   const fetchRelatedTickets = async (ticketId) => {
     setLoadingRelated(true);
