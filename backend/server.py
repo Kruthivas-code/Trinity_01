@@ -79,6 +79,10 @@ GMAIL_SCOPES = [
 gmail_tokens_collection = db.gmail_tokens
 email_threads_collection = db.email_threads
 
+# Phase 2: Team & Notes collections
+teams_collection = db.teams
+messages_collection = db.messages  # For internal notes and replies
+
 # API Key Security
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
 
