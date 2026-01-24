@@ -19,7 +19,7 @@ const PRIORITIES = [
   { value: 'urgent', label: 'Urgent' }
 ];
 
-const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) => {
+const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete, currentUser }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -28,6 +28,13 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
     priority: 'medium'
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  
+  // Internal notes state
+  const [notes, setNotes] = useState([]);
+  const [newNote, setNewNote] = useState('');
+  const [notesExpanded, setNotesExpanded] = useState(true);
+  const [loadingNotes, setLoadingNotes] = useState(false);
+  const [addingNote, setAddingNote] = useState(false);
 
   useEffect(() => {
     if (ticket) {
@@ -39,8 +46,66 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
         priority: ticket.priority || 'medium'
       });
       setShowDeleteConfirm(false); // Reset delete confirmation when opening drawer
+      fetchNotes(ticket.id);
     }
   }, [ticket]);
+
+  const fetchNotes = async (ticketId) => {
+    setLoadingNotes(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}/notes`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotes(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch notes:', error);
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
+  const handleAddNote = async (e) => {
+    e.preventDefault();
+    if (!newNote.trim() || !ticket) return;
+    
+    setAddingNote(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: newNote.trim() })
+      });
+      
+      if (!response.ok) throw new Error('Failed to add note');
+      
+      toast.success('Note added');
+      setNewNote('');
+      fetchNotes(ticket.id);
+    } catch (error) {
+      toast.error('Failed to add note');
+    } finally {
+      setAddingNote(false);
+    }
+  };
+
+  const formatNoteDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
