@@ -87,6 +87,14 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/teams"
+        element={
+          <ProtectedRoute>
+            <TeamsPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
