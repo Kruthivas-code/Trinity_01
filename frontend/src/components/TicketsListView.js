@@ -101,7 +101,7 @@ const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick 
       
       setHasMore(endIdx < filteredTickets.length);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Failed to fetch tickets:', error);
     } finally {
       setLoading(false);
     }
