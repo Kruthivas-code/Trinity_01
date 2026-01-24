@@ -10,21 +10,27 @@ const getPriorityColor = (priority) => {
   }
 };
 
-// Strip HTML tags and decode entities for display
+// Strip HTML tags and CSS for display
 const stripHtml = (html) => {
   if (!html) return '';
+  // Remove style tags and their content
+  let text = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+  // Remove script tags
+  text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
   // Remove HTML tags
-  let text = html.replace(/<[^>]*>/g, ' ');
+  text = text.replace(/<[^>]*>/g, ' ');
+  // Remove CSS properties that might be in text
+  text = text.replace(/[\w-]+\s*:\s*[^;]+;/g, ' ');
   // Decode common HTML entities
   text = text.replace(/&nbsp;/g, ' ')
              .replace(/&amp;/g, '&')
              .replace(/&lt;/g, '<')
              .replace(/&gt;/g, '>')
              .replace(/&quot;/g, '"')
-             .replace(/&#39;/g, "'");
-  // Collapse multiple spaces
-  text = text.replace(/\s+/g, ' ').trim();
-  return text;
+             .replace(/&#39;/g, "'")
+             .replace(/&#\d+;/g, ' ');
+  // Remove multiple spaces and trim
+  return text.replace(/\s+/g, ' ').trim();
 };
 
 const TicketCard = ({ ticket, users, onClick, isDragging }) => {
