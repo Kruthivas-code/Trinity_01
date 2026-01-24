@@ -6,7 +6,6 @@ import OpenTicketsPage from './OpenTicketsPage';
 import WaitingTicketsPage from './WaitingTicketsPage';
 import ClosedTicketsPage from './ClosedTicketsPage';
 import TicketDrawer from './TicketDrawer';
-import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -58,9 +57,9 @@ const MainLayout = ({ user, view }) => {
       const updated = await response.json();
       setSelectedTicket(updated);
       setRefreshKey(prev => prev + 1); // Trigger list refresh
-      toast.success('Ticket updated');
+      // Success
     } catch (error) {
-      toast.error('Failed to update ticket');
+      // Error
     }
   };
 
@@ -75,9 +74,9 @@ const MainLayout = ({ user, view }) => {
       
       handleCloseDrawer();
       setRefreshKey(prev => prev + 1); // Trigger list refresh
-      toast.success('Ticket deleted');
+      // Success
     } catch (error) {
-      toast.error('Failed to delete ticket');
+      // Error
     }
   };
 

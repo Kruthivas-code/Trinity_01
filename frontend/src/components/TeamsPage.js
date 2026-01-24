@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Users, Plus, Trash2, UserPlus, UserMinus, Loader2, Shield, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -53,7 +52,7 @@ const TeamsPage = ({ user }) => {
 
   const handleCreateTeam = async () => {
     if (!newTeam.name.trim()) {
-      toast.error('Please enter a team name');
+      // Error
       return;
     }
     
@@ -68,12 +67,12 @@ const TeamsPage = ({ user }) => {
       
       if (!response.ok) throw new Error('Failed to create team');
       
-      toast.success('Team created!');
+      // Success
       setShowCreateModal(false);
       setNewTeam({ name: '', type: 'l1', description: '' });
       fetchTeams();
     } catch (error) {
-      toast.error('Failed to create team');
+      // Error
     } finally {
       setCreating(false);
     }
@@ -90,10 +89,10 @@ const TeamsPage = ({ user }) => {
       
       if (!response.ok) throw new Error('Failed to delete');
       
-      toast.success('Team deleted');
+      // Success
       fetchTeams();
     } catch (error) {
-      toast.error('Failed to delete team');
+      // Error
     }
   };
 
@@ -108,11 +107,11 @@ const TeamsPage = ({ user }) => {
       
       if (!response.ok) throw new Error('Failed to add member');
       
-      toast.success('Member added');
+      // Success
       setShowAddMemberModal(null);
       fetchTeams();
     } catch (error) {
-      toast.error('Failed to add member');
+      // Error
     }
   };
 
@@ -125,10 +124,10 @@ const TeamsPage = ({ user }) => {
       
       if (!response.ok) throw new Error('Failed to remove member');
       
-      toast.success('Member removed');
+      // Success
       fetchTeams();
     } catch (error) {
-      toast.error('Failed to remove member');
+      // Error
     }
   };
 

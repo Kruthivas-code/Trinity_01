@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Sun, Moon, Mail, CheckCircle, XCircle, Loader2, RefreshCw, ExternalLink, LogOut, Key, Copy, Trash2, Plus } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
-import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -40,11 +39,11 @@ const SettingsPage = ({ user }) => {
     const gmailError = searchParams.get('gmail_error');
     
     if (gmailConnected === 'true') {
-      toast.success('Gmail connected successfully!');
+      // Success
       window.history.replaceState({}, '', '/settings');
       fetchGmailStatus();
     } else if (gmailError) {
-      toast.error(`Gmail connection failed: ${gmailError}`);
+      // Error
       window.history.replaceState({}, '', '/settings');
     }
   }, [searchParams, user]);
@@ -87,7 +86,7 @@ const SettingsPage = ({ user }) => {
       window.location.href = data.authorization_url;
     } catch (error) {
       console.error('Gmail connect error:', error);
-      toast.error(error.message || 'Failed to connect Gmail');
+      // Error
       setConnecting(false);
     }
   };
@@ -100,11 +99,11 @@ const SettingsPage = ({ user }) => {
       });
       
       if (response.ok) {
-        toast.success('Gmail disconnected');
+        // Success
         setGmailStatus(prev => ({ ...prev, connected: false, watch_email: null }));
       }
     } catch (error) {
-      toast.error('Failed to disconnect Gmail');
+      // Error
     }
   };
 
@@ -124,10 +123,10 @@ const SettingsPage = ({ user }) => {
       if (data.created > 0) {
         toast.success(`Created ${data.created} ticket(s) from emails`);
       } else {
-        toast.info('No new emails to process');
+        // Info
       }
     } catch (error) {
-      toast.error('Failed to sync emails');
+      // Error
     } finally {
       setSyncing(false);
     }
@@ -143,7 +142,7 @@ const SettingsPage = ({ user }) => {
       
       localStorage.removeItem('theme');
       
-      toast.success('Logged out successfully');
+      // Success
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
@@ -170,7 +169,7 @@ const SettingsPage = ({ user }) => {
 
   const handleCreateApiKey = async () => {
     if (!newKeyName.trim()) {
-      toast.error('Please enter a name for the API key');
+      // Error
       return;
     }
     
@@ -189,9 +188,9 @@ const SettingsPage = ({ user }) => {
       setShowNewKey(data.key);
       setNewKeyName('');
       fetchApiKeys();
-      toast.success('API key created!');
+      // Success
     } catch (error) {
-      toast.error('Failed to create API key');
+      // Error
     } finally {
       setCreatingKey(false);
     }
@@ -206,16 +205,16 @@ const SettingsPage = ({ user }) => {
       
       if (!response.ok) throw new Error('Failed to revoke');
       
-      toast.success('API key revoked');
+      // Success
       fetchApiKeys();
     } catch (error) {
-      toast.error('Failed to revoke API key');
+      // Error
     }
   };
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard!');
+    // Success
   };
 
   if (!user) {
@@ -239,9 +238,9 @@ const SettingsPage = ({ user }) => {
 
       if (!response.ok) throw new Error('Failed to save preferences');
       
-      toast.success(`Theme changed to ${newTheme} mode`);
+      // Success
     } catch (error) {
-      toast.error('Failed to save theme preference');
+      // Error
     }
   };
 

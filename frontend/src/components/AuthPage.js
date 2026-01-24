@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -34,10 +33,10 @@ const AuthPage = ({ onLogin }) => {
         throw new Error(data.detail || 'Authentication failed');
       }
 
-      toast.success(isLogin ? 'Welcome back!' : 'Account created successfully!');
+      // Success
       onLogin(data.access_token, data.user);
     } catch (error) {
-      toast.error(error.message);
+      // Error
     } finally {
       setLoading(false);
     }

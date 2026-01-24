@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -52,10 +51,10 @@ const AuthCallback = () => {
           state: { user: userData }
         });
         
-        toast.success(`Welcome, ${userData.name}!`);
+        // Success
       } catch (error) {
         console.error('Auth callback error:', error);
-        toast.error(error.message || 'Authentication failed');
+        // Error
         navigate('/login', { replace: true });
       }
     };

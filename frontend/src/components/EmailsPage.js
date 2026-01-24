@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Mail, RefreshCw, Loader2, Ticket, CheckCircle, Clock, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -50,7 +49,7 @@ const EmailsPage = ({ user }) => {
       setEmails(data.emails || []);
     } catch (error) {
       console.error('Error fetching emails:', error);
-      toast.error('Failed to fetch emails');
+      // Error
     }
   };
 
@@ -58,7 +57,7 @@ const EmailsPage = ({ user }) => {
     setRefreshing(true);
     await fetchEmails();
     setRefreshing(false);
-    toast.success('Emails refreshed');
+    // Success
   };
 
   const handleSelectEmail = async (email) => {
@@ -76,7 +75,7 @@ const EmailsPage = ({ user }) => {
       setEmailDetail(detail);
     } catch (error) {
       console.error('Error fetching email detail:', error);
-      toast.error('Failed to load email details');
+      // Error
     } finally {
       setLoadingDetail(false);
     }
@@ -95,11 +94,11 @@ const EmailsPage = ({ user }) => {
       if (!response.ok) throw new Error('Failed to create ticket');
       
       const ticket = await response.json();
-      toast.success(`Ticket created: ${ticket.title}`);
+      // Success
       navigate('/dashboard');
     } catch (error) {
       console.error('Error creating ticket:', error);
-      toast.error('Failed to create ticket');
+      // Error
     } finally {
       setCreatingTicket(false);
     }
