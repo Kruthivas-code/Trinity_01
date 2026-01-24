@@ -280,9 +280,94 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete, curr
                 </div>
                 <div className="flex justify-between">
                   <span>ID:</span>
-                  <span>#{ticket.id?.slice(-8) || 'N/A'}</span>
+                  <span className="font-mono">{ticket.ticket_id || `#${ticket.id?.slice(-8)}`}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Internal Notes Section */}
+            <div className="pt-4 border-t border-border/40" data-testid="internal-notes-section">
+              <button
+                type="button"
+                onClick={() => setNotesExpanded(!notesExpanded)}
+                className="w-full flex items-center justify-between py-2 text-sm font-medium hover:text-primary transition-interactive"
+              >
+                <div className="flex items-center gap-2">
+                  <StickyNote size={16} className="text-amber-400" />
+                  <span>Internal Notes</span>
+                  {notes.length > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-xs bg-amber-400/20 text-amber-400">
+                      {notes.length}
+                    </span>
+                  )}
+                </div>
+                {notesExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+              
+              {notesExpanded && (
+                <div className="mt-3 space-y-3">
+                  {/* Add Note Form */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleAddNote(e);
+                        }
+                      }}
+                      placeholder="Add internal note..."
+                      className="flex-1 h-9 px-3 rounded-lg bg-secondary/70 border border-white/10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-interactive"
+                      data-testid="note-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddNote}
+                      disabled={addingNote || !newNote.trim()}
+                      className="h-9 w-9 flex items-center justify-center rounded-lg bg-amber-400/20 text-amber-400 hover:bg-amber-400/30 disabled:opacity-50 disabled:cursor-not-allowed transition-interactive"
+                      data-testid="add-note-button"
+                    >
+                      {addingNote ? <Loader2 size={16} className="animate-spin" /> : <Send size={14} />}
+                    </button>
+                  </div>
+
+                  {/* Notes List */}
+                  {loadingNotes ? (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 size={20} className="animate-spin text-muted-foreground" />
+                    </div>
+                  ) : notes.length > 0 ? (
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {notes.map((note) => (
+                        <div
+                          key={note.message_id || note._id}
+                          className="p-3 rounded-lg bg-amber-400/5 border border-amber-400/10"
+                          data-testid={`note-${note.message_id}`}
+                        >
+                          <p className="text-sm text-foreground whitespace-pre-wrap">{note.content}</p>
+                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <User size={12} />
+                              <span>{note.author_name || 'Unknown'}</span>
+                            </div>
+                            <span>•</span>
+                            <div className="flex items-center gap-1">
+                              <Clock size={12} />
+                              <span>{formatNoteDate(note.created_at)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-3">
+                      No internal notes yet
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -301,7 +386,6 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete, curr
 
         {/* Delete Section - Outside Form */}
         <div className="px-6 py-4 border-t border-border/40">
-          {console.log('Rendering delete section, showDeleteConfirm:', showDeleteConfirm)}
           {!showDeleteConfirm ? (
             <button
               type="button"
