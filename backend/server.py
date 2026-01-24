@@ -452,7 +452,12 @@ async def create_ticket(
     )
     next_order = (max_order_ticket["order"] + 1) if max_order_ticket and "order" in max_order_ticket else 0
     
-    ticket_id = f"ticket_{uuid.uuid4().hex[:12]}"
+    # Generate sequential ticket ID
+    ticket_id = generate_ticket_id()
+    
+    # Extract domain from customer email if provided
+    domain = extract_domain(ticket_data.customer_email) if ticket_data.customer_email else None
+    
     ticket_doc = {
         "ticket_id": ticket_id,
         "title": ticket_data.title,
@@ -462,8 +467,13 @@ async def create_ticket(
         "priority": ticket_data.priority,
         "order": next_order,
         "created_by": current_user["user_id"],
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+        # New fields
+        "source": ticket_data.source or "manual",
+        "tags": ticket_data.tags or [],
+        "customer_email": ticket_data.customer_email,
+        "domain": domain
     }
     
     tickets_collection.insert_one(ticket_doc)
