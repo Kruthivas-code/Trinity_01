@@ -87,6 +87,13 @@ messages_collection = db.messages  # For internal notes and replies
 custom_fields_collection = db.custom_fields  # Custom fields for tickets/users
 admin_settings_collection = db.admin_settings  # General admin settings
 
+# Phase 4: Shifts & Scheduling collections
+shifts_collection = db.shifts  # Shift definitions per team
+user_shifts_collection = db.user_shifts  # User-to-shift assignments
+
+# System timezone - IST
+SYSTEM_TIMEZONE = "Asia/Kolkata"
+
 # API Key Security
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
 
