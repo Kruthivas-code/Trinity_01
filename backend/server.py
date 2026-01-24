@@ -273,6 +273,36 @@ class APIKeyResponse(BaseModel):
     created_at: str
     last_used_at: Optional[str] = None
 
+# Phase 2: Team Models
+class TeamCreate(BaseModel):
+    name: str
+    type: str = "l1"  # l1, l2, specialist
+    description: Optional[str] = ""
+
+class TeamUpdate(BaseModel):
+    name: Optional[str] = None
+    type: Optional[str] = None
+    description: Optional[str] = None
+    lead_id: Optional[str] = None
+
+class TeamMemberAdd(BaseModel):
+    user_id: str
+
+class UserRoleUpdate(BaseModel):
+    role: str  # agent, lead, admin
+    team_id: Optional[str] = None
+    skills: Optional[List[str]] = None
+    max_tickets: Optional[int] = 10
+
+# Phase 2: Internal Notes Model
+class InternalNoteCreate(BaseModel):
+    content: str
+    mentions: Optional[List[str]] = []  # List of user_ids to mention
+
+class TicketAssign(BaseModel):
+    assignee_id: Optional[str] = None
+    team_id: Optional[str] = None
+
 # Routes
 @app.get("/api/health")
 async def health():
