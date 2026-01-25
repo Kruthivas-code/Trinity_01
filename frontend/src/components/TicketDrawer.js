@@ -96,6 +96,14 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
     // Check if content is HTML or plain text
     const hasHtml = /<[^>]+>/.test(html);
     if (hasHtml) {
+      // Sanitize HTML to prevent XSS attacks
+      const sanitizedHtml = DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'u', 'strong', 'em', 'a', 'ul', 'ol', 'li', 
+                       'blockquote', 'pre', 'code', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                       'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span', 'div'],
+        ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'style', 'target', 'rel'],
+        ALLOW_DATA_ATTR: false
+      });
       return (
         <div 
           className="prose prose-sm dark:prose-invert max-w-none
@@ -107,7 +115,7 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
             [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:my-1
             [&_p]:my-1 [&_br]:my-0.5
             [&_img]:max-w-full [&_img]:rounded"
-          dangerouslySetInnerHTML={{ __html: html }}
+          dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
       );
     }
