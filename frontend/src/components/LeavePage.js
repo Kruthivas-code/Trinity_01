@@ -152,20 +152,13 @@ const LeavePage = ({ user }) => {
       fetchLeaves();
       fetchCalendar();
       
-      // Show toast for real-time updates (from other users)
+      // Handle real-time updates (from other users)
       const currentUserId = user?.user_id;
       const eventUserId = data.created_by?.user_id || data.updated_by?.user_id || data.deleted_by?.user_id;
       
       if (eventUserId && eventUserId !== currentUserId) {
-        const actionUser = data.created_by?.name || data.updated_by?.name || data.deleted_by?.name || 'Someone';
-        
-        if (data.leave) {
-          toast.info(`${actionUser} ${data.leave_id ? 'updated' : 'added'} a leave`, {
-            description: `${data.leave.user_name} - ${data.leave.leave_type}`
-          });
-        } else if (data.leave_id) {
-          // Notification
-        }
+        // Silent update - no notification needed
+        console.log('Leave update from another user');
       }
     });
     
