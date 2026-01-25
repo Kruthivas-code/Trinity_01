@@ -6,7 +6,7 @@ import {
   Sparkles, PenLine, Command, Link2, Settings, Users,
   Clock, ArrowUpCircle, UserCheck, AtSign, Copy, Printer,
   BellOff, Merge, ExternalLink, Split, Link, FileText, 
-  Tag, Bookmark, Download, UserPlus, Scissors
+  Tag, Bookmark, Download, UserPlus, Scissors, MessageSquareHeart
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import MentionInput, { renderTextWithMentions } from './MentionInput';
