@@ -1011,6 +1011,370 @@ async def update_user_role(
     user = users_collection.find_one({"user_id": user_id}, {"_id": 0})
     return serialize_doc(user)
 
+# ==================== Shift Management ====================
+
+@app.post("/api/shifts")
+async def create_shift(
+    shift_data: ShiftCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new shift for a team"""
+    # Verify team exists
+    team = teams_collection.find_one({"team_id": shift_data.team_id})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    shift_id = f"shift_{uuid.uuid4().hex[:12]}"
+    
+    shift_doc = {
+        "shift_id": shift_id,
+        "team_id": shift_data.team_id,
+        "name": shift_data.name,
+        "start_time": shift_data.start_time,
+        "end_time": shift_data.end_time,
+        "days_of_week": shift_data.days_of_week,
+        "is_active": True,
+        "created_by": current_user["user_id"],
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    shifts_collection.insert_one(shift_doc)
+    return serialize_doc(shift_doc)
+
+@app.get("/api/shifts")
+async def get_all_shifts(current_user: dict = Depends(get_current_user)):
+    """Get all shifts"""
+    shifts = list(shifts_collection.find({}, {"_id": 0}))
+    
+    # Enrich with team name and assigned user count
+    for shift in shifts:
+        team = teams_collection.find_one({"team_id": shift.get("team_id")}, {"_id": 0, "name": 1, "escalation_level": 1})
+        if team:
+            shift["team_name"] = team.get("name")
+            shift["team_escalation_level"] = team.get("escalation_level")
+        
+        # Count users assigned to this shift
+        assigned_count = user_shifts_collection.count_documents({"shift_id": shift.get("shift_id")})
+        shift["assigned_users_count"] = assigned_count
+    
+    return [serialize_doc(s) for s in shifts]
+
+@app.get("/api/shifts/team/{team_id}")
+async def get_team_shifts(
+    team_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all shifts for a specific team"""
+    shifts = list(shifts_collection.find({"team_id": team_id}, {"_id": 0}))
+    
+    # Enrich with assigned users
+    for shift in shifts:
+        user_shift_docs = list(user_shifts_collection.find({"shift_id": shift.get("shift_id")}, {"_id": 0}))
+        user_ids = [us["user_id"] for us in user_shift_docs]
+        
+        if user_ids:
+            users = list(users_collection.find(
+                {"user_id": {"$in": user_ids}},
+                {"_id": 0, "user_id": 1, "name": 1, "email": 1}
+            ))
+            shift["assigned_users"] = [serialize_doc(u) for u in users]
+        else:
+            shift["assigned_users"] = []
+    
+    return [serialize_doc(s) for s in shifts]
+
+@app.put("/api/shifts/{shift_id}")
+async def update_shift(
+    shift_id: str,
+    shift_data: ShiftUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a shift"""
+    update_data = {"updated_at": datetime.now(timezone.utc)}
+    
+    if shift_data.name is not None:
+        update_data["name"] = shift_data.name
+    if shift_data.start_time is not None:
+        update_data["start_time"] = shift_data.start_time
+    if shift_data.end_time is not None:
+        update_data["end_time"] = shift_data.end_time
+    if shift_data.days_of_week is not None:
+        update_data["days_of_week"] = shift_data.days_of_week
+    if shift_data.is_active is not None:
+        update_data["is_active"] = shift_data.is_active
+    
+    result = shifts_collection.update_one(
+        {"shift_id": shift_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Shift not found")
+    
+    shift = shifts_collection.find_one({"shift_id": shift_id}, {"_id": 0})
+    return serialize_doc(shift)
+
+@app.delete("/api/shifts/{shift_id}")
+async def delete_shift(
+    shift_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a shift"""
+    result = shifts_collection.delete_one({"shift_id": shift_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Shift not found")
+    
+    # Also remove user-shift assignments
+    user_shifts_collection.delete_many({"shift_id": shift_id})
+    
+    return {"message": "Shift deleted successfully"}
+
+# ==================== User Shift Assignments ====================
+
+@app.post("/api/users/{user_id}/shifts")
+async def assign_user_to_shift(
+    user_id: str,
+    assignment: UserShiftAssign,
+    current_user: dict = Depends(get_current_user)
+):
+    """Assign a user to a shift"""
+    # Verify user exists
+    user = users_collection.find_one({"user_id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Verify shift exists
+    shift = shifts_collection.find_one({"shift_id": assignment.shift_id})
+    if not shift:
+        raise HTTPException(status_code=404, detail="Shift not found")
+    
+    # Check if assignment already exists
+    existing = user_shifts_collection.find_one({
+        "user_id": user_id,
+        "shift_id": assignment.shift_id
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="User already assigned to this shift")
+    
+    user_shift_id = f"us_{uuid.uuid4().hex[:12]}"
+    
+    user_shift_doc = {
+        "user_shift_id": user_shift_id,
+        "user_id": user_id,
+        "team_id": shift.get("team_id"),
+        "shift_id": assignment.shift_id,
+        "is_primary": assignment.is_primary,
+        "effective_from": assignment.effective_from or datetime.now(timezone.utc).isoformat(),
+        "effective_to": None,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    user_shifts_collection.insert_one(user_shift_doc)
+    return serialize_doc(user_shift_doc)
+
+@app.get("/api/users/{user_id}/shifts")
+async def get_user_shifts(
+    user_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all shifts assigned to a user"""
+    user_shift_docs = list(user_shifts_collection.find({"user_id": user_id}, {"_id": 0}))
+    
+    # Enrich with shift details
+    for us_doc in user_shift_docs:
+        shift = shifts_collection.find_one({"shift_id": us_doc.get("shift_id")}, {"_id": 0})
+        if shift:
+            us_doc["shift_details"] = serialize_doc(shift)
+            # Get team name
+            team = teams_collection.find_one({"team_id": shift.get("team_id")}, {"_id": 0, "name": 1})
+            if team:
+                us_doc["team_name"] = team.get("name")
+    
+    return [serialize_doc(us) for us in user_shift_docs]
+
+@app.delete("/api/users/{user_id}/shifts/{shift_id}")
+async def remove_user_from_shift(
+    user_id: str,
+    shift_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Remove a user from a shift"""
+    result = user_shifts_collection.delete_one({
+        "user_id": user_id,
+        "shift_id": shift_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User shift assignment not found")
+    
+    return {"message": "User removed from shift successfully"}
+
+# ==================== On-Shift Queries ====================
+
+@app.get("/api/teams/{team_id}/on-shift")
+async def get_team_on_shift_members(
+    team_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all team members currently on shift"""
+    team = teams_collection.find_one({"team_id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    on_shift = get_on_shift_members(team_id)
+    
+    # Get current IST time for reference
+    ist_now = get_ist_now()
+    
+    return {
+        "team_id": team_id,
+        "team_name": team.get("name"),
+        "current_time_ist": ist_now.strftime("%Y-%m-%d %H:%M:%S"),
+        "on_shift_count": len(on_shift),
+        "on_shift_members": on_shift
+    }
+
+@app.get("/api/teams/{team_id}/schedule")
+async def get_team_schedule(
+    team_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get complete team schedule overview"""
+    team = teams_collection.find_one({"team_id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    shifts = list(shifts_collection.find({"team_id": team_id, "is_active": True}, {"_id": 0}))
+    
+    schedule = []
+    for shift in shifts:
+        shift_data = serialize_doc(shift)
+        
+        # Get users assigned to this shift
+        user_shift_docs = list(user_shifts_collection.find({"shift_id": shift.get("shift_id")}, {"_id": 0}))
+        user_ids = [us["user_id"] for us in user_shift_docs]
+        
+        if user_ids:
+            users = list(users_collection.find(
+                {"user_id": {"$in": user_ids}},
+                {"_id": 0, "user_id": 1, "name": 1, "email": 1}
+            ))
+            shift_data["members"] = [serialize_doc(u) for u in users]
+        else:
+            shift_data["members"] = []
+        
+        schedule.append(shift_data)
+    
+    # Get current IST time
+    ist_now = get_ist_now()
+    
+    return {
+        "team_id": team_id,
+        "team_name": team.get("name"),
+        "escalation_level": team.get("escalation_level"),
+        "current_time_ist": ist_now.strftime("%Y-%m-%d %H:%M:%S"),
+        "current_day": ist_now.strftime("%A"),
+        "total_members": len(team.get("members", [])),
+        "on_shift_now": len(get_on_shift_members(team_id)),
+        "shifts": schedule
+    }
+
+# ==================== Ticket Escalation ====================
+
+@app.put("/api/tickets/{ticket_id}/escalate")
+async def escalate_ticket(
+    ticket_id: str,
+    escalation: TicketEscalate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Change ticket escalation level and auto-route to appropriate team"""
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    old_level = ticket.get("escalation_level", "L1")
+    new_level = escalation.escalation_level
+    
+    if new_level not in ["L1", "L2", "L3"]:
+        raise HTTPException(status_code=400, detail="Invalid escalation level. Must be L1, L2, or L3")
+    
+    # Record escalation in history
+    escalation_record = {
+        "from_level": old_level,
+        "to_level": new_level,
+        "reason": escalation.reason,
+        "escalated_by": current_user["user_id"],
+        "escalated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Auto-assign based on new escalation level
+    assignment_result = auto_assign_on_escalation(ticket_id, new_level)
+    
+    # Update escalation history
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {
+            "$push": {"escalation_history": escalation_record},
+            "$set": {"escalated_at": datetime.now(timezone.utc)}
+        }
+    )
+    
+    # Get updated ticket
+    updated_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    
+    return {
+        "ticket": serialize_doc(updated_ticket),
+        "assignment": assignment_result,
+        "escalation": escalation_record
+    }
+
+@app.get("/api/tickets/{ticket_id}/assignment-options")
+async def get_ticket_assignment_options(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get assignment options for a ticket - team members and other teams"""
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    current_team_id = ticket.get("team_id")
+    
+    # Get current team members (if ticket is assigned to a team)
+    team_members = []
+    current_team = None
+    if current_team_id:
+        current_team = teams_collection.find_one({"team_id": current_team_id}, {"_id": 0})
+        if current_team:
+            for member_id in current_team.get("members", []):
+                user = users_collection.find_one({"user_id": member_id}, {"_id": 0, "user_id": 1, "name": 1, "email": 1})
+                if user:
+                    user_data = serialize_doc(user)
+                    user_data["is_on_shift"] = is_user_on_shift(member_id, current_team_id)
+                    team_members.append(user_data)
+    
+    # Get other teams (grouped by escalation level)
+    all_teams = list(teams_collection.find({}, {"_id": 0, "team_id": 1, "name": 1, "escalation_level": 1}))
+    other_teams = []
+    for team in all_teams:
+        if team.get("team_id") != current_team_id:
+            team_data = serialize_doc(team)
+            team_data["on_shift_count"] = len(get_on_shift_members(team.get("team_id")))
+            other_teams.append(team_data)
+    
+    # Sort other teams by escalation level
+    other_teams.sort(key=lambda t: t.get("escalation_level", "L1"))
+    
+    return {
+        "ticket_id": ticket_id,
+        "current_team": serialize_doc(current_team) if current_team else None,
+        "current_escalation_level": ticket.get("escalation_level", "L1"),
+        "team_members": team_members,
+        "other_teams": other_teams
+    }
+
 # ==================== Round Robin Assignment ====================
 
 def get_available_agents(team_id: str) -> List[dict]:
