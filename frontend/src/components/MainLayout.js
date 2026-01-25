@@ -14,12 +14,51 @@ import { CommandPaletteContext } from '../App';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const MainLayout = ({ user, view }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const { openCommandPalette } = useContext(CommandPaletteContext);
+
+  // Open ticket by ID (fetch from API)
+  const openTicketById = useCallback(async (ticketId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const ticket = await response.json();
+        setSelectedTicket(ticket);
+        setIsDrawerOpen(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch ticket:', error);
+    }
+  }, []);
+
+  // Handle URL query param for opening a ticket
+  useEffect(() => {
+    const ticketId = searchParams.get('ticket');
+    if (ticketId) {
+      openTicketById(ticketId);
+      // Clear the param from URL to prevent re-opening on refresh
+      // (optional - comment out if you want ticket links to be shareable)
+    }
+  }, [searchParams, openTicketById]);
+
+  // Listen for open ticket events from search
+  useEffect(() => {
+    const handleOpenTicket = (e) => {
+      const { ticketId } = e.detail || {};
+      if (ticketId) {
+        openTicketById(ticketId);
+      }
+    };
+    window.addEventListener('trinity:open-ticket', handleOpenTicket);
+    return () => window.removeEventListener('trinity:open-ticket', handleOpenTicket);
+  }, [openTicketById]);
 
   // Listen for create ticket events from GlobalHeader/CommandPalette
   useEffect(() => {
