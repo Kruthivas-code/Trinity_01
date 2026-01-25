@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Bookmark, Plus, ChevronRight, Search, Filter, 
   TrendingUp, Users, Calendar, MessageSquare, CheckCircle,
-  Clock, ArrowUpRight, X, ExternalLink, ChevronDown
+  Clock, ArrowUpRight, X, ExternalLink, ChevronDown,
+  Bug, Sparkles, Zap
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -16,12 +17,26 @@ const STATUS_CONFIG = {
   archived: { label: 'Archived', color: 'bg-muted text-muted-foreground', dotColor: 'bg-muted-foreground' },
 };
 
+const TYPE_CONFIG = {
+  feature: { label: 'Feature', color: 'bg-purple-500/20 text-purple-400', icon: Sparkles },
+  bug_fix: { label: 'Bug Fix', color: 'bg-red-500/20 text-red-400', icon: Bug },
+  enhancement: { label: 'Enhancement', color: 'bg-blue-500/20 text-blue-400', icon: Zap },
+};
+
+const PRIORITY_CONFIG = {
+  low: { label: 'Low', color: 'bg-green-500/20 text-green-400' },
+  medium: { label: 'Medium', color: 'bg-yellow-500/20 text-yellow-400' },
+  high: { label: 'High', color: 'bg-orange-500/20 text-orange-400' },
+  critical: { label: 'Critical', color: 'bg-red-500/20 text-red-400' },
+};
+
 const FeatureRequestsPage = ({ user }) => {
   const navigate = useNavigate();
   const [featureRequests, setFeatureRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [sortBy, setSortBy] = useState('mentions'); // mentions, created, updated
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -57,7 +72,8 @@ const FeatureRequestsPage = ({ user }) => {
       fr.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       fr.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || fr.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesType = typeFilter === 'all' || fr.request_type === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
   });
 
   const sortedRequests = [...filteredRequests].sort((a, b) => {
