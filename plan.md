@@ -168,6 +168,33 @@ Major design refresh completed:
 - Minor backend linter warnings (low priority)
 - Minor ESLint warnings for React hooks dependencies (does not affect functionality)
 
+## Phase 7: @Mention Feature ✅ COMPLETED (1/25/2026)
+
+### @Mentions Implementation
+- [x] **MentionInput Component** (`/app/frontend/src/components/MentionInput.js`)
+  - Reusable textarea with @mention autocomplete
+  - Fetches users from API for suggestions
+  - Shows dropdown ABOVE the input (fixed positioning issue)
+  - Keyboard navigation (ArrowUp/Down, Enter, Escape)
+  - Stores mentions in `@[Name](user_id)` format
+- [x] **TicketDrawer Integration**
+  - Internal Note mode uses MentionInput
+  - Sends mentions array to backend when submitting notes
+  - Renders mentions as styled badges in conversation thread
+- [x] **DashboardContainer View Toggle**
+  - "My Tickets" / "Mentioned" toggle in dashboard header
+  - Filters tickets by mentioned_users field
+  - Badge count for mentioned tickets
+- [x] **Backend Mention Processing**
+  - `/api/tickets/{id}/notes` endpoint accepts `mentions` array
+  - Stores mentioned user IDs in ticket's `mentioned_users` field
+  - Ticket filtering by `mentioned_by` query parameter
+
+### Key Bug Fix
+- **Dropdown Position**: Changed from `mt-1` (below) to `bottom-full mb-1` (above) so dropdown shows within viewport
+
+---
+
 ## Next Steps / Future Enhancements
 - [ ] Real-time presence indicators (avatars showing who's viewing a ticket)
 - [ ] Live update toasts/notifications for ticket changes
@@ -176,6 +203,7 @@ Major design refresh completed:
 - [ ] AI-powered escalation level prediction
 - [ ] More sophisticated routing rules with ML
 - [ ] Email integration (currently mocked)
+- [x] @Mention functionality in internal notes (COMPLETED)
 
 ---
 
