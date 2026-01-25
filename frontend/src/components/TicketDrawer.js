@@ -286,12 +286,98 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       setSnoozed(ticket.snoozed || false);
       setShowMoreMenu(false);
       setLinkedTickets(ticket.linked_tickets || []);
+      setTicketTags(ticket.tags || []);
+      setTagInput('');
+      setShowTagDropdown(false);
       fetchNotes(ticket.id);
       fetchRelatedTickets(ticket.id);
       fetchCustomFields();
       fetchAssignmentOptions(ticket.id);
+      fetchAvailableTags();
     }
   }, [ticket]);
+
+  // Fetch all available tags from existing tickets
+  const fetchAvailableTags = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const tickets = await response.json();
+        const allTags = new Set();
+        tickets.forEach(t => (t.tags || []).forEach(tag => allTags.add(tag)));
+        setAvailableTags(Array.from(allTags).sort());
+      }
+    } catch (error) {
+      console.error('Failed to fetch tags:', error);
+    }
+  };
+
+  // Add tag to ticket
+  const handleAddTag = async (tag) => {
+    if (!tag.trim() || !ticket) return;
+    const normalizedTag = tag.trim().toLowerCase().replace(/\s+/g, '-');
+    
+    if (ticketTags.includes(normalizedTag)) {
+      setTagInput('');
+      setShowTagDropdown(false);
+      return;
+    }
+    
+    setLoadingTags(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/tags`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify([normalizedTag])
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTicketTags(data.tags || [...ticketTags, normalizedTag]);
+        // Add to available tags if it's new
+        if (!availableTags.includes(normalizedTag)) {
+          setAvailableTags(prev => [...prev, normalizedTag].sort());
+        }
+      }
+    } catch (error) {
+      console.error('Failed to add tag:', error);
+    } finally {
+      setLoadingTags(false);
+      setTagInput('');
+      setShowTagDropdown(false);
+    }
+  };
+
+  // Remove tag from ticket
+  const handleRemoveTag = async (tag) => {
+    if (!ticket) return;
+    
+    setLoadingTags(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/tags/${encodeURIComponent(tag)}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTicketTags(data.tags || ticketTags.filter(t => t !== tag));
+      }
+    } catch (error) {
+      console.error('Failed to remove tag:', error);
+    } finally {
+      setLoadingTags(false);
+    }
+  };
+
+  // Filter available tags based on input
+  const filteredTags = availableTags.filter(tag => 
+    tag.toLowerCase().includes(tagInput.toLowerCase()) && 
+    !ticketTags.includes(tag)
+  );
 
   // Handle assignment change - persist to backend
   const handleAssign = async (userId) => {
