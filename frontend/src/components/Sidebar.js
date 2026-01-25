@@ -207,9 +207,7 @@ const Sidebar = ({ user }) => {
         <div className="!my-2 h-px bg-border/50" />
 
         {/* Other Items */}
-        {mainItems.map(item => (
-          <NavItem key={item.id} item={item} />
-        ))}
+        {mainItems.map(item => renderNavItem(item, false))}
       </nav>
 
       {/* Spacer */}
