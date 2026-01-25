@@ -302,8 +302,40 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       fetchAssignmentOptions(ticket.id);
       fetchAvailableTags();
       fetchCsatData(ticket.id);
+      fetchLinkedFeatureRequests(ticket.id);
     }
   }, [ticket]);
+
+  // Fetch linked feature requests for ticket
+  const fetchLinkedFeatureRequests = async (ticketId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}/feature-requests`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setLinkedFeatureRequests(data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch linked feature requests:', error);
+      setLinkedFeatureRequests([]);
+    }
+  };
+
+  // Unlink feature request from ticket
+  const handleUnlinkFeatureRequest = async (featureRequestId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/feature-request/${featureRequestId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (response.ok) {
+        setLinkedFeatureRequests(prev => prev.filter(fr => fr.feature_request_id !== featureRequestId));
+      }
+    } catch (error) {
+      console.error('Failed to unlink feature request:', error);
+    }
+  };
 
   // Fetch CSAT data for ticket
   const fetchCsatData = async (ticketId) => {
