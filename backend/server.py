@@ -2140,6 +2140,22 @@ async def update_ticket(
     
     update_data["updated_at"] = datetime.now(timezone.utc)
     
+    # Check for auto-reassignment on ticket reopen
+    reassignment_info = None
+    if "status" in update_data:
+        reassignment_info = handle_ticket_reopen_reassignment(
+            current_ticket, 
+            update_data["status"],
+            current_user["user_id"]
+        )
+        
+        if reassignment_info and reassignment_info.get("reassigned"):
+            # Apply reassignment to update_data
+            update_data["assignee_id"] = reassignment_info.get("new_assignee_id")
+            if reassignment_info.get("new_assignee_id") is None:
+                # Unassign - also update status to queued
+                update_data["status"] = "queued"
+    
     # Build changelog entries for changed fields
     changes = {}
     for field, new_value in update_data.items():
@@ -2166,8 +2182,26 @@ async def update_ticket(
             change_type="update"
         )
     
+    # Log auto-reassignment to changelog if it occurred
+    if reassignment_info and reassignment_info.get("reassigned"):
+        reason_text = "Original assignee not on shift" if reassignment_info.get("reason") == "original_assignee_off_shift" else "No agents on shift - ticket unassigned"
+        log_ticket_change(
+            ticket_id=ticket_id,
+            uuid=current_ticket.get("uuid", ""),
+            field="auto_reassignment",
+            old_value=reassignment_info.get("old_assignee_name"),
+            new_value=reassignment_info.get("new_assignee_name") or "Unassigned",
+            changed_by="system",
+            change_type="auto_reassign",
+            metadata={"reason": reason_text}
+        )
+    
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     serialized = serialize_doc(ticket)
+    
+    # Add reassignment info to response if it occurred
+    if reassignment_info:
+        serialized["_reassignment_info"] = reassignment_info
     
     # Broadcast real-time event
     asyncio.create_task(broadcast_ticket_update(
