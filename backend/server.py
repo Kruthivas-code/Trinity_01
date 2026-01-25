@@ -1810,9 +1810,10 @@ async def get_ticket_notes(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get all internal notes for a ticket"""
+    """Get all notes and replies for a ticket"""
+    # Return both internal_note and reply types
     notes = list(messages_collection.find(
-        {"ticket_id": ticket_id, "type": "internal_note"},
+        {"ticket_id": ticket_id, "type": {"$in": ["internal_note", "reply"]}},
         {"_id": 0}
     ).sort("created_at", ASCENDING))
     
