@@ -794,7 +794,8 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
             {/* Status - Only show if assigned */}
             {formData.assignee_id && (
               <div>
-                <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 block">
+                <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
                   Status
                 </label>
                 <select
@@ -807,16 +808,13 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                     <option key={status.value} value={status.value}>{status.label}</option>
                   ))}
                 </select>
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
-                  <span className="text-xs">{statusConfig.label}</span>
-                </div>
               </div>
             )}
 
             {/* Priority */}
             <div>
-              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 block">
+              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <AlertCircle size={11} className={priorityConfig.color} />
                 Priority
               </label>
               <select
@@ -829,10 +827,6 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                   <option key={priority.value} value={priority.value}>{priority.label}</option>
                 ))}
               </select>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <AlertCircle size={12} className={priorityConfig.color} />
-                <span className={`text-xs ${priorityConfig.color}`}>{priorityConfig.label}</span>
-              </div>
             </div>
 
             {/* Divider */}
