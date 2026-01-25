@@ -92,6 +92,9 @@ admin_settings_collection = db.admin_settings  # General admin settings
 shifts_collection = db.shifts  # Shift definitions per team
 user_shifts_collection = db.user_shifts  # User-to-shift assignments
 
+# Phase 5: Routing Rules
+routing_rules_collection = db.routing_rules  # Ticket routing rules
+
 # System timezone - IST
 SYSTEM_TIMEZONE = "Asia/Kolkata"
 
