@@ -67,7 +67,11 @@ function AppRouter() {
         path="/profile"
         element={
           <ProtectedRoute>
-            <ProfilePage />
+            {(user) => (
+              <PageLayout user={user}>
+                <ProfilePage user={user} />
+              </PageLayout>
+            )}
           </ProtectedRoute>
         }
       />
@@ -75,7 +79,11 @@ function AppRouter() {
         path="/settings"
         element={
           <ProtectedRoute>
-            <SettingsPage />
+            {(user) => (
+              <PageLayout user={user}>
+                <SettingsPage user={user} />
+              </PageLayout>
+            )}
           </ProtectedRoute>
         }
       />
@@ -83,7 +91,11 @@ function AppRouter() {
         path="/teams"
         element={
           <ProtectedRoute>
-            <TeamsPage />
+            {(user) => (
+              <PageLayout user={user}>
+                <TeamsPage user={user} />
+              </PageLayout>
+            )}
           </ProtectedRoute>
         }
       />
@@ -91,7 +103,11 @@ function AppRouter() {
         path="/admin"
         element={
           <ProtectedRoute>
-            <AdminPage />
+            {(user) => (
+              <PageLayout user={user}>
+                <AdminPage user={user} />
+              </PageLayout>
+            )}
           </ProtectedRoute>
         }
       />
