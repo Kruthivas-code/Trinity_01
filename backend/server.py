@@ -25,7 +25,7 @@ from dotenv import load_dotenv
 from functools import wraps
 
 # Real-time and Search imports
-from realtime import sio, socket_app, broadcast_ticket_update, broadcast_ticket_created, broadcast_ticket_deleted, get_presence_stats, get_users_viewing_ticket, broadcast_leave_created, broadcast_leave_updated, broadcast_leave_deleted
+from realtime import sio, socket_app, broadcast_ticket_update, broadcast_ticket_created, broadcast_ticket_deleted, get_presence_stats, get_users_viewing_ticket, broadcast_leave_created, broadcast_leave_updated, broadcast_leave_deleted, broadcast_mention_notification
 from search import get_search_engine
 from leave_management import get_leave_manager, LeaveRequest, LeaveUpdate
 
