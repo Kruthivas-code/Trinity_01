@@ -111,6 +111,9 @@ search_engine = get_search_engine(db)
 # Phase 7: Ticket Changelog (audit log)
 ticket_changelog_collection = db.ticket_changelog  # All metadata changes for tickets
 
+# Phase 8: Feature Requests
+feature_requests_collection = db.feature_requests  # Product feature requests linked to tickets
+
 # System timezone - IST
 SYSTEM_TIMEZONE = "Asia/Kolkata"
 
