@@ -335,7 +335,7 @@ const Sidebar = ({ user }) => {
                 <h2 className="text-lg font-semibold brand tracking-tight">Trinity</h2>
               ) : (
                 <div className="w-8 h-8 flex items-center justify-center">
-                  <Zap size={20} className="text-primary" />
+                  <Triangle size={20} className="text-primary" />
                 </div>
               )}
             </div>
