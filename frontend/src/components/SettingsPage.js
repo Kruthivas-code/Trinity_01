@@ -124,12 +124,10 @@ const SettingsPage = ({ user }) => {
       
       const data = await response.json();
       if (data.created > 0) {
-        toast.success(`Created ${data.created} ticket(s) from emails`);
-      } else {
-        // Info
+        console.log(`Created ${data.created} ticket(s) from emails`);
       }
     } catch (error) {
-      // Error
+      console.error('Sync failed:', error);
     } finally {
       setSyncing(false);
     }
