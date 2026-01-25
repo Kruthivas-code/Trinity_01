@@ -599,15 +599,29 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
               </button>
             </div>
 
-            {/* Rich Text Editor */}
-            <RichTextEditor
-              value={inputText}
-              onChange={setInputText}
-              placeholder={inputMode === 'note' ? 'Add an internal note...' : 'Type your reply...'}
-              mode={inputMode}
-              onSubmit={handleSubmitInput}
-              disabled={submitting}
-            />
+            {/* Rich Text Editor for Reply / MentionInput for Notes */}
+            {inputMode === 'note' ? (
+              <MentionInput
+                value={inputText}
+                onChange={(text, mentions) => {
+                  setInputText(text);
+                  setInputMentions(mentions);
+                }}
+                onSubmit={handleSubmitInput}
+                placeholder="Add an internal note... Use @ to mention someone"
+                disabled={submitting}
+                rows={4}
+              />
+            ) : (
+              <RichTextEditor
+                value={inputText}
+                onChange={setInputText}
+                placeholder="Type your reply..."
+                mode={inputMode}
+                onSubmit={handleSubmitInput}
+                disabled={submitting}
+              />
+            )}
           </div>
         </div>
 
