@@ -143,7 +143,7 @@ class LeaveManager:
         
         # Recalculate days if dates changed
         if "start_date" in update_dict or "end_date" in update_dict or "is_half_day" in update_dict:
-            existing = self.leaves_collection.find_one({"id": leave_id})
+            existing = self.leaves_collection.find_one({"id": leave_id}, {"_id": 0})
             if existing:
                 start = update_dict.get("start_date", existing["start_date"])
                 end = update_dict.get("end_date", existing["end_date"])
