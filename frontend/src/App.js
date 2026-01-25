@@ -119,12 +119,49 @@ function AppRouter() {
   );
 }
 
+// Wrapper component that provides realtime context to authenticated routes
+function AppWithRealtime({ user, children }) {
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  // Global keyboard shortcut for Command Palette
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Cmd+K (Mac) or Ctrl+K (Windows/Linux)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Store current user ID for presence filtering
+  useEffect(() => {
+    if (user?.user_id) {
+      window.__CURRENT_USER_ID__ = user.user_id;
+    }
+  }, [user]);
+
+  return (
+    <RealtimeProvider user={user}>
+      {children}
+      <CommandPalette 
+        isOpen={commandPaletteOpen} 
+        onClose={() => setCommandPaletteOpen(false)} 
+      />
+    </RealtimeProvider>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider>
       <Router>
         <div className="App min-h-screen bg-background">
           <AppRouter />
+          <Toaster richColors position="top-right" />
         </div>
       </Router>
     </ThemeProvider>
