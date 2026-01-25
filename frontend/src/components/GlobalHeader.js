@@ -215,6 +215,7 @@ const GlobalHeader = ({ user, onCreateTicket, onOpenCommandPalette }) => {
                     key={`${result.type}-${result.id}-${idx}`}
                     onClick={() => handleResultClick(result)}
                     className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-secondary/50 transition-colors text-left"
+                    data-testid={`quick-search-result-${result.type}-${idx}`}
                   >
                     <div className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center shrink-0">
                       {result.picture ? (
