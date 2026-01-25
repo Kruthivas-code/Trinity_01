@@ -252,7 +252,7 @@ def get_team_for_escalation_level(escalation_level: str) -> Optional[dict]:
     team = teams_collection.find_one({"escalation_level": escalation_level}, {"_id": 0})
     return serialize_doc(team) if team else None
 
-def round_robin_assign(team_id: str) -> Optional[str]:
+def shift_based_round_robin(team_id: str) -> Optional[str]:
     """
     Get next assignee using round-robin within on-shift team members.
     Returns user_id or None if no one is on shift.
@@ -277,7 +277,7 @@ def round_robin_assign(team_id: str) -> Optional[str]:
     
     return on_shift[next_idx].get("user_id")
 
-def auto_assign_ticket(ticket_id: str, escalation_level: str) -> dict:
+def auto_assign_on_escalation(ticket_id: str, escalation_level: str) -> dict:
     """
     Auto-assign a ticket based on escalation level.
     Returns assignment result with status.
@@ -294,8 +294,8 @@ def auto_assign_ticket(ticket_id: str, escalation_level: str) -> dict:
     
     team_id = team.get("team_id")
     
-    # Try round-robin assignment
-    assignee_id = round_robin_assign(team_id)
+    # Try shift-based round-robin assignment
+    assignee_id = shift_based_round_robin(team_id)
     
     # Update ticket
     update_data = {
