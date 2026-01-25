@@ -374,6 +374,31 @@ async def broadcast_leave_deleted(leave_id: str, deleted_by: dict):
     })
 
 
+async def broadcast_mention_notification(user_id: str, ticket_id: str, ticket_title: str, mentioned_by: str, note_preview: str):
+    """Send notification to a user when they are mentioned in a ticket"""
+    notification = {
+        'type': 'mention',
+        'ticket_id': ticket_id,
+        'ticket_title': ticket_title,
+        'mentioned_by': mentioned_by,
+        'note_preview': note_preview,
+        'timestamp': datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Send to specific user if they're connected
+    if user_id in presence.users:
+        socket_id = presence.users[user_id]['socket_id']
+        await sio.emit('notification:mention', notification, to=socket_id)
+    
+    # Also broadcast to the ticket room so anyone viewing sees it
+    await sio.emit('ticket:mention', {
+        'ticket_id': ticket_id,
+        'mentioned_user_id': user_id,
+        'mentioned_by': mentioned_by,
+        'timestamp': datetime.now(timezone.utc).isoformat()
+    })
+
+
 def get_presence_stats() -> dict:
     """Get presence statistics"""
     return {
