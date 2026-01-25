@@ -1912,6 +1912,12 @@ async def create_ticket(
     result["routing_applied"] = routing_result.get("matched", False)
     result["routing_rule"] = routing_result.get("rule_name")
     
+    # Broadcast real-time event
+    asyncio.create_task(broadcast_ticket_created(
+        result,
+        {"user_id": current_user["user_id"], "name": current_user.get("name", "Unknown")}
+    ))
+    
     return result
 
 @app.get("/api/tickets/{ticket_id}")
@@ -1945,7 +1951,17 @@ async def update_ticket(
         raise HTTPException(status_code=404, detail="Ticket not found")
     
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
-    return serialize_doc(ticket)
+    serialized = serialize_doc(ticket)
+    
+    # Broadcast real-time event
+    asyncio.create_task(broadcast_ticket_update(
+        ticket_id, 
+        'updated', 
+        serialized,
+        {"user_id": current_user["user_id"], "name": current_user.get("name", "Unknown")}
+    ))
+    
+    return serialized
 
 @app.delete("/api/tickets/{ticket_id}")
 async def delete_ticket(
@@ -1955,6 +1971,13 @@ async def delete_ticket(
     result = tickets_collection.delete_one({"ticket_id": ticket_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Broadcast real-time event
+    asyncio.create_task(broadcast_ticket_deleted(
+        ticket_id,
+        {"user_id": current_user["user_id"], "name": current_user.get("name", "Unknown")}
+    ))
+    
     return {"message": "Ticket deleted successfully"}
 
 @app.post("/api/tickets/reorder")
