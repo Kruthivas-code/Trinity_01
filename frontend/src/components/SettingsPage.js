@@ -829,7 +829,6 @@ const SettingsPage = ({ user }) => {
               </button>
             </div>
           </div>
-        </div>
       </div>
     </div>
   );
