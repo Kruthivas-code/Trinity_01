@@ -372,6 +372,17 @@ const AdminPage = ({ user }) => {
                 Custom Fields
               </button>
               <button
+                onClick={() => setActiveTab('shifts')}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  activeTab === 'shifts'
+                    ? 'bg-primary/20 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+              >
+                <Clock size={16} />
+                Shifts & Schedules
+              </button>
+              <button
                 onClick={() => setActiveTab('general')}
                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                   activeTab === 'general'
