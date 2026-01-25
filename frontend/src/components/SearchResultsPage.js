@@ -472,7 +472,7 @@ const SearchResultsPage = ({ user }) => {
                               key={`${result.type}-${result.id}-${idx}`}
                               onClick={() => handleResultClick(result)}
                               className="w-full flex items-center gap-4 px-4 py-3 hover:bg-secondary/30 transition-colors text-left border-b border-border/20 last:border-b-0"
-                              data-testid={`search-result-${result.id}`}
+                              data-testid={`search-result-${result.type}-${idx}`}
                             >
                               {/* Icon/Avatar */}
                               <div className="w-10 h-10 rounded-lg bg-secondary/50 flex items-center justify-center shrink-0">
