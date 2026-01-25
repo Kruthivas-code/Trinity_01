@@ -1748,6 +1748,7 @@ async def get_team_tickets(
 async def add_internal_note(
     ticket_id: str,
     note: InternalNoteCreate,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user)
 ):
     """Add an internal note to a ticket"""
@@ -1756,28 +1757,51 @@ async def add_internal_note(
         raise HTTPException(status_code=404, detail="Ticket not found")
     
     message_id = f"msg_{uuid.uuid4().hex[:12]}"
+    mentions = note.mentions or []
     
     note_doc = {
         "message_id": message_id,
         "ticket_id": ticket_id,
-        "type": "internal_note",
+        "type": note.type or "internal_note",
         "content": note.content,
         "author_id": current_user["user_id"],
         "author_name": current_user.get("name", "Unknown"),
         "author_email": current_user.get("email"),
-        "mentions": note.mentions or [],
+        "mentions": mentions,
         "created_at": datetime.now(timezone.utc)
     }
     
     messages_collection.insert_one(note_doc)
     
-    # Update ticket's updated_at
-    tickets_collection.update_one(
-        {"ticket_id": ticket_id},
-        {"$set": {"updated_at": datetime.now(timezone.utc)}}
-    )
+    # Update ticket's updated_at and add mentioned users to ticket
+    update_fields = {"updated_at": datetime.now(timezone.utc)}
     
-    # TODO: Send notifications to mentioned users
+    # Add mentioned users to ticket's mentioned_users array (for dashboard filtering)
+    if mentions:
+        tickets_collection.update_one(
+            {"ticket_id": ticket_id},
+            {
+                "$set": update_fields,
+                "$addToSet": {"mentioned_users": {"$each": mentions}}
+            }
+        )
+        
+        # Broadcast mention notifications to mentioned users
+        for mentioned_user_id in mentions:
+            if mentioned_user_id != current_user["user_id"]:
+                background_tasks.add_task(
+                    broadcast_mention_notification,
+                    mentioned_user_id,
+                    ticket_id,
+                    ticket.get("title", ""),
+                    current_user.get("name", "Unknown"),
+                    note.content[:100]
+                )
+    else:
+        tickets_collection.update_one(
+            {"ticket_id": ticket_id},
+            {"$set": update_fields}
+        )
     
     return serialize_doc(note_doc)
 
