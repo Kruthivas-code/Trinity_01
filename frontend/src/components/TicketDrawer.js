@@ -261,6 +261,9 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const [csatData, setCsatData] = useState(null);
   const [sendingCsat, setSendingCsat] = useState(false);
   
+  // Linked Feature Requests state
+  const [linkedFeatureRequests, setLinkedFeatureRequests] = useState([]);
+  
   // Collapsible sections
   const [sectionsExpanded, setSectionsExpanded] = useState({
     links: false,
