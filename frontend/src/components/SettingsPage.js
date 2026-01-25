@@ -247,6 +247,116 @@ const SettingsPage = ({ user }) => {
     }
   };
 
+  const handleExport = async (type) => {
+    setExporting(type);
+    try {
+      let url = '';
+      let filename = '';
+      
+      switch (type) {
+        case 'tickets':
+          url = `${BACKEND_URL}/api/tickets`;
+          filename = `trinity-tickets-${new Date().toISOString().split('T')[0]}.json`;
+          break;
+        case 'users':
+          url = `${BACKEND_URL}/api/users`;
+          filename = `trinity-users-${new Date().toISOString().split('T')[0]}.json`;
+          break;
+        case 'teams':
+          url = `${BACKEND_URL}/api/teams`;
+          filename = `trinity-teams-${new Date().toISOString().split('T')[0]}.json`;
+          break;
+        case 'shifts':
+          url = `${BACKEND_URL}/api/shifts`;
+          filename = `trinity-shifts-${new Date().toISOString().split('T')[0]}.json`;
+          break;
+        default:
+          return;
+      }
+      
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Export failed');
+      
+      const data = await response.json();
+      
+      // Create and download file
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Export failed:', error);
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const handleExportCSV = async (type) => {
+    setExporting(type + '-csv');
+    try {
+      let url = '';
+      let filename = '';
+      let headers = [];
+      
+      switch (type) {
+        case 'tickets':
+          url = `${BACKEND_URL}/api/tickets`;
+          filename = `trinity-tickets-${new Date().toISOString().split('T')[0]}.csv`;
+          headers = ['ticket_id', 'title', 'status', 'priority', 'escalation_level', 'assignee_id', 'created_at'];
+          break;
+        case 'users':
+          url = `${BACKEND_URL}/api/users`;
+          filename = `trinity-users-${new Date().toISOString().split('T')[0]}.csv`;
+          headers = ['user_id', 'name', 'email', 'role', 'created_at'];
+          break;
+        case 'teams':
+          url = `${BACKEND_URL}/api/teams`;
+          filename = `trinity-teams-${new Date().toISOString().split('T')[0]}.csv`;
+          headers = ['team_id', 'name', 'escalation_level', 'member_count'];
+          break;
+        default:
+          return;
+      }
+      
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Export failed');
+      
+      const data = await response.json();
+      
+      // Convert to CSV
+      const csvRows = [headers.join(',')];
+      data.forEach(item => {
+        const row = headers.map(h => {
+          const val = item[h] || '';
+          // Escape commas and quotes in values
+          const escaped = String(val).replace(/"/g, '""');
+          return escaped.includes(',') || escaped.includes('"') ? `"${escaped}"` : escaped;
+        });
+        csvRows.push(row.join(','));
+      });
+      
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('CSV Export failed:', error);
+    } finally {
+      setExporting(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="gradient-overlay" />
