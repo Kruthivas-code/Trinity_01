@@ -625,6 +625,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       <TicketDrawer
         ticket={selectedTicket}
         users={users}
+        currentUser={user}
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         onUpdate={handleUpdateTicket}
