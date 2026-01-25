@@ -70,9 +70,22 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
 
   const isNote = type === 'internal_note';
   
-  // Render HTML content safely
+  // Render HTML content safely, with mention support for notes
   const renderContent = (html) => {
     if (!html) return <span className="text-muted-foreground/50 italic">No content</span>;
+    
+    // For internal notes, render mentions
+    if (isNote) {
+      // Check for mention format: @[Name](id)
+      const hasMentions = /@\[([^\]]+)\]\(([^)]+)\)/.test(html);
+      if (hasMentions) {
+        return (
+          <p className="whitespace-pre-wrap">
+            {renderTextWithMentions(html)}
+          </p>
+        );
+      }
+    }
     
     // Check if content is HTML or plain text
     const hasHtml = /<[^>]+>/.test(html);
