@@ -295,7 +295,7 @@ class LeaveManager:
         leaves = list(self.leaves_collection.find({
             "user_id": user_id,
             "start_date": {"$gte": start_date, "$lte": end_date}
-        }))
+        }, {"_id": 0}))
         
         # Group by type
         by_type = {}
