@@ -218,6 +218,11 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
     }
   };
 
+  // Get tickets to display based on viewMode
+  const displayTickets = viewMode === 'mentioned' ? mentionedTickets : 
+                         viewMode === 'all' ? [...tickets, ...mentionedTickets.filter(t => !tickets.find(mt => mt.id === t.id))] :
+                         tickets;
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -234,14 +239,41 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       <div className="sticky top-0 z-40 glass border-b border-border/60 backdrop-saturate-150">
         <div className="px-4 md:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h2 className="text-lg md:text-xl font-semibold">My Tickets</h2>
-            {analytics && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs px-2 py-1 rounded-md glass" data-testid="badge-mine">
-                  {analytics.my_tickets} tickets
-                </span>
-              </div>
-            )}
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-secondary/50 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('assigned')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'assigned' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+                data-testid="view-assigned"
+              >
+                <User size={14} />
+                <span className="hidden sm:inline">My Tickets</span>
+                <span className="sm:hidden">Mine</span>
+                {tickets.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-primary/20 text-primary">
+                    {tickets.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setViewMode('mentioned')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  viewMode === 'mentioned' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}
+                data-testid="view-mentioned"
+              >
+                <AtSign size={14} />
+                <span className="hidden sm:inline">Mentioned</span>
+                <span className="sm:hidden">@</span>
+                {mentionedTickets.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-amber-500/20 text-amber-400">
+                    {mentionedTickets.length}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
