@@ -358,25 +358,16 @@ const SettingsPage = ({ user }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="gradient-overlay" />
-      <div className="content-wrapper relative z-10">
-        {/* Header */}
-        <header className="sticky top-0 z-40 glass border-b border-border/60 backdrop-saturate-150">
-          <div className="mx-auto max-w-[1200px] px-4 h-16 flex items-center gap-4">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-white/10 transition-interactive"
-              data-testid="back-button"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <h1 className="text-xl font-semibold">Settings</h1>
-          </div>
-        </header>
+    <div className="h-full">
+      {/* Header */}
+      <header className="sticky top-0 z-40 glass border-b border-border/60 backdrop-saturate-150">
+        <div className="px-6 h-14 flex items-center">
+          <h1 className="text-lg font-semibold">Settings</h1>
+        </div>
+      </header>
 
-        {/* Content */}
-        <div className="mx-auto max-w-[1200px] px-4 py-8 space-y-6">
+      {/* Content */}
+      <div className="p-6 space-y-6 max-w-4xl">
           {/* Email Integration Section */}
           <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
             <div className="flex items-center gap-3 mb-6">
