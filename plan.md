@@ -256,6 +256,59 @@ Major design refresh completed:
 
 ---
 
+## Phase 10: Advanced Ticket Actions ✅ COMPLETED (1/25/2026)
+
+### Backend Implementation
+- [x] **Merge Tickets** (`POST /api/tickets/{id}/merge`)
+  - Moves all messages from source to target ticket
+  - Adds system note to target about the merge
+  - Marks source ticket as "merged" (soft delete)
+  - Logs change to changelog
+- [x] **Link Tickets** (`POST /api/tickets/{id}/link`)
+  - Bidirectional linking (both tickets show the link)
+  - Support for link types: related, blocks, blocked_by, duplicates
+  - Automatic reverse link creation
+- [x] **Unlink Tickets** (`DELETE /api/tickets/{id}/unlink/{target_id}`)
+  - Removes link from both tickets
+- [x] **Split Tickets** (`POST /api/tickets/{id}/split`)
+  - Creates new ticket from split point
+  - Moves messages after split index to new ticket
+  - Preserves customer, priority, assignee info
+  - Adds system notes to both tickets
+
+### Frontend Implementation
+- [x] **TicketDrawer "More Options" Menu** with all advanced actions
+  - Merge with ticket...
+  - Link to ticket...
+  - Split ticket...
+  - Link to Feature Request...
+- [x] **Modal Components** for each action
+  - MergeTicketModal - Search and select target ticket
+  - LinkTicketModal - Link type selection and search
+  - SplitTicketModal - Select message to split at
+  - FeatureRequestModal - Link ticket to feature request
+
+### Feature Requests Module
+- [x] **New Page** (`/feature-requests`)
+  - List all feature requests
+  - Status filters (New, Planned, In Progress, Completed)
+  - Mentions count tracking
+  - Create new feature request
+- [x] **API Endpoints**
+  - `GET /api/feature-requests` - List with filters
+  - `POST /api/feature-requests` - Create new
+  - `GET /api/feature-requests/{id}` - Get details with linked tickets
+  - `PUT /api/feature-requests/{id}` - Update status/details
+  - `POST /api/tickets/{id}/feature-request` - Link ticket to FR
+
+### UI Enhancements
+- [x] **Draggable Sidebar** - Resizable via drag handle
+- [x] **Enhanced Dashboard Filters** - Priority, Status, Date range, Tags
+- [x] **Search by Ticket ID or UUID**
+- [x] **All toasts removed** per user preference
+
+---
+
 ## Next Steps / Future Enhancements
 - [ ] Real-time presence indicators (avatars showing who's viewing a ticket)
 - [ ] Live update notifications (non-toast based)
@@ -266,6 +319,8 @@ Major design refresh completed:
 - [ ] Email integration (currently mocked)
 - [x] @Mention functionality in internal notes (COMPLETED)
 - [x] Ticket UUID and changelog system (COMPLETED)
+- [x] Advanced ticket actions - Merge, Link, Split (COMPLETED)
+- [x] Feature Requests module (COMPLETED)
 
 ---
 
