@@ -421,6 +421,55 @@ Major design refresh completed:
 
 ---
 
+## Phase 13: CSAT (Customer Satisfaction) System ✅ COMPLETED (1/25/2026)
+
+### Backend APIs
+- [x] `POST /api/csat/send/{ticket_id}` - Generate CSAT survey email (MOCKED)
+  - Creates secure token for rating links
+  - Generates HTML email template with star ratings
+  - 7-day expiration on survey links
+- [x] `GET /api/csat/rate` - Handle rating from email (no auth required)
+  - Validates token and expiration
+  - Stores rating in database
+  - Updates ticket with CSAT score
+  - **Creates LOW CSAT ALERT for ratings ≤2**
+- [x] `POST /api/csat/{response_id}/feedback` - Add optional feedback
+- [x] `GET /api/csat/ticket/{ticket_id}` - Get CSAT data for ticket
+- [x] `GET /api/csat/analytics` - CSAT metrics dashboard
+- [x] `GET /api/notifications` - Low CSAT alert notifications
+- [x] `PUT /api/notifications/{id}/read` - Mark notification read
+
+### Frontend Components
+- [x] **CSATPage** (`/csat/:token`) - Public landing page
+  - One-click rating submission from email
+  - Thank you confirmation with star display
+  - Optional feedback textarea
+  - Already submitted handling
+  - Error/expired link handling
+- [x] **CSAT in TicketDrawer** - Customer Satisfaction section
+  - Shows rating stars if CSAT received
+  - Shows "Survey sent" status if pending
+  - "Send CSAT Survey" button for resolved tickets
+- [x] **CSAT in Analytics** - Dashboard section
+  - Average rating with visual stars
+  - Rating distribution bar chart
+  - Satisfaction rate percentage
+  - Low ratings alerts list
+
+### Email Design (MOCKED)
+- [x] Professional HTML email template
+- [x] One-click star rating links
+- [x] Mobile-responsive design
+- [x] Personalized with customer name and ticket details
+- [x] 7-day expiration notice
+
+### Low Rating Alerts
+- [x] Auto-notification when rating ≤2
+- [x] Stores in notifications collection
+- [x] Displays in Analytics dashboard
+
+---
+
 ## Phase 6: Leave Management System ✅ COMPLETED (1/25/2026)
 
 ### Backend (`/app/backend/leave_management.py`)
