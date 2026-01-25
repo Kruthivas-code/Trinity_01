@@ -3484,6 +3484,7 @@ leave_manager = get_leave_manager(db)
 @app.post("/api/leaves")
 async def create_leave(
     leave_data: LeaveRequest,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user)
 ):
     """Create a new leave entry (auto-approved)"""
@@ -3492,6 +3493,14 @@ async def create_leave(
         leave_data.user_id = current_user.get("user_id")
     
     leave = await leave_manager.create_leave(leave_data)
+    
+    # Broadcast to connected clients
+    background_tasks.add_task(
+        broadcast_leave_created,
+        leave,
+        {"user_id": current_user.get("user_id"), "name": current_user.get("name")}
+    )
+    
     return leave
 
 @app.get("/api/leaves")
