@@ -1,9 +1,8 @@
 import React from 'react';
 
 /**
- * TridentIcon - Trinity's brand icon
- * A minimalist, sleek trident inspired by Maserati's logo
- * Represents power, precision, and the Trinity brand
+ * TriangleIcon - Trinity's brand icon
+ * A clean, minimal triangle representing stability and direction
  */
 export const TridentIcon = ({ 
   size = 24, 
@@ -22,29 +21,11 @@ export const TridentIcon = ({
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`trident-icon ${className}`}
+      className={className}
       {...props}
     >
-      {/* Center prong - tallest */}
-      <path d="M12 2v16" />
-      <path d="M12 2l-1.5 3" />
-      <path d="M12 2l1.5 3" />
-      
-      {/* Left prong - curved elegantly */}
-      <path d="M12 7c-2 -1.5 -3.5 -3 -4 -5" />
-      <path d="M8 2l-0.5 2" />
-      <path d="M8 2l1.2 1.2" />
-      
-      {/* Right prong - curved elegantly */}
-      <path d="M12 7c2 -1.5 3.5 -3 4 -5" />
-      <path d="M16 2l0.5 2" />
-      <path d="M16 2l-1.2 1.2" />
-      
-      {/* Handle */}
-      <path d="M12 18v4" strokeWidth={strokeWidth * 1.2} />
-      
-      {/* Cross guard */}
-      <path d="M9 18h6" />
+      {/* Simple elegant triangle pointing up */}
+      <path d="M12 3L21 20H3L12 3Z" />
     </svg>
   );
 };
@@ -58,16 +39,16 @@ export const TridentLogo = ({
   className = '' 
 }) => {
   const sizes = {
-    sm: { icon: 20, text: 'text-base' },
-    default: { icon: 24, text: 'text-lg' },
-    lg: { icon: 32, text: 'text-xl' }
+    sm: { icon: 18, text: 'text-base' },
+    default: { icon: 20, text: 'text-lg' },
+    lg: { icon: 28, text: 'text-xl' }
   };
   
   const { icon, text } = sizes[size] || sizes.default;
   
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <TridentIcon size={icon} className="text-primary" />
+      <TridentIcon size={icon} className="text-primary" strokeWidth={2} />
       {showText && (
         <span className={`brand ${text} font-bold tracking-tight`}>
           Trinity
