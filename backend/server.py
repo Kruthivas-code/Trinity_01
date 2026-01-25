@@ -3091,6 +3091,145 @@ async def update_admin_settings(
     
     return admin_settings_collection.find_one({"type": "global"})
 
+# ==================== Routing Rules Endpoints ====================
+
+@app.get("/api/admin/routing-rules")
+async def get_routing_rules(current_user: dict = Depends(get_current_user)):
+    """Get all routing rules"""
+    rules = list(routing_rules_collection.find({}, {"_id": 0}).sort("priority", -1))
+    return [serialize_doc(r) for r in rules]
+
+@app.post("/api/admin/routing-rules")
+async def create_routing_rule(
+    rule_data: RoutingRuleCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new routing rule"""
+    rule_id = f"rule_{uuid.uuid4().hex[:12]}"
+    
+    rule_doc = {
+        "rule_id": rule_id,
+        "name": rule_data.name,
+        "description": rule_data.description,
+        "conditions": rule_data.conditions,
+        "actions": rule_data.actions,
+        "priority": rule_data.priority,
+        "is_active": rule_data.is_active,
+        "created_by": current_user["user_id"],
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    routing_rules_collection.insert_one(rule_doc)
+    return serialize_doc(rule_doc)
+
+@app.put("/api/admin/routing-rules/{rule_id}")
+async def update_routing_rule(
+    rule_id: str,
+    rule_data: RoutingRuleUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a routing rule"""
+    update_data = {"updated_at": datetime.now(timezone.utc)}
+    
+    if rule_data.name is not None:
+        update_data["name"] = rule_data.name
+    if rule_data.description is not None:
+        update_data["description"] = rule_data.description
+    if rule_data.conditions is not None:
+        update_data["conditions"] = rule_data.conditions
+    if rule_data.actions is not None:
+        update_data["actions"] = rule_data.actions
+    if rule_data.priority is not None:
+        update_data["priority"] = rule_data.priority
+    if rule_data.is_active is not None:
+        update_data["is_active"] = rule_data.is_active
+    
+    result = routing_rules_collection.update_one(
+        {"rule_id": rule_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    
+    rule = routing_rules_collection.find_one({"rule_id": rule_id}, {"_id": 0})
+    return serialize_doc(rule)
+
+@app.delete("/api/admin/routing-rules/{rule_id}")
+async def delete_routing_rule(
+    rule_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a routing rule"""
+    result = routing_rules_collection.delete_one({"rule_id": rule_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    
+    return {"message": "Rule deleted successfully"}
+
+@app.post("/api/admin/routing-rules/test")
+async def test_routing_rule(
+    ticket_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Test routing rules against a sample ticket (dry run - no changes)"""
+    rules = list(routing_rules_collection.find(
+        {"is_active": True}, 
+        {"_id": 0}
+    ).sort("priority", -1))
+    
+    matched_rules = []
+    for rule in rules:
+        conditions = rule.get("conditions", [])
+        all_match = True
+        condition_results = []
+        
+        for condition in conditions:
+            result = evaluate_condition(ticket_data, condition)
+            condition_results.append({
+                "condition": condition,
+                "matched": result
+            })
+            if not result:
+                all_match = False
+        
+        if all_match:
+            matched_rules.append({
+                "rule_id": rule.get("rule_id"),
+                "rule_name": rule.get("name"),
+                "priority": rule.get("priority"),
+                "actions": rule.get("actions"),
+                "condition_results": condition_results
+            })
+    
+    return {
+        "ticket_data": ticket_data,
+        "matched_rules": matched_rules,
+        "would_apply": matched_rules[0] if matched_rules else None
+    }
+
+@app.post("/api/tickets/{ticket_id}/route")
+async def route_ticket(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Manually trigger routing rules for a ticket"""
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    result = run_routing_rules(ticket)
+    
+    # Get updated ticket
+    updated_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    
+    return {
+        "ticket": serialize_doc(updated_ticket),
+        "routing_result": result
+    }
+
 # ==================== Conversation History Endpoints ====================
 
 @app.get("/api/tickets/by-email/{email}")
