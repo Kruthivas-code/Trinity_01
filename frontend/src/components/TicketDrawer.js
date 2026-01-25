@@ -1527,6 +1527,93 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               )}
             </div>
 
+            {/* CSAT Section */}
+            {ticket?.customer_email && (
+              <>
+                <div className="h-px bg-border/30" />
+                <div>
+                  <div className="flex items-center justify-between py-1">
+                    <div className="flex items-center gap-2">
+                      <MessageSquareHeart size={12} className="text-muted-foreground" />
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Customer Satisfaction</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-2">
+                    {csatData?.has_response ? (
+                      // Show CSAT score
+                      <div className="p-3 rounded-lg bg-secondary/20 border border-border/30">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map(star => (
+                              <Star
+                                key={star}
+                                size={16}
+                                className={star <= csatData.rating 
+                                  ? 'fill-yellow-400 text-yellow-400' 
+                                  : 'fill-transparent text-gray-400'
+                                }
+                              />
+                            ))}
+                          </div>
+                          <span className={`text-xs font-medium ${
+                            csatData.rating >= 4 ? 'text-emerald-400' : 
+                            csatData.rating >= 3 ? 'text-amber-400' : 'text-red-400'
+                          }`}>
+                            {csatData.rating}/5
+                          </span>
+                        </div>
+                        {csatData.feedback && (
+                          <p className="text-xs text-muted-foreground mt-2 italic">
+                            "{csatData.feedback}"
+                          </p>
+                        )}
+                        <p className="text-[10px] text-muted-foreground/60 mt-2">
+                          by {csatData.customer_name} · {new Date(csatData.submitted_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ) : csatData?.survey_sent ? (
+                      // Survey sent but not responded
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                        <div className="flex items-center gap-2 text-amber-400">
+                          <Mail size={14} />
+                          <span className="text-xs font-medium">Survey sent</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          Awaiting response · Expires {new Date(csatData.expires_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ) : formData.status === 'resolved' ? (
+                      // Can send survey (ticket resolved)
+                      <button
+                        onClick={handleSendCsat}
+                        disabled={sendingCsat}
+                        className="w-full py-2 px-3 rounded-lg bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary text-xs font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                        data-testid="send-csat-button"
+                      >
+                        {sendingCsat ? (
+                          <>
+                            <Loader2 size={14} className="animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send size={14} />
+                            Send CSAT Survey
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      // Ticket not resolved yet
+                      <p className="text-[10px] text-muted-foreground/60 italic">
+                        Resolve ticket to send CSAT survey
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+
             {/* Custom Fields Section */}
             {customFields.length > 0 && (
               <>
