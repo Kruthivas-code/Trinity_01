@@ -395,6 +395,17 @@ const AdminPage = ({ user }) => {
                 <Building size={16} />
                 General Settings
               </button>
+              <button
+                onClick={() => setActiveTab('export')}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  activeTab === 'export'
+                    ? 'bg-primary/20 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+              >
+                <Download size={16} />
+                Data Export
+              </button>
             </nav>
           </aside>
 
