@@ -3471,9 +3471,120 @@ async def health_check():
         "version": "2.0.0",
         "features": {
             "realtime": True,
-            "search": True
+            "search": True,
+            "leave_management": True
         }
     }
+
+
+# ==================== Leave Management API ====================
+
+leave_manager = get_leave_manager(db)
+
+@app.post("/api/leaves")
+async def create_leave(
+    leave_data: LeaveRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new leave entry (auto-approved)"""
+    # Allow creating leave for self or others (minimal friction)
+    if not leave_data.user_id:
+        leave_data.user_id = current_user.get("user_id")
+    
+    leave = await leave_manager.create_leave(leave_data)
+    return leave
+
+@app.get("/api/leaves")
+async def get_leaves(
+    user_id: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    status: Optional[str] = None,
+    leave_type: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get leaves with optional filters"""
+    leaves = await leave_manager.get_leaves(
+        user_id=user_id,
+        start_date=start_date,
+        end_date=end_date,
+        status=status,
+        leave_type=leave_type
+    )
+    return leaves
+
+@app.get("/api/leaves/types")
+async def get_leave_types(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all available leave types"""
+    types = await leave_manager.get_leave_types()
+    return {"types": types}
+
+@app.get("/api/leaves/calendar/{year}/{month}")
+async def get_team_calendar(
+    year: int,
+    month: int,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get team calendar for a month"""
+    calendar = await leave_manager.get_team_calendar(year, month)
+    return {"year": year, "month": month, "days": calendar}
+
+@app.get("/api/leaves/conflicts")
+async def check_leave_conflicts(
+    start_date: str,
+    end_date: str,
+    exclude_user_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Check for leave conflicts on given dates"""
+    conflicts = await leave_manager.check_conflicts(start_date, end_date, exclude_user_id)
+    return conflicts
+
+@app.get("/api/leaves/summary/{user_id}")
+async def get_user_leave_summary(
+    user_id: str,
+    year: Optional[int] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get leave summary for a user"""
+    summary = await leave_manager.get_user_leave_summary(user_id, year)
+    return summary
+
+@app.get("/api/leaves/{leave_id}")
+async def get_leave(
+    leave_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific leave entry"""
+    leave = await leave_manager.get_leave(leave_id)
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave not found")
+    return leave
+
+@app.put("/api/leaves/{leave_id}")
+async def update_leave(
+    leave_id: str,
+    update_data: LeaveUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a leave entry (admin can edit/deny)"""
+    leave = await leave_manager.update_leave(leave_id, update_data)
+    if not leave:
+        raise HTTPException(status_code=404, detail="Leave not found")
+    return leave
+
+@app.delete("/api/leaves/{leave_id}")
+async def delete_leave(
+    leave_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a leave entry"""
+    deleted = await leave_manager.delete_leave(leave_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Leave not found")
+    return {"message": "Leave deleted successfully"}
 
 
 if __name__ == "__main__":
