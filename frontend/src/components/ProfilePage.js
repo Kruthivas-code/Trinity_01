@@ -378,6 +378,7 @@ const ProfilePage = ({ user: currentUser }) => {
               </div>
             )}
           </div>
+          )}
         </div>
 
       {/* Add Shift Modal */}
