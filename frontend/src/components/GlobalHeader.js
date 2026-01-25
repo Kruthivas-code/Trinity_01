@@ -97,13 +97,56 @@ const GlobalHeader = ({ user, onCreateTicket, onOpenCommandPalette }) => {
     setSearchQuery('');
     setQuickResults([]);
     
-    if (result.action?.startsWith('/')) {
-      navigate(result.action);
-    } else if (result.type === 'action') {
-      // Handle actions
-      if (result.action === 'create_ticket' && onCreateTicket) {
-        onCreateTicket();
-      }
+    // Handle different result types
+    switch (result.type) {
+      case 'ticket':
+        // Navigate to all-tickets and open the ticket drawer
+        navigate(`/all-tickets?ticket=${result.id}`);
+        // Dispatch event to open ticket drawer
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('trinity:open-ticket', { detail: { ticketId: result.id } }));
+        }, 100);
+        break;
+      
+      case 'user':
+        // Navigate to profile page with user param
+        navigate(`/profile?user=${result.id}`);
+        break;
+      
+      case 'team':
+        // Navigate to teams page and highlight the team
+        navigate(`/teams?team=${result.id}`);
+        break;
+      
+      case 'customer':
+        // Search for all tickets from this customer
+        navigate(`/search?q=customer:${encodeURIComponent(result.email || result.id)}`);
+        break;
+      
+      case 'action':
+        // Handle actions
+        if (result.action === 'create_ticket' && onCreateTicket) {
+          onCreateTicket();
+        } else if (result.action === 'create_team') {
+          navigate('/teams');
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('trinity:create-team'));
+          }, 100);
+        } else if (result.action === 'toggle_theme' || result.action === 'theme_light' || result.action === 'theme_dark') {
+          window.dispatchEvent(new CustomEvent('trinity:toggle-theme'));
+        } else if (result.action === 'logout') {
+          window.location.href = '/login';
+        }
+        break;
+      
+      case 'command':
+      case 'filter':
+      default:
+        // Navigation or filter - use the action URL
+        if (result.action?.startsWith('/')) {
+          navigate(result.action);
+        }
+        break;
     }
   };
 
