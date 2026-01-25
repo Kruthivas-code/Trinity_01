@@ -200,7 +200,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       // Silently sync with backend (no visual change expected)
       await fetchAnalytics();
     } catch (error) {
-      toast.error(error.message);
+      console.error('Failed to reorder:', error);
       // Revert on error - refetch the actual state
       await fetchTickets();
     }
@@ -223,10 +223,8 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
-      toast.success(`Tickets exported as ${format.toUpperCase()}`);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Export failed:', error);
     }
   };
 
@@ -246,31 +244,92 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
         throw new Error(error.detail || 'Failed to import tickets');
       }
       
-      const data = await response.json();
-      toast.success(data.message);
       await fetchTickets();
       await fetchAnalytics();
       setIsImportModalOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Import failed:', error);
+    }
+  };
+  
+  // Check if ticket matches date filter
+  const matchesDateFilter = (ticket) => {
+    if (filters.dateRange === 'all') return true;
+    const createdAt = new Date(ticket.created_at);
+    const now = new Date();
+    
+    switch (filters.dateRange) {
+      case 'today':
+        return createdAt.toDateString() === now.toDateString();
+      case 'week':
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return createdAt >= weekAgo;
+      case 'month':
+        const monthAgo = new Date(now);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        return createdAt >= monthAgo;
+      default:
+        return true;
     }
   };
 
-  // Get tickets to display based on viewMode and priority filter
+  // Get tickets to display based on viewMode and all filters
   const getFilteredTickets = () => {
     let baseTickets = viewMode === 'mentioned' ? mentionedTickets : 
                       viewMode === 'all' ? [...tickets, ...mentionedTickets.filter(t => !tickets.find(mt => mt.id === t.id))] :
                       tickets;
     
     // Apply priority filter
-    if (priorityFilter !== 'all') {
-      baseTickets = baseTickets.filter(t => t.priority === priorityFilter);
+    if (filters.priority !== 'all') {
+      baseTickets = baseTickets.filter(t => t.priority === filters.priority);
+    }
+    
+    // Apply status filter
+    if (filters.status !== 'all') {
+      baseTickets = baseTickets.filter(t => t.status === filters.status);
+    }
+    
+    // Apply tag filter
+    if (filters.tag) {
+      baseTickets = baseTickets.filter(t => (t.tags || []).includes(filters.tag));
+    }
+    
+    // Apply date filter
+    baseTickets = baseTickets.filter(matchesDateFilter);
+    
+    // Apply search (ticket_id or uuid)
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      baseTickets = baseTickets.filter(t => 
+        (t.ticket_id && t.ticket_id.toLowerCase().includes(searchLower)) ||
+        (t.uuid && t.uuid.toLowerCase().includes(searchLower))
+      );
     }
     
     return baseTickets;
   };
   
   const displayTickets = getFilteredTickets();
+  
+  // Count active filters
+  const activeFilterCount = [
+    filters.priority !== 'all',
+    filters.status !== 'all',
+    filters.tag !== '',
+    filters.dateRange !== 'all',
+    filters.search !== ''
+  ].filter(Boolean).length;
+  
+  const clearFilters = () => {
+    setFilters({
+      priority: 'all',
+      status: 'all',
+      tag: '',
+      dateRange: 'all',
+      search: ''
+    });
+  };
 
   if (loading) {
     return (
