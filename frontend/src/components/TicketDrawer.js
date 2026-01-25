@@ -189,6 +189,16 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [snoozed, setSnoozed] = useState(false);
   
+  // Modal states for new features
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [showSplitModal, setShowSplitModal] = useState(false);
+  const [showFeatureRequestModal, setShowFeatureRequestModal] = useState(false);
+  const [splitMessageIndex, setSplitMessageIndex] = useState(null);
+  
+  // Linked tickets
+  const [linkedTickets, setLinkedTickets] = useState([]);
+  
   // Collapsible sections
   const [sectionsExpanded, setSectionsExpanded] = useState({
     links: false,
@@ -217,12 +227,31 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       setIsStarred(ticket.is_starred || false);
       setSnoozed(ticket.snoozed || false);
       setShowMoreMenu(false);
+      setLinkedTickets(ticket.linked_tickets || []);
       fetchNotes(ticket.id);
       fetchRelatedTickets(ticket.id);
       fetchCustomFields();
       fetchAssignmentOptions(ticket.id);
     }
   }, [ticket]);
+
+  // Handle assignment change - persist to backend
+  const handleAssign = async (userId) => {
+    setFormData({ ...formData, assignee_id: userId });
+    setShowAssignDropdown(false);
+    
+    if (onUpdate && ticket) {
+      await onUpdate(ticket.id, { assignee_id: userId });
+    }
+  };
+
+  // Assign to current user
+  const handleAssignToMe = async () => {
+    const myUserId = currentUser?.user_id || currentUser?.id;
+    if (myUserId) {
+      await handleAssign(myUserId);
+    }
+  };
 
   // Handle star toggle
   const handleToggleStar = async () => {
