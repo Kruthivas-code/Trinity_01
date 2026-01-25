@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, 
   User, ChevronDown, Menu, X, LogOut, Users, Shield, CalendarDays,
-  GripVertical
+  GripVertical, Bookmark
 } from 'lucide-react';
 
 import { TridentIcon } from './TridentIcon';
