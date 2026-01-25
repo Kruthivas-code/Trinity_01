@@ -418,6 +418,17 @@ const FeatureRequestCard = ({ request, statusConfig, onClick, onStatusChange }) 
 const CreateFeatureRequestModal = ({ onClose, onCreate }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [requestType, setRequestType] = useState('feature');
+  const [priority, setPriority] = useState('medium');
+
+  const handleSubmit = () => {
+    onCreate({
+      title,
+      description,
+      request_type: requestType,
+      priority
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -436,26 +447,77 @@ const CreateFeatureRequestModal = ({ onClose, onCreate }) => {
         </div>
         
         <div className="p-4 space-y-4">
+          {/* Type Selection */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Type *</label>
+            <div className="grid grid-cols-3 gap-2">
+              {Object.entries(TYPE_CONFIG).map(([type, config]) => {
+                const IconComponent = config.icon;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setRequestType(type)}
+                    className={`p-3 rounded-lg border text-sm flex flex-col items-center gap-1.5 transition-colors ${
+                      requestType === type 
+                        ? 'border-primary bg-primary/10 text-primary' 
+                        : 'border-border/40 hover:bg-secondary/50'
+                    }`}
+                  >
+                    <IconComponent size={18} />
+                    <span>{config.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div>
             <label className="text-sm font-medium mb-2 block">Title *</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Feature request title..."
+              placeholder={
+                requestType === 'bug_fix' ? 'Bug description...' :
+                requestType === 'enhancement' ? 'Enhancement title...' :
+                'Feature request title...'
+              }
               className="w-full h-10 px-3 rounded-lg bg-secondary/50 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               autoFocus
             />
           </div>
+          
           <div>
             <label className="text-sm font-medium mb-2 block">Description</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the feature request..."
+              placeholder="Describe the request in detail..."
               rows={4}
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
             />
+          </div>
+
+          {/* Priority Selection */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Priority</label>
+            <div className="flex gap-2">
+              {Object.entries(PRIORITY_CONFIG).map(([p, config]) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPriority(p)}
+                  className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-colors ${
+                    priority === p 
+                      ? config.color.replace('/20', '') + ' text-white'
+                      : 'bg-secondary/50 hover:bg-secondary text-muted-foreground'
+                  }`}
+                >
+                  {config.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         
@@ -467,7 +529,7 @@ const CreateFeatureRequestModal = ({ onClose, onCreate }) => {
             Cancel
           </button>
           <button
-            onClick={() => onCreate(title, description)}
+            onClick={handleSubmit}
             disabled={!title.trim()}
             className="h-9 px-4 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
