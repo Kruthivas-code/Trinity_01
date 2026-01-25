@@ -44,6 +44,7 @@ const Sidebar = ({ user }) => {
   const mainItems = [
     { id: 'teams', label: 'Teams', icon: Users, path: '/teams' },
     { id: 'leaves', label: 'Leaves', icon: CalendarDays, path: '/leaves' },
+    { id: 'feature-requests', label: 'Feature Requests', icon: Bookmark, path: '/feature-requests' },
     { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
     { id: 'admin', label: 'Admin', icon: Shield, path: '/admin' },
