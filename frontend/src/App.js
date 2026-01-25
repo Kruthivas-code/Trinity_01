@@ -18,6 +18,7 @@ import CommandPalette from './components/CommandPalette';
 import FeatureRequestsPage from './components/FeatureRequestsPage';
 import CustomersPage from './components/CustomersPage';
 import AnalyticsPage from './components/AnalyticsPage';
+import CSATPage from './components/CSATPage';
 import { Toaster } from './components/ui/sonner';
 
 function AppRouter() {
