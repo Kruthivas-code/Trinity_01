@@ -37,10 +37,14 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
 app = FastAPI(
-    title="TickFlow API",
-    description="Enterprise ticket management platform",
-    version="1.0.0"
+    title="Trinity API",
+    description="Enterprise ticket management platform with real-time collaboration",
+    version="2.0.0"
 )
+
+# Mount Socket.IO for WebSocket support
+# Socket.IO will handle /socket.io/ routes
+app.mount("/socket.io", socket_app)
 
 # CORS
 app.add_middleware(
