@@ -340,6 +340,9 @@ const FeatureRequestsPage = ({ user }) => {
 // Feature Request Card Component
 const FeatureRequestCard = ({ request, statusConfig, onClick, onStatusChange }) => {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
+  const typeConfig = TYPE_CONFIG[request.request_type] || TYPE_CONFIG.feature;
+  const priorityConfig = PRIORITY_CONFIG[request.priority] || PRIORITY_CONFIG.medium;
+  const TypeIcon = typeConfig.icon;
 
   return (
     <div
@@ -348,10 +351,17 @@ const FeatureRequestCard = ({ request, statusConfig, onClick, onStatusChange }) 
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-xs font-mono text-muted-foreground">{request.feature_request_id}</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 ${typeConfig.color}`}>
+              <TypeIcon size={10} />
+              {typeConfig.label}
+            </span>
             <span className={`text-[10px] px-1.5 py-0.5 rounded ${statusConfig.color}`}>
               {statusConfig.label}
+            </span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded ${priorityConfig.color}`}>
+              {priorityConfig.label}
             </span>
           </div>
           <h3 className="text-sm font-medium truncate">{request.title}</h3>
