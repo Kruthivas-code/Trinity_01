@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   Settings, Plus, Trash2, Save, X, ChevronDown, ChevronRight,
   Type, Hash, Calendar, ToggleLeft, List, Building, User, Ticket,
-  Loader2, GripVertical, Clock, Users, UserPlus
+  Loader2, GripVertical, Clock, Users, UserPlus, Zap
 } from 'lucide-react';
 import Sidebar from './Sidebar';
+import RoutingRulesTab from './RoutingRulesTab';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
