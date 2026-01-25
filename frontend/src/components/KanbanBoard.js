@@ -1,20 +1,17 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
-  closestCenter,
-  pointerWithin,
-  rectIntersection,
-  getFirstCollision,
   PointerSensor,
   useSensor,
   useSensors,
-  MeasuringStrategy
+  MeasuringStrategy,
+  pointerWithin,
+  rectIntersection
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
-  horizontalListSortingStrategy
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable';
 import KanbanColumn from './KanbanColumn';
 import TicketCard from './TicketCard';
@@ -27,45 +24,21 @@ const COLUMNS = [
   { id: 'resolved', title: 'Resolved' }
 ];
 
-// Custom collision detection that works better for kanban boards
-const customCollisionDetection = (args) => {
-  // First, check if we're over a droppable column
-  const pointerCollisions = pointerWithin(args);
-  const intersectionCollisions = rectIntersection(args);
-  
-  // Combine and prioritize collisions
-  const collisions = pointerCollisions.length > 0 ? pointerCollisions : intersectionCollisions;
-  
-  // Get first collision
-  const firstCollision = getFirstCollision(collisions, 'id');
-  
-  if (firstCollision) {
-    // If collision is with a column, return it
-    if (COLUMNS.some(col => col.id === firstCollision)) {
-      return [{ id: firstCollision }];
-    }
-    return collisions;
-  }
-  
-  // Fall back to closest center
-  return closestCenter(args);
-};
-
 const KanbanBoard = ({ tickets, users, onTicketClick, onDragEnd, onCreateTicket }) => {
   const [activeId, setActiveId] = useState(null);
   const [activeTicket, setActiveTicket] = useState(null);
-  const [overId, setOverId] = useState(null);
+  const lastOverId = useRef(null);
 
-  // Optimized sensor with lower activation distance for snappier feel
+  // Single optimized sensor - minimal activation distance
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Lower distance for quicker activation
+        distance: 3,
       },
     })
   );
 
-  // Group tickets by status with memoization
+  // Group tickets by status
   const ticketsByStatus = useMemo(() => {
     const grouped = {
       todo: [],
@@ -81,7 +54,6 @@ const KanbanBoard = ({ tickets, users, onTicketClick, onDragEnd, onCreateTicket 
       }
     });
 
-    // Sort by order
     Object.keys(grouped).forEach(status => {
       grouped[status].sort((a, b) => (a.order || 0) - (b.order || 0));
     });
@@ -89,16 +61,10 @@ const KanbanBoard = ({ tickets, users, onTicketClick, onDragEnd, onCreateTicket 
     return grouped;
   }, [tickets]);
 
-  // Find which column contains a ticket or is the column itself
   const findContainer = useCallback((id) => {
     if (!id) return null;
+    if (COLUMNS.some(col => col.id === id)) return id;
     
-    // Check if id is a column
-    if (COLUMNS.some(col => col.id === id)) {
-      return id;
-    }
-
-    // Find which column contains this ticket
     for (const [status, ticketList] of Object.entries(ticketsByStatus)) {
       if (ticketList.some(ticket => ticket.id === id)) {
         return status;
@@ -107,86 +73,60 @@ const KanbanBoard = ({ tickets, users, onTicketClick, onDragEnd, onCreateTicket 
     return null;
   }, [ticketsByStatus]);
 
+  // Simple collision detection
+  const collisionDetection = useCallback((args) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) return pointerCollisions;
+    return rectIntersection(args);
+  }, []);
+
   const handleDragStart = useCallback((event) => {
     const { active } = event;
+    const ticket = tickets.find(t => t.id === active.id);
     setActiveId(active.id);
-    setActiveTicket(tickets.find(t => t.id === active.id) || null);
+    setActiveTicket(ticket || null);
+    lastOverId.current = null;
   }, [tickets]);
-
-  const handleDragOver = useCallback((event) => {
-    const { over } = event;
-    setOverId(over?.id || null);
-  }, []);
 
   const handleDragEnd = useCallback((event) => {
     const { active, over } = event;
     
     setActiveId(null);
     setActiveTicket(null);
-    setOverId(null);
 
     if (!over) return;
 
     const activeContainer = findContainer(active.id);
-    let overContainer = findContainer(over.id);
-
-    // If over.id is a column ID, use it directly
-    if (COLUMNS.some(col => col.id === over.id)) {
-      overContainer = over.id;
-    }
+    let overContainer = COLUMNS.some(col => col.id === over.id) ? over.id : findContainer(over.id);
 
     if (!activeContainer || !overContainer) return;
 
-    // Get the ticket being moved
-    const movedTicket = tickets.find(t => t.id === active.id);
-    if (!movedTicket) return;
-
-    // Calculate new order
     const overTickets = ticketsByStatus[overContainer] || [];
-    let newOrder = 0;
+    let newOrder = overTickets.length;
 
-    if (over.id === overContainer) {
-      // Dropped on column itself - add to end
-      newOrder = overTickets.length;
-    } else {
-      // Dropped on a ticket - find its position
+    if (over.id !== overContainer) {
       const overIndex = overTickets.findIndex(t => t.id === over.id);
-      if (overIndex >= 0) {
-        // Insert at the position of the target ticket
-        newOrder = overIndex;
-      } else {
-        newOrder = overTickets.length;
-      }
+      if (overIndex >= 0) newOrder = overIndex;
     }
 
-    // Only trigger update if something changed
     if (activeContainer !== overContainer || active.id !== over.id) {
       onDragEnd(active.id, overContainer, newOrder);
     }
-  }, [findContainer, tickets, ticketsByStatus, onDragEnd]);
+  }, [findContainer, ticketsByStatus, onDragEnd]);
 
   const handleDragCancel = useCallback(() => {
     setActiveId(null);
     setActiveTicket(null);
-    setOverId(null);
   }, []);
-
-  // Measuring configuration for better drop zone detection
-  const measuringConfig = {
-    droppable: {
-      strategy: MeasuringStrategy.Always,
-    },
-  };
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={customCollisionDetection}
+      collisionDetection={collisionDetection}
       onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
-      measuring={measuringConfig}
+      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
     >
       <div className="relative h-[calc(100vh-64px)] overflow-x-auto overflow-y-hidden">
         <div className="flex h-full gap-4 px-6 pb-6 pt-4 min-w-max" data-testid="kanban-track">
@@ -199,27 +139,16 @@ const KanbanBoard = ({ tickets, users, onTicketClick, onDragEnd, onCreateTicket 
               onTicketClick={onTicketClick}
               onCreateTicket={onCreateTicket}
               staggerIndex={index + 1}
-              isOver={overId === column.id || findContainer(overId) === column.id}
               activeId={activeId}
             />
           ))}
         </div>
       </div>
 
-      <DragOverlay
-        dropAnimation={{
-          duration: 200,
-          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
-        }}
-      >
+      <DragOverlay dropAnimation={null}>
         {activeTicket && (
-          <div className="transform rotate-2 scale-105 opacity-95">
-            <TicketCard 
-              ticket={activeTicket} 
-              users={users} 
-              onClick={() => {}} 
-              isDragging 
-            />
+          <div style={{ transform: 'rotate(3deg)', opacity: 0.9 }}>
+            <TicketCard ticket={activeTicket} users={users} onClick={() => {}} isDragging />
           </div>
         )}
       </DragOverlay>
