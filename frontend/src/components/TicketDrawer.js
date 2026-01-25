@@ -1384,7 +1384,658 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           </div>
         </div>
       </div>
+      
+      {/* Merge Ticket Modal */}
+      {showMergeModal && (
+        <MergeTicketModal
+          ticket={ticket}
+          onClose={() => setShowMergeModal(false)}
+          onMerge={async (targetTicketId) => {
+            try {
+              const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/merge`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ target_ticket_id: targetTicketId })
+              });
+              if (response.ok) {
+                setShowMergeModal(false);
+                onClose();
+              }
+            } catch (error) {
+              console.error('Merge failed:', error);
+            }
+          }}
+        />
+      )}
+      
+      {/* Link Ticket Modal */}
+      {showLinkModal && (
+        <LinkTicketModal
+          ticket={ticket}
+          linkedTickets={linkedTickets}
+          onClose={() => setShowLinkModal(false)}
+          onLink={async (targetTicketId, linkType) => {
+            try {
+              const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/link`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ target_ticket_id: targetTicketId, link_type: linkType })
+              });
+              if (response.ok) {
+                const data = await response.json();
+                setLinkedTickets(data.linked_tickets || []);
+                setShowLinkModal(false);
+              }
+            } catch (error) {
+              console.error('Link failed:', error);
+            }
+          }}
+          onUnlink={async (targetTicketId) => {
+            try {
+              const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/unlink/${targetTicketId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+              });
+              if (response.ok) {
+                setLinkedTickets(linkedTickets.filter(t => t.ticket_id !== targetTicketId));
+              }
+            } catch (error) {
+              console.error('Unlink failed:', error);
+            }
+          }}
+        />
+      )}
+      
+      {/* Split Ticket Modal */}
+      {showSplitModal && (
+        <SplitTicketModal
+          ticket={ticket}
+          notes={notes}
+          splitMessageIndex={splitMessageIndex}
+          onClose={() => setShowSplitModal(false)}
+          onSplit={async (splitIndex, newTicketTitle) => {
+            try {
+              const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/split`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ split_at_index: splitIndex, new_ticket_title: newTicketTitle })
+              });
+              if (response.ok) {
+                setShowSplitModal(false);
+                // Refresh the current ticket
+                onUpdate && onUpdate(ticket.id, {});
+              }
+            } catch (error) {
+              console.error('Split failed:', error);
+            }
+          }}
+        />
+      )}
+      
+      {/* Feature Request Modal */}
+      {showFeatureRequestModal && (
+        <FeatureRequestModal
+          ticket={ticket}
+          onClose={() => setShowFeatureRequestModal(false)}
+          onLink={async (featureRequestId) => {
+            try {
+              const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/feature-request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ feature_request_id: featureRequestId })
+              });
+              if (response.ok) {
+                setShowFeatureRequestModal(false);
+              }
+            } catch (error) {
+              console.error('Link to feature request failed:', error);
+            }
+          }}
+        />
+      )}
     </>
+  );
+};
+
+// Merge Ticket Modal Component
+const MergeTicketModal = ({ ticket, onClose, onMerge }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+
+  const searchTickets = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/search?q=${encodeURIComponent(query)}&types=tickets`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSearchResults((data.tickets || []).filter(t => t.ticket_id !== ticket.ticket_id).slice(0, 10));
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => searchTickets(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg glass rounded-xl border border-border/60 shadow-2xl">
+        <div className="p-4 border-b border-border/40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Merge size={18} className="text-primary" />
+              <h3 className="text-base font-semibold">Merge Ticket</h3>
+            </div>
+            <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded hover:bg-secondary/50">
+              <X size={18} />
+            </button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Merge <span className="text-foreground font-medium">{ticket.ticket_id}</span> into another ticket. All messages will be moved.
+          </p>
+        </div>
+        
+        <div className="p-4 space-y-4">
+          <div>
+            <label className="text-sm font-medium mb-2 block">Search for target ticket</label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by ticket ID, title, or content..."
+              className="w-full h-10 px-3 rounded-lg bg-secondary/50 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              autoFocus
+            />
+          </div>
+          
+          <div className="max-h-64 overflow-y-auto space-y-1">
+            {loading && (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 size={20} className="animate-spin text-muted-foreground" />
+              </div>
+            )}
+            {!loading && searchResults.map(result => (
+              <button
+                key={result.ticket_id}
+                onClick={() => setSelectedTicket(result)}
+                className={`w-full p-3 rounded-lg text-left transition-colors ${
+                  selectedTicket?.ticket_id === result.ticket_id 
+                    ? 'bg-primary/20 border border-primary/40' 
+                    : 'bg-secondary/30 hover:bg-secondary/50 border border-transparent'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-muted-foreground">{result.ticket_id}</span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    result.status === 'resolved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'
+                  }`}>{result.status}</span>
+                </div>
+                <p className="text-sm font-medium truncate mt-1">{result.title}</p>
+              </button>
+            ))}
+            {!loading && searchQuery && searchResults.length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-4">No tickets found</p>
+            )}
+          </div>
+        </div>
+        
+        <div className="p-4 border-t border-border/40 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="h-9 px-4 text-sm rounded-lg border border-border/40 hover:bg-secondary/50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => selectedTicket && onMerge(selectedTicket.ticket_id)}
+            disabled={!selectedTicket}
+            className="h-9 px-4 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Merge into {selectedTicket?.ticket_id || '...'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Link Ticket Modal Component
+const LinkTicketModal = ({ ticket, linkedTickets, onClose, onLink, onUnlink }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [linkType, setLinkType] = useState('related'); // related, blocks, blocked_by, duplicates
+
+  const linkTypes = [
+    { value: 'related', label: 'Related to' },
+    { value: 'blocks', label: 'Blocks' },
+    { value: 'blocked_by', label: 'Blocked by' },
+    { value: 'duplicates', label: 'Duplicates' },
+  ];
+
+  const searchTickets = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/search?q=${encodeURIComponent(query)}&types=tickets`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const existingLinks = linkedTickets.map(t => t.ticket_id);
+        setSearchResults((data.tickets || []).filter(t => 
+          t.ticket_id !== ticket.ticket_id && !existingLinks.includes(t.ticket_id)
+        ).slice(0, 10));
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => searchTickets(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg glass rounded-xl border border-border/60 shadow-2xl">
+        <div className="p-4 border-b border-border/40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Link size={18} className="text-primary" />
+              <h3 className="text-base font-semibold">Link Tickets</h3>
+            </div>
+            <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded hover:bg-secondary/50">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+        
+        <div className="p-4 space-y-4">
+          {/* Existing links */}
+          {linkedTickets.length > 0 && (
+            <div>
+              <label className="text-sm font-medium mb-2 block">Linked Tickets</label>
+              <div className="space-y-1">
+                {linkedTickets.map(link => (
+                  <div key={link.ticket_id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30">
+                    <div>
+                      <span className="text-xs text-muted-foreground">{link.link_type}</span>
+                      <p className="text-sm font-medium">{link.ticket_id} - {link.title}</p>
+                    </div>
+                    <button 
+                      onClick={() => onUnlink(link.ticket_id)}
+                      className="h-7 w-7 flex items-center justify-center rounded hover:bg-red-500/20 text-red-400"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Link type selector */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Link Type</label>
+            <div className="flex flex-wrap gap-1">
+              {linkTypes.map(type => (
+                <button
+                  key={type.value}
+                  onClick={() => setLinkType(type.value)}
+                  className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                    linkType === type.value ? 'bg-primary/20 text-primary' : 'bg-secondary/50 hover:bg-secondary/70'
+                  }`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Search */}
+          <div>
+            <label className="text-sm font-medium mb-2 block">Search ticket to link</label>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by ticket ID or title..."
+              className="w-full h-10 px-3 rounded-lg bg-secondary/50 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          
+          <div className="max-h-48 overflow-y-auto space-y-1">
+            {loading && (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 size={20} className="animate-spin text-muted-foreground" />
+              </div>
+            )}
+            {!loading && searchResults.map(result => (
+              <button
+                key={result.ticket_id}
+                onClick={() => onLink(result.ticket_id, linkType)}
+                className="w-full p-2 rounded-lg text-left bg-secondary/30 hover:bg-secondary/50 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-muted-foreground">{result.ticket_id}</span>
+                </div>
+                <p className="text-sm truncate">{result.title}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        <div className="p-4 border-t border-border/40 flex justify-end">
+          <button
+            onClick={onClose}
+            className="h-9 px-4 text-sm rounded-lg border border-border/40 hover:bg-secondary/50 transition-colors"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Split Ticket Modal Component
+const SplitTicketModal = ({ ticket, notes, splitMessageIndex, onClose, onSplit }) => {
+  const [selectedIndex, setSelectedIndex] = useState(splitMessageIndex);
+  const [newTitle, setNewTitle] = useState('');
+
+  const messages = [
+    { type: 'original', content: ticket.description, index: 0 },
+    ...notes.map((n, i) => ({ ...n, index: i + 1 }))
+  ];
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-2xl glass rounded-xl border border-border/60 shadow-2xl max-h-[80vh] flex flex-col">
+        <div className="p-4 border-b border-border/40 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Scissors size={18} className="text-primary" />
+              <h3 className="text-base font-semibold">Split Ticket</h3>
+            </div>
+            <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded hover:bg-secondary/50">
+              <X size={18} />
+            </button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            Select where to split. Messages after this point will move to a new ticket.
+          </p>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          {messages.map((msg, idx) => (
+            <div key={idx} className="relative">
+              {idx > 0 && (
+                <button
+                  onClick={() => setSelectedIndex(idx)}
+                  className={`absolute -top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-colors ${
+                    selectedIndex === idx 
+                      ? 'bg-red-500 text-white' 
+                      : 'bg-secondary/50 text-muted-foreground hover:bg-red-500/20 hover:text-red-400'
+                  }`}
+                >
+                  <Scissors size={10} />
+                  Split here
+                </button>
+              )}
+              <div className={`p-3 rounded-lg border ${
+                selectedIndex !== null && idx >= selectedIndex 
+                  ? 'bg-amber-500/10 border-amber-500/30' 
+                  : 'bg-secondary/30 border-border/30'
+              }`}>
+                <div className="text-[10px] text-muted-foreground mb-1">
+                  {msg.type === 'original' ? 'Original Message' : msg.type === 'internal_note' ? 'Internal Note' : 'Reply'}
+                </div>
+                <p className="text-sm line-clamp-2">{msg.content || msg.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {selectedIndex !== null && (
+          <div className="p-4 border-t border-border/40 space-y-3 shrink-0">
+            <div className="flex items-center gap-2 text-sm text-amber-400">
+              <AlertCircle size={14} />
+              <span>{messages.length - selectedIndex} message(s) will move to the new ticket</span>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1 block">New ticket title</label>
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder={`Split from ${ticket.ticket_id}`}
+                className="w-full h-10 px-3 rounded-lg bg-secondary/50 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          </div>
+        )}
+        
+        <div className="p-4 border-t border-border/40 flex justify-end gap-2 shrink-0">
+          <button
+            onClick={onClose}
+            className="h-9 px-4 text-sm rounded-lg border border-border/40 hover:bg-secondary/50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onSplit(selectedIndex, newTitle || `Split from ${ticket.ticket_id}`)}
+            disabled={selectedIndex === null}
+            className="h-9 px-4 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Split Ticket
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Feature Request Modal Component
+const FeatureRequestModal = ({ ticket, onClose, onLink }) => {
+  const [featureRequests, setFeatureRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showCreateNew, setShowCreateNew] = useState(false);
+  const [newFeatureTitle, setNewFeatureTitle] = useState('');
+  const [newFeatureDescription, setNewFeatureDescription] = useState('');
+
+  useEffect(() => {
+    fetchFeatureRequests();
+  }, []);
+
+  const fetchFeatureRequests = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/feature-requests`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFeatureRequests(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch feature requests:', error);
+    }
+    setLoading(false);
+  };
+
+  const createAndLink = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/feature-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          title: newFeatureTitle, 
+          description: newFeatureDescription,
+          linked_ticket_id: ticket.id
+        })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        onLink(data.feature_request_id);
+      }
+    } catch (error) {
+      console.error('Failed to create feature request:', error);
+    }
+  };
+
+  const filteredRequests = featureRequests.filter(fr => 
+    fr.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    fr.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg glass rounded-xl border border-border/60 shadow-2xl">
+        <div className="p-4 border-b border-border/40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bookmark size={18} className="text-primary" />
+              <h3 className="text-base font-semibold">Link to Feature Request</h3>
+            </div>
+            <button onClick={onClose} className="h-8 w-8 flex items-center justify-center rounded hover:bg-secondary/50">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+        
+        <div className="p-4 space-y-4">
+          {!showCreateNew ? (
+            <>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Search existing feature requests</label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search..."
+                  className="w-full h-10 px-3 rounded-lg bg-secondary/50 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              
+              <div className="max-h-64 overflow-y-auto space-y-1">
+                {loading && (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 size={20} className="animate-spin text-muted-foreground" />
+                  </div>
+                )}
+                {!loading && filteredRequests.map(fr => (
+                  <button
+                    key={fr.feature_request_id}
+                    onClick={() => onLink(fr.feature_request_id)}
+                    className="w-full p-3 rounded-lg text-left bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        fr.status === 'planned' ? 'bg-blue-500/20 text-blue-400' :
+                        fr.status === 'in_progress' ? 'bg-amber-500/20 text-amber-400' :
+                        fr.status === 'completed' ? 'bg-emerald-500/20 text-emerald-400' :
+                        'bg-secondary text-muted-foreground'
+                      }`}>{fr.status}</span>
+                      <span className="text-xs text-muted-foreground">{fr.mentions_count || 0} mentions</span>
+                    </div>
+                    <p className="text-sm font-medium mt-1">{fr.title}</p>
+                  </button>
+                ))}
+                {!loading && filteredRequests.length === 0 && (
+                  <p className="text-center text-sm text-muted-foreground py-4">No feature requests found</p>
+                )}
+              </div>
+              
+              <button
+                onClick={() => setShowCreateNew(true)}
+                className="w-full h-10 flex items-center justify-center gap-2 rounded-lg border border-dashed border-border/60 text-sm text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors"
+              >
+                <FileText size={16} />
+                Create new feature request
+              </button>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Title</label>
+                <input
+                  type="text"
+                  value={newFeatureTitle}
+                  onChange={(e) => setNewFeatureTitle(e.target.value)}
+                  placeholder="Feature request title..."
+                  className="w-full h-10 px-3 rounded-lg bg-secondary/50 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Description</label>
+                <textarea
+                  value={newFeatureDescription}
+                  onChange={(e) => setNewFeatureDescription(e.target.value)}
+                  placeholder="Describe the feature request..."
+                  rows={4}
+                  className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
+              </div>
+            </>
+          )}
+        </div>
+        
+        <div className="p-4 border-t border-border/40 flex justify-end gap-2">
+          {showCreateNew ? (
+            <>
+              <button
+                onClick={() => setShowCreateNew(false)}
+                className="h-9 px-4 text-sm rounded-lg border border-border/40 hover:bg-secondary/50 transition-colors"
+              >
+                Back
+              </button>
+              <button
+                onClick={createAndLink}
+                disabled={!newFeatureTitle.trim()}
+                className="h-9 px-4 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Create & Link
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={onClose}
+              className="h-9 px-4 text-sm rounded-lg border border-border/40 hover:bg-secondary/50 transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
