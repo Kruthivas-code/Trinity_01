@@ -122,6 +122,7 @@ const AnalyticsPage = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState(null);
   const [agents, setAgents] = useState([]);
+  const [csatAnalytics, setCsatAnalytics] = useState(null);
   const [period, setPeriod] = useState(30);
   
   useEffect(() => {
@@ -131,9 +132,10 @@ const AnalyticsPage = ({ user }) => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const [overviewRes, agentsRes] = await Promise.all([
+      const [overviewRes, agentsRes, csatRes] = await Promise.all([
         fetch(`${BACKEND_URL}/api/analytics/overview?days=${period}`, { credentials: 'include' }),
-        fetch(`${BACKEND_URL}/api/analytics/agents?days=${period}`, { credentials: 'include' })
+        fetch(`${BACKEND_URL}/api/analytics/agents?days=${period}`, { credentials: 'include' }),
+        fetch(`${BACKEND_URL}/api/csat/analytics?days=${period}`, { credentials: 'include' })
       ]);
       
       if (overviewRes.ok) {
@@ -141,6 +143,9 @@ const AnalyticsPage = ({ user }) => {
       }
       if (agentsRes.ok) {
         setAgents(await agentsRes.json());
+      }
+      if (csatRes.ok) {
+        setCsatAnalytics(await csatRes.json());
       }
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
