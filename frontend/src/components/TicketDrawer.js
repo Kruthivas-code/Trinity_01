@@ -623,7 +623,21 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                       <Printer size={14} className="text-muted-foreground" />
                       Print ticket
                     </button>
+                    <button
+                      onClick={async () => {
+                        // Export as PDF (using print dialog)
+                        window.print();
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left"
+                      data-testid="more-export-pdf"
+                    >
+                      <Download size={14} className="text-muted-foreground" />
+                      Export as PDF
+                    </button>
+                    
                     <div className="h-px bg-border my-1" />
+                    
                     <button
                       onClick={handleToggleSnooze}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left"
@@ -632,17 +646,81 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                       <BellOff size={14} className={snoozed ? "text-amber-400" : "text-muted-foreground"} />
                       {snoozed ? 'Unsnooze ticket' : 'Snooze ticket'}
                     </button>
+                    
+                    <button
+                      onClick={handleAssignToMe}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left"
+                      data-testid="more-assign-me"
+                    >
+                      <UserPlus size={14} className="text-muted-foreground" />
+                      Assign to me
+                    </button>
+                    
                     <div className="h-px bg-border my-1" />
+                    
                     <button
                       onClick={() => {
-                        // Feature placeholder
+                        setShowMergeModal(true);
                         setShowMoreMenu(false);
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left text-muted-foreground"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left"
                       data-testid="more-merge"
                     >
-                      <Merge size={14} />
+                      <Merge size={14} className="text-muted-foreground" />
                       Merge with ticket...
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setShowLinkModal(true);
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left"
+                      data-testid="more-link"
+                    >
+                      <Link size={14} className="text-muted-foreground" />
+                      Link to ticket...
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setSplitMessageIndex(null);
+                        setShowSplitModal(true);
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left"
+                      data-testid="more-split"
+                    >
+                      <Scissors size={14} className="text-muted-foreground" />
+                      Split ticket...
+                    </button>
+                    
+                    <div className="h-px bg-border my-1" />
+                    
+                    <button
+                      onClick={() => {
+                        setShowFeatureRequestModal(true);
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left"
+                      data-testid="more-feature-request"
+                    >
+                      <Bookmark size={14} className="text-muted-foreground" />
+                      Link to Feature Request...
+                    </button>
+                    
+                    <div className="h-px bg-border my-1" />
+                    
+                    <button
+                      onClick={() => {
+                        setShowDeleteConfirm(true);
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-red-500/10 transition-colors text-left text-red-400"
+                      data-testid="more-delete"
+                    >
+                      <Trash2 size={14} />
+                      Delete ticket...
                     </button>
                   </div>
                 )}
