@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Users, Plus, Trash2, UserPlus, UserMinus, Loader2, X } from 'lucide-react';
-import { toast } from 'sonner';
+
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -75,7 +75,7 @@ const TeamsPage = ({ user }) => {
 
   const handleCreateTeam = async () => {
     if (!newTeam.name.trim()) {
-      toast.error('Team name is required');
+      console.error('Operation failed');
       return;
     }
     
@@ -90,12 +90,12 @@ const TeamsPage = ({ user }) => {
       
       if (!response.ok) throw new Error('Failed to create team');
       
-      toast.success('Team created successfully');
+      // Success
       setShowCreateModal(false);
       setNewTeam({ name: '', type: '', description: '' });
       fetchTeams();
     } catch (error) {
-      toast.error('Failed to create team');
+      console.error('Operation failed');
     } finally {
       setCreating(false);
     }
@@ -112,10 +112,10 @@ const TeamsPage = ({ user }) => {
       
       if (!response.ok) throw new Error('Failed to delete');
       
-      toast.success('Team deleted');
+      // Success
       fetchTeams();
     } catch (error) {
-      toast.error('Failed to delete team');
+      console.error('Operation failed');
     }
   };
 
@@ -130,11 +130,11 @@ const TeamsPage = ({ user }) => {
       
       if (!response.ok) throw new Error('Failed to add member');
       
-      toast.success('Member added');
+      // Success
       setShowAddMemberModal(null);
       fetchTeams();
     } catch (error) {
-      toast.error('Failed to add member');
+      console.error('Operation failed');
     }
   };
 
@@ -147,10 +147,10 @@ const TeamsPage = ({ user }) => {
       
       if (!response.ok) throw new Error('Failed to remove member');
       
-      toast.success('Member removed');
+      // Success
       fetchTeams();
     } catch (error) {
-      toast.error('Failed to remove member');
+      console.error('Operation failed');
     }
   };
 
