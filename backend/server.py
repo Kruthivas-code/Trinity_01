@@ -3588,6 +3588,607 @@ async def get_customers(
     ]
 
 
+@app.get("/api/customers/{customer_email}")
+async def get_customer_detail(
+    customer_email: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get detailed customer profile with all tickets and stats"""
+    import urllib.parse
+    email = urllib.parse.unquote(customer_email).lower()
+    
+    # Get all tickets for this customer
+    tickets = list(tickets_collection.find(
+        {"$or": [
+            {"customer_email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}},
+            {"email_sender": {"$regex": f"^{re.escape(email)}$", "$options": "i"}}
+        ]},
+        {"_id": 0}
+    ).sort("created_at", -1))
+    
+    if not tickets:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Calculate stats
+    total_tickets = len(tickets)
+    open_tickets = len([t for t in tickets if t.get("status") not in ["resolved", "closed"]])
+    resolved_tickets = len([t for t in tickets if t.get("status") in ["resolved", "closed"]])
+    
+    # Priority breakdown
+    priority_breakdown = {}
+    for t in tickets:
+        p = t.get("priority", "medium")
+        priority_breakdown[p] = priority_breakdown.get(p, 0) + 1
+    
+    # Status breakdown
+    status_breakdown = {}
+    for t in tickets:
+        s = t.get("status", "todo")
+        status_breakdown[s] = status_breakdown.get(s, 0) + 1
+    
+    # Average resolution time (for resolved tickets)
+    resolution_times = []
+    for t in tickets:
+        if t.get("resolved_at") and t.get("created_at"):
+            try:
+                created = datetime.fromisoformat(str(t["created_at"]).replace("Z", "+00:00"))
+                resolved = datetime.fromisoformat(str(t["resolved_at"]).replace("Z", "+00:00"))
+                resolution_times.append((resolved - created).total_seconds() / 3600)  # hours
+            except:
+                pass
+    
+    avg_resolution_hours = sum(resolution_times) / len(resolution_times) if resolution_times else None
+    
+    # First and last contact
+    first_contact = tickets[-1].get("created_at") if tickets else None
+    last_contact = tickets[0].get("created_at") if tickets else None
+    
+    # Get customer name and domain from first ticket
+    first_ticket = tickets[0] if tickets else {}
+    customer_name = first_ticket.get("customer_name") or email.split("@")[0]
+    domain = first_ticket.get("domain") or (email.split("@")[1] if "@" in email else None)
+    
+    return {
+        "email": email,
+        "name": customer_name,
+        "domain": domain,
+        "company": domain.split(".")[0].title() if domain else None,
+        "stats": {
+            "total_tickets": total_tickets,
+            "open_tickets": open_tickets,
+            "resolved_tickets": resolved_tickets,
+            "avg_resolution_hours": round(avg_resolution_hours, 1) if avg_resolution_hours else None,
+            "priority_breakdown": priority_breakdown,
+            "status_breakdown": status_breakdown,
+            "first_contact": first_contact,
+            "last_contact": last_contact
+        },
+        "tickets": tickets[:50]  # Limit to 50 most recent
+    }
+
+
+# ==================== SLA Management ====================
+
+sla_policies_collection = db.sla_policies
+
+class SLAPolicy(BaseModel):
+    name: str
+    description: Optional[str] = None
+    priority: str  # urgent, high, medium, low, or "all"
+    first_response_hours: float  # Target hours for first response
+    resolution_hours: float  # Target hours for resolution
+    business_hours_only: bool = True
+    is_active: bool = True
+
+@app.get("/api/sla-policies")
+async def get_sla_policies(current_user: dict = Depends(get_current_user)):
+    """Get all SLA policies"""
+    policies = list(sla_policies_collection.find({}, {"_id": 0}))
+    return policies
+
+@app.post("/api/sla-policies")
+async def create_sla_policy(
+    policy: SLAPolicy,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new SLA policy"""
+    policy_id = f"sla_{uuid.uuid4().hex[:8]}"
+    policy_doc = {
+        "policy_id": policy_id,
+        **policy.dict(),
+        "created_at": datetime.now(timezone.utc),
+        "created_by": current_user.get("user_id")
+    }
+    sla_policies_collection.insert_one(policy_doc)
+    return {"policy_id": policy_id, **policy.dict()}
+
+@app.put("/api/sla-policies/{policy_id}")
+async def update_sla_policy(
+    policy_id: str,
+    policy: SLAPolicy,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update an SLA policy"""
+    result = sla_policies_collection.update_one(
+        {"policy_id": policy_id},
+        {"$set": {**policy.dict(), "updated_at": datetime.now(timezone.utc)}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    return {"policy_id": policy_id, **policy.dict()}
+
+@app.delete("/api/sla-policies/{policy_id}")
+async def delete_sla_policy(
+    policy_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete an SLA policy"""
+    result = sla_policies_collection.delete_one({"policy_id": policy_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    return {"message": "Policy deleted"}
+
+@app.get("/api/sla/ticket/{ticket_id}")
+async def get_ticket_sla_status(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get SLA status for a specific ticket"""
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Find applicable SLA policy
+    priority = ticket.get("priority", "medium")
+    policy = sla_policies_collection.find_one(
+        {"$or": [{"priority": priority}, {"priority": "all"}], "is_active": True},
+        {"_id": 0}
+    )
+    
+    if not policy:
+        return {"ticket_id": ticket_id, "sla_policy": None, "status": "no_policy"}
+    
+    created_at = ticket.get("created_at")
+    if isinstance(created_at, str):
+        created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    
+    now = datetime.now(timezone.utc)
+    hours_elapsed = (now - created_at).total_seconds() / 3600
+    
+    # Check first response
+    first_response_at = ticket.get("first_response_at")
+    first_response_status = "pending"
+    first_response_hours = None
+    
+    if first_response_at:
+        if isinstance(first_response_at, str):
+            first_response_at = datetime.fromisoformat(first_response_at.replace("Z", "+00:00"))
+        first_response_hours = (first_response_at - created_at).total_seconds() / 3600
+        first_response_status = "met" if first_response_hours <= policy["first_response_hours"] else "breached"
+    elif hours_elapsed > policy["first_response_hours"]:
+        first_response_status = "breached"
+    elif hours_elapsed > policy["first_response_hours"] * 0.75:
+        first_response_status = "at_risk"
+    
+    # Check resolution
+    resolved_at = ticket.get("resolved_at")
+    resolution_status = "pending"
+    resolution_hours = None
+    
+    if resolved_at:
+        if isinstance(resolved_at, str):
+            resolved_at = datetime.fromisoformat(resolved_at.replace("Z", "+00:00"))
+        resolution_hours = (resolved_at - created_at).total_seconds() / 3600
+        resolution_status = "met" if resolution_hours <= policy["resolution_hours"] else "breached"
+    elif ticket.get("status") not in ["resolved", "closed"]:
+        if hours_elapsed > policy["resolution_hours"]:
+            resolution_status = "breached"
+        elif hours_elapsed > policy["resolution_hours"] * 0.75:
+            resolution_status = "at_risk"
+    
+    return {
+        "ticket_id": ticket_id,
+        "sla_policy": policy,
+        "first_response": {
+            "target_hours": policy["first_response_hours"],
+            "actual_hours": round(first_response_hours, 2) if first_response_hours else None,
+            "status": first_response_status,
+            "hours_remaining": max(0, policy["first_response_hours"] - hours_elapsed) if first_response_status == "pending" else None
+        },
+        "resolution": {
+            "target_hours": policy["resolution_hours"],
+            "actual_hours": round(resolution_hours, 2) if resolution_hours else None,
+            "status": resolution_status,
+            "hours_remaining": max(0, policy["resolution_hours"] - hours_elapsed) if resolution_status == "pending" else None
+        },
+        "hours_elapsed": round(hours_elapsed, 2)
+    }
+
+
+# ==================== Analytics API ====================
+
+@app.get("/api/analytics/overview")
+async def get_analytics_overview(
+    days: int = 30,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get overview analytics for the dashboard"""
+    from_date = datetime.now(timezone.utc) - timedelta(days=days)
+    
+    # Get all tickets in range
+    all_tickets = list(tickets_collection.find({}, {"_id": 0}))
+    recent_tickets = [t for t in all_tickets if t.get("created_at") and 
+                      datetime.fromisoformat(str(t["created_at"]).replace("Z", "+00:00")) >= from_date]
+    
+    # Basic counts
+    total_tickets = len(all_tickets)
+    tickets_in_period = len(recent_tickets)
+    open_tickets = len([t for t in all_tickets if t.get("status") not in ["resolved", "closed"]])
+    resolved_in_period = len([t for t in recent_tickets if t.get("status") in ["resolved", "closed"]])
+    
+    # Priority breakdown
+    priority_counts = {"urgent": 0, "high": 0, "medium": 0, "low": 0}
+    for t in all_tickets:
+        if t.get("status") not in ["resolved", "closed"]:
+            p = t.get("priority", "medium")
+            if p in priority_counts:
+                priority_counts[p] += 1
+    
+    # Status breakdown
+    status_counts = {"todo": 0, "in_progress": 0, "waiting": 0, "review": 0, "resolved": 0}
+    for t in all_tickets:
+        s = t.get("status", "todo")
+        if s in status_counts:
+            status_counts[s] += 1
+    
+    # Volume by day (last N days)
+    volume_by_day = {}
+    for t in recent_tickets:
+        try:
+            date = datetime.fromisoformat(str(t["created_at"]).replace("Z", "+00:00")).strftime("%Y-%m-%d")
+            volume_by_day[date] = volume_by_day.get(date, 0) + 1
+        except:
+            pass
+    
+    # Sort by date
+    volume_trend = [{"date": k, "count": v} for k, v in sorted(volume_by_day.items())]
+    
+    # Average resolution time
+    resolution_times = []
+    for t in recent_tickets:
+        if t.get("resolved_at") and t.get("created_at"):
+            try:
+                created = datetime.fromisoformat(str(t["created_at"]).replace("Z", "+00:00"))
+                resolved = datetime.fromisoformat(str(t["resolved_at"]).replace("Z", "+00:00"))
+                resolution_times.append((resolved - created).total_seconds() / 3600)
+            except:
+                pass
+    
+    avg_resolution_hours = sum(resolution_times) / len(resolution_times) if resolution_times else None
+    
+    # SLA compliance (simplified)
+    sla_met = 0
+    sla_breached = 0
+    for t in recent_tickets:
+        if t.get("resolved_at") and t.get("created_at"):
+            try:
+                created = datetime.fromisoformat(str(t["created_at"]).replace("Z", "+00:00"))
+                resolved = datetime.fromisoformat(str(t["resolved_at"]).replace("Z", "+00:00"))
+                hours = (resolved - created).total_seconds() / 3600
+                # Default SLA: 24 hours for resolution
+                if hours <= 24:
+                    sla_met += 1
+                else:
+                    sla_breached += 1
+            except:
+                pass
+    
+    sla_compliance = (sla_met / (sla_met + sla_breached) * 100) if (sla_met + sla_breached) > 0 else None
+    
+    # Top assignees
+    assignee_counts = {}
+    for t in recent_tickets:
+        assignee = t.get("assignee_id")
+        if assignee:
+            assignee_counts[assignee] = assignee_counts.get(assignee, 0) + 1
+    
+    # Get user names
+    top_assignees = []
+    for user_id, count in sorted(assignee_counts.items(), key=lambda x: -x[1])[:5]:
+        user = users_collection.find_one({"user_id": user_id}, {"_id": 0, "name": 1})
+        top_assignees.append({
+            "user_id": user_id,
+            "name": user.get("name") if user else "Unknown",
+            "ticket_count": count
+        })
+    
+    return {
+        "period_days": days,
+        "summary": {
+            "total_tickets": total_tickets,
+            "open_tickets": open_tickets,
+            "tickets_in_period": tickets_in_period,
+            "resolved_in_period": resolved_in_period,
+            "avg_resolution_hours": round(avg_resolution_hours, 1) if avg_resolution_hours else None,
+            "sla_compliance_percent": round(sla_compliance, 1) if sla_compliance else None
+        },
+        "priority_breakdown": priority_counts,
+        "status_breakdown": status_counts,
+        "volume_trend": volume_trend,
+        "top_assignees": top_assignees
+    }
+
+@app.get("/api/analytics/agents")
+async def get_agent_analytics(
+    days: int = 30,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get per-agent performance analytics"""
+    from_date = datetime.now(timezone.utc) - timedelta(days=days)
+    
+    # Get all tickets in range
+    recent_tickets = list(tickets_collection.find({
+        "created_at": {"$gte": from_date}
+    }, {"_id": 0}))
+    
+    # Get all users
+    users = {u["user_id"]: u for u in users_collection.find({}, {"_id": 0})}
+    
+    # Calculate per-agent stats
+    agent_stats = {}
+    for t in recent_tickets:
+        assignee = t.get("assignee_id")
+        if not assignee:
+            continue
+        
+        if assignee not in agent_stats:
+            user = users.get(assignee, {})
+            agent_stats[assignee] = {
+                "user_id": assignee,
+                "name": user.get("name", "Unknown"),
+                "email": user.get("email"),
+                "tickets_assigned": 0,
+                "tickets_resolved": 0,
+                "resolution_times": [],
+                "priorities": {"urgent": 0, "high": 0, "medium": 0, "low": 0}
+            }
+        
+        agent_stats[assignee]["tickets_assigned"] += 1
+        
+        p = t.get("priority", "medium")
+        if p in agent_stats[assignee]["priorities"]:
+            agent_stats[assignee]["priorities"][p] += 1
+        
+        if t.get("status") in ["resolved", "closed"]:
+            agent_stats[assignee]["tickets_resolved"] += 1
+            
+            if t.get("resolved_at") and t.get("created_at"):
+                try:
+                    created = datetime.fromisoformat(str(t["created_at"]).replace("Z", "+00:00"))
+                    resolved = datetime.fromisoformat(str(t["resolved_at"]).replace("Z", "+00:00"))
+                    agent_stats[assignee]["resolution_times"].append(
+                        (resolved - created).total_seconds() / 3600
+                    )
+                except:
+                    pass
+    
+    # Calculate averages
+    result = []
+    for agent in agent_stats.values():
+        avg_resolution = sum(agent["resolution_times"]) / len(agent["resolution_times"]) if agent["resolution_times"] else None
+        result.append({
+            "user_id": agent["user_id"],
+            "name": agent["name"],
+            "email": agent["email"],
+            "tickets_assigned": agent["tickets_assigned"],
+            "tickets_resolved": agent["tickets_resolved"],
+            "resolution_rate": round(agent["tickets_resolved"] / agent["tickets_assigned"] * 100, 1) if agent["tickets_assigned"] > 0 else 0,
+            "avg_resolution_hours": round(avg_resolution, 1) if avg_resolution else None,
+            "priority_breakdown": agent["priorities"]
+        })
+    
+    # Sort by tickets resolved
+    result.sort(key=lambda x: -x["tickets_resolved"])
+    
+    return result
+
+
+# ==================== Reply Templates ====================
+
+templates_collection = db.reply_templates
+
+class ReplyTemplate(BaseModel):
+    name: str
+    category: Optional[str] = "general"
+    content: str
+    shortcut: Optional[str] = None  # e.g., "/thanks" to quick insert
+
+@app.get("/api/templates")
+async def get_templates(
+    category: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all reply templates"""
+    query = {}
+    if category:
+        query["category"] = category
+    templates = list(templates_collection.find(query, {"_id": 0}))
+    return templates
+
+@app.post("/api/templates")
+async def create_template(
+    template: ReplyTemplate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new reply template"""
+    template_id = f"tmpl_{uuid.uuid4().hex[:8]}"
+    template_doc = {
+        "template_id": template_id,
+        **template.dict(),
+        "created_at": datetime.now(timezone.utc),
+        "created_by": current_user.get("user_id")
+    }
+    templates_collection.insert_one(template_doc)
+    return {"template_id": template_id, **template.dict()}
+
+@app.put("/api/templates/{template_id}")
+async def update_template(
+    template_id: str,
+    template: ReplyTemplate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a reply template"""
+    result = templates_collection.update_one(
+        {"template_id": template_id},
+        {"$set": {**template.dict(), "updated_at": datetime.now(timezone.utc)}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return {"template_id": template_id, **template.dict()}
+
+@app.delete("/api/templates/{template_id}")
+async def delete_template(
+    template_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete a reply template"""
+    result = templates_collection.delete_one({"template_id": template_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return {"message": "Template deleted"}
+
+
+# ==================== Bulk Operations ====================
+
+class BulkUpdateRequest(BaseModel):
+    ticket_ids: List[str]
+    updates: dict  # Fields to update: status, priority, assignee_id, tags, etc.
+
+@app.post("/api/tickets/bulk-update")
+async def bulk_update_tickets(
+    request: BulkUpdateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Bulk update multiple tickets at once"""
+    if not request.ticket_ids:
+        raise HTTPException(status_code=400, detail="No ticket IDs provided")
+    
+    if len(request.ticket_ids) > 100:
+        raise HTTPException(status_code=400, detail="Maximum 100 tickets per bulk operation")
+    
+    # Validate updates
+    allowed_fields = {"status", "priority", "assignee_id", "team_id", "escalation_level"}
+    update_fields = {k: v for k, v in request.updates.items() if k in allowed_fields}
+    
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No valid update fields provided")
+    
+    update_fields["updated_at"] = datetime.now(timezone.utc)
+    
+    # Perform bulk update
+    result = tickets_collection.update_many(
+        {"ticket_id": {"$in": request.ticket_ids}},
+        {"$set": update_fields}
+    )
+    
+    # Log to changelog for each ticket
+    for ticket_id in request.ticket_ids:
+        for field, new_value in update_fields.items():
+            if field != "updated_at":
+                changelog_collection.insert_one({
+                    "changelog_id": f"cl_{uuid.uuid4().hex[:12]}",
+                    "ticket_id": ticket_id,
+                    "field": field,
+                    "old_value": None,  # Unknown in bulk operation
+                    "new_value": new_value,
+                    "changed_by": current_user.get("user_id"),
+                    "changed_by_name": current_user.get("name"),
+                    "timestamp": datetime.now(timezone.utc),
+                    "bulk_operation": True
+                })
+    
+    return {
+        "message": f"Updated {result.modified_count} tickets",
+        "matched": result.matched_count,
+        "modified": result.modified_count
+    }
+
+class BulkTagRequest(BaseModel):
+    ticket_ids: List[str]
+    tags_to_add: List[str] = []
+    tags_to_remove: List[str] = []
+
+@app.post("/api/tickets/bulk-tag")
+async def bulk_tag_tickets(
+    request: BulkTagRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Bulk add or remove tags from multiple tickets"""
+    if not request.ticket_ids:
+        raise HTTPException(status_code=400, detail="No ticket IDs provided")
+    
+    if len(request.ticket_ids) > 100:
+        raise HTTPException(status_code=400, detail="Maximum 100 tickets per bulk operation")
+    
+    modified_count = 0
+    
+    for ticket_id in request.ticket_ids:
+        update_ops = {}
+        
+        if request.tags_to_add:
+            update_ops["$addToSet"] = {"tags": {"$each": request.tags_to_add}}
+        
+        if request.tags_to_remove:
+            update_ops["$pull"] = {"tags": {"$in": request.tags_to_remove}}
+        
+        if update_ops:
+            # MongoDB doesn't allow $addToSet and $pull in same operation
+            if request.tags_to_add:
+                tickets_collection.update_one(
+                    {"ticket_id": ticket_id},
+                    {"$addToSet": {"tags": {"$each": request.tags_to_add}}}
+                )
+            if request.tags_to_remove:
+                tickets_collection.update_one(
+                    {"ticket_id": ticket_id},
+                    {"$pull": {"tags": {"$in": request.tags_to_remove}}}
+                )
+            modified_count += 1
+    
+    return {
+        "message": f"Updated tags for {modified_count} tickets",
+        "tags_added": request.tags_to_add,
+        "tags_removed": request.tags_to_remove
+    }
+
+@app.post("/api/tickets/bulk-close")
+async def bulk_close_tickets(
+    ticket_ids: List[str],
+    current_user: dict = Depends(get_current_user)
+):
+    """Bulk close multiple tickets"""
+    if not ticket_ids:
+        raise HTTPException(status_code=400, detail="No ticket IDs provided")
+    
+    if len(ticket_ids) > 100:
+        raise HTTPException(status_code=400, detail="Maximum 100 tickets per bulk operation")
+    
+    now = datetime.now(timezone.utc)
+    result = tickets_collection.update_many(
+        {"ticket_id": {"$in": ticket_ids}},
+        {"$set": {
+            "status": "resolved",
+            "resolved_at": now,
+            "updated_at": now
+        }}
+    )
+    
+    return {
+        "message": f"Closed {result.modified_count} tickets",
+        "modified": result.modified_count
+    }
+
+
 # ==================== Search API ====================
 
 class SearchQuery(BaseModel):
