@@ -30,6 +30,7 @@ const GlobalHeader = ({ user, onCreateTicket, onOpenCommandPalette }) => {
       '/waiting-tickets': 'Waiting on Customer',
       '/closed-tickets': 'Closed Tickets',
       '/teams': 'Teams',
+      '/leaves': 'Leave Management',
       '/profile': 'Profile',
       '/settings': 'Settings',
       '/admin': 'Admin',
