@@ -117,7 +117,7 @@ const TicketCard = ({ ticket, users, onClick, isDragging }) => {
           {ticket.customer_email}
         </p>
       )}
-    </button>
+    </div>
   );
 };
 
