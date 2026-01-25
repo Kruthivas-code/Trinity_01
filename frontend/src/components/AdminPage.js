@@ -521,6 +521,11 @@ const AdminPage = ({ user }) => {
               </div>
             )}
 
+            {/* Routing Rules Tab */}
+            {activeTab === 'routing' && (
+              <RoutingRulesTab teams={teams} users={allUsers} />
+            )}
+
             {/* Shifts Tab */}
             {activeTab === 'shifts' && (
               <div className="max-w-5xl">
