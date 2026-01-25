@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Sidebar from './Sidebar';
+import GlobalHeader from './GlobalHeader';
 import DashboardContainer from './DashboardContainer';
 import AllTicketsPage from './AllTicketsPage';
 import OpenTicketsPage from './OpenTicketsPage';
 import WaitingTicketsPage from './WaitingTicketsPage';
 import ClosedTicketsPage from './ClosedTicketsPage';
 import TicketDrawer from './TicketDrawer';
+import CreateTicketModal from './CreateTicketModal';
+import { CommandPaletteContext } from '../App';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
