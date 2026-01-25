@@ -17,6 +17,15 @@ const MainLayout = ({ user, view }) => {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [users, setUsers] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const { openCommandPalette } = useContext(CommandPaletteContext);
+
+  // Listen for create ticket events from GlobalHeader/CommandPalette
+  useEffect(() => {
+    const handleCreateTicket = () => setIsCreateModalOpen(true);
+    window.addEventListener('trinity:create-ticket', handleCreateTicket);
+    return () => window.removeEventListener('trinity:create-ticket', handleCreateTicket);
+  }, []);
 
   // Fetch users on mount
   useEffect(() => {
