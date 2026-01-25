@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, 
   User, ChevronDown, Menu, X, LogOut, Users, Shield, CalendarDays,
-  GripVertical, Bookmark
+  GripVertical, Bookmark, BarChart3, UserCircle
 } from 'lucide-react';
 
 import { TridentIcon } from './TridentIcon';
@@ -42,9 +42,11 @@ const Sidebar = ({ user }) => {
   ];
 
   const mainItems = [
+    { id: 'customers', label: 'Customers', icon: UserCircle, path: '/customers' },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
     { id: 'teams', label: 'Teams', icon: Users, path: '/teams' },
     { id: 'leaves', label: 'Leaves', icon: CalendarDays, path: '/leaves' },
-    { id: 'feature-requests', label: 'Feature Requests', icon: Bookmark, path: '/feature-requests' },
+    { id: 'feature-requests', label: 'Features', icon: Bookmark, path: '/feature-requests' },
     { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
     { id: 'admin', label: 'Admin', icon: Shield, path: '/admin' },
