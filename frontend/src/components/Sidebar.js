@@ -76,13 +76,14 @@ const Sidebar = ({ user }) => {
     }
   };
 
-  // Compact nav item
-  const NavItem = ({ item, nested = false }) => {
+  // Helper to render nav item inline
+  const renderNavItem = (item, nested = false) => {
     const Icon = item.icon;
     const active = isActive(item.path);
     
     return (
       <button
+        key={item.id}
         onClick={() => handleNavigate(item.path)}
         className={`
           w-full flex items-center gap-2.5 h-9 rounded-md text-[13px]
