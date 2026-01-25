@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, 
   User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, 
-  Menu, X, LogOut, Users, Shield 
+  Menu, X, LogOut, Users, Shield, CalendarDays 
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TridentIcon } from './TridentIcon';
@@ -28,6 +28,7 @@ const Sidebar = ({ user }) => {
 
   const mainItems = [
     { id: 'teams', label: 'Teams', icon: Users, path: '/teams' },
+    { id: 'leaves', label: 'Leaves', icon: CalendarDays, path: '/leaves' },
     { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
     { id: 'admin', label: 'Admin', icon: Shield, path: '/admin' },
