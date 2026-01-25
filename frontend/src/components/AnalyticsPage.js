@@ -435,6 +435,139 @@ const AnalyticsPage = ({ user }) => {
           </div>
         </div>
       )}
+      
+      {/* CSAT Analytics Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* CSAT Overview */}
+        <div className="p-5 rounded-xl bg-card border border-border/50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold flex items-center gap-2">
+              <MessageSquareHeart size={18} className="text-primary" />
+              Customer Satisfaction (CSAT)
+            </h3>
+            <span className="text-xs text-muted-foreground">
+              {csatAnalytics?.total_responses || 0} responses
+            </span>
+          </div>
+          
+          {csatAnalytics?.total_responses > 0 ? (
+            <>
+              {/* Average Rating */}
+              <div className="text-center py-6">
+                <div className="flex items-center justify-center gap-1 mb-2">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <Star
+                      key={star}
+                      size={28}
+                      className={star <= Math.round(csatAnalytics?.average_rating || 0)
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'fill-transparent text-gray-400'
+                      }
+                    />
+                  ))}
+                </div>
+                <p className="text-3xl font-bold">{csatAnalytics?.average_rating || '-'}</p>
+                <p className="text-sm text-muted-foreground">Average Rating</p>
+              </div>
+              
+              {/* Rating Distribution */}
+              <div className="space-y-2 mb-4">
+                {[5, 4, 3, 2, 1].map(rating => {
+                  const count = csatAnalytics?.rating_distribution?.[rating] || 0;
+                  const total = csatAnalytics?.total_responses || 1;
+                  const percentage = (count / total) * 100;
+                  
+                  return (
+                    <div key={rating} className="flex items-center gap-2">
+                      <span className="text-xs w-8">{rating} ⭐</span>
+                      <div className="flex-1 h-2 bg-secondary/30 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${
+                            rating >= 4 ? 'bg-emerald-500' : 
+                            rating >= 3 ? 'bg-amber-500' : 'bg-red-500'
+                          }`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground w-8 text-right">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Satisfaction Rate */}
+              <div className="p-3 rounded-lg bg-secondary/20 text-center">
+                <p className={`text-2xl font-bold ${
+                  (csatAnalytics?.satisfaction_rate || 0) >= 80 ? 'text-emerald-400' :
+                  (csatAnalytics?.satisfaction_rate || 0) >= 60 ? 'text-amber-400' : 'text-red-400'
+                }`}>
+                  {csatAnalytics?.satisfaction_rate || 0}%
+                </p>
+                <p className="text-xs text-muted-foreground">Satisfaction Rate (4-5 stars)</p>
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <MessageSquareHeart size={32} className="mx-auto mb-2 opacity-30" />
+              <p>No CSAT responses yet</p>
+              <p className="text-xs mt-1">Send surveys after resolving tickets</p>
+            </div>
+          )}
+        </div>
+        
+        {/* Low Ratings / Alerts */}
+        <div className="p-5 rounded-xl bg-card border border-border/50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold flex items-center gap-2">
+              <AlertCircle size={18} className="text-red-400" />
+              Low Ratings Alerts
+            </h3>
+            <span className="text-xs px-2 py-0.5 rounded bg-red-500/20 text-red-400">
+              {csatAnalytics?.low_ratings?.length || 0} alerts
+            </span>
+          </div>
+          
+          {csatAnalytics?.low_ratings?.length > 0 ? (
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {csatAnalytics.low_ratings.map((item, idx) => (
+                <div key={idx} className="p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-mono text-muted-foreground">{item.ticket_id}</span>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star
+                          key={star}
+                          size={12}
+                          className={star <= item.rating
+                            ? 'fill-red-400 text-red-400'
+                            : 'fill-transparent text-gray-500'
+                          }
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {item.customer_email}
+                    {item.resolved_by_name && ` → ${item.resolved_by_name}`}
+                  </p>
+                  {item.feedback && (
+                    <p className="text-xs text-red-300 mt-1 italic">"{item.feedback}"</p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <CheckCircle2 size={32} className="mx-auto mb-2 text-emerald-400/30" />
+              <p className="text-emerald-400">No low ratings!</p>
+              <p className="text-xs mt-1">All customers are satisfied</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
