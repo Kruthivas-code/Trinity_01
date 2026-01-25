@@ -1072,9 +1072,32 @@ const AdminPage = ({ user }) => {
                       className={`w-12 h-6 rounded-full transition-colors relative ${
                         settings.auto_assignment ? 'bg-primary' : 'bg-secondary border border-border'
                       }`}
+                      data-testid="auto-assignment-toggle"
                     >
                       <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
                         settings.auto_assignment ? 'translate-x-6' : 'translate-x-0.5'
+                      }`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 border border-border/50">
+                    <div>
+                      <label className="block text-sm font-medium">Auto-Reassign Reopened Tickets</label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        When a ticket is reopened and the original assignee is not on shift,
+                        automatically reassign to an agent who is on shift (round-robin).
+                        If no agents are on shift, the ticket will be unassigned.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setSettings({ ...settings, auto_reassign_reopened: !settings.auto_reassign_reopened })}
+                      className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${
+                        settings.auto_reassign_reopened ? 'bg-primary' : 'bg-secondary border border-border'
+                      }`}
+                      data-testid="auto-reassign-reopened-toggle"
+                    >
+                      <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                        settings.auto_reassign_reopened ? 'translate-x-6' : 'translate-x-0.5'
                       }`} />
                     </button>
                   </div>
