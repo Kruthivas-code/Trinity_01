@@ -995,16 +995,19 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                       </button>
                       {users.map(user => (
                         <button
-                          key={user.id}
-                          onClick={() => {
-                            setFormData({ ...formData, assignee_id: user.id });
-                            setShowAssignDropdown(false);
-                          }}
-                          className={`w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 ${
-                            formData.assignee_id === user.id ? 'bg-primary/10 text-primary' : ''
+                          key={user.id || user.user_id}
+                          onClick={() => handleAssign(user.id || user.user_id)}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 flex items-center gap-2 ${
+                            formData.assignee_id === (user.id || user.user_id) ? 'bg-primary/10 text-primary' : ''
                           }`}
                         >
+                          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 flex items-center justify-center text-[9px] font-medium">
+                            {user.name?.charAt(0).toUpperCase()}
+                          </div>
                           {user.name}
+                          {(user.id || user.user_id) === (currentUser?.user_id || currentUser?.id) && (
+                            <span className="text-[10px] text-primary">(me)</span>
+                          )}
                         </button>
                       ))}
                     </>
