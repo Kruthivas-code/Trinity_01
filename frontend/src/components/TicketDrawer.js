@@ -1980,6 +1980,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               });
               if (response.ok) {
                 setShowFeatureRequestModal(false);
+                // Refresh linked feature requests
+                fetchLinkedFeatureRequests(ticket.id);
               }
             } catch (error) {
               console.error('Link to feature request failed:', error);
