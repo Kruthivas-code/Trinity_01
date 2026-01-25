@@ -446,15 +446,17 @@ const AdminPage = ({ user }) => {
                 </div>
 
                 {/* Fields List */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {filteredFields.length === 0 ? (
-                    <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-xl">
-                      <List size={40} className="mx-auto mb-3 opacity-50" />
-                      <p className="font-medium">No custom fields yet</p>
-                      <p className="text-sm mt-1">Create your first custom field to get started</p>
+                    <div className="text-center py-16 card-premium border-dashed rounded-xl">
+                      <div className="w-14 h-14 mx-auto mb-4 rounded-xl empty-state-icon flex items-center justify-center">
+                        <List size={28} className="text-muted-foreground/50" />
+                      </div>
+                      <p className="font-medium text-foreground">No custom fields yet</p>
+                      <p className="text-sm mt-1 text-muted-foreground">Create your first custom field to get started</p>
                       <button
                         onClick={() => setShowCreateModal(true)}
-                        className="mt-4 h-9 px-4 inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                        className="mt-5 h-10 px-5 inline-flex items-center gap-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-interactive shadow-md shadow-primary/20"
                       >
                         <Plus size={16} />
                         Create Field
@@ -466,28 +468,30 @@ const AdminPage = ({ user }) => {
                       return (
                         <div
                           key={field.field_id}
-                          className="flex items-center justify-between p-4 rounded-xl bg-card border border-border/50 hover:border-border transition-colors"
+                          className="flex items-center justify-between p-5 rounded-xl card-premium group"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                              <Icon size={18} className="text-primary" />
+                          <div className="flex items-center gap-4">
+                            <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center group-hover:bg-primary/15 transition-interactive">
+                              <Icon size={20} className="text-primary" />
                             </div>
                             <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{field.name}</span>
+                              <div className="flex items-center gap-2.5">
+                                <span className="font-semibold text-foreground">{field.name}</span>
                                 {field.required && (
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-destructive/20 text-destructive font-medium">
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-semibold border border-destructive/20">
                                     Required
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-muted-foreground capitalize">
+                              <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-xs text-muted-foreground capitalize bg-secondary/50 px-2 py-0.5 rounded">
                                   {FIELD_TYPES.find(t => t.value === field.field_type)?.label || field.field_type}
                                 </span>
                                 <span className="text-muted-foreground/40">•</span>
-                                <span className={`text-xs font-medium ${
-                                  field.entity_type === 'ticket' ? 'text-primary' : 'text-amber-500'
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                                  field.entity_type === 'ticket' 
+                                    ? 'text-primary bg-primary/10' 
+                                    : 'text-amber-500 bg-amber-500/10'
                                 }`}>
                                   {field.entity_type === 'ticket' ? 'Ticket' : 'User'}
                                 </span>
@@ -501,14 +505,14 @@ const AdminPage = ({ user }) => {
                                 )}
                               </div>
                               {field.description && (
-                                <p className="text-xs text-muted-foreground mt-1">{field.description}</p>
+                                <p className="text-xs text-muted-foreground mt-2">{field.description}</p>
                               )}
                             </div>
                           </div>
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => handleDeleteField(field.field_id)}
-                              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                              className="h-9 w-9 flex items-center justify-center rounded-lg btn-destructive-subtle opacity-0 group-hover:opacity-100 transition-interactive"
                             >
                               <Trash2 size={16} />
                             </button>
