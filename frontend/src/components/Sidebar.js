@@ -5,7 +5,7 @@ import {
   User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, 
   Menu, X, LogOut, Users, Shield, CalendarDays 
 } from 'lucide-react';
-import { toast } from 'sonner';
+
 import { TridentIcon } from './TridentIcon';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -69,7 +69,7 @@ const Sidebar = ({ user }) => {
         credentials: 'include'
       });
       localStorage.removeItem('theme');
-      toast.success('Logged out successfully');
+      // Logged out
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
