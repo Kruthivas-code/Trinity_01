@@ -27,6 +27,361 @@ const DAYS_OF_WEEK = [
   { value: 7, label: 'Sun' }
 ];
 
+// Export Data Tab Component
+const ExportDataTab = () => {
+  const [exportFormat, setExportFormat] = useState('json');
+  const [exportType, setExportType] = useState('full');
+  const [includeNotes, setIncludeNotes] = useState(true);
+  const [includeChangelog, setIncludeChangelog] = useState(true);
+  const [includeCsat, setIncludeCsat] = useState(true);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [statusFilter, setStatusFilter] = useState([]);
+  const [exporting, setExporting] = useState(false);
+  const [exportSuccess, setExportSuccess] = useState(null);
+
+  const handleExport = async () => {
+    setExporting(true);
+    setExportSuccess(null);
+    
+    try {
+      let endpoint = '';
+      let method = 'POST';
+      let body = null;
+      
+      switch (exportType) {
+        case 'full':
+          endpoint = `${BACKEND_URL}/api/admin/export/full`;
+          body = JSON.stringify({
+            format: exportFormat,
+            include_notes: includeNotes,
+            include_changelog: includeChangelog,
+            include_csat: includeCsat
+          });
+          break;
+        case 'tickets':
+          endpoint = `${BACKEND_URL}/api/admin/export/tickets`;
+          body = JSON.stringify({
+            format: exportFormat,
+            include_notes: includeNotes,
+            include_changelog: includeChangelog,
+            include_csat: includeCsat,
+            date_from: dateFrom || null,
+            date_to: dateTo || null,
+            status_filter: statusFilter.length > 0 ? statusFilter : null
+          });
+          break;
+        case 'customers':
+          endpoint = `${BACKEND_URL}/api/admin/export/customers?format=${exportFormat}`;
+          method = 'GET';
+          break;
+        case 'analytics':
+          endpoint = `${BACKEND_URL}/api/admin/export/analytics?days=90&format=${exportFormat}`;
+          method = 'GET';
+          break;
+        default:
+          endpoint = `${BACKEND_URL}/api/admin/export/full`;
+      }
+      
+      const options = {
+        method,
+        credentials: 'include',
+        headers: body ? { 'Content-Type': 'application/json' } : {}
+      };
+      if (body) options.body = body;
+      
+      const response = await fetch(endpoint, options);
+      
+      if (!response.ok) throw new Error('Export failed');
+      
+      // Get filename from Content-Disposition header or generate one
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = `export_${exportType}_${new Date().toISOString().split('T')[0]}.${exportFormat}`;
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename=([^;]+)/);
+        if (match) filename = match[1].trim();
+      }
+      
+      // Download the file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      setExportSuccess(`Export downloaded: ${filename}`);
+    } catch (error) {
+      console.error('Export failed:', error);
+      setExportSuccess('Export failed. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const exportTypes = [
+    { 
+      id: 'full', 
+      label: 'Full System Export', 
+      description: 'All data including tickets, users, teams, settings',
+      icon: Database
+    },
+    { 
+      id: 'tickets', 
+      label: 'Tickets Only', 
+      description: 'All tickets with notes, changelog, and CSAT',
+      icon: Ticket
+    },
+    { 
+      id: 'customers', 
+      label: 'Customers', 
+      description: 'Customer data with ticket history summary',
+      icon: Users
+    },
+    { 
+      id: 'analytics', 
+      label: 'Analytics Report', 
+      description: 'Performance metrics and statistics',
+      icon: Download
+    }
+  ];
+
+  const statuses = [
+    { value: 'todo', label: 'To Do' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'waiting', label: 'Waiting' },
+    { value: 'review', label: 'Review' },
+    { value: 'resolved', label: 'Resolved' }
+  ];
+
+  return (
+    <div className="max-w-4xl">
+      <div className="mb-6">
+        <h2 className="text-lg font-medium">Data Export</h2>
+        <p className="text-sm text-muted-foreground">
+          Export your data in JSON or CSV format for backup, analysis, or migration
+        </p>
+      </div>
+
+      {/* Export Type Selection */}
+      <div className="mb-8">
+        <h3 className="text-sm font-medium mb-3">What do you want to export?</h3>
+        <div className="grid grid-cols-2 gap-4">
+          {exportTypes.map(type => (
+            <button
+              key={type.id}
+              onClick={() => setExportType(type.id)}
+              className={`p-4 rounded-xl border text-left transition-all ${
+                exportType === type.id
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary/50 hover:bg-secondary/30'
+              }`}
+              data-testid={`export-type-${type.id}`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg ${
+                  exportType === type.id ? 'bg-primary/20 text-primary' : 'bg-secondary/50 text-muted-foreground'
+                }`}>
+                  <type.icon size={20} />
+                </div>
+                <div>
+                  <div className="font-medium">{type.label}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{type.description}</div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Format Selection */}
+      <div className="mb-8">
+        <h3 className="text-sm font-medium mb-3">Export Format</h3>
+        <div className="flex gap-4">
+          <button
+            onClick={() => setExportFormat('json')}
+            className={`flex-1 p-4 rounded-xl border flex items-center gap-3 transition-all ${
+              exportFormat === 'json'
+                ? 'border-primary bg-primary/10'
+                : 'border-border hover:border-primary/50'
+            }`}
+            data-testid="export-format-json"
+          >
+            <FileJson size={24} className={exportFormat === 'json' ? 'text-primary' : 'text-muted-foreground'} />
+            <div className="text-left">
+              <div className="font-medium">JSON</div>
+              <div className="text-xs text-muted-foreground">Structured data, best for imports</div>
+            </div>
+          </button>
+          <button
+            onClick={() => setExportFormat('csv')}
+            className={`flex-1 p-4 rounded-xl border flex items-center gap-3 transition-all ${
+              exportFormat === 'csv'
+                ? 'border-primary bg-primary/10'
+                : 'border-border hover:border-primary/50'
+            }`}
+            data-testid="export-format-csv"
+          >
+            <FileSpreadsheet size={24} className={exportFormat === 'csv' ? 'text-primary' : 'text-muted-foreground'} />
+            <div className="text-left">
+              <div className="font-medium">CSV</div>
+              <div className="text-xs text-muted-foreground">Spreadsheet compatible</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Options for Tickets Export */}
+      {(exportType === 'tickets' || exportType === 'full') && (
+        <div className="mb-8 p-4 rounded-xl bg-secondary/20 border border-border/30">
+          <h3 className="text-sm font-medium mb-4">Include Related Data</h3>
+          <div className="space-y-3">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeNotes}
+                onChange={(e) => setIncludeNotes(e.target.checked)}
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="text-sm">Notes & Replies</span>
+              <span className="text-xs text-muted-foreground">Internal notes and customer replies</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeChangelog}
+                onChange={(e) => setIncludeChangelog(e.target.checked)}
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="text-sm">Changelog</span>
+              <span className="text-xs text-muted-foreground">All field change history</span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={includeCsat}
+                onChange={(e) => setIncludeCsat(e.target.checked)}
+                className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="text-sm">CSAT Responses</span>
+              <span className="text-xs text-muted-foreground">Customer satisfaction ratings</span>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* Filters for Tickets Export */}
+      {exportType === 'tickets' && (
+        <div className="mb-8 p-4 rounded-xl bg-secondary/20 border border-border/30">
+          <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
+            <Filter size={16} />
+            Filters (Optional)
+          </h3>
+          
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-xs font-medium mb-1.5 text-muted-foreground">From Date</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full h-10 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1.5 text-muted-foreground">To Date</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full h-10 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-xs font-medium mb-1.5 text-muted-foreground">Status Filter</label>
+            <div className="flex flex-wrap gap-2">
+              {statuses.map(status => (
+                <button
+                  key={status.value}
+                  onClick={() => {
+                    if (statusFilter.includes(status.value)) {
+                      setStatusFilter(statusFilter.filter(s => s !== status.value));
+                    } else {
+                      setStatusFilter([...statusFilter, status.value]);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    statusFilter.includes(status.value)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {status.label}
+                </button>
+              ))}
+              {statusFilter.length > 0 && (
+                <button
+                  onClick={() => setStatusFilter([])}
+                  className="px-3 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export Button */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="h-12 px-8 flex items-center gap-2 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          data-testid="export-button"
+        >
+          {exporting ? (
+            <>
+              <Loader2 size={18} className="animate-spin" />
+              Exporting...
+            </>
+          ) : (
+            <>
+              <Download size={18} />
+              Export Data
+            </>
+          )}
+        </button>
+        
+        {exportSuccess && (
+          <div className={`flex items-center gap-2 text-sm ${
+            exportSuccess.includes('failed') ? 'text-red-400' : 'text-emerald-400'
+          }`}>
+            <CheckCircle2 size={16} />
+            {exportSuccess}
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="mt-8 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+        <h4 className="text-sm font-medium text-blue-400 mb-2">Export Information</h4>
+        <ul className="text-xs text-muted-foreground space-y-1">
+          <li>• Full export includes: tickets, users, teams, customers, settings, CSAT, leaves</li>
+          <li>• Large exports may take a few moments to generate</li>
+          <li>• JSON format preserves all data structure and relationships</li>
+          <li>• CSV format flattens nested data into columns</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
 const AdminPage = ({ user }) => {
   const [activeTab, setActiveTab] = useState('custom-fields');
   const [customFields, setCustomFields] = useState([]);
