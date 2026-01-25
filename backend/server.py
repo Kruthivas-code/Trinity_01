@@ -104,6 +104,9 @@ user_shifts_collection = db.user_shifts  # User-to-shift assignments
 # Phase 5: Routing Rules
 routing_rules_collection = db.routing_rules  # Ticket routing rules
 
+# Phase 6: Initialize Search Engine
+search_engine = get_search_engine(db)
+
 # System timezone - IST
 SYSTEM_TIMEZONE = "Asia/Kolkata"
 
