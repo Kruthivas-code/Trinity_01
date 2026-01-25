@@ -3371,34 +3371,68 @@ async def get_customers(
 # ==================== Search API ====================
 
 class SearchQuery(BaseModel):
-    query: str = Field(..., min_length=1, max_length=200)
-    limit_per_category: int = Field(default=5, ge=1, le=20)
+    query: str = Field(..., min_length=1, max_length=500)
+    limit_per_category: int = Field(default=10, ge=1, le=50)
+    type_filter: Optional[str] = None
 
 @app.get("/api/search")
 async def search(
     q: str,
-    limit: int = 5,
+    limit: int = 10,
+    type: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Comprehensive search across all entities.
-    Searches: tickets, users, teams, shifts, routing rules, and platform commands.
-    """
-    if not q or len(q) < 2:
-        return {"results": [], "total": 0, "by_category": {}}
+    Comprehensive search across ALL entities.
     
-    results = search_engine.search_all(q, limit_per_category=limit)
+    Supports operators:
+    - status:open, status:closed
+    - priority:urgent, priority:high
+    - assigned:me, assigned:none, assigned:@username
+    - team:teamname
+    - tag:tagname
+    - created:today, created:last-week, created:2024-01-15
+    - customer:email@domain.com
+    - domain:acme.com
+    - escalation:L1, escalation:L2
+    - type:ticket, type:user, type:team
+    
+    Example: /api/search?q=billing status:open priority:urgent
+    """
+    if not q or len(q) < 1:
+        return {"results": [], "total": 0, "by_category": {}, "operators": {}}
+    
+    results = search_engine.search_all(
+        q, 
+        limit_per_category=limit,
+        current_user_id=current_user.get("user_id"),
+        type_filter=type
+    )
     return results
+
+@app.get("/api/search/suggestions")
+async def search_suggestions(
+    q: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get autocomplete suggestions for search"""
+    if not q:
+        return {"suggestions": []}
+    
+    suggestions = search_engine.get_search_suggestions(q)
+    return {"suggestions": suggestions}
 
 @app.post("/api/search")
 async def search_post(
     search_query: SearchQuery,
     current_user: dict = Depends(get_current_user)
 ):
-    """Search with POST (for longer queries)"""
+    """Search with POST (for complex queries)"""
     results = search_engine.search_all(
         search_query.query, 
-        limit_per_category=search_query.limit_per_category
+        limit_per_category=search_query.limit_per_category,
+        current_user_id=current_user.get("user_id"),
+        type_filter=search_query.type_filter
     )
     return results
 
