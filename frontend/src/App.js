@@ -187,6 +187,34 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/customers"
+        element={
+          <ProtectedRoute>
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <PageLayout user={user}>
+                  <CustomersPage user={user} />
+                </PageLayout>
+              </AppWithRealtime>
+            )}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <PageLayout user={user}>
+                  <AnalyticsPage user={user} />
+                </PageLayout>
+              </AppWithRealtime>
+            )}
+          </ProtectedRoute>
+        }
+      />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
