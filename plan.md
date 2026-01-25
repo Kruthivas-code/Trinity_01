@@ -158,9 +158,13 @@ Major design refresh completed:
 
 ## Known Issues
 - Minor backend linter warnings (low priority)
+- Minor ESLint warnings for React hooks dependencies (does not affect functionality)
 
 ## Next Steps / Future Enhancements
-- AI-powered escalation level prediction
-- More sophisticated routing rules with ML
-- Real-time collaboration features
-- Email integration (currently mocked)
+- [ ] Real-time presence indicators (avatars showing who's viewing a ticket)
+- [ ] Live update toasts/notifications for ticket changes
+- [ ] "Someone is editing" indicators
+- [ ] Real-time Kanban board updates via WebSocket
+- [ ] AI-powered escalation level prediction
+- [ ] More sophisticated routing rules with ML
+- [ ] Email integration (currently mocked)
