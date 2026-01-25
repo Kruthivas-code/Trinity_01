@@ -539,14 +539,85 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
               <span className="text-[11px] text-muted-foreground font-mono bg-secondary/40 px-1.5 py-0.5 rounded shrink-0">
                 {ticket.ticket_id || `#${ticket.id?.slice(-8)}`}
               </span>
+              {snoozed && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-400 font-medium">
+                  Snoozed
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-0.5 shrink-0">
-              <button className="h-7 w-7 flex items-center justify-center rounded hover:bg-secondary/50 transition-colors" title="Star">
-                <Star size={14} className="text-muted-foreground" />
+              <button 
+                onClick={handleToggleStar}
+                className="h-7 w-7 flex items-center justify-center rounded hover:bg-secondary/50 transition-colors" 
+                title={isStarred ? "Unstar ticket" : "Star ticket"}
+                data-testid="drawer-star-button"
+              >
+                <Star 
+                  size={14} 
+                  className={isStarred ? "text-amber-400 fill-amber-400" : "text-muted-foreground"} 
+                />
               </button>
-              <button className="h-7 w-7 flex items-center justify-center rounded hover:bg-secondary/50 transition-colors" title="More">
-                <MoreHorizontal size={14} className="text-muted-foreground" />
-              </button>
+              <div className="relative">
+                <button 
+                  onClick={() => setShowMoreMenu(!showMoreMenu)}
+                  className="h-7 w-7 flex items-center justify-center rounded hover:bg-secondary/50 transition-colors" 
+                  title="More options"
+                  data-testid="drawer-more-button"
+                >
+                  <MoreHorizontal size={14} className="text-muted-foreground" />
+                </button>
+                
+                {/* More options dropdown */}
+                {showMoreMenu && (
+                  <div className="absolute right-0 top-8 w-48 bg-popover border border-border rounded-lg shadow-xl z-50 py-1">
+                    <button
+                      onClick={handleCopyLink}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left"
+                      data-testid="more-copy-link"
+                    >
+                      <Copy size={14} className="text-muted-foreground" />
+                      Copy link
+                    </button>
+                    <button
+                      onClick={handleOpenInNewTab}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left"
+                      data-testid="more-open-new-tab"
+                    >
+                      <ExternalLink size={14} className="text-muted-foreground" />
+                      Open in new tab
+                    </button>
+                    <button
+                      onClick={handlePrint}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left"
+                      data-testid="more-print"
+                    >
+                      <Printer size={14} className="text-muted-foreground" />
+                      Print ticket
+                    </button>
+                    <div className="h-px bg-border my-1" />
+                    <button
+                      onClick={handleToggleSnooze}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left"
+                      data-testid="more-snooze"
+                    >
+                      <BellOff size={14} className={snoozed ? "text-amber-400" : "text-muted-foreground"} />
+                      {snoozed ? 'Unsnooze ticket' : 'Snooze ticket'}
+                    </button>
+                    <div className="h-px bg-border my-1" />
+                    <button
+                      onClick={() => {
+                        toast.info('Merge feature coming soon');
+                        setShowMoreMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left text-muted-foreground"
+                      data-testid="more-merge"
+                    >
+                      <Merge size={14} />
+                      Merge with ticket...
+                    </button>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={onClose}
                 className="h-7 w-7 flex items-center justify-center rounded hover:bg-secondary/50 transition-colors ml-1"
