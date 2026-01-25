@@ -147,9 +147,7 @@ const Sidebar = ({ user }) => {
             
             {isTicketsExpanded && (
               <div className="mt-0.5 space-y-0.5">
-                {ticketViews.map(view => (
-                  <NavItem key={view.id} item={view} nested />
-                ))}
+                {ticketViews.map(view => renderNavItem(view, true))}
               </div>
             )}
           </div>
