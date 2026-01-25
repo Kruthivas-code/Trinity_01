@@ -195,6 +195,36 @@ Major design refresh completed:
 
 ---
 
+## Phase 8: UX Fixes & Enhancements ✅ COMPLETED (1/25/2026)
+
+### Bug Fixes
+- [x] **Replies not showing in UI**: Fixed backend `/api/tickets/{id}/notes` to return both `internal_note` AND `reply` types (was filtering only internal_note)
+- [x] **Kanban drag-and-drop snap-back**: Implemented optimistic updates - local state updates immediately before API call, no more visual snap-back
+- [x] **Duplicate "New Ticket" buttons**: Removed redundant button from DashboardContainer (GlobalHeader already has one)
+
+### New Features
+
+#### Dashboard Toolbar Improvements
+- [x] **Priority Filter dropdown**: Filter tickets by Urgent/High/Medium/Low priority with color-coded indicators
+- [x] **Refresh button**: Manual refresh with spinning animation while loading
+
+#### Ticket Drawer Header Actions
+- [x] **Star/Favorite button**: Toggle starred state for tickets (persists to backend). Starred tickets show filled amber star
+- [x] **More options menu** with actions:
+  - Copy link (copies ticket URL to clipboard)
+  - Open in new tab
+  - Print ticket
+  - Snooze ticket (hide from main view temporarily)
+  - Merge with ticket... (placeholder for future)
+- [x] **Snoozed badge**: Shows "Snoozed" label in ticket header when snoozed
+
+### Files Modified
+- `/app/backend/server.py` - Fixed notes endpoint to return replies
+- `/app/frontend/src/components/DashboardContainer.js` - Optimistic updates, filter, refresh
+- `/app/frontend/src/components/TicketDrawer.js` - Star/More menu functionality
+
+---
+
 ## Next Steps / Future Enhancements
 - [ ] Real-time presence indicators (avatars showing who's viewing a ticket)
 - [ ] Live update toasts/notifications for ticket changes
