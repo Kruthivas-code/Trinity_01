@@ -1,46 +1,138 @@
 """
-Trinity Comprehensive Search Module
-Full-text search across all entities with fuzzy matching
+Trinity Comprehensive Search Module v2
+Full-text search across ALL entities with operator support
 """
 
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timezone
+from typing import List, Dict, Any, Optional, Tuple
+from datetime import datetime, timezone, timedelta
 from pymongo import MongoClient, TEXT
-from bson import ObjectId
 import re
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Platform commands/features for search
+# ============================================================================
+# PLATFORM COMMANDS - Everything the user can do
+# ============================================================================
+
 PLATFORM_COMMANDS = [
-    # Navigation
-    {"id": "nav-dashboard", "type": "command", "category": "Navigation", "title": "Go to Dashboard", "description": "View Kanban board and ticket overview", "action": "/dashboard", "keywords": ["home", "main", "kanban", "board"]},
-    {"id": "nav-all-tickets", "type": "command", "category": "Navigation", "title": "All Tickets", "description": "View all tickets in the system", "action": "/all-tickets", "keywords": ["tickets", "list", "all"]},
-    {"id": "nav-open-tickets", "type": "command", "category": "Navigation", "title": "Open Tickets", "description": "View tickets that are open", "action": "/open-tickets", "keywords": ["open", "active", "pending"]},
-    {"id": "nav-waiting-tickets", "type": "command", "category": "Navigation", "title": "Waiting on Customer", "description": "View tickets waiting for customer response", "action": "/waiting-tickets", "keywords": ["waiting", "customer", "response"]},
-    {"id": "nav-closed-tickets", "type": "command", "category": "Navigation", "title": "Closed Tickets", "description": "View resolved tickets", "action": "/closed-tickets", "keywords": ["closed", "resolved", "done", "completed"]},
-    {"id": "nav-teams", "type": "command", "category": "Navigation", "title": "Teams", "description": "Manage teams and members", "action": "/teams", "keywords": ["teams", "groups", "members", "organization"]},
-    {"id": "nav-profile", "type": "command", "category": "Navigation", "title": "My Profile", "description": "View and edit your profile", "action": "/profile", "keywords": ["profile", "account", "me", "settings"]},
-    {"id": "nav-settings", "type": "command", "category": "Navigation", "title": "Settings", "description": "App settings and preferences", "action": "/settings", "keywords": ["settings", "preferences", "config", "theme"]},
-    {"id": "nav-admin", "type": "command", "category": "Navigation", "title": "Admin Panel", "description": "Admin settings and configuration", "action": "/admin", "keywords": ["admin", "administration", "configure", "custom fields"]},
+    # Navigation - Main
+    {"id": "nav-dashboard", "type": "command", "category": "Navigation", "title": "Dashboard", "subtitle": "Kanban board overview", "action": "/dashboard", "keywords": ["home", "main", "kanban", "board", "overview"]},
+    {"id": "nav-all-tickets", "type": "command", "category": "Navigation", "title": "All Tickets", "subtitle": "View all tickets", "action": "/all-tickets", "keywords": ["tickets", "list", "all", "every"]},
+    {"id": "nav-open-tickets", "type": "command", "category": "Navigation", "title": "Open Tickets", "subtitle": "Tickets in progress", "action": "/open-tickets", "keywords": ["open", "active", "pending", "working"]},
+    {"id": "nav-waiting-tickets", "type": "command", "category": "Navigation", "title": "Waiting on Customer", "subtitle": "Awaiting response", "action": "/waiting-tickets", "keywords": ["waiting", "customer", "response", "pending"]},
+    {"id": "nav-closed-tickets", "type": "command", "category": "Navigation", "title": "Closed Tickets", "subtitle": "Resolved tickets", "action": "/closed-tickets", "keywords": ["closed", "resolved", "done", "completed", "finished"]},
+    {"id": "nav-teams", "type": "command", "category": "Navigation", "title": "Teams", "subtitle": "Manage teams", "action": "/teams", "keywords": ["teams", "groups", "members", "organization", "people"]},
+    {"id": "nav-profile", "type": "command", "category": "Navigation", "title": "My Profile", "subtitle": "Your account settings", "action": "/profile", "keywords": ["profile", "account", "me", "my", "user"]},
+    {"id": "nav-settings", "type": "command", "category": "Navigation", "title": "Settings", "subtitle": "App preferences", "action": "/settings", "keywords": ["settings", "preferences", "config", "options"]},
+    {"id": "nav-admin", "type": "command", "category": "Navigation", "title": "Admin Panel", "subtitle": "System configuration", "action": "/admin", "keywords": ["admin", "administration", "configure", "system"]},
+    
+    # Admin sub-pages
+    {"id": "admin-custom-fields", "type": "command", "category": "Admin", "title": "Custom Fields", "subtitle": "Manage ticket fields", "action": "/admin?tab=custom-fields", "keywords": ["custom", "fields", "attributes", "properties", "metadata"]},
+    {"id": "admin-routing-rules", "type": "command", "category": "Admin", "title": "Routing Rules", "subtitle": "Automatic ticket routing", "action": "/admin?tab=routing-rules", "keywords": ["routing", "rules", "automation", "assignment", "auto"]},
+    {"id": "admin-shifts", "type": "command", "category": "Admin", "title": "Shifts & Schedules", "subtitle": "Team schedules", "action": "/admin?tab=shifts", "keywords": ["shifts", "schedule", "time", "availability", "hours"]},
+    {"id": "admin-general", "type": "command", "category": "Admin", "title": "General Settings", "subtitle": "System settings", "action": "/admin?tab=general", "keywords": ["general", "settings", "system", "config"]},
     
     # Actions
-    {"id": "action-new-ticket", "type": "action", "category": "Actions", "title": "Create New Ticket", "description": "Create a new support ticket", "action": "create_ticket", "keywords": ["new", "create", "add", "ticket"]},
-    {"id": "action-new-team", "type": "action", "category": "Actions", "title": "Create New Team", "description": "Create a new team", "action": "create_team", "keywords": ["new", "create", "add", "team"]},
-    {"id": "action-export", "type": "action", "category": "Actions", "title": "Export Data", "description": "Export tickets, users, or teams", "action": "export", "keywords": ["export", "download", "backup", "csv", "json"]},
-    {"id": "action-theme-toggle", "type": "action", "category": "Actions", "title": "Toggle Theme", "description": "Switch between light and dark mode", "action": "toggle_theme", "keywords": ["theme", "dark", "light", "mode", "appearance"]},
-    {"id": "action-logout", "type": "action", "category": "Actions", "title": "Sign Out", "description": "Log out of your account", "action": "logout", "keywords": ["logout", "sign out", "exit"]},
+    {"id": "action-new-ticket", "type": "action", "category": "Actions", "title": "Create New Ticket", "subtitle": "Open a support ticket", "action": "create_ticket", "keywords": ["new", "create", "add", "ticket", "issue", "request"]},
+    {"id": "action-new-team", "type": "action", "category": "Actions", "title": "Create New Team", "subtitle": "Add a team", "action": "create_team", "keywords": ["new", "create", "add", "team", "group"]},
+    {"id": "action-export-tickets", "type": "action", "category": "Actions", "title": "Export Tickets", "subtitle": "Download as CSV/JSON", "action": "export_tickets", "keywords": ["export", "download", "csv", "json", "backup", "tickets"]},
+    {"id": "action-export-users", "type": "action", "category": "Actions", "title": "Export Users", "subtitle": "Download user list", "action": "export_users", "keywords": ["export", "download", "users", "agents"]},
+    {"id": "action-theme-light", "type": "action", "category": "Actions", "title": "Switch to Light Mode", "subtitle": "Light theme", "action": "theme_light", "keywords": ["light", "theme", "bright", "day"]},
+    {"id": "action-theme-dark", "type": "action", "category": "Actions", "title": "Switch to Dark Mode", "subtitle": "Dark theme", "action": "theme_dark", "keywords": ["dark", "theme", "night", "dim"]},
+    {"id": "action-logout", "type": "action", "category": "Actions", "title": "Sign Out", "subtitle": "Log out of account", "action": "logout", "keywords": ["logout", "sign out", "exit", "leave"]},
     
-    # Admin Features
-    {"id": "admin-custom-fields", "type": "command", "category": "Admin", "title": "Custom Fields", "description": "Manage custom ticket and user fields", "action": "/admin?tab=custom-fields", "keywords": ["custom", "fields", "attributes", "properties"]},
-    {"id": "admin-routing-rules", "type": "command", "category": "Admin", "title": "Routing Rules", "description": "Configure automatic ticket routing", "action": "/admin?tab=routing-rules", "keywords": ["routing", "rules", "automation", "assignment"]},
-    {"id": "admin-shifts", "type": "command", "category": "Admin", "title": "Shifts & Schedules", "description": "Manage shift schedules", "action": "/admin?tab=shifts", "keywords": ["shifts", "schedule", "time", "availability"]},
+    # Quick filters (search shortcuts)
+    {"id": "filter-my-tickets", "type": "filter", "category": "Quick Filters", "title": "My Tickets", "subtitle": "Assigned to me", "action": "/search?q=assigned:me", "keywords": ["my", "mine", "assigned"]},
+    {"id": "filter-urgent", "type": "filter", "category": "Quick Filters", "title": "Urgent Tickets", "subtitle": "High priority items", "action": "/search?q=priority:urgent", "keywords": ["urgent", "critical", "important", "asap"]},
+    {"id": "filter-unassigned", "type": "filter", "category": "Quick Filters", "title": "Unassigned Tickets", "subtitle": "Need assignment", "action": "/search?q=assigned:none", "keywords": ["unassigned", "nobody", "available"]},
+    {"id": "filter-today", "type": "filter", "category": "Quick Filters", "title": "Created Today", "subtitle": "New tickets", "action": "/search?q=created:today", "keywords": ["today", "new", "recent"]},
+    {"id": "filter-overdue", "type": "filter", "category": "Quick Filters", "title": "Needs Attention", "subtitle": "Old open tickets", "action": "/search?q=status:open created:last-week", "keywords": ["overdue", "old", "attention", "stale"]},
 ]
+
+# ============================================================================
+# SEARCH OPERATORS
+# ============================================================================
+
+SEARCH_OPERATORS = {
+    'status': ['open', 'in-progress', 'waiting', 'closed', 'new'],
+    'priority': ['urgent', 'high', 'medium', 'low'],
+    'assigned': ['me', 'none'],  # Also accepts @username
+    'team': [],  # Dynamic - any team name
+    'tag': [],  # Dynamic - any tag
+    'escalation': ['L1', 'L2', 'L3', 'L4'],
+    'source': ['email', 'manual', 'api'],
+    'type': ['ticket', 'user', 'team', 'command', 'customer', 'shift', 'rule'],
+    'created': ['today', 'yesterday', 'this-week', 'last-week', 'this-month', 'last-month'],
+    'updated': ['today', 'yesterday', 'this-week', 'last-week'],
+    'customer': [],  # Dynamic - email
+    'domain': [],  # Dynamic - domain name
+    'has': ['attachment', 'comment', 'tag'],
+}
+
+
+def parse_date_filter(value: str) -> Tuple[Optional[datetime], Optional[datetime]]:
+    """Parse natural language date filters into datetime range"""
+    now = datetime.now(timezone.utc)
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    date_ranges = {
+        'today': (today_start, now),
+        'yesterday': (today_start - timedelta(days=1), today_start),
+        'this-week': (today_start - timedelta(days=today_start.weekday()), now),
+        'last-week': (today_start - timedelta(days=today_start.weekday() + 7), 
+                      today_start - timedelta(days=today_start.weekday())),
+        'this-month': (today_start.replace(day=1), now),
+        'last-month': ((today_start.replace(day=1) - timedelta(days=1)).replace(day=1),
+                       today_start.replace(day=1)),
+        'last-7-days': (today_start - timedelta(days=7), now),
+        'last-30-days': (today_start - timedelta(days=30), now),
+    }
+    
+    if value.lower() in date_ranges:
+        return date_ranges[value.lower()]
+    
+    # Try parsing as date string (YYYY-MM-DD)
+    try:
+        parsed = datetime.strptime(value, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+        return (parsed, parsed + timedelta(days=1))
+    except ValueError:
+        pass
+    
+    return (None, None)
+
+
+def parse_search_query(query: str) -> Tuple[str, Dict[str, str]]:
+    """
+    Parse search query with operators.
+    Returns (text_query, operators_dict)
+    
+    Example: "billing issue status:open priority:urgent"
+    Returns: ("billing issue", {"status": "open", "priority": "urgent"})
+    """
+    operators = {}
+    text_parts = []
+    
+    # Regex to match operator:value patterns
+    operator_pattern = r'(\w+):(\S+)'
+    
+    parts = query.split()
+    for part in parts:
+        match = re.match(operator_pattern, part)
+        if match:
+            op, val = match.groups()
+            if op.lower() in SEARCH_OPERATORS or op.lower() in ['customer', 'domain', 'team', 'tag', 'assigned']:
+                operators[op.lower()] = val.lower()
+            else:
+                text_parts.append(part)
+        else:
+            text_parts.append(part)
+    
+    return (' '.join(text_parts), operators)
 
 
 class SearchEngine:
-    """Comprehensive search engine for Trinity"""
+    """Comprehensive search engine for Trinity - indexes EVERYTHING"""
     
     def __init__(self, db):
         self.db = db
@@ -54,215 +146,281 @@ class SearchEngine:
     def ensure_indexes(self):
         """Create text indexes for full-text search"""
         try:
-            # Tickets - weighted text index
+            # Tickets - comprehensive text index
             self.tickets.create_index([
                 ("title", TEXT),
                 ("content", TEXT),
+                ("description", TEXT),
                 ("tags", TEXT),
-                ("ticket_number", TEXT)
+                ("ticket_id", TEXT),
+                ("customer_email", TEXT),
+                ("customer_name", TEXT),
+                ("domain", TEXT)
             ], weights={
                 "title": 10,
-                "ticket_number": 8,
-                "tags": 5,
-                "content": 1
-            }, name="ticket_search_idx", default_language="english")
-            logger.info("Created ticket search index")
+                "ticket_id": 10,
+                "tags": 8,
+                "customer_email": 5,
+                "domain": 5,
+                "content": 2,
+                "description": 2,
+                "customer_name": 3
+            }, name="ticket_search_idx_v2", default_language="english")
+            logger.info("Created ticket search index v2")
         except Exception as e:
             logger.warning(f"Ticket index may already exist: {e}")
         
         try:
-            # Users
             self.users.create_index([
                 ("name", TEXT),
                 ("email", TEXT)
-            ], weights={
-                "name": 10,
-                "email": 5
-            }, name="user_search_idx")
-            logger.info("Created user search index")
+            ], weights={"name": 10, "email": 5}, name="user_search_idx_v2")
         except Exception as e:
-            logger.warning(f"User index may already exist: {e}")
+            logger.warning(f"User index exists: {e}")
         
         try:
-            # Teams
             self.teams.create_index([
                 ("name", TEXT),
                 ("type", TEXT),
                 ("description", TEXT)
-            ], weights={
-                "name": 10,
-                "type": 5,
-                "description": 1
-            }, name="team_search_idx")
-            logger.info("Created team search index")
+            ], weights={"name": 10, "type": 5, "description": 1}, name="team_search_idx_v2")
         except Exception as e:
-            logger.warning(f"Team index may already exist: {e}")
+            logger.warning(f"Team index exists: {e}")
         
         try:
-            # Shifts
-            self.shifts.create_index([
-                ("name", TEXT)
-            ], name="shift_search_idx")
-            logger.info("Created shift search index")
+            self.shifts.create_index([("name", TEXT)], name="shift_search_idx_v2")
         except Exception as e:
-            logger.warning(f"Shift index may already exist: {e}")
+            logger.warning(f"Shift index exists: {e}")
         
         try:
-            # Routing rules
             self.routing_rules.create_index([
                 ("name", TEXT),
                 ("description", TEXT)
-            ], name="routing_rule_search_idx")
-            logger.info("Created routing rule search index")
+            ], name="routing_rule_search_idx_v2")
         except Exception as e:
-            logger.warning(f"Routing rule index may already exist: {e}")
+            logger.warning(f"Routing rule index exists: {e}")
+        
+        try:
+            self.custom_fields.create_index([
+                ("name", TEXT),
+                ("description", TEXT)
+            ], name="custom_field_search_idx")
+        except Exception as e:
+            logger.warning(f"Custom field index exists: {e}")
     
     def _fuzzy_match(self, query: str, text: str) -> float:
         """Calculate fuzzy match score (0-1)"""
         if not query or not text:
             return 0.0
-        
-        query = query.lower()
-        text = text.lower()
-        
-        # Exact match
-        if query in text:
+        query, text = query.lower(), text.lower()
+        if query == text:
             return 1.0
-        
-        # Word match
+        if query in text:
+            return 0.9
         query_words = set(query.split())
         text_words = set(text.split())
         if query_words & text_words:
-            return 0.8
-        
-        # Prefix match
+            overlap = len(query_words & text_words) / len(query_words)
+            return 0.5 + (overlap * 0.4)
         for word in text_words:
             if word.startswith(query) or query.startswith(word):
-                return 0.6
-        
+                return 0.4
         return 0.0
     
-    def search_commands(self, query: str, limit: int = 5) -> List[Dict]:
-        """Search platform commands/features"""
+    def search_commands(self, query: str, limit: int = 10) -> List[Dict]:
+        """Search platform commands/features/actions"""
         query_lower = query.lower()
         results = []
         
         for cmd in PLATFORM_COMMANDS:
             score = 0.0
             
-            # Check title
+            # Title match (highest weight)
             title_score = self._fuzzy_match(query_lower, cmd["title"].lower())
             score = max(score, title_score * 1.0)
             
-            # Check description
-            desc_score = self._fuzzy_match(query_lower, cmd["description"].lower())
-            score = max(score, desc_score * 0.7)
+            # Subtitle match
+            if cmd.get("subtitle"):
+                sub_score = self._fuzzy_match(query_lower, cmd["subtitle"].lower())
+                score = max(score, sub_score * 0.7)
             
-            # Check keywords
+            # Keywords match
             for keyword in cmd.get("keywords", []):
                 kw_score = self._fuzzy_match(query_lower, keyword)
-                score = max(score, kw_score * 0.9)
+                score = max(score, kw_score * 0.85)
             
-            if score > 0.3:
+            # Category match
+            cat_score = self._fuzzy_match(query_lower, cmd["category"].lower())
+            score = max(score, cat_score * 0.5)
+            
+            if score > 0.25:
                 results.append({
                     **cmd,
-                    "score": score
+                    "score": score,
+                    "result_type": cmd["type"]
                 })
         
-        # Sort by score and limit
         results.sort(key=lambda x: x["score"], reverse=True)
         return results[:limit]
     
-    def search_tickets(self, query: str, limit: int = 10) -> List[Dict]:
-        """Search tickets using text index"""
+    def search_tickets(self, query: str, operators: Dict[str, str], limit: int = 20, current_user_id: str = None) -> List[Dict]:
+        """Search tickets with operator support"""
         results = []
         
+        # Build MongoDB query
+        mongo_query = {}
+        
+        # Apply operators
+        if 'status' in operators:
+            mongo_query['status'] = operators['status']
+        
+        if 'priority' in operators:
+            mongo_query['priority'] = operators['priority']
+        
+        if 'escalation' in operators:
+            mongo_query['escalation_level'] = operators['escalation'].upper()
+        
+        if 'source' in operators:
+            mongo_query['source'] = operators['source']
+        
+        if 'assigned' in operators:
+            val = operators['assigned']
+            if val == 'me' and current_user_id:
+                mongo_query['assignee_id'] = current_user_id
+            elif val == 'none':
+                mongo_query['$or'] = [{'assignee_id': None}, {'assignee_id': {'$exists': False}}]
+            elif val.startswith('@'):
+                # Find user by name
+                username = val[1:]
+                user = self.users.find_one({'name': {'$regex': username, '$options': 'i'}})
+                if user:
+                    mongo_query['assignee_id'] = user.get('user_id')
+        
+        if 'team' in operators:
+            team = self.teams.find_one({'name': {'$regex': operators['team'], '$options': 'i'}})
+            if team:
+                mongo_query['team_id'] = team.get('team_id')
+        
+        if 'tag' in operators:
+            mongo_query['tags'] = {'$regex': operators['tag'], '$options': 'i'}
+        
+        if 'customer' in operators:
+            mongo_query['customer_email'] = {'$regex': operators['customer'], '$options': 'i'}
+        
+        if 'domain' in operators:
+            mongo_query['domain'] = {'$regex': operators['domain'], '$options': 'i'}
+        
+        if 'created' in operators:
+            start, end = parse_date_filter(operators['created'])
+            if start and end:
+                mongo_query['created_at'] = {'$gte': start, '$lt': end}
+        
+        if 'updated' in operators:
+            start, end = parse_date_filter(operators['updated'])
+            if start and end:
+                mongo_query['updated_at'] = {'$gte': start, '$lt': end}
+        
         try:
-            # Try text search first
-            cursor = self.tickets.find(
-                {"$text": {"$search": query}},
-                {"score": {"$meta": "textScore"}}
-            ).sort([("score", {"$meta": "textScore"})]).limit(limit)
+            # Text search if there's a query
+            if query and len(query) >= 2:
+                mongo_query['$text'] = {'$search': query}
+                cursor = self.tickets.find(
+                    mongo_query,
+                    {'score': {'$meta': 'textScore'}}
+                ).sort([('score', {'$meta': 'textScore'})]).limit(limit)
+            else:
+                # Just filter by operators
+                cursor = self.tickets.find(mongo_query).sort('created_at', -1).limit(limit)
             
             for doc in cursor:
                 results.append({
                     "id": doc.get("ticket_id", str(doc.get("_id"))),
                     "type": "ticket",
+                    "result_type": "ticket",
                     "category": "Tickets",
                     "title": doc.get("title", "Untitled"),
-                    "description": f"#{doc.get('ticket_number', 'N/A')} - {doc.get('status', 'unknown')}",
+                    "subtitle": f"#{doc.get('ticket_id', 'N/A')} • {doc.get('status', 'unknown')}",
                     "status": doc.get("status"),
                     "priority": doc.get("priority"),
+                    "escalation_level": doc.get("escalation_level"),
+                    "assignee_id": doc.get("assignee_id"),
+                    "customer_email": doc.get("customer_email"),
+                    "domain": doc.get("domain"),
+                    "tags": doc.get("tags", []),
+                    "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
                     "action": f"/all-tickets?ticket={doc.get('ticket_id')}",
-                    "score": doc.get("score", 0),
-                    "metadata": {
-                        "ticket_number": doc.get("ticket_number"),
-                        "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None
-                    }
+                    "score": doc.get("score", 0.5)
                 })
         except Exception as e:
             logger.error(f"Ticket search error: {e}")
             # Fallback to regex search
-            regex = {"$regex": query, "$options": "i"}
-            cursor = self.tickets.find({
-                "$or": [
-                    {"title": regex},
-                    {"content": regex},
-                    {"ticket_number": regex}
-                ]
-            }).limit(limit)
-            
-            for doc in cursor:
-                results.append({
-                    "id": doc.get("ticket_id", str(doc.get("_id"))),
-                    "type": "ticket",
-                    "category": "Tickets",
-                    "title": doc.get("title", "Untitled"),
-                    "description": f"#{doc.get('ticket_number', 'N/A')} - {doc.get('status', 'unknown')}",
-                    "status": doc.get("status"),
-                    "priority": doc.get("priority"),
-                    "action": f"/all-tickets?ticket={doc.get('ticket_id')}",
-                    "score": 0.5
-                })
+            if query:
+                regex = {"$regex": query, "$options": "i"}
+                fallback_query = {
+                    "$or": [
+                        {"title": regex},
+                        {"content": regex},
+                        {"ticket_id": regex},
+                        {"customer_email": regex}
+                    ]
+                }
+                fallback_query.update({k: v for k, v in mongo_query.items() if k != '$text'})
+                cursor = self.tickets.find(fallback_query).limit(limit)
+                
+                for doc in cursor:
+                    results.append({
+                        "id": doc.get("ticket_id", str(doc.get("_id"))),
+                        "type": "ticket",
+                        "result_type": "ticket",
+                        "category": "Tickets",
+                        "title": doc.get("title", "Untitled"),
+                        "subtitle": f"#{doc.get('ticket_id', 'N/A')} • {doc.get('status', 'unknown')}",
+                        "status": doc.get("status"),
+                        "priority": doc.get("priority"),
+                        "action": f"/all-tickets?ticket={doc.get('ticket_id')}",
+                        "score": 0.5
+                    })
         
         return results
     
-    def search_users(self, query: str, limit: int = 5) -> List[Dict]:
-        """Search users"""
+    def search_users(self, query: str, limit: int = 10) -> List[Dict]:
+        """Search users/agents"""
         results = []
         
         try:
-            cursor = self.users.find(
-                {"$text": {"$search": query}},
-                {"score": {"$meta": "textScore"}}
-            ).sort([("score", {"$meta": "textScore"})]).limit(limit)
+            if query and len(query) >= 2:
+                cursor = self.users.find(
+                    {"$text": {"$search": query}},
+                    {"score": {"$meta": "textScore"}}
+                ).sort([("score", {"$meta": "textScore"})]).limit(limit)
+            else:
+                cursor = self.users.find().limit(limit)
             
             for doc in cursor:
                 results.append({
                     "id": doc.get("user_id", str(doc.get("_id"))),
                     "type": "user",
+                    "result_type": "user",
                     "category": "Users",
                     "title": doc.get("name", "Unknown"),
-                    "description": doc.get("email", ""),
+                    "subtitle": doc.get("email", ""),
                     "picture": doc.get("picture"),
+                    "email": doc.get("email"),
                     "action": f"/profile?user={doc.get('user_id')}",
-                    "score": doc.get("score", 0)
+                    "score": doc.get("score", 0.5)
                 })
         except Exception as e:
             logger.error(f"User search error: {e}")
-            # Fallback
             regex = {"$regex": query, "$options": "i"}
-            cursor = self.users.find({
-                "$or": [{"name": regex}, {"email": regex}]
-            }).limit(limit)
-            
+            cursor = self.users.find({"$or": [{"name": regex}, {"email": regex}]}).limit(limit)
             for doc in cursor:
                 results.append({
-                    "id": doc.get("user_id", str(doc.get("_id"))),
+                    "id": doc.get("user_id"),
                     "type": "user",
+                    "result_type": "user",
                     "category": "Users",
                     "title": doc.get("name", "Unknown"),
-                    "description": doc.get("email", ""),
+                    "subtitle": doc.get("email", ""),
                     "picture": doc.get("picture"),
                     "action": f"/profile?user={doc.get('user_id')}",
                     "score": 0.5
@@ -270,137 +428,257 @@ class SearchEngine:
         
         return results
     
-    def search_teams(self, query: str, limit: int = 5) -> List[Dict]:
+    def search_teams(self, query: str, limit: int = 10) -> List[Dict]:
         """Search teams"""
         results = []
+        regex = {"$regex": query, "$options": "i"} if query else {}
         
         try:
-            cursor = self.teams.find(
-                {"$text": {"$search": query}},
-                {"score": {"$meta": "textScore"}}
-            ).sort([("score", {"$meta": "textScore"})]).limit(limit)
+            if query:
+                cursor = self.teams.find({"$or": [
+                    {"name": regex}, {"type": regex}, {"description": regex}
+                ]}).limit(limit)
+            else:
+                cursor = self.teams.find().limit(limit)
             
             for doc in cursor:
                 results.append({
                     "id": doc.get("team_id", str(doc.get("_id"))),
                     "type": "team",
+                    "result_type": "team",
                     "category": "Teams",
                     "title": doc.get("name", "Unknown Team"),
-                    "description": doc.get("type", "") or doc.get("description", ""),
-                    "action": f"/teams?team={doc.get('team_id')}",
-                    "score": doc.get("score", 0),
-                    "metadata": {
-                        "member_count": doc.get("member_count", 0)
-                    }
-                })
-        except Exception as e:
-            logger.error(f"Team search error: {e}")
-            regex = {"$regex": query, "$options": "i"}
-            cursor = self.teams.find({
-                "$or": [{"name": regex}, {"type": regex}]
-            }).limit(limit)
-            
-            for doc in cursor:
-                results.append({
-                    "id": doc.get("team_id", str(doc.get("_id"))),
-                    "type": "team",
-                    "category": "Teams",
-                    "title": doc.get("name", "Unknown Team"),
-                    "description": doc.get("type", ""),
+                    "subtitle": doc.get("type", "") or f"{doc.get('member_count', 0)} members",
+                    "member_count": doc.get("member_count", 0),
                     "action": f"/teams?team={doc.get('team_id')}",
                     "score": 0.5
                 })
+        except Exception as e:
+            logger.error(f"Team search error: {e}")
         
         return results
     
-    def search_shifts(self, query: str, limit: int = 3) -> List[Dict]:
-        """Search shifts"""
+    def search_customers(self, query: str, limit: int = 10) -> List[Dict]:
+        """Search customers (aggregated from tickets)"""
         results = []
         
-        regex = {"$regex": query, "$options": "i"}
-        cursor = self.shifts.find({"name": regex}).limit(limit)
+        if not query or len(query) < 2:
+            return results
+        
+        try:
+            pipeline = [
+                {"$match": {
+                    "$or": [
+                        {"customer_email": {"$regex": query, "$options": "i"}},
+                        {"customer_name": {"$regex": query, "$options": "i"}},
+                        {"domain": {"$regex": query, "$options": "i"}}
+                    ]
+                }},
+                {"$group": {
+                    "_id": {"$toLower": "$customer_email"},
+                    "email": {"$first": "$customer_email"},
+                    "name": {"$first": "$customer_name"},
+                    "domain": {"$first": "$domain"},
+                    "ticket_count": {"$sum": 1},
+                    "last_ticket": {"$max": "$created_at"}
+                }},
+                {"$sort": {"ticket_count": -1}},
+                {"$limit": limit}
+            ]
+            
+            for doc in self.tickets.aggregate(pipeline):
+                results.append({
+                    "id": doc.get("_id"),
+                    "type": "customer",
+                    "result_type": "customer",
+                    "category": "Customers",
+                    "title": doc.get("name") or doc.get("email", "Unknown"),
+                    "subtitle": f"{doc.get('email', '')} • {doc.get('ticket_count', 0)} tickets",
+                    "email": doc.get("email"),
+                    "domain": doc.get("domain"),
+                    "ticket_count": doc.get("ticket_count"),
+                    "action": f"/search?q=customer:{doc.get('email', '')}",
+                    "score": 0.6
+                })
+        except Exception as e:
+            logger.error(f"Customer search error: {e}")
+        
+        return results
+    
+    def search_shifts(self, query: str, limit: int = 5) -> List[Dict]:
+        """Search shifts"""
+        results = []
+        regex = {"$regex": query, "$options": "i"} if query else {}
+        
+        cursor = self.shifts.find({"name": regex} if query else {}).limit(limit)
         
         for doc in cursor:
             results.append({
                 "id": doc.get("shift_id", str(doc.get("_id"))),
                 "type": "shift",
+                "result_type": "shift",
                 "category": "Shifts",
                 "title": doc.get("name", "Unknown Shift"),
-                "description": f"{doc.get('start_time', '')} - {doc.get('end_time', '')}",
+                "subtitle": f"{doc.get('start_time', '')} - {doc.get('end_time', '')}",
                 "action": "/admin?tab=shifts",
-                "score": 0.5
+                "score": 0.4
             })
         
         return results
     
-    def search_routing_rules(self, query: str, limit: int = 3) -> List[Dict]:
+    def search_routing_rules(self, query: str, limit: int = 5) -> List[Dict]:
         """Search routing rules"""
         results = []
+        regex = {"$regex": query, "$options": "i"} if query else {}
         
-        regex = {"$regex": query, "$options": "i"}
         cursor = self.routing_rules.find({
             "$or": [{"name": regex}, {"description": regex}]
-        }).limit(limit)
+        } if query else {}).limit(limit)
         
         for doc in cursor:
             results.append({
                 "id": doc.get("rule_id", str(doc.get("_id"))),
                 "type": "routing_rule",
+                "result_type": "routing_rule",
                 "category": "Routing Rules",
                 "title": doc.get("name", "Unknown Rule"),
-                "description": doc.get("description", ""),
+                "subtitle": doc.get("description", ""),
+                "active": doc.get("active", False),
                 "action": "/admin?tab=routing-rules",
-                "score": 0.5,
-                "metadata": {
-                    "active": doc.get("active", False)
-                }
+                "score": 0.4
             })
         
         return results
     
-    def search_all(self, query: str, limit_per_category: int = 5) -> Dict[str, List]:
-        """Search across all entities"""
-        if not query or len(query) < 2:
-            return {"results": [], "total": 0}
+    def search_custom_fields(self, query: str, limit: int = 5) -> List[Dict]:
+        """Search custom field definitions"""
+        results = []
+        regex = {"$regex": query, "$options": "i"} if query else {}
         
-        results = {
-            "commands": self.search_commands(query, limit_per_category),
-            "tickets": self.search_tickets(query, limit_per_category),
-            "users": self.search_users(query, limit_per_category),
-            "teams": self.search_teams(query, limit_per_category),
-            "shifts": self.search_shifts(query, 3),
-            "routing_rules": self.search_routing_rules(query, 3)
-        }
+        cursor = self.custom_fields.find({
+            "$or": [{"name": regex}, {"description": regex}]
+        } if query else {}).limit(limit)
+        
+        for doc in cursor:
+            results.append({
+                "id": doc.get("field_id", str(doc.get("_id"))),
+                "type": "custom_field",
+                "result_type": "custom_field",
+                "category": "Custom Fields",
+                "title": doc.get("name", "Unknown Field"),
+                "subtitle": f"{doc.get('field_type', '')} • {doc.get('entity_type', '')}",
+                "action": "/admin?tab=custom-fields",
+                "score": 0.3
+            })
+        
+        return results
+    
+    def search_all(
+        self, 
+        query: str, 
+        limit_per_category: int = 10,
+        current_user_id: str = None,
+        type_filter: str = None
+    ) -> Dict[str, Any]:
+        """
+        Search across ALL entities
+        
+        Args:
+            query: Search query (may include operators like status:open)
+            limit_per_category: Max results per category
+            current_user_id: For assigned:me filter
+            type_filter: Optional - only search specific type (ticket, user, etc.)
+        """
+        if not query:
+            return {"results": [], "total": 0, "by_category": {}, "operators": {}}
+        
+        # Parse operators from query
+        text_query, operators = parse_search_query(query)
+        
+        # If type filter specified via operator
+        if 'type' in operators:
+            type_filter = operators['type']
+        
+        results_by_category = {}
+        
+        # Search each entity type (unless filtered)
+        if not type_filter or type_filter == 'command':
+            results_by_category['commands'] = self.search_commands(text_query or query, limit_per_category)
+        
+        if not type_filter or type_filter == 'ticket':
+            results_by_category['tickets'] = self.search_tickets(
+                text_query, operators, limit_per_category * 2, current_user_id
+            )
+        
+        if not type_filter or type_filter == 'user':
+            results_by_category['users'] = self.search_users(text_query or query, limit_per_category)
+        
+        if not type_filter or type_filter == 'team':
+            results_by_category['teams'] = self.search_teams(text_query or query, limit_per_category)
+        
+        if not type_filter or type_filter == 'customer':
+            results_by_category['customers'] = self.search_customers(text_query or query, limit_per_category)
+        
+        if not type_filter or type_filter == 'shift':
+            results_by_category['shifts'] = self.search_shifts(text_query or query, 5)
+        
+        if not type_filter or type_filter == 'rule':
+            results_by_category['routing_rules'] = self.search_routing_rules(text_query or query, 5)
+        
+        if not type_filter or type_filter == 'field':
+            results_by_category['custom_fields'] = self.search_custom_fields(text_query or query, 5)
         
         # Flatten and sort all results
         all_results = []
-        for category, items in results.items():
+        for category, items in results_by_category.items():
             all_results.extend(items)
         
         all_results.sort(key=lambda x: x.get("score", 0), reverse=True)
         
         return {
+            "query": query,
+            "text_query": text_query,
+            "operators": operators,
             "results": all_results,
             "total": len(all_results),
-            "by_category": results
+            "by_category": results_by_category
         }
     
-    def get_recent_searches(self, user_id: str, limit: int = 5) -> List[Dict]:
-        """Get user's recent searches (placeholder for future implementation)"""
-        # TODO: Implement search history storage
-        return []
-    
-    def save_search(self, user_id: str, query: str):
-        """Save search to history (placeholder for future implementation)"""
-        # TODO: Implement search history storage
-        pass
+    def get_search_suggestions(self, partial_query: str) -> List[Dict]:
+        """Get autocomplete suggestions as user types"""
+        suggestions = []
+        
+        # Suggest operators
+        if ':' not in partial_query:
+            for op in SEARCH_OPERATORS.keys():
+                if op.startswith(partial_query.lower()):
+                    suggestions.append({
+                        "type": "operator",
+                        "text": f"{op}:",
+                        "description": f"Filter by {op}"
+                    })
+        
+        # Suggest operator values
+        if ':' in partial_query:
+            parts = partial_query.split(':')
+            if len(parts) == 2:
+                op, val = parts[0].lower(), parts[1].lower()
+                if op in SEARCH_OPERATORS:
+                    for valid_val in SEARCH_OPERATORS[op]:
+                        if valid_val.startswith(val):
+                            suggestions.append({
+                                "type": "operator_value",
+                                "text": f"{op}:{valid_val}",
+                                "description": f"{op} is {valid_val}"
+                            })
+        
+        return suggestions[:10]
 
 
-# Singleton instance creator
+# Singleton
 _search_engine = None
 
 def get_search_engine(db) -> SearchEngine:
-    """Get or create search engine instance"""
     global _search_engine
     if _search_engine is None:
         _search_engine = SearchEngine(db)
