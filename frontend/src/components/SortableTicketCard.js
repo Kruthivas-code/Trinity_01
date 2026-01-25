@@ -1,6 +1,5 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import TicketCard from './TicketCard';
 
 const SortableTicketCard = ({ ticket, users, onClick, isActive }) => {
@@ -10,22 +9,15 @@ const SortableTicketCard = ({ ticket, users, onClick, isActive }) => {
     setNodeRef,
     transform,
     transition,
-    isDragging,
-    isOver
-  } = useSortable({ 
-    id: ticket.id,
-    data: {
-      type: 'ticket',
-      ticket
-    }
-  });
+    isDragging
+  } = useSortable({ id: ticket.id });
 
-  // Use CSS.Translate for better performance (GPU accelerated)
+  // Direct transform without CSS utility for instant response
   const style = {
-    transform: CSS.Translate.toString(transform),
-    transition: transition || 'transform 150ms cubic-bezier(0.25, 0.1, 0.25, 1)',
-    opacity: isDragging ? 0.4 : 1,
-    zIndex: isDragging ? 1000 : isOver ? 100 : 'auto',
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transition: isDragging ? 'none' : 'transform 120ms ease',
+    opacity: isDragging ? 0.3 : 1,
+    pointerEvents: isDragging ? 'none' : 'auto',
   };
 
   return (
@@ -34,23 +26,9 @@ const SortableTicketCard = ({ ticket, users, onClick, isActive }) => {
       style={style} 
       {...attributes} 
       {...listeners}
-      className={`
-        touch-none select-none
-        ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}
-        ${isOver ? 'relative' : ''}
-      `}
+      className="touch-none"
     >
-      {/* Drop indicator line when hovering over this card */}
-      {isOver && !isDragging && (
-        <div className="absolute -top-1 left-0 right-0 h-0.5 bg-primary rounded-full animate-pulse" />
-      )}
-      
-      <TicketCard 
-        ticket={ticket} 
-        users={users} 
-        onClick={onClick} 
-        isDragging={isDragging}
-      />
+      <TicketCard ticket={ticket} users={users} onClick={onClick} isDragging={isDragging} />
     </div>
   );
 };
