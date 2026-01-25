@@ -3825,6 +3825,374 @@ async def delete_leave(
     return {"message": "Leave deleted successfully"}
 
 
+# ==================== Ticket Merge/Link/Split APIs ====================
+
+@app.post("/api/tickets/{ticket_id}/merge")
+async def merge_tickets(
+    ticket_id: str,
+    merge_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Merge this ticket into another ticket"""
+    target_ticket_id = merge_data.get("target_ticket_id")
+    if not target_ticket_id:
+        raise HTTPException(status_code=400, detail="Target ticket ID required")
+    
+    # Get both tickets
+    source_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    target_ticket = tickets_collection.find_one({"ticket_id": target_ticket_id}, {"_id": 0})
+    
+    if not source_ticket:
+        raise HTTPException(status_code=404, detail="Source ticket not found")
+    if not target_ticket:
+        raise HTTPException(status_code=404, detail="Target ticket not found")
+    
+    # Move all messages from source to target
+    messages_collection.update_many(
+        {"ticket_id": ticket_id},
+        {"$set": {"ticket_id": target_ticket_id, "merged_from": ticket_id}}
+    )
+    
+    # Add a system note about the merge
+    merge_note = {
+        "message_id": f"msg_{uuid4().hex[:12]}",
+        "ticket_id": target_ticket_id,
+        "type": "system",
+        "text": f"Merged from ticket {ticket_id}: {source_ticket.get('title')}",
+        "created_by": current_user["user_id"],
+        "created_at": datetime.now(timezone.utc)
+    }
+    messages_collection.insert_one(merge_note)
+    
+    # Mark source ticket as merged (soft delete)
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$set": {
+            "status": "merged",
+            "merged_into": target_ticket_id,
+            "merged_at": datetime.now(timezone.utc),
+            "merged_by": current_user["user_id"]
+        }}
+    )
+    
+    # Log the change
+    log_ticket_change(ticket_id, source_ticket.get("uuid", ""), "merge", None, target_ticket_id, current_user["user_id"], "merge")
+    
+    return {"message": f"Ticket {ticket_id} merged into {target_ticket_id}"}
+
+
+@app.post("/api/tickets/{ticket_id}/link")
+async def link_tickets(
+    ticket_id: str,
+    link_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Link this ticket to another ticket"""
+    target_ticket_id = link_data.get("target_ticket_id")
+    link_type = link_data.get("link_type", "related")  # related, blocks, blocked_by, duplicates
+    
+    if not target_ticket_id:
+        raise HTTPException(status_code=400, detail="Target ticket ID required")
+    
+    # Get both tickets
+    source_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    target_ticket = tickets_collection.find_one({"ticket_id": target_ticket_id}, {"_id": 0})
+    
+    if not source_ticket:
+        raise HTTPException(status_code=404, detail="Source ticket not found")
+    if not target_ticket:
+        raise HTTPException(status_code=404, detail="Target ticket not found")
+    
+    # Add link to source ticket
+    link_entry = {
+        "ticket_id": target_ticket_id,
+        "title": target_ticket.get("title"),
+        "link_type": link_type,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$addToSet": {"linked_tickets": link_entry}}
+    )
+    
+    # Add reverse link to target
+    reverse_type = link_type
+    if link_type == "blocks":
+        reverse_type = "blocked_by"
+    elif link_type == "blocked_by":
+        reverse_type = "blocks"
+    
+    reverse_entry = {
+        "ticket_id": ticket_id,
+        "title": source_ticket.get("title"),
+        "link_type": reverse_type,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    tickets_collection.update_one(
+        {"ticket_id": target_ticket_id},
+        {"$addToSet": {"linked_tickets": reverse_entry}}
+    )
+    
+    # Return updated ticket
+    updated_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    return serialize_doc(updated_ticket)
+
+
+@app.delete("/api/tickets/{ticket_id}/unlink/{target_ticket_id}")
+async def unlink_tickets(
+    ticket_id: str,
+    target_ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Remove link between two tickets"""
+    # Remove link from source
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$pull": {"linked_tickets": {"ticket_id": target_ticket_id}}}
+    )
+    
+    # Remove link from target
+    tickets_collection.update_one(
+        {"ticket_id": target_ticket_id},
+        {"$pull": {"linked_tickets": {"ticket_id": ticket_id}}}
+    )
+    
+    return {"message": "Tickets unlinked"}
+
+
+@app.post("/api/tickets/{ticket_id}/split")
+async def split_ticket(
+    ticket_id: str,
+    split_data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Split a ticket at a specific message index"""
+    split_at_index = split_data.get("split_at_index")
+    new_ticket_title = split_data.get("new_ticket_title")
+    
+    if split_at_index is None:
+        raise HTTPException(status_code=400, detail="Split index required")
+    
+    # Get original ticket
+    original_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not original_ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Get all messages for this ticket
+    messages = list(messages_collection.find({"ticket_id": ticket_id}, {"_id": 0}).sort("created_at", ASCENDING))
+    
+    if split_at_index <= 0 or split_at_index > len(messages):
+        raise HTTPException(status_code=400, detail="Invalid split index")
+    
+    # Create new ticket
+    new_ticket_id = generate_ticket_id()
+    new_uuid = str(uuid4())
+    
+    new_ticket = {
+        "ticket_id": new_ticket_id,
+        "uuid": new_uuid,
+        "title": new_ticket_title or f"Split from {ticket_id}",
+        "description": f"This ticket was split from {ticket_id}",
+        "status": original_ticket.get("status", "todo"),
+        "assignee_id": original_ticket.get("assignee_id"),
+        "priority": original_ticket.get("priority", "medium"),
+        "escalation_level": original_ticket.get("escalation_level", "L1"),
+        "customer_email": original_ticket.get("customer_email"),
+        "domain": original_ticket.get("domain"),
+        "tags": original_ticket.get("tags", []),
+        "created_by": current_user["user_id"],
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+        "split_from": ticket_id,
+        "is_starred": False,
+        "snoozed": False
+    }
+    
+    tickets_collection.insert_one(new_ticket)
+    
+    # Move messages after split point to new ticket
+    messages_to_move = [m.get("message_id") for m in messages[split_at_index:]]
+    if messages_to_move:
+        messages_collection.update_many(
+            {"message_id": {"$in": messages_to_move}},
+            {"$set": {"ticket_id": new_ticket_id, "split_from": ticket_id}}
+        )
+    
+    # Add system notes to both tickets
+    split_note_original = {
+        "message_id": f"msg_{uuid4().hex[:12]}",
+        "ticket_id": ticket_id,
+        "type": "system",
+        "text": f"Ticket split. {len(messages_to_move)} message(s) moved to {new_ticket_id}",
+        "created_by": current_user["user_id"],
+        "created_at": datetime.now(timezone.utc)
+    }
+    messages_collection.insert_one(split_note_original)
+    
+    split_note_new = {
+        "message_id": f"msg_{uuid4().hex[:12]}",
+        "ticket_id": new_ticket_id,
+        "type": "system",
+        "text": f"This ticket was split from {ticket_id}",
+        "created_by": current_user["user_id"],
+        "created_at": datetime.now(timezone.utc)
+    }
+    messages_collection.insert_one(split_note_new)
+    
+    # Log the change
+    log_ticket_change(ticket_id, original_ticket.get("uuid", ""), "split", None, new_ticket_id, current_user["user_id"], "split")
+    
+    return {
+        "message": f"Ticket split successfully",
+        "new_ticket_id": new_ticket_id,
+        "messages_moved": len(messages_to_move)
+    }
+
+
+# ==================== Feature Requests APIs ====================
+
+class FeatureRequestCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    linked_ticket_id: Optional[str] = None
+
+class FeatureRequestUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None  # new, planned, in_progress, completed, archived
+
+@app.get("/api/feature-requests")
+async def get_feature_requests(
+    status: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all feature requests"""
+    query = {}
+    if status:
+        query["status"] = status
+    
+    requests = list(feature_requests_collection.find(query, {"_id": 0}).sort("mentions_count", DESCENDING))
+    return [serialize_doc(r) for r in requests]
+
+@app.post("/api/feature-requests")
+async def create_feature_request(
+    data: FeatureRequestCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new feature request"""
+    feature_request_id = f"FR-{str(uuid4().hex[:8]).upper()}"
+    
+    feature_request = {
+        "feature_request_id": feature_request_id,
+        "title": data.title,
+        "description": data.description or "",
+        "status": "new",
+        "mentions_count": 1 if data.linked_ticket_id else 0,
+        "linked_tickets": [data.linked_ticket_id] if data.linked_ticket_id else [],
+        "created_by": current_user["user_id"],
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    feature_requests_collection.insert_one(feature_request)
+    
+    # If linked_ticket_id provided, update the ticket
+    if data.linked_ticket_id:
+        tickets_collection.update_one(
+            {"ticket_id": data.linked_ticket_id},
+            {"$set": {"feature_request_id": feature_request_id}}
+        )
+    
+    return serialize_doc(feature_request)
+
+@app.get("/api/feature-requests/{feature_request_id}")
+async def get_feature_request(
+    feature_request_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific feature request with linked tickets"""
+    fr = feature_requests_collection.find_one({"feature_request_id": feature_request_id}, {"_id": 0})
+    if not fr:
+        raise HTTPException(status_code=404, detail="Feature request not found")
+    
+    # Get linked tickets details
+    linked_tickets = []
+    if fr.get("linked_tickets"):
+        tickets = list(tickets_collection.find(
+            {"ticket_id": {"$in": fr["linked_tickets"]}},
+            {"_id": 0, "ticket_id": 1, "title": 1, "status": 1, "customer_email": 1, "created_at": 1}
+        ))
+        linked_tickets = [serialize_doc(t) for t in tickets]
+    
+    result = serialize_doc(fr)
+    result["linked_ticket_details"] = linked_tickets
+    return result
+
+@app.put("/api/feature-requests/{feature_request_id}")
+async def update_feature_request(
+    feature_request_id: str,
+    data: FeatureRequestUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update a feature request"""
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    result = feature_requests_collection.update_one(
+        {"feature_request_id": feature_request_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Feature request not found")
+    
+    fr = feature_requests_collection.find_one({"feature_request_id": feature_request_id}, {"_id": 0})
+    return serialize_doc(fr)
+
+@app.post("/api/tickets/{ticket_id}/feature-request")
+async def link_ticket_to_feature_request(
+    ticket_id: str,
+    data: dict,
+    current_user: dict = Depends(get_current_user)
+):
+    """Link a ticket to a feature request"""
+    feature_request_id = data.get("feature_request_id")
+    if not feature_request_id:
+        raise HTTPException(status_code=400, detail="Feature request ID required")
+    
+    # Verify ticket exists
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Verify feature request exists
+    fr = feature_requests_collection.find_one({"feature_request_id": feature_request_id}, {"_id": 0})
+    if not fr:
+        raise HTTPException(status_code=404, detail="Feature request not found")
+    
+    # Add ticket to feature request
+    feature_requests_collection.update_one(
+        {"feature_request_id": feature_request_id},
+        {
+            "$addToSet": {"linked_tickets": ticket_id},
+            "$inc": {"mentions_count": 1}
+        }
+    )
+    
+    # Update ticket with feature request reference
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$set": {"feature_request_id": feature_request_id}}
+    )
+    
+    return {"message": "Ticket linked to feature request"}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
