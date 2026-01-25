@@ -303,13 +303,63 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Priority Filter */}
+            <div className="relative">
+              <button
+                onClick={() => setShowFilterMenu(!showFilterMenu)}
+                className={`h-9 px-3 flex items-center gap-2 rounded-lg text-sm border transition-interactive ${
+                  priorityFilter !== 'all' 
+                    ? 'bg-primary/20 text-primary border-primary/30' 
+                    : 'bg-secondary/70 text-secondary-foreground border-white/10 hover:bg-secondary/90'
+                }`}
+                data-testid="filter-button"
+              >
+                <Filter size={16} />
+                <span className="hidden sm:inline">
+                  {priorityFilter === 'all' ? 'Filter' : priorityFilter.charAt(0).toUpperCase() + priorityFilter.slice(1)}
+                </span>
+              </button>
+
+              {showFilterMenu && (
+                <div className="absolute right-0 top-12 glass rounded-lg border border-border/60 p-2 min-w-[140px] z-50">
+                  <div className="text-[10px] text-muted-foreground uppercase font-medium px-3 py-1">Priority</div>
+                  {['all', 'urgent', 'high', 'medium', 'low'].map(priority => (
+                    <button
+                      key={priority}
+                      onClick={() => {
+                        setPriorityFilter(priority);
+                        setShowFilterMenu(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm rounded transition-colors flex items-center gap-2 ${
+                        priorityFilter === priority ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
+                      }`}
+                      data-testid={`filter-${priority}`}
+                    >
+                      {priority === 'urgent' && <span className="w-2 h-2 rounded-full bg-red-400" />}
+                      {priority === 'high' && <span className="w-2 h-2 rounded-full bg-orange-400" />}
+                      {priority === 'medium' && <span className="w-2 h-2 rounded-full bg-amber-400" />}
+                      {priority === 'low' && <span className="w-2 h-2 rounded-full bg-slate-400" />}
+                      {priority === 'all' ? 'All Priorities' : priority.charAt(0).toUpperCase() + priority.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Refresh Button */}
             <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="h-9 px-3 flex items-center gap-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-cyan-400/90 transition-interactive"
-              data-testid="create-ticket-button"
+              onClick={async () => {
+                setIsRefreshing(true);
+                await fetchTickets();
+                await fetchAnalytics();
+                setIsRefreshing(false);
+                toast.success('Dashboard refreshed');
+              }}
+              disabled={isRefreshing}
+              className="h-9 px-3 flex items-center gap-2 rounded-lg bg-secondary/70 text-secondary-foreground text-sm border border-white/10 hover:bg-secondary/90 transition-interactive disabled:opacity-50"
+              data-testid="refresh-button"
             >
-              <Plus size={16} />
-              <span className="hidden sm:inline">New</span>
+              <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
             </button>
 
             <button
