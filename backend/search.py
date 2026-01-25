@@ -121,7 +121,7 @@ def parse_search_query(query: str) -> Tuple[str, Dict[str, str]]:
         match = re.match(operator_pattern, part)
         if match:
             op, val = match.groups()
-            if op.lower() in SEARCH_OPERATORS or op.lower() in ['customer', 'domain', 'team', 'tag', 'assigned']:
+            if op.lower() in SEARCH_OPERATORS or op.lower() in ['customer', 'domain', 'team', 'tag', 'assigned', 'uuid']:
                 operators[op.lower()] = val.lower()
             else:
                 text_parts.append(part)
@@ -146,27 +146,29 @@ class SearchEngine:
     def ensure_indexes(self):
         """Create text indexes for full-text search"""
         try:
-            # Tickets - comprehensive text index
+            # Tickets - comprehensive text index including uuid
             self.tickets.create_index([
                 ("title", TEXT),
                 ("content", TEXT),
                 ("description", TEXT),
                 ("tags", TEXT),
                 ("ticket_id", TEXT),
+                ("uuid", TEXT),
                 ("customer_email", TEXT),
                 ("customer_name", TEXT),
                 ("domain", TEXT)
             ], weights={
                 "title": 10,
                 "ticket_id": 10,
+                "uuid": 10,
                 "tags": 8,
                 "customer_email": 5,
                 "domain": 5,
                 "content": 2,
                 "description": 2,
                 "customer_name": 3
-            }, name="ticket_search_idx_v2", default_language="english")
-            logger.info("Created ticket search index v2")
+            }, name="ticket_search_idx_v3", default_language="english")
+            logger.info("Created ticket search index v3 with UUID")
         except Exception as e:
             logger.warning(f"Ticket index may already exist: {e}")
         
