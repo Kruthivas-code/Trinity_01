@@ -437,14 +437,24 @@ const LeavePage = ({ user }) => {
             </div>
           </div>
           
-          <button
-            onClick={() => { resetForm(); setShowModal(true); }}
-            className="flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-            data-testid="add-leave-btn"
-          >
-            <Plus size={16} />
-            Add Leave
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Connection Status */}
+            <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs ${
+              isConnected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+            }`}>
+              {isConnected ? <Wifi size={12} /> : <WifiOff size={12} />}
+              <span>{isConnected ? 'Live' : 'Offline'}</span>
+            </div>
+            
+            <button
+              onClick={() => { resetForm(); setShowModal(true); }}
+              className="flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              data-testid="add-leave-btn"
+            >
+              <Plus size={16} />
+              Add Leave
+            </button>
+          </div>
         </div>
       </header>
 
