@@ -187,21 +187,17 @@ const FeatureRequestsPage = ({ user }) => {
             <Bookmark size={16} className="text-primary" />
             <span className="text-sm">{stats.total} Total</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-500/10">
-            <div className="w-2 h-2 rounded-full bg-slate-400" />
-            <span className="text-sm">{stats.new} New</span>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10">
+            <Sparkles size={14} className="text-purple-400" />
+            <span className="text-sm">{stats.features} Features</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10">
+            <Bug size={14} className="text-red-400" />
+            <span className="text-sm">{stats.bugFixes} Bug Fixes</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10">
-            <div className="w-2 h-2 rounded-full bg-blue-400" />
-            <span className="text-sm">{stats.planned} Planned</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10">
-            <div className="w-2 h-2 rounded-full bg-amber-400" />
-            <span className="text-sm">{stats.inProgress} In Progress</span>
-          </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10">
-            <CheckCircle size={16} className="text-emerald-400" />
-            <span className="text-sm">{stats.completed} Completed</span>
+            <Zap size={14} className="text-blue-400" />
+            <span className="text-sm">{stats.enhancements} Enhancements</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 ml-auto">
             <MessageSquare size={16} className="text-primary" />
@@ -211,8 +207,8 @@ const FeatureRequestsPage = ({ user }) => {
       </div>
 
       {/* Toolbar */}
-      <div className="px-4 md:px-6 py-3 flex items-center gap-3 border-b border-border/30">
-        <div className="flex-1 relative">
+      <div className="px-4 md:px-6 py-3 flex items-center gap-3 border-b border-border/30 flex-wrap">
+        <div className="flex-1 relative min-w-[200px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
@@ -224,6 +220,17 @@ const FeatureRequestsPage = ({ user }) => {
         </div>
 
         <div className="flex items-center gap-2">
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="h-9 px-3 rounded-lg bg-secondary/50 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            <option value="all">All Types</option>
+            <option value="feature">Features</option>
+            <option value="bug_fix">Bug Fixes</option>
+            <option value="enhancement">Enhancements</option>
+          </select>
+          
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
