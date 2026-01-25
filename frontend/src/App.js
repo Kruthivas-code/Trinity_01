@@ -15,6 +15,7 @@ import AdminPage from './components/AdminPage';
 import LeavePage from './components/LeavePage';
 import SearchResultsPage from './components/SearchResultsPage';
 import CommandPalette from './components/CommandPalette';
+import FeatureRequestsPage from './components/FeatureRequestsPage';
 import { Toaster } from './components/ui/sonner';
 
 function AppRouter() {
