@@ -329,12 +329,12 @@ const Sidebar = ({ user }) => {
         >
           <div className="flex flex-col h-full">
             {/* Logo/Brand */}
-            <div className="h-16 flex items-center justify-between px-4 border-b border-border/40">
+            <div className="h-16 flex items-center justify-center px-4 border-b border-border/40">
               {isExpanded ? (
-                <h2 className="text-lg font-semibold brand">Trinity</h2>
+                <h2 className="text-lg font-semibold brand tracking-tight">Trinity</h2>
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center text-white font-bold text-sm brand">
-                  TF
+                <div className="w-8 h-8 flex items-center justify-center">
+                  <Zap size={20} className="text-primary" />
                 </div>
               )}
             </div>
@@ -345,11 +345,11 @@ const Sidebar = ({ user }) => {
             <div className="border-t border-border/40 p-2">
               {isExpanded && user && (
                 <div className="px-3 py-2 mb-2">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-3">
                     {user.picture ? (
                       <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xs font-medium">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center text-primary text-xs font-semibold">
                         {user.name?.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -358,13 +358,13 @@ const Sidebar = ({ user }) => {
                       <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                     </div>
                   </div>
-                  {/* Logout Button */}
+                  {/* Logout Button - Subtle design */}
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-3 h-9 rounded-lg text-destructive hover:bg-destructive/10 transition-interactive text-sm"
+                    className="w-full flex items-center gap-2 px-3 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all text-sm group"
                     data-testid="logout-button-sidebar"
                   >
-                    <LogOut size={16} />
+                    <LogOut size={15} className="opacity-60 group-hover:opacity-100" />
                     <span>Sign Out</span>
                   </button>
                 </div>
@@ -374,7 +374,7 @@ const Sidebar = ({ user }) => {
               {!isExpanded && (
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center justify-center h-10 rounded-lg text-destructive hover:bg-destructive/10 transition-interactive mb-1"
+                  className="w-full flex items-center justify-center h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all mb-1"
                   data-testid="logout-button-collapsed"
                   title="Sign Out"
                 >
