@@ -570,6 +570,8 @@ class TicketUpdate(BaseModel):
     custom_fields: Optional[Dict[str, Any]] = None
     escalation_level: Optional[str] = None  # L1, L2, L3
     team_id: Optional[str] = None
+    is_starred: Optional[bool] = None
+    snoozed: Optional[bool] = None
 
 class TicketReorder(BaseModel):
     ticket_id: str
