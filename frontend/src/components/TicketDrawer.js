@@ -152,7 +152,7 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
   );
 };
 
-const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) => {
+const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, onDelete }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
