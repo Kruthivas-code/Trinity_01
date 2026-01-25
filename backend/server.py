@@ -403,6 +403,92 @@ def auto_assign_on_escalation(ticket_id: str, escalation_level: str) -> dict:
         "assignee_id": assignee_id
     }
 
+# ==================== Auto-Reassignment on Reopen ====================
+
+def get_auto_reassign_setting() -> bool:
+    """Get the auto_reassign_reopened setting from admin settings"""
+    settings = admin_settings_collection.find_one({"type": "global"})
+    if settings:
+        return settings.get("auto_reassign_reopened", False)
+    return False
+
+def handle_ticket_reopen_reassignment(ticket: dict, new_status: str, changed_by: str) -> Optional[dict]:
+    """
+    Handle auto-reassignment when a ticket is reopened.
+    Returns reassignment info if reassignment occurred, None otherwise.
+    
+    Conditions for reassignment:
+    1. Setting is enabled
+    2. Ticket is being reopened (from resolved/closed to another status)
+    3. Original assignee is not on shift
+    4. There are agents on shift to assign to
+    """
+    # Check if setting is enabled
+    if not get_auto_reassign_setting():
+        return None
+    
+    old_status = ticket.get("status", "")
+    
+    # Check if this is a reopen (from resolved/closed to active status)
+    resolved_statuses = ["resolved", "closed"]
+    active_statuses = ["todo", "in_progress", "waiting", "review", "assigned", "queued"]
+    
+    if old_status not in resolved_statuses or new_status not in active_statuses:
+        return None
+    
+    current_assignee_id = ticket.get("assignee_id")
+    team_id = ticket.get("team_id")
+    
+    # If no assignee or no team, nothing to reassign
+    if not current_assignee_id or not team_id:
+        return None
+    
+    # Check if current assignee is on shift
+    if is_user_on_shift(current_assignee_id, team_id):
+        # Assignee is on shift, no need to reassign
+        return None
+    
+    # Current assignee is NOT on shift - try to reassign using round-robin
+    new_assignee_id = shift_based_round_robin(team_id)
+    
+    if new_assignee_id:
+        # Found someone on shift - reassign
+        new_assignee = users_collection.find_one({"user_id": new_assignee_id}, {"_id": 0})
+        old_assignee = users_collection.find_one({"user_id": current_assignee_id}, {"_id": 0})
+        
+        # Create notification for new assignee
+        notification_doc = {
+            "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
+            "type": "ticket_reassigned",
+            "user_id": new_assignee_id,
+            "ticket_id": ticket.get("ticket_id"),
+            "ticket_title": ticket.get("title"),
+            "message": f"Ticket '{ticket.get('title')}' has been automatically reassigned to you because the original assignee is not on shift.",
+            "from_user_id": current_assignee_id,
+            "from_user_name": old_assignee.get("name", "Unknown") if old_assignee else "Unknown",
+            "read": False,
+            "created_at": datetime.now(timezone.utc)
+        }
+        db.notifications.insert_one(notification_doc)
+        
+        return {
+            "reassigned": True,
+            "old_assignee_id": current_assignee_id,
+            "old_assignee_name": old_assignee.get("name", "Unknown") if old_assignee else "Unknown",
+            "new_assignee_id": new_assignee_id,
+            "new_assignee_name": new_assignee.get("name", "Unknown") if new_assignee else "Unknown",
+            "reason": "original_assignee_off_shift"
+        }
+    else:
+        # No one is on shift - unassign the ticket
+        return {
+            "reassigned": True,
+            "old_assignee_id": current_assignee_id,
+            "new_assignee_id": None,
+            "new_assignee_name": None,
+            "reason": "no_agents_on_shift"
+        }
+
 # ==================== Routing Rule Engine ====================
 
 def evaluate_condition(ticket: dict, condition: dict) -> bool:
