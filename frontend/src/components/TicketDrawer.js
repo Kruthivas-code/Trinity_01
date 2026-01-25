@@ -780,15 +780,6 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                   )}
                 </div>
               )}
-
-              {assignee && (
-                <div className="flex items-center gap-2 mt-1.5">
-                  <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 flex items-center justify-center text-[9px] font-medium">
-                    {assignee.name?.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="text-xs">{assignee.name}</span>
-                </div>
-              )}
             </div>
 
             {/* Status - Only show if assigned */}
