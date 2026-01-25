@@ -214,12 +214,87 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
       setShowDeleteConfirm(false);
       setInputText('');
       setCustomFieldValues(ticket.custom_fields || {});
+      setIsStarred(ticket.is_starred || false);
+      setSnoozed(ticket.snoozed || false);
+      setShowMoreMenu(false);
       fetchNotes(ticket.id);
       fetchRelatedTickets(ticket.id);
       fetchCustomFields();
       fetchAssignmentOptions(ticket.id);
     }
   }, [ticket]);
+
+  // Handle star toggle
+  const handleToggleStar = async () => {
+    if (!ticket) return;
+    const newStarred = !isStarred;
+    setIsStarred(newStarred);
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ is_starred: newStarred })
+      });
+      
+      if (response.ok) {
+        toast.success(newStarred ? 'Ticket starred' : 'Ticket unstarred');
+      } else {
+        setIsStarred(!newStarred); // Revert on error
+      }
+    } catch (error) {
+      setIsStarred(!newStarred);
+      toast.error('Failed to update star status');
+    }
+  };
+
+  // Handle copy ticket URL
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/all-tickets?ticket=${ticket.ticket_id || ticket.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success('Link copied to clipboard');
+    setShowMoreMenu(false);
+  };
+
+  // Handle snooze toggle
+  const handleToggleSnooze = async () => {
+    if (!ticket) return;
+    const newSnoozed = !snoozed;
+    setSnoozed(newSnoozed);
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ snoozed: newSnoozed })
+      });
+      
+      if (response.ok) {
+        toast.success(newSnoozed ? 'Ticket snoozed - hidden from main view' : 'Ticket unsnoozed');
+      } else {
+        setSnoozed(!newSnoozed);
+      }
+    } catch (error) {
+      setSnoozed(!newSnoozed);
+      toast.error('Failed to update snooze status');
+    }
+    setShowMoreMenu(false);
+  };
+
+  // Handle print ticket
+  const handlePrint = () => {
+    window.print();
+    setShowMoreMenu(false);
+  };
+
+  // Handle open in new tab
+  const handleOpenInNewTab = () => {
+    const url = `${window.location.origin}/all-tickets?ticket=${ticket.ticket_id || ticket.id}`;
+    window.open(url, '_blank');
+    setShowMoreMenu(false);
+  };
 
   const fetchCustomFields = async () => {
     try {
