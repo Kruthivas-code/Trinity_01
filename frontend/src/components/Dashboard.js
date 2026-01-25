@@ -176,10 +176,8 @@ const Dashboard = ({ user, token, onLogout }) => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
-      toast.success(`Tickets exported as ${format.toUpperCase()}`);
     } catch (error) {
-      console.error('Operation failed');
+      console.error('Export failed:', error);
     }
   };
 
