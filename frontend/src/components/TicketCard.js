@@ -31,12 +31,20 @@ const TicketCard = ({ ticket, users, onClick, isDragging }) => {
   const tags = ticket.tags || [];
 
   return (
-    <button
+    <div
       onClick={onClick}
-      className={`w-full text-left glass rounded-lg p-3 border hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glass-ring)] transition-interactive ${
-        isDragging ? 'shadow-2xl scale-105' : ''
-      }`}
+      className={`
+        w-full text-left glass rounded-lg p-3 border cursor-pointer
+        transition-all duration-150 ease-out
+        ${isDragging 
+          ? 'shadow-2xl scale-105 border-primary/50 ring-2 ring-primary/30 bg-card' 
+          : 'hover:border-white/20 hover:shadow-md active:scale-[0.98]'
+        }
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glass-ring)]
+      `}
       data-testid="ticket-card"
+      role="button"
+      tabIndex={0}
     >
       {/* Top row: Ticket ID + Escalation Level */}
       <div className="flex items-center justify-between gap-2 mb-2">
