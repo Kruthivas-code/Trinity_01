@@ -1949,14 +1949,18 @@ async def create_ticket(
     )
     next_order = (max_order_ticket["order"] + 1) if max_order_ticket and "order" in max_order_ticket else 0
     
-    # Generate sequential ticket ID
+    # Generate sequential ticket ID and UUID
     ticket_id = generate_ticket_id()
+    ticket_uuid = str(uuid4())
     
     # Extract domain from customer email if provided
     domain = extract_domain(ticket_data.customer_email) if ticket_data.customer_email else None
     
+    now = datetime.now(timezone.utc)
+    
     ticket_doc = {
         "ticket_id": ticket_id,
+        "uuid": ticket_uuid,
         "title": ticket_data.title,
         "description": ticket_data.description,
         "status": ticket_data.status,
@@ -1965,16 +1969,29 @@ async def create_ticket(
         "escalation_level": ticket_data.escalation_level or "L1",
         "order": next_order,
         "created_by": current_user["user_id"],
-        "created_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc),
+        "created_at": now,
+        "updated_at": now,
         # New fields
         "source": ticket_data.source or "manual",
         "tags": ticket_data.tags or [],
         "customer_email": ticket_data.customer_email,
-        "domain": domain
+        "domain": domain,
+        "is_starred": False,
+        "snoozed": False
     }
     
     tickets_collection.insert_one(ticket_doc)
+    
+    # Log ticket creation in changelog
+    log_ticket_change(
+        ticket_id=ticket_id,
+        uuid=ticket_uuid,
+        field="ticket",
+        old_value=None,
+        new_value=ticket_doc.get("title"),
+        changed_by=current_user["user_id"],
+        change_type="create"
+    )
     
     # Run routing rules on newly created ticket
     routing_result = run_routing_rules(ticket_doc)
