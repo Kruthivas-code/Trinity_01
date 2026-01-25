@@ -191,11 +191,11 @@ const MentionInput = ({
         </div>
       )}
 
-      {/* Suggestions dropdown */}
+      {/* Suggestions dropdown - positioned above the input */}
       {showSuggestions && filteredUsers.length > 0 && (
         <div
           ref={suggestionsRef}
-          className="absolute z-50 mt-1 w-64 bg-card border border-border rounded-lg shadow-xl overflow-hidden"
+          className="absolute z-50 bottom-full mb-1 w-64 bg-card border border-border rounded-lg shadow-xl overflow-hidden"
           data-testid="mention-suggestions"
         >
           <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border bg-secondary/30">
