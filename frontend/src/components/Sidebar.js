@@ -1,7 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Menu, X, LogOut, Users, Shield, Triangle } from 'lucide-react';
+import { 
+  LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, 
+  User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, 
+  Menu, X, LogOut, Users, Shield 
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { TridentIcon } from './TridentIcon';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -80,42 +85,46 @@ const Sidebar = ({ user }) => {
         key={item.id}
         onClick={() => handleNavigate(item.path)}
         className={`
-          w-full flex items-center gap-3 h-11 rounded-lg
-          transition-interactive
+          w-full flex items-center gap-3 h-10 rounded-lg
+          transition-interactive focus-ring
           ${active 
-            ? 'bg-gradient-primary text-white shadow-lg shadow-primary/25' 
-            : 'hover:bg-white/10 text-foreground opacity-100'
+            ? 'bg-primary/15 text-primary border border-primary/20' 
+            : 'hover:bg-secondary/60 text-foreground/80 hover:text-foreground border border-transparent'
           }
           ${!isExpanded && !isNested && 'justify-center'}
-          ${isNested ? 'px-3 ml-8' : 'px-3'}
+          ${isNested ? 'px-3 ml-7' : 'px-3'}
         `}
         data-testid={`nav-${item.id}`}
         title={!isExpanded ? item.label : undefined}
       >
-        <Icon size={18} className="shrink-0" />
-        {(isExpanded || isNested) && <span className="text-sm font-medium">{item.label}</span>}
+        <Icon size={18} className={`shrink-0 ${active ? 'text-primary' : 'opacity-70'}`} />
+        {(isExpanded || isNested) && (
+          <span className={`text-sm font-medium ${active ? 'text-primary' : ''}`}>
+            {item.label}
+          </span>
+        )}
       </button>
     );
   };
 
   const renderDesktopNav = () => (
-    <nav className="flex-1 py-4 px-2 space-y-1">
+    <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
       {/* Dashboard */}
       <button
         onClick={() => handleNavigate('/dashboard')}
         className={`
-          w-full flex items-center gap-3 px-3 h-11 rounded-lg
-          transition-interactive
+          w-full flex items-center gap-3 px-3 h-10 rounded-lg
+          transition-interactive focus-ring
           ${isActive('/dashboard')
-            ? 'bg-gradient-primary text-white shadow-lg shadow-primary/25' 
-            : 'hover:bg-white/10 text-foreground'
+            ? 'bg-primary/15 text-primary border border-primary/20' 
+            : 'hover:bg-secondary/60 text-foreground/80 hover:text-foreground border border-transparent'
           }
           ${!isExpanded && 'justify-center'}
         `}
         data-testid="nav-dashboard"
         title={!isExpanded ? 'Dashboard' : undefined}
       >
-        <LayoutDashboard size={20} className={isActive('/dashboard') ? 'opacity-100' : 'opacity-70'} />
+        <LayoutDashboard size={18} className={isActive('/dashboard') ? 'text-primary' : 'opacity-70'} />
         {isExpanded && <span className="text-sm font-medium">Dashboard</span>}
       </button>
 
@@ -125,22 +134,22 @@ const Sidebar = ({ user }) => {
           <button
             onClick={() => setIsTicketsExpanded(!isTicketsExpanded)}
             className={`
-              w-full flex items-center justify-between px-3 h-11 rounded-lg
-              transition-interactive
-              ${isTicketViewActive ? 'text-primary' : 'text-foreground'}
-              hover:bg-white/10
+              w-full flex items-center justify-between px-3 h-10 rounded-lg
+              transition-interactive focus-ring border border-transparent
+              ${isTicketViewActive ? 'text-primary' : 'text-foreground/80'}
+              hover:bg-secondary/60 hover:text-foreground
             `}
             data-testid="nav-tickets-toggle"
           >
             <div className="flex items-center gap-3">
-              <List size={20} className="opacity-70" />
+              <List size={18} className={isTicketViewActive ? 'text-primary' : 'opacity-70'} />
               <span className="text-sm font-medium">Tickets</span>
             </div>
-            {isTicketsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {isTicketsExpanded ? <ChevronUp size={16} className="opacity-50" /> : <ChevronDown size={16} className="opacity-50" />}
           </button>
           
           {isTicketsExpanded && (
-            <div className="space-y-1 pl-2">
+            <div className="space-y-0.5 pl-1">
               {ticketViews.map(view => renderNavItem(view, true))}
             </div>
           )}
@@ -151,27 +160,26 @@ const Sidebar = ({ user }) => {
           <button
             onClick={() => setIsCollapsedMenuOpen(!isCollapsedMenuOpen)}
             className={`
-              w-full flex items-center justify-center px-3 h-11 rounded-lg
-              transition-interactive
-              ${isTicketViewActive || isCollapsedMenuOpen ? 'bg-primary/10 text-primary' : 'hover:bg-white/10 text-foreground'}
+              w-full flex items-center justify-center px-3 h-10 rounded-lg
+              transition-interactive focus-ring border
+              ${isTicketViewActive || isCollapsedMenuOpen 
+                ? 'bg-primary/15 text-primary border-primary/20' 
+                : 'hover:bg-secondary/60 text-foreground/80 border-transparent'
+              }
             `}
             title="Tickets"
             data-testid="collapsed-tickets-toggle"
           >
-            <List size={20} className={isCollapsedMenuOpen ? 'opacity-100' : 'opacity-70'} />
+            <List size={18} className={isCollapsedMenuOpen || isTicketViewActive ? 'text-primary' : 'opacity-70'} />
           </button>
           
           {/* Click submenu for collapsed state */}
           {isCollapsedMenuOpen && (
             <div className="absolute left-full top-0 ml-2 z-50">
               <div 
-                className="rounded-lg border border-border/60 p-2 min-w-[200px] shadow-xl backdrop-blur-xl backdrop-saturate-150"
-                style={{
-                  background: 'var(--glass-elevated-bg)',
-                  backgroundColor: 'hsl(var(--card))',
-                }}
+                className="card-premium rounded-xl p-2 min-w-[200px]"
               >
-                <div className="px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider border-b border-border/40 mb-2">
+                <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 mb-2">
                   Tickets
                 </div>
                 {ticketViews.map(view => {
@@ -183,15 +191,15 @@ const Sidebar = ({ user }) => {
                       onClick={() => handleNavigate(view.path)}
                       className={`
                         w-full flex items-center gap-3 px-3 h-10 rounded-lg
-                        transition-interactive text-left
+                        transition-interactive text-left focus-ring
                         ${active 
-                          ? 'bg-gradient-primary text-white' 
-                          : 'hover:bg-white/10 text-foreground'
+                          ? 'bg-primary/15 text-primary' 
+                          : 'hover:bg-secondary/60 text-foreground/80 hover:text-foreground'
                         }
                       `}
                       data-testid={`collapsed-nav-${view.id}`}
                     >
-                      <Icon size={18} />
+                      <Icon size={16} className={active ? 'text-primary' : 'opacity-70'} />
                       <span className="text-sm font-medium">{view.label}</span>
                     </button>
                   );
@@ -203,27 +211,27 @@ const Sidebar = ({ user }) => {
       )}
 
       {/* Other Items */}
-      <div className="pt-2 border-t border-border/40 mt-2">
+      <div className="pt-3 mt-3 border-t border-border/40 space-y-0.5">
         {otherItems.map(item => renderNavItem(item, false))}
       </div>
     </nav>
   );
 
   const renderMobileNav = () => (
-    <nav className="flex-1 py-4 px-2 space-y-1">
+    <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
       {/* Dashboard */}
       <button
         onClick={() => handleNavigate('/dashboard')}
         className={`
-          w-full flex items-center gap-3 px-3 h-11 rounded-lg
-          transition-interactive
+          w-full flex items-center gap-3 px-3 h-10 rounded-lg
+          transition-interactive focus-ring
           ${isActive('/dashboard')
-            ? 'bg-gradient-primary text-white shadow-lg shadow-primary/25' 
-            : 'hover:bg-white/10 text-foreground'
+            ? 'bg-primary/15 text-primary border border-primary/20' 
+            : 'hover:bg-secondary/60 text-foreground/80 border border-transparent'
           }
         `}
       >
-        <LayoutDashboard size={20} />
+        <LayoutDashboard size={18} className={isActive('/dashboard') ? 'text-primary' : 'opacity-70'} />
         <span className="text-sm font-medium">Dashboard</span>
       </button>
 
@@ -232,21 +240,21 @@ const Sidebar = ({ user }) => {
         <button
           onClick={() => setIsTicketsExpanded(!isTicketsExpanded)}
           className={`
-            w-full flex items-center justify-between px-3 h-11 rounded-lg
-            transition-interactive
-            ${isTicketViewActive ? 'text-primary' : 'text-foreground'}
-            hover:bg-white/10
+            w-full flex items-center justify-between px-3 h-10 rounded-lg
+            transition-interactive focus-ring border border-transparent
+            ${isTicketViewActive ? 'text-primary' : 'text-foreground/80'}
+            hover:bg-secondary/60
           `}
         >
           <div className="flex items-center gap-3">
-            <List size={20} />
+            <List size={18} className={isTicketViewActive ? 'text-primary' : 'opacity-70'} />
             <span className="text-sm font-medium">Tickets</span>
           </div>
-          {isTicketsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          {isTicketsExpanded ? <ChevronUp size={16} className="opacity-50" /> : <ChevronDown size={16} className="opacity-50" />}
         </button>
         
         {isTicketsExpanded && (
-          <div className="space-y-1 pl-2">
+          <div className="space-y-0.5 pl-1">
             {ticketViews.map(view => {
               const Icon = view.icon;
               const active = isActive(view.path);
@@ -255,15 +263,15 @@ const Sidebar = ({ user }) => {
                   key={view.id}
                   onClick={() => handleNavigate(view.path)}
                   className={`
-                    w-full flex items-center gap-3 px-3 ml-6 h-11 rounded-lg
-                    transition-interactive
+                    w-full flex items-center gap-3 px-3 ml-7 h-10 rounded-lg
+                    transition-interactive focus-ring
                     ${active 
-                      ? 'bg-gradient-primary text-white shadow-lg shadow-primary/25' 
-                      : 'hover:bg-white/10 text-foreground'
+                      ? 'bg-primary/15 text-primary border border-primary/20' 
+                      : 'hover:bg-secondary/60 text-foreground/80 border border-transparent'
                     }
                   `}
                 >
-                  <Icon size={18} />
+                  <Icon size={16} className={active ? 'text-primary' : 'opacity-70'} />
                   <span className="text-sm font-medium">{view.label}</span>
                 </button>
               );
@@ -273,7 +281,7 @@ const Sidebar = ({ user }) => {
       </div>
 
       {/* Other Items */}
-      <div className="pt-2 border-t border-border/40 mt-2">
+      <div className="pt-3 mt-3 border-t border-border/40 space-y-0.5">
         {otherItems.map(item => {
           const Icon = item.icon;
           const active = isActive(item.path);
@@ -282,15 +290,15 @@ const Sidebar = ({ user }) => {
               key={item.id}
               onClick={() => handleNavigate(item.path)}
               className={`
-                w-full flex items-center gap-3 px-3 h-11 rounded-lg
-                transition-interactive
+                w-full flex items-center gap-3 px-3 h-10 rounded-lg
+                transition-interactive focus-ring
                 ${active 
-                  ? 'bg-gradient-primary text-white shadow-lg shadow-primary/25' 
-                  : 'hover:bg-white/10 text-foreground'
+                  ? 'bg-primary/15 text-primary border border-primary/20' 
+                  : 'hover:bg-secondary/60 text-foreground/80 border border-transparent'
                 }
               `}
             >
-              <Icon size={20} />
+              <Icon size={18} className={active ? 'text-primary' : 'opacity-70'} />
               <span className="text-sm font-medium">{item.label}</span>
             </button>
           );
@@ -304,7 +312,7 @@ const Sidebar = ({ user }) => {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 h-10 w-10 flex items-center justify-center rounded-lg glass border border-border/60 hover:bg-white/10 transition-interactive"
+        className="lg:hidden fixed top-4 left-4 z-50 h-10 w-10 flex items-center justify-center rounded-xl glass border border-border/60 hover:bg-secondary/60 transition-interactive focus-ring"
         data-testid="mobile-menu-button"
       >
         {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -313,18 +321,18 @@ const Sidebar = ({ user }) => {
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
       {/* Desktop Sidebar Wrapper */}
-      <div className={`shrink-0 transition-all duration-300 ${isExpanded ? 'w-64' : 'w-16'} hidden lg:block`}>
+      <div className={`shrink-0 transition-all duration-300 ${isExpanded ? 'w-60' : 'w-16'} hidden lg:block`}>
         <aside
           className={`
-            fixed top-0 left-0 h-full z-40 glass border-r border-border/60 backdrop-saturate-150
-            transition-all duration-300 ease-in-out
-            ${isExpanded ? 'w-64' : 'w-16'}
+            fixed top-0 left-0 h-full z-40 glass border-r border-border/50
+            transition-all duration-300 ease-out
+            ${isExpanded ? 'w-60' : 'w-16'}
           `}
           data-testid="sidebar"
         >
@@ -332,10 +340,13 @@ const Sidebar = ({ user }) => {
             {/* Logo/Brand */}
             <div className="h-16 flex items-center justify-center px-4 border-b border-border/40">
               {isExpanded ? (
-                <h2 className="text-lg font-semibold brand tracking-tight">Trinity</h2>
+                <div className="flex items-center gap-2.5">
+                  <TridentIcon size={22} className="text-primary" strokeWidth={2.5} />
+                  <span className="brand text-lg font-bold tracking-tight">Trinity</span>
+                </div>
               ) : (
-                <div className="w-8 h-8 flex items-center justify-center">
-                  <Triangle size={20} className="text-primary" />
+                <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary/10 hover:bg-primary/15 transition-interactive">
+                  <TridentIcon size={20} className="text-primary" strokeWidth={2.5} />
                 </div>
               )}
             </div>
@@ -345,12 +356,12 @@ const Sidebar = ({ user }) => {
             {/* User Info & Toggle */}
             <div className="border-t border-border/40 p-2">
               {isExpanded && user && (
-                <div className="px-3 py-2 mb-2">
-                  <div className="flex items-center gap-2 mb-3">
+                <div className="px-2 py-3 mb-2">
+                  <div className="flex items-center gap-2.5 mb-3">
                     {user.picture ? (
-                      <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
+                      <img src={user.picture} alt={user.name} className="w-9 h-9 rounded-full ring-2 ring-border/50" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center text-primary text-xs font-semibold">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/40 to-accent/40 flex items-center justify-center text-primary text-sm font-semibold ring-2 ring-border/50">
                         {user.name?.charAt(0).toUpperCase()}
                       </div>
                     )}
@@ -362,10 +373,10 @@ const Sidebar = ({ user }) => {
                   {/* Logout Button - Subtle design */}
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-3 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all text-sm group"
+                    className="w-full flex items-center gap-2 px-3 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-interactive text-sm group focus-ring"
                     data-testid="logout-button-sidebar"
                   >
-                    <LogOut size={15} className="opacity-60 group-hover:opacity-100" />
+                    <LogOut size={15} className="opacity-60 group-hover:opacity-100 transition-interactive" />
                     <span>Sign Out</span>
                   </button>
                 </div>
@@ -375,7 +386,7 @@ const Sidebar = ({ user }) => {
               {!isExpanded && (
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center justify-center h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-all mb-1"
+                  className="w-full flex items-center justify-center h-10 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-interactive mb-1 focus-ring"
                   data-testid="logout-button-collapsed"
                   title="Sign Out"
                 >
@@ -386,10 +397,10 @@ const Sidebar = ({ user }) => {
               {/* Desktop Toggle Button */}
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className="w-full flex items-center justify-center h-10 rounded-lg hover:bg-white/10 transition-interactive"
+                className="w-full flex items-center justify-center h-10 rounded-lg hover:bg-secondary/50 transition-interactive focus-ring text-muted-foreground hover:text-foreground"
                 data-testid="sidebar-toggle"
               >
-                {isExpanded ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+                {isExpanded ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
               </button>
             </div>
           </div>
@@ -399,15 +410,18 @@ const Sidebar = ({ user }) => {
       {/* Mobile Sidebar */}
       <aside
         className={`
-          lg:hidden fixed top-0 left-0 h-full w-64 z-40 glass border-r border-border/60 backdrop-saturate-150
-          transition-transform duration-300 ease-in-out
+          lg:hidden fixed top-0 left-0 h-full w-64 z-40 glass border-r border-border/50
+          transition-transform duration-300 ease-out
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
         <div className="flex flex-col h-full">
           {/* Logo/Brand */}
           <div className="h-16 flex items-center justify-between px-4 border-b border-border/40">
-            <h2 className="text-lg font-semibold brand">Trinity</h2>
+            <div className="flex items-center gap-2.5">
+              <TridentIcon size={22} className="text-primary" strokeWidth={2.5} />
+              <span className="brand text-lg font-bold">Trinity</span>
+            </div>
           </div>
 
           {renderMobileNav()}
@@ -415,11 +429,11 @@ const Sidebar = ({ user }) => {
           {/* User Info */}
           {user && (
             <div className="border-t border-border/40 p-4">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2.5 mb-3">
                 {user.picture ? (
-                  <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
+                  <img src={user.picture} alt={user.name} className="w-9 h-9 rounded-full ring-2 ring-border/50" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-xs font-medium">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/40 to-accent/40 flex items-center justify-center text-primary text-sm font-medium ring-2 ring-border/50">
                     {user.name?.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -428,13 +442,13 @@ const Sidebar = ({ user }) => {
                   <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 </div>
               </div>
-              {/* Mobile Logout Button */}
+              {/* Mobile Logout Button - Subtle, not harsh red */}
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-3 h-10 rounded-lg text-destructive hover:bg-destructive/10 transition-interactive"
+                className="w-full flex items-center gap-2 px-3 h-10 rounded-lg btn-destructive-subtle transition-interactive focus-ring"
                 data-testid="logout-button-mobile"
               >
-                <LogOut size={18} />
+                <LogOut size={16} />
                 <span className="text-sm font-medium">Sign Out</span>
               </button>
             </div>
