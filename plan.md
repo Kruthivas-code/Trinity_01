@@ -110,6 +110,14 @@ Major design refresh completed:
   - Export functionality
   - Search operators documentation
 
+### Search Click-Through Flows (1/25/2026)
+- [x] **Ticket Click** - Navigate to `/all-tickets?ticket={id}` and open ticket drawer
+- [x] **User Click** - Navigate to `/profile?user={id}` showing user details and their teams
+- [x] **Team Click** - Navigate to `/teams?team={id}` with highlight effect on target team
+- [x] **Customer Click** - Navigate to search with `customer:{email}` filter
+- [x] **Command/Action Click** - Execute actions (create ticket/team, toggle theme, export, logout)
+- [x] **Navigation/Filter Click** - Navigate to target URL
+
 ### Layout Updates
 - [x] `MainLayout` updated with GlobalHeader + CreateTicketModal
 - [x] `PageLayout` updated with GlobalHeader + CreateTicketModal
