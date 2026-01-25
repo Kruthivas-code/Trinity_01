@@ -131,6 +131,20 @@ function AppRouter() {
         }
       />
       <Route
+        path="/leaves"
+        element={
+          <ProtectedRoute>
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <PageLayout user={user}>
+                  <LeavePage user={user} />
+                </PageLayout>
+              </AppWithRealtime>
+            )}
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin"
         element={
           <ProtectedRoute>
