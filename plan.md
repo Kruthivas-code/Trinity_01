@@ -83,6 +83,53 @@ Major design refresh completed:
 
 ---
 
+## Phase 5: Real-time & Universal Search ✅ COMPLETED (1/25/2026)
+
+### Backend Infrastructure
+- [x] Socket.IO server with Redis adapter for horizontal scaling
+- [x] WebSocket connection handler with authentication
+- [x] Presence tracking system with heartbeats
+- [x] Multi-collection search API (`/api/search`)
+- [x] Advanced operator-based search (`status:`, `priority:`, `team:`, etc.)
+- [x] Text indexes on tickets, users, teams, shifts, routing rules
+
+### Universal Search UI
+- [x] **GlobalHeader Component** - Central search bar across all pages
+  - Dynamic page title based on route
+  - Quick search with live dropdown results
+  - "New Ticket" button
+  - `⌘K` keyboard hint to open Command Palette
+- [x] **Command Palette** (`Cmd+K` / `Ctrl+K`)
+  - Quick actions (Create ticket, Navigate, Toggle theme)
+  - Full search with keyboard navigation
+  - Recent searches history
+- [x] **Dedicated Search Results Page** (`/search`)
+  - Full-featured search with filters sidebar
+  - Result type filtering (Tickets, Users, Teams, Customers, Commands)
+  - Quick filters (+Open tickets, +Urgent, +Assigned to me, +Created today)
+  - Export functionality
+  - Search operators documentation
+
+### Layout Updates
+- [x] `MainLayout` updated with GlobalHeader + CreateTicketModal
+- [x] `PageLayout` updated with GlobalHeader + CreateTicketModal
+- [x] `CommandPaletteContext` for sharing palette state
+- [x] Fixed horizontal scrolling issues with `overflow-hidden`
+
+### Files Modified/Created
+- `/app/frontend/src/App.js` - Added search route, CommandPaletteContext
+- `/app/frontend/src/components/MainLayout.js` - GlobalHeader integration
+- `/app/frontend/src/components/PageLayout.js` - GlobalHeader integration
+- `/app/frontend/src/components/GlobalHeader.js` - Central search bar
+- `/app/frontend/src/components/SearchResultsPage.js` - Dedicated results page
+- `/app/frontend/src/components/CommandPalette.js` - Cmd+K search modal
+- `/app/frontend/src/components/CreateTicketModal.js` - Fixed for GlobalHeader
+- `/app/frontend/src/contexts/RealtimeContext.js` - WebSocket client
+- `/app/backend/realtime.py` - Socket.IO server
+- `/app/backend/search.py` - Advanced search engine
+
+---
+
 ## Technical Notes
 
 ### Color System
