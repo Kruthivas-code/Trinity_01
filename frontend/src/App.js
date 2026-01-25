@@ -12,6 +12,7 @@ import ProfilePage from './components/ProfilePage';
 import SettingsPage from './components/SettingsPage';
 import TeamsPage from './components/TeamsPage';
 import AdminPage from './components/AdminPage';
+import SearchResultsPage from './components/SearchResultsPage';
 import CommandPalette from './components/CommandPalette';
 import { Toaster } from './components/ui/sonner';
 
@@ -136,6 +137,20 @@ function AppRouter() {
               <AppWithRealtime user={user}>
                 <PageLayout user={user}>
                   <AdminPage user={user} />
+                </PageLayout>
+              </AppWithRealtime>
+            )}
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/search"
+        element={
+          <ProtectedRoute>
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <PageLayout user={user}>
+                  <SearchResultsPage user={user} />
                 </PageLayout>
               </AppWithRealtime>
             )}
