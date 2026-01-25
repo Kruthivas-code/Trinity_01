@@ -181,6 +181,22 @@ export const RealtimeProvider = ({ children, user }) => {
     };
   }, [socket]);
 
+  // Subscribe to leave updates
+  const onLeaveUpdate = useCallback((callback) => {
+    if (!socket) return () => {};
+    
+    const handler = (data) => callback(data);
+    socket.on('leave:created', handler);
+    socket.on('leave:updated', handler);
+    socket.on('leave:deleted', handler);
+    
+    return () => {
+      socket.off('leave:created', handler);
+      socket.off('leave:updated', handler);
+      socket.off('leave:deleted', handler);
+    };
+  }, [socket]);
+
   // Subscribe to notifications
   const onNotification = useCallback((callback) => {
     if (!socket) return () => {};
@@ -199,6 +215,7 @@ export const RealtimeProvider = ({ children, user }) => {
     leaveLocation,
     sendTyping,
     onTicketUpdate,
+    onLeaveUpdate,
     onNotification,
   };
 
