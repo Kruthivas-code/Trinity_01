@@ -5269,7 +5269,7 @@ async def link_ticket_to_feature_request(
     data: dict,
     current_user: dict = Depends(get_current_user)
 ):
-    """Link a ticket to a feature request"""
+    """Link a ticket to a feature request (supports multiple links)"""
     feature_request_id = data.get("feature_request_id")
     if not feature_request_id:
         raise HTTPException(status_code=400, detail="Feature request ID required")
@@ -5284,7 +5284,12 @@ async def link_ticket_to_feature_request(
     if not fr:
         raise HTTPException(status_code=404, detail="Feature request not found")
     
-    # Add ticket to feature request
+    # Check if already linked
+    current_links = ticket.get("feature_request_ids", [])
+    if feature_request_id in current_links:
+        return {"message": "Ticket already linked to this feature request"}
+    
+    # Add ticket to feature request's linked_tickets
     feature_requests_collection.update_one(
         {"feature_request_id": feature_request_id},
         {
@@ -5293,10 +5298,10 @@ async def link_ticket_to_feature_request(
         }
     )
     
-    # Update ticket with feature request reference
+    # Add feature request to ticket's feature_request_ids array
     tickets_collection.update_one(
         {"ticket_id": ticket_id},
-        {"$set": {"feature_request_id": feature_request_id}}
+        {"$addToSet": {"feature_request_ids": feature_request_id}}
     )
     
     return {"message": "Ticket linked to feature request"}
