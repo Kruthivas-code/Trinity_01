@@ -3,9 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { 
   Calendar, Plus, ChevronLeft, ChevronRight, X, 
   AlertTriangle, Clock, Trash2, Edit2, BarChart3,
-  Users, TrendingUp, PieChart
+  Users, TrendingUp, PieChart, Wifi, WifiOff
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRealtime } from '../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
