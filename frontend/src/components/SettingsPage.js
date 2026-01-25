@@ -673,6 +673,134 @@ const SettingsPage = ({ user }) => {
             </div>
           </div>
 
+          {/* Data Export Section */}
+          <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
+            <div className="flex items-center gap-3 mb-4">
+              <Download className="text-primary" size={24} />
+              <div>
+                <h3 className="text-lg font-medium">Data Export</h3>
+                <p className="text-sm text-muted-foreground">Export your data in JSON or CSV format</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Tickets Export */}
+              <div className="p-4 rounded-lg bg-secondary/30 border border-border/30">
+                <div className="flex items-center gap-3 mb-3">
+                  <Ticket size={20} className="text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Tickets</p>
+                    <p className="text-xs text-muted-foreground">Export all ticket data</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleExport('tickets')}
+                    disabled={exporting === 'tickets'}
+                    className="flex-1 h-8 px-3 text-xs font-medium rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    data-testid="export-tickets-json"
+                  >
+                    {exporting === 'tickets' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
+                    JSON
+                  </button>
+                  <button
+                    onClick={() => handleExportCSV('tickets')}
+                    disabled={exporting === 'tickets-csv'}
+                    className="flex-1 h-8 px-3 text-xs font-medium rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    data-testid="export-tickets-csv"
+                  >
+                    {exporting === 'tickets-csv' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
+                    CSV
+                  </button>
+                </div>
+              </div>
+
+              {/* Users Export */}
+              <div className="p-4 rounded-lg bg-secondary/30 border border-border/30">
+                <div className="flex items-center gap-3 mb-3">
+                  <Users size={20} className="text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Users</p>
+                    <p className="text-xs text-muted-foreground">Export user profiles</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleExport('users')}
+                    disabled={exporting === 'users'}
+                    className="flex-1 h-8 px-3 text-xs font-medium rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    data-testid="export-users-json"
+                  >
+                    {exporting === 'users' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
+                    JSON
+                  </button>
+                  <button
+                    onClick={() => handleExportCSV('users')}
+                    disabled={exporting === 'users-csv'}
+                    className="flex-1 h-8 px-3 text-xs font-medium rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    data-testid="export-users-csv"
+                  >
+                    {exporting === 'users-csv' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
+                    CSV
+                  </button>
+                </div>
+              </div>
+
+              {/* Teams Export */}
+              <div className="p-4 rounded-lg bg-secondary/30 border border-border/30">
+                <div className="flex items-center gap-3 mb-3">
+                  <Users size={20} className="text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Teams</p>
+                    <p className="text-xs text-muted-foreground">Export team configurations</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleExport('teams')}
+                    disabled={exporting === 'teams'}
+                    className="flex-1 h-8 px-3 text-xs font-medium rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    data-testid="export-teams-json"
+                  >
+                    {exporting === 'teams' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
+                    JSON
+                  </button>
+                  <button
+                    onClick={() => handleExportCSV('teams')}
+                    disabled={exporting === 'teams-csv'}
+                    className="flex-1 h-8 px-3 text-xs font-medium rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    data-testid="export-teams-csv"
+                  >
+                    {exporting === 'teams-csv' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
+                    CSV
+                  </button>
+                </div>
+              </div>
+
+              {/* Shifts Export */}
+              <div className="p-4 rounded-lg bg-secondary/30 border border-border/30">
+                <div className="flex items-center gap-3 mb-3">
+                  <Download size={20} className="text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Shifts</p>
+                    <p className="text-xs text-muted-foreground">Export shift schedules</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleExport('shifts')}
+                    disabled={exporting === 'shifts'}
+                    className="flex-1 h-8 px-3 text-xs font-medium rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    data-testid="export-shifts-json"
+                  >
+                    {exporting === 'shifts' ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />}
+                    JSON
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Account Section */}
           <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
             <h3 className="text-lg font-medium mb-4">Account</h3>
