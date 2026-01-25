@@ -1878,6 +1878,7 @@ async def remove_tag(
 async def get_tickets(
     status: Optional[str] = None,
     assignee_id: Optional[str] = None,
+    mentioned_user_id: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     query = {}
@@ -1885,6 +1886,8 @@ async def get_tickets(
         query["status"] = status
     if assignee_id:
         query["assignee_id"] = assignee_id
+    if mentioned_user_id:
+        query["mentioned_users"] = mentioned_user_id
     
     tickets = list(tickets_collection.find(query).sort("order", ASCENDING))
     return [serialize_doc(ticket) for ticket in tickets]
