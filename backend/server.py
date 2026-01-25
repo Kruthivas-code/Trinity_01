@@ -5307,6 +5307,59 @@ async def link_ticket_to_feature_request(
     return {"message": "Ticket linked to feature request"}
 
 
+@app.delete("/api/tickets/{ticket_id}/feature-request/{feature_request_id}")
+async def unlink_ticket_from_feature_request(
+    ticket_id: str,
+    feature_request_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Unlink a ticket from a feature request"""
+    # Remove ticket from feature request's linked_tickets
+    feature_requests_collection.update_one(
+        {"feature_request_id": feature_request_id},
+        {
+            "$pull": {"linked_tickets": ticket_id},
+            "$inc": {"mentions_count": -1}
+        }
+    )
+    
+    # Remove feature request from ticket's feature_request_ids array
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$pull": {"feature_request_ids": feature_request_id}}
+    )
+    
+    return {"message": "Ticket unlinked from feature request"}
+
+
+@app.get("/api/tickets/{ticket_id}/feature-requests")
+async def get_ticket_feature_requests(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all feature requests linked to a ticket"""
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    feature_request_ids = ticket.get("feature_request_ids", [])
+    
+    # Also check legacy single feature_request_id field
+    legacy_fr_id = ticket.get("feature_request_id")
+    if legacy_fr_id and legacy_fr_id not in feature_request_ids:
+        feature_request_ids.append(legacy_fr_id)
+    
+    if not feature_request_ids:
+        return []
+    
+    feature_requests = list(feature_requests_collection.find(
+        {"feature_request_id": {"$in": feature_request_ids}},
+        {"_id": 0}
+    ))
+    
+    return [serialize_doc(fr) for fr in feature_requests]
+
+
 # ==================== Data Export System ====================
 
 import csv
