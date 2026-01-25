@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, ArrowUpCircle, Clock, User } from 'lucide-react';
+import { Tag, User } from 'lucide-react';
 
 const getPriorityConfig = (priority) => {
   switch (priority) {
@@ -21,9 +21,7 @@ const getEscalationConfig = (level) => {
 };
 
 const TicketCard = ({ ticket, users, onClick, isDragging }) => {
-  if (!ticket || !ticket.id) {
-    return null;
-  }
+  if (!ticket || !ticket.id) return null;
   
   const assignee = users.find(u => u.id === ticket.assignee_id);
   const priorityConfig = getPriorityConfig(ticket.priority);
@@ -32,21 +30,12 @@ const TicketCard = ({ ticket, users, onClick, isDragging }) => {
 
   return (
     <div
-      onClick={onClick}
-      className={`
-        w-full text-left glass rounded-lg p-3 border cursor-pointer
-        transition-all duration-150 ease-out
-        ${isDragging 
-          ? 'shadow-2xl scale-105 border-primary/50 ring-2 ring-primary/30 bg-card' 
-          : 'hover:border-white/20 hover:shadow-md active:scale-[0.98]'
-        }
-        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glass-ring)]
-      `}
+      onClick={isDragging ? undefined : onClick}
+      className={`w-full text-left glass rounded-lg p-3 border cursor-grab active:cursor-grabbing ${
+        isDragging ? 'shadow-xl border-primary/50' : 'hover:border-white/20'
+      }`}
       data-testid="ticket-card"
-      role="button"
-      tabIndex={0}
     >
-      {/* Top row: Ticket ID + Escalation Level */}
       <div className="flex items-center justify-between gap-2 mb-2">
         <span className="text-[10px] text-muted-foreground/70 font-mono">
           {ticket.ticket_id || `#${ticket.id?.slice(-6)}`}
@@ -56,66 +45,40 @@ const TicketCard = ({ ticket, users, onClick, isDragging }) => {
         </span>
       </div>
 
-      {/* Priority Badge + Assignee Row */}
       <div className="flex items-center gap-2 mb-2">
-        {/* Priority */}
         <div className="flex items-center gap-1">
           <span className={`w-2 h-2 rounded-full ${priorityConfig.color}`} />
-          <span className={`text-[10px] font-medium ${priorityConfig.text}`}>
-            {priorityConfig.label}
-          </span>
+          <span className={`text-[10px] font-medium ${priorityConfig.text}`}>{priorityConfig.label}</span>
         </div>
-        
         <span className="text-muted-foreground/30">•</span>
-        
-        {/* Assignee */}
         {assignee ? (
           <div className="flex items-center gap-1 min-w-0">
             <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-[9px] text-primary font-medium shrink-0">
               {assignee.name.charAt(0).toUpperCase()}
             </div>
-            <span className="text-[10px] text-muted-foreground truncate" data-testid="ticket-assignee">
-              {assignee.name.split(' ')[0]}
-            </span>
+            <span className="text-[10px] text-muted-foreground truncate">{assignee.name.split(' ')[0]}</span>
           </div>
         ) : (
           <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
-            <User size={10} />
-            Unassigned
+            <User size={10} />Unassigned
           </span>
         )}
       </div>
 
-      {/* Tags Row */}
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-2">
           {tags.slice(0, 3).map((tag, idx) => (
-            <span
-              key={idx}
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded bg-secondary/50 text-muted-foreground"
-            >
-              <Tag size={8} />
-              {tag}
+            <span key={idx} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded bg-secondary/50 text-muted-foreground">
+              <Tag size={8} />{tag}
             </span>
           ))}
-          {tags.length > 3 && (
-            <span className="text-[9px] text-muted-foreground/50">
-              +{tags.length - 3}
-            </span>
-          )}
+          {tags.length > 3 && <span className="text-[9px] text-muted-foreground/50">+{tags.length - 3}</span>}
         </div>
       )}
 
-      {/* Title - smaller, single line */}
-      <h4 className="text-[11px] text-foreground/80 leading-tight truncate" data-testid="ticket-title">
-        {ticket.title}
-      </h4>
-
-      {/* Customer email if exists */}
+      <h4 className="text-[11px] text-foreground/80 leading-tight truncate">{ticket.title}</h4>
       {ticket.customer_email && (
-        <p className="text-[9px] text-muted-foreground/50 truncate mt-1">
-          {ticket.customer_email}
-        </p>
+        <p className="text-[9px] text-muted-foreground/50 truncate mt-1">{ticket.customer_email}</p>
       )}
     </div>
   );
