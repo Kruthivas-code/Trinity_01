@@ -257,6 +257,10 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const [availableTags, setAvailableTags] = useState([]);
   const [loadingTags, setLoadingTags] = useState(false);
   
+  // CSAT state
+  const [csatData, setCsatData] = useState(null);
+  const [sendingCsat, setSendingCsat] = useState(false);
+  
   // Collapsible sections
   const [sectionsExpanded, setSectionsExpanded] = useState({
     links: false,
