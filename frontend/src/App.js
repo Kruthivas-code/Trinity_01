@@ -79,14 +79,6 @@ function AppRouter() {
         }
       />
       <Route
-        path="/emails"
-        element={
-          <ProtectedRoute>
-            <EmailsPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/teams"
         element={
           <ProtectedRoute>
