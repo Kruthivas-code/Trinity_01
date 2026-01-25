@@ -9,23 +9,57 @@ const STATUSES = [
   { value: 'resolved', label: 'Resolved' }
 ];
 
-const CreateTicketModal = ({ isOpen, users, onClose, onCreate }) => {
+const CreateTicketModal = ({ isOpen, users = [], onClose, onCreate, onCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     status: 'todo',
     assignee_id: null
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onCreate(formData);
-    setFormData({
-      title: '',
-      description: '',
-      status: 'backlog',
-      assignee_id: null
-    });
+    
+    // If onCreate is provided, use it (legacy behavior)
+    if (onCreate) {
+      onCreate(formData);
+      setFormData({
+        title: '',
+        description: '',
+        status: 'todo',
+        assignee_id: null
+      });
+      return;
+    }
+
+    // Otherwise, handle the creation internally
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(formData)
+      });
+      
+      if (!response.ok) throw new Error('Failed to create ticket');
+      
+      setFormData({
+        title: '',
+        description: '',
+        status: 'todo',
+        assignee_id: null
+      });
+      
+      if (onCreated) onCreated();
+    } catch (error) {
+      console.error('Failed to create ticket:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
