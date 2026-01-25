@@ -197,8 +197,18 @@ const ProfilePage = ({ user: currentUser }) => {
     <div className="h-full">
       {/* Header */}
       <header className="sticky top-0 z-40 glass border-b border-border/60 backdrop-saturate-150">
-        <div className="px-6 h-14 flex items-center">
-          <h1 className="text-lg font-semibold">Profile</h1>
+        <div className="px-6 h-14 flex items-center gap-3">
+          {isViewingOther && (
+            <button
+              onClick={() => navigate('/profile')}
+              className="p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
+          <h1 className="text-lg font-semibold">
+            {isViewingOther ? `${user?.name || 'User'}'s Profile` : 'My Profile'}
+          </h1>
         </div>
       </header>
 
@@ -261,10 +271,30 @@ const ProfilePage = ({ user: currentUser }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Show teams for viewed user */}
+              {isViewingOther && userTeams.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-medium mb-4">Teams</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {userTeams.map(team => (
+                      <button
+                        key={team.team_id}
+                        onClick={() => navigate(`/teams?team=${team.team_id}`)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                      >
+                        <Users size={14} className="text-primary" />
+                        <span className="text-sm font-medium">{team.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* My Shifts Card */}
+          {/* My Shifts Card - Only show for own profile */}
+          {!isViewingOther && (
           <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
