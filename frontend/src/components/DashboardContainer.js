@@ -146,6 +146,26 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   };
 
   const handleDragEnd = async (ticketId, newStatus, newOrder) => {
+    // Optimistic update - immediately update local state
+    setTickets(prevTickets => {
+      return prevTickets.map(ticket => {
+        if (ticket.id === ticketId) {
+          return { ...ticket, status: newStatus, order: newOrder };
+        }
+        return ticket;
+      });
+    });
+    
+    // Also update mentioned tickets if needed
+    setMentionedTickets(prevTickets => {
+      return prevTickets.map(ticket => {
+        if (ticket.id === ticketId) {
+          return { ...ticket, status: newStatus, order: newOrder };
+        }
+        return ticket;
+      });
+    });
+
     try {
       const response = await fetch(`${BACKEND_URL}/api/tickets/reorder`, {
         method: 'POST',
@@ -158,12 +178,15 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
         })
       });
 
-      if (!response.ok) throw new Error('Failed to reorder tickets');
+      if (!response.ok) {
+        throw new Error('Failed to reorder tickets');
+      }
       
-      await fetchTickets();
+      // Silently sync with backend (no visual change expected)
       await fetchAnalytics();
     } catch (error) {
       toast.error(error.message);
+      // Revert on error - refetch the actual state
       await fetchTickets();
     }
   };
