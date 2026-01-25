@@ -93,47 +93,55 @@ const MainLayout = ({ user, view }) => {
   };
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-background overflow-hidden">
       <div className="gradient-overlay" />
       
       <Sidebar user={user} />
       
-      <main className="flex-1 relative z-10">
-        {view === 'dashboard' && (
-          <DashboardContainer 
-            user={user} 
-            onTicketClickFromExternal={handleTicketClick}
-          />
-        )}
-        {view === 'all-tickets' && (
-          <AllTicketsPage 
-            key={refreshKey}
-            user={user} 
-            onTicketClick={handleTicketClick}
-          />
-        )}
-        {view === 'open-tickets' && (
-          <OpenTicketsPage 
-            key={refreshKey}
-            user={user} 
-            onTicketClick={handleTicketClick}
-          />
-        )}
-        {view === 'waiting-tickets' && (
-          <WaitingTicketsPage 
-            key={refreshKey}
-            user={user} 
-            onTicketClick={handleTicketClick}
-          />
-        )}
-        {view === 'closed-tickets' && (
-          <ClosedTicketsPage 
-            key={refreshKey}
-            user={user} 
-            onTicketClick={handleTicketClick}
-          />
-        )}
-      </main>
+      <div className="flex-1 flex flex-col relative z-10 min-w-0">
+        <GlobalHeader 
+          user={user} 
+          onCreateTicket={() => setIsCreateModalOpen(true)}
+          onOpenCommandPalette={openCommandPalette}
+        />
+        
+        <main className="flex-1 overflow-auto">
+          {view === 'dashboard' && (
+            <DashboardContainer 
+              user={user} 
+              onTicketClickFromExternal={handleTicketClick}
+            />
+          )}
+          {view === 'all-tickets' && (
+            <AllTicketsPage 
+              key={refreshKey}
+              user={user} 
+              onTicketClick={handleTicketClick}
+            />
+          )}
+          {view === 'open-tickets' && (
+            <OpenTicketsPage 
+              key={refreshKey}
+              user={user} 
+              onTicketClick={handleTicketClick}
+            />
+          )}
+          {view === 'waiting-tickets' && (
+            <WaitingTicketsPage 
+              key={refreshKey}
+              user={user} 
+              onTicketClick={handleTicketClick}
+            />
+          )}
+          {view === 'closed-tickets' && (
+            <ClosedTicketsPage 
+              key={refreshKey}
+              user={user} 
+              onTicketClick={handleTicketClick}
+            />
+          )}
+        </main>
+      </div>
 
       {/* Shared Ticket Drawer */}
       {(view !== 'dashboard') && (
@@ -146,6 +154,16 @@ const MainLayout = ({ user, view }) => {
           onDelete={handleDeleteTicket}
         />
       )}
+
+      {/* Create Ticket Modal */}
+      <CreateTicketModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreated={() => {
+          setRefreshKey(prev => prev + 1);
+          setIsCreateModalOpen(false);
+        }}
+      />
     </div>
   );
 };
