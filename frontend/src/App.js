@@ -8,7 +8,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './components/MainLayout';
 import ProfilePage from './components/ProfilePage';
 import SettingsPage from './components/SettingsPage';
-import EmailsPage from './components/EmailsPage';
 import TeamsPage from './components/TeamsPage';
 import AdminPage from './components/AdminPage';
 
