@@ -2082,6 +2082,22 @@ async def delete_ticket(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    # Get ticket before deletion for changelog
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Log deletion
+    log_ticket_change(
+        ticket_id=ticket_id,
+        uuid=ticket.get("uuid", ""),
+        field="ticket",
+        old_value=ticket.get("title"),
+        new_value=None,
+        changed_by=current_user["user_id"],
+        change_type="delete"
+    )
+    
     result = tickets_collection.delete_one({"ticket_id": ticket_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -2093,6 +2109,84 @@ async def delete_ticket(
     ))
     
     return {"message": "Ticket deleted successfully"}
+
+@app.get("/api/tickets/{ticket_id}/changelog")
+async def get_ticket_changelog(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get the full changelog/audit log for a ticket"""
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Get all changelog entries for this ticket
+    changelog = list(ticket_changelog_collection.find(
+        {"ticket_id": ticket_id},
+        {"_id": 0}
+    ).sort("changed_at", DESCENDING))
+    
+    # Enrich with user names
+    user_ids = list(set(entry.get("changed_by") for entry in changelog if entry.get("changed_by")))
+    users = {u["user_id"]: u.get("name", "Unknown") for u in users_collection.find({"user_id": {"$in": user_ids}}, {"user_id": 1, "name": 1})}
+    
+    for entry in changelog:
+        entry["changed_by_name"] = users.get(entry.get("changed_by"), "Unknown")
+        if isinstance(entry.get("changed_at"), datetime):
+            entry["changed_at"] = entry["changed_at"].isoformat()
+    
+    return changelog
+
+@app.get("/api/tickets/{ticket_id}/metadata")
+async def get_ticket_metadata(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get comprehensive ticket metadata including timestamps and all fields"""
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Get changelog summary
+    changelog_count = ticket_changelog_collection.count_documents({"ticket_id": ticket_id})
+    last_change = ticket_changelog_collection.find_one(
+        {"ticket_id": ticket_id},
+        {"_id": 0},
+        sort=[("changed_at", DESCENDING)]
+    )
+    
+    # Get notes/messages count
+    notes_count = messages_collection.count_documents({"ticket_id": ticket_id})
+    
+    metadata = {
+        "ticket_id": ticket.get("ticket_id"),
+        "uuid": ticket.get("uuid"),
+        "title": ticket.get("title"),
+        "status": ticket.get("status"),
+        "priority": ticket.get("priority"),
+        "escalation_level": ticket.get("escalation_level"),
+        "tags": ticket.get("tags", []),
+        "source": ticket.get("source"),
+        "customer_email": ticket.get("customer_email"),
+        "domain": ticket.get("domain"),
+        "assignee_id": ticket.get("assignee_id"),
+        "team_id": ticket.get("team_id"),
+        "is_starred": ticket.get("is_starred", False),
+        "snoozed": ticket.get("snoozed", False),
+        "custom_fields": ticket.get("custom_fields", {}),
+        "timestamps": {
+            "created_at": ticket.get("created_at").isoformat() if isinstance(ticket.get("created_at"), datetime) else ticket.get("created_at"),
+            "updated_at": ticket.get("updated_at").isoformat() if isinstance(ticket.get("updated_at"), datetime) else ticket.get("updated_at"),
+            "last_change": last_change.get("changed_at").isoformat() if last_change and isinstance(last_change.get("changed_at"), datetime) else None
+        },
+        "stats": {
+            "changelog_entries": changelog_count,
+            "notes_count": notes_count
+        },
+        "created_by": ticket.get("created_by")
+    }
+    
+    return metadata
 
 @app.post("/api/tickets/reorder")
 async def reorder_tickets(
