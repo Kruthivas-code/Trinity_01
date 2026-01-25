@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, Save, Trash2, Send, ChevronDown, ChevronRight,
   Loader2, Star, MoreHorizontal, Mail, AlertCircle, 
-  Sparkles, PenLine, Command, Link2, Settings
+  Sparkles, PenLine, Command, Link2, Settings, Users,
+  Clock, ArrowUpCircle, UserCheck
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 
@@ -21,6 +22,12 @@ const PRIORITIES = [
   { value: 'medium', label: 'Medium', color: 'text-amber-400' },
   { value: 'high', label: 'High', color: 'text-orange-400' },
   { value: 'urgent', label: 'Urgent', color: 'text-red-400' }
+];
+
+const ESCALATION_LEVELS = [
+  { value: 'L1', label: 'L1 - Basic Support', color: 'bg-blue-500' },
+  { value: 'L2', label: 'L2 - Advanced Support', color: 'bg-amber-500' },
+  { value: 'L3', label: 'L3 - Specialist', color: 'bg-red-500' }
 ];
 
 // Strip HTML for plain text display
