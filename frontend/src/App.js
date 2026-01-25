@@ -32,6 +32,8 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      {/* CSAT Page - Public route (no auth required) */}
+      <Route path="/csat/:token" element={<CSATPage />} />
       <Route
         path="/dashboard"
         element={
