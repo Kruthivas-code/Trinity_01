@@ -3344,6 +3344,80 @@ async def get_customers(
         for c in customers
     ]
 
+
+# ==================== Search API ====================
+
+class SearchQuery(BaseModel):
+    query: str = Field(..., min_length=1, max_length=200)
+    limit_per_category: int = Field(default=5, ge=1, le=20)
+
+@app.get("/api/search")
+async def search(
+    q: str,
+    limit: int = 5,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Comprehensive search across all entities.
+    Searches: tickets, users, teams, shifts, routing rules, and platform commands.
+    """
+    if not q or len(q) < 2:
+        return {"results": [], "total": 0, "by_category": {}}
+    
+    results = search_engine.search_all(q, limit_per_category=limit)
+    return results
+
+@app.post("/api/search")
+async def search_post(
+    search_query: SearchQuery,
+    current_user: dict = Depends(get_current_user)
+):
+    """Search with POST (for longer queries)"""
+    results = search_engine.search_all(
+        search_query.query, 
+        limit_per_category=search_query.limit_per_category
+    )
+    return results
+
+
+# ==================== Real-time Presence API ====================
+
+@app.get("/api/presence/stats")
+async def get_presence_statistics(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get real-time presence statistics"""
+    return get_presence_stats()
+
+@app.get("/api/presence/ticket/{ticket_id}")
+async def get_ticket_viewers(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get users currently viewing a specific ticket"""
+    viewers = get_users_viewing_ticket(ticket_id)
+    return {
+        "ticket_id": ticket_id,
+        "viewers": viewers,
+        "count": len(viewers)
+    }
+
+
+# ==================== Health Check ====================
+
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "version": "2.0.0",
+        "features": {
+            "realtime": True,
+            "search": True
+        }
+    }
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
