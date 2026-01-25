@@ -344,6 +344,36 @@ async def broadcast_notification(user_id: str, notification: dict):
         await sio.emit('notification:new', notification, to=socket_id)
 
 
+# ==================== Leave Broadcasting ====================
+
+async def broadcast_leave_created(leave_data: dict, created_by: dict):
+    """Broadcast new leave creation to all connected users"""
+    await sio.emit('leave:created', {
+        'leave': leave_data,
+        'created_by': created_by,
+        'timestamp': datetime.now(timezone.utc).isoformat()
+    })
+
+
+async def broadcast_leave_updated(leave_id: str, leave_data: dict, updated_by: dict):
+    """Broadcast leave update to all connected users"""
+    await sio.emit('leave:updated', {
+        'leave_id': leave_id,
+        'leave': leave_data,
+        'updated_by': updated_by,
+        'timestamp': datetime.now(timezone.utc).isoformat()
+    })
+
+
+async def broadcast_leave_deleted(leave_id: str, deleted_by: dict):
+    """Broadcast leave deletion to all connected users"""
+    await sio.emit('leave:deleted', {
+        'leave_id': leave_id,
+        'deleted_by': deleted_by,
+        'timestamp': datetime.now(timezone.utc).isoformat()
+    })
+
+
 def get_presence_stats() -> dict:
     """Get presence statistics"""
     return {
