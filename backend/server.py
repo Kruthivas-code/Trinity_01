@@ -3458,11 +3458,16 @@ async def get_admin_settings(current_user: dict = Depends(get_current_user)):
             "company_name": "TickFlow",
             "support_email": "",
             "auto_assignment": True,
+            "auto_reassign_reopened": False,
             "default_priority": "medium",
             "ticket_statuses": ["todo", "in_progress", "waiting", "review", "resolved"],
             "ticket_priorities": ["low", "medium", "high", "urgent"]
         }
-    return serialize_doc(settings)
+    # Ensure new settings have defaults
+    result = serialize_doc(settings)
+    if "auto_reassign_reopened" not in result:
+        result["auto_reassign_reopened"] = False
+    return result
 
 @app.put("/api/admin/settings")
 async def update_admin_settings(
