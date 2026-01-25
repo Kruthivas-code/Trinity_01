@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { 
   X, Save, Trash2, Send, ChevronDown, ChevronRight,
   Loader2, Star, MoreHorizontal, Mail, AlertCircle, 
   Sparkles, PenLine, Command, Link2, Settings, Users,
-  Clock, ArrowUpCircle, UserCheck, AtSign
+  Clock, ArrowUpCircle, UserCheck, AtSign, Copy, Printer,
+  BellOff, Merge, ExternalLink
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import MentionInput, { renderTextWithMentions } from './MentionInput';
