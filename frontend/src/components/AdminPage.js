@@ -559,45 +559,47 @@ const AdminPage = ({ user }) => {
                 </div>
 
                 {/* Shifts Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                   {filteredShifts.length === 0 ? (
-                    <div className="col-span-2 text-center py-12 bg-card rounded-xl border border-border/50">
-                      <Clock size={40} className="mx-auto text-muted-foreground/30 mb-3" />
-                      <p className="text-muted-foreground">No shifts configured</p>
-                      <p className="text-sm text-muted-foreground/70 mt-1">Create a shift to start managing schedules</p>
+                    <div className="col-span-2 text-center py-16 card-premium rounded-xl">
+                      <div className="w-14 h-14 mx-auto mb-4 rounded-xl empty-state-icon flex items-center justify-center">
+                        <Clock size={28} className="text-muted-foreground/50" />
+                      </div>
+                      <p className="text-foreground font-medium">No shifts configured</p>
+                      <p className="text-sm text-muted-foreground mt-1">Create a shift to start managing schedules</p>
                     </div>
                   ) : (
                     filteredShifts.map(shift => (
-                      <div key={shift.shift_id} className="bg-card rounded-xl border border-border/50 overflow-hidden">
+                      <div key={shift.shift_id} className="card-premium rounded-xl overflow-hidden">
                         {/* Shift Header */}
-                        <div className="p-4 border-b border-border/30">
+                        <div className="p-5 border-b border-border/30 bg-gradient-subtle">
                           <div className="flex items-start justify-between">
                             <div>
-                              <h3 className="font-medium">{shift.name}</h3>
-                              <p className="text-sm text-muted-foreground mt-0.5">
+                              <h3 className="font-semibold text-foreground">{shift.name}</h3>
+                              <p className="text-sm text-muted-foreground mt-1">
                                 {shift.team_name} • {shift.team_escalation_level || 'N/A'}
                               </p>
                             </div>
                             <button
                               onClick={() => handleDeleteShift(shift.shift_id)}
-                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                              className="p-2 rounded-lg btn-destructive-subtle transition-interactive"
                             >
                               <Trash2 size={14} />
                             </button>
                           </div>
-                          <div className="flex items-center gap-4 mt-3 text-sm">
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <Clock size={14} />
+                          <div className="flex items-center gap-4 mt-4 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground bg-secondary/40 px-3 py-1.5 rounded-lg">
+                              <Clock size={14} className="text-primary" />
                               <span>{shift.start_time} - {shift.end_time} IST</span>
                             </div>
                             <div className="flex gap-1">
                               {DAYS_OF_WEEK.map(day => (
                                 <span
                                   key={day.value}
-                                  className={`w-6 h-6 flex items-center justify-center text-[10px] rounded ${
+                                  className={`w-7 h-7 flex items-center justify-center text-[10px] rounded-md font-medium transition-interactive ${
                                     shift.days_of_week?.includes(day.value)
-                                      ? 'bg-primary/20 text-primary font-medium'
-                                      : 'bg-secondary/30 text-muted-foreground/50'
+                                      ? 'bg-primary/20 text-primary border border-primary/30'
+                                      : 'bg-secondary/40 text-muted-foreground/50 border border-transparent'
                                   }`}
                                 >
                                   {day.label[0]}
@@ -608,9 +610,9 @@ const AdminPage = ({ user }) => {
                         </div>
                         
                         {/* Assigned Users */}
-                        <div className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <div className="p-5">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                               Assigned Users ({shift.assigned_users_count || 0})
                             </span>
                             <button
@@ -618,7 +620,7 @@ const AdminPage = ({ user }) => {
                                 setSelectedShiftForAssign(shift);
                                 setShowAssignUserModal(true);
                               }}
-                              className="text-xs text-primary hover:underline flex items-center gap-1"
+                              className="text-xs text-primary hover:text-primary/80 flex items-center gap-1.5 font-medium transition-interactive"
                             >
                               <UserPlus size={12} />
                               Add User
@@ -628,16 +630,16 @@ const AdminPage = ({ user }) => {
                           {shift.assigned_users?.length > 0 ? (
                             <div className="space-y-2">
                               {shift.assigned_users.map(user => (
-                                <div key={user.user_id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 flex items-center justify-center text-[10px] font-medium">
+                                <div key={user.user_id} className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/30 border border-border/30 hover:border-border/50 transition-interactive">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary/40 to-accent/40 flex items-center justify-center text-[11px] font-semibold text-primary">
                                       {user.name?.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="text-sm">{user.name}</span>
+                                    <span className="text-sm font-medium">{user.name}</span>
                                   </div>
                                   <button
                                     onClick={() => handleRemoveUserFromShift(user.user_id, shift.shift_id)}
-                                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                                    className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-interactive"
                                   >
                                     <X size={12} />
                                   </button>
@@ -645,9 +647,9 @@ const AdminPage = ({ user }) => {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-sm text-muted-foreground/50 text-center py-4">
-                              No users assigned to this shift
-                            </p>
+                            <div className="text-center py-6 rounded-lg border border-dashed border-border/50">
+                              <p className="text-sm text-muted-foreground">No users assigned to this shift</p>
+                            </div>
                           )}
                         </div>
                       </div>
