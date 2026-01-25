@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Settings, Plus, Trash2, Save, X, ChevronDown, ChevronRight,
   Type, Hash, Calendar, ToggleLeft, List, Building, User, Ticket,
-  Loader2, GripVertical
+  Loader2, GripVertical, Clock, Users, UserPlus
 } from 'lucide-react';
 import Sidebar from './Sidebar';
 
@@ -16,6 +16,16 @@ const FIELD_TYPES = [
   { value: 'boolean', label: 'Yes/No', icon: ToggleLeft, description: 'Toggle switch' }
 ];
 
+const DAYS_OF_WEEK = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 7, label: 'Sun' }
+];
+
 const AdminPage = ({ user }) => {
   const [activeTab, setActiveTab] = useState('custom-fields');
   const [customFields, setCustomFields] = useState([]);
@@ -24,6 +34,15 @@ const AdminPage = ({ user }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [entityFilter, setEntityFilter] = useState('all');
   const [savingSettings, setSavingSettings] = useState(false);
+  
+  // Shifts state
+  const [shifts, setShifts] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [showShiftModal, setShowShiftModal] = useState(false);
+  const [selectedTeamForShifts, setSelectedTeamForShifts] = useState('all');
+  const [showAssignUserModal, setShowAssignUserModal] = useState(false);
+  const [selectedShiftForAssign, setSelectedShiftForAssign] = useState(null);
   
   // Form state for new field
   const [newField, setNewField] = useState({
@@ -35,10 +54,23 @@ const AdminPage = ({ user }) => {
     description: ''
   });
   const [creatingField, setCreatingField] = useState(false);
+  
+  // Form state for new shift
+  const [newShift, setNewShift] = useState({
+    team_id: '',
+    name: '',
+    start_time: '09:00',
+    end_time: '17:00',
+    days_of_week: [1, 2, 3, 4, 5]
+  });
+  const [creatingShift, setCreatingShift] = useState(false);
 
   useEffect(() => {
     fetchCustomFields();
     fetchSettings();
+    fetchShifts();
+    fetchTeams();
+    fetchAllUsers();
   }, []);
 
   const fetchCustomFields = async () => {
@@ -56,6 +88,148 @@ const AdminPage = ({ user }) => {
       setLoading(false);
     }
   };
+  
+  const fetchShifts = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/shifts`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setShifts(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch shifts:', error);
+    }
+  };
+  
+  const fetchTeams = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/teams`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTeams(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch teams:', error);
+    }
+  };
+  
+  const fetchAllUsers = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/users`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAllUsers(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+    }
+  };
+  
+  const handleCreateShift = async (e) => {
+    e.preventDefault();
+    if (!newShift.team_id || !newShift.name) return;
+    
+    setCreatingShift(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/shifts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(newShift)
+      });
+      
+      if (response.ok) {
+        await fetchShifts();
+        setShowShiftModal(false);
+        setNewShift({
+          team_id: '',
+          name: '',
+          start_time: '09:00',
+          end_time: '17:00',
+          days_of_week: [1, 2, 3, 4, 5]
+        });
+      }
+    } catch (error) {
+      console.error('Failed to create shift:', error);
+    } finally {
+      setCreatingShift(false);
+    }
+  };
+  
+  const handleDeleteShift = async (shiftId) => {
+    if (!window.confirm('Are you sure you want to delete this shift?')) return;
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/shifts/${shiftId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        await fetchShifts();
+      }
+    } catch (error) {
+      console.error('Failed to delete shift:', error);
+    }
+  };
+  
+  const handleAssignUserToShift = async (userId) => {
+    if (!selectedShiftForAssign) return;
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/users/${userId}/shifts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          shift_id: selectedShiftForAssign.shift_id,
+          is_primary: true
+        })
+      });
+      
+      if (response.ok) {
+        await fetchShifts();
+        setShowAssignUserModal(false);
+        setSelectedShiftForAssign(null);
+      }
+    } catch (error) {
+      console.error('Failed to assign user to shift:', error);
+    }
+  };
+  
+  const handleRemoveUserFromShift = async (userId, shiftId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/users/${userId}/shifts/${shiftId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        await fetchShifts();
+      }
+    } catch (error) {
+      console.error('Failed to remove user from shift:', error);
+    }
+  };
+  
+  const toggleDayOfWeek = (day) => {
+    setNewShift(prev => {
+      const days = prev.days_of_week.includes(day)
+        ? prev.days_of_week.filter(d => d !== day)
+        : [...prev.days_of_week, day].sort((a, b) => a - b);
+      return { ...prev, days_of_week: days };
+    });
+  };
+  
+  const filteredShifts = selectedTeamForShifts === 'all' 
+    ? shifts 
+    : shifts.filter(s => s.team_id === selectedTeamForShifts);
 
   const fetchSettings = async () => {
     try {
