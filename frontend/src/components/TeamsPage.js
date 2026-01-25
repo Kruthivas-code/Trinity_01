@@ -204,7 +204,12 @@ const TeamsPage = ({ user }) => {
             {teams.map(team => (
               <div
                 key={team.team_id}
-                className="card-premium rounded-xl overflow-hidden"
+                ref={el => teamRefs.current[team.team_id] = el}
+                className={`card-premium rounded-xl overflow-hidden transition-all duration-500 ${
+                  highlightedTeamId === team.team_id 
+                    ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-[1.02]' 
+                    : ''
+                }`}
                 data-testid={`team-card-${team.team_id}`}
               >
                 {/* Team Header */}
