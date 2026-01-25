@@ -108,6 +108,9 @@ routing_rules_collection = db.routing_rules  # Ticket routing rules
 # Phase 6: Initialize Search Engine
 search_engine = get_search_engine(db)
 
+# Phase 7: Ticket Changelog (audit log)
+ticket_changelog_collection = db.ticket_changelog  # All metadata changes for tickets
+
 # System timezone - IST
 SYSTEM_TIMEZONE = "Asia/Kolkata"
 
@@ -115,6 +118,46 @@ SYSTEM_TIMEZONE = "Asia/Kolkata"
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 # ==================== Utility Functions ====================
+
+def log_ticket_change(ticket_id: str, uuid: str, field: str, old_value: Any, new_value: Any, changed_by: str, change_type: str = "update"):
+    """Log a change to a ticket's metadata for audit purposes"""
+    changelog_entry = {
+        "changelog_id": f"cl_{uuid4().hex[:12]}",
+        "ticket_id": ticket_id,
+        "ticket_uuid": uuid,
+        "field": field,
+        "old_value": old_value,
+        "new_value": new_value,
+        "change_type": change_type,  # create, update, delete
+        "changed_by": changed_by,
+        "changed_at": datetime.now(timezone.utc)
+    }
+    ticket_changelog_collection.insert_one(changelog_entry)
+    return changelog_entry
+
+def log_ticket_changes_batch(ticket_id: str, uuid: str, changes: Dict[str, Tuple[Any, Any]], changed_by: str, change_type: str = "update"):
+    """Log multiple changes at once"""
+    entries = []
+    timestamp = datetime.now(timezone.utc)
+    for field, (old_value, new_value) in changes.items():
+        if old_value != new_value:
+            entry = {
+                "changelog_id": f"cl_{uuid4().hex[:12]}",
+                "ticket_id": ticket_id,
+                "ticket_uuid": uuid,
+                "field": field,
+                "old_value": old_value,
+                "new_value": new_value,
+                "change_type": change_type,
+                "changed_by": changed_by,
+                "changed_at": timestamp
+            }
+            entries.append(entry)
+    if entries:
+        ticket_changelog_collection.insert_many(entries)
+    return entries
+
+from uuid import uuid4
 
 def generate_ticket_id() -> str:
     """Generate sequential ticket ID (TKT-000001 format)"""
