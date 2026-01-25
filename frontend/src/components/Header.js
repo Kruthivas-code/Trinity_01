@@ -17,7 +17,7 @@ const Header = ({ user, analytics, onLogout, onCreateTicket, onExport, onImport 
             data-testid="app-brand"
             onClick={() => navigate('/dashboard')}
           >
-            TickFlow
+            Trinity
           </h1>
           
           {analytics && (

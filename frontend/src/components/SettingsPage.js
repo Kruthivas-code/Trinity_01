@@ -474,7 +474,7 @@ const SettingsPage = ({ user }) => {
           <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
             <h3 className="text-lg font-medium mb-4">Appearance</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Customize how TickFlow looks on your device.
+              Customize how Trinity looks on your device.
             </p>
 
             <div className="space-y-3">
