@@ -7,7 +7,7 @@ Trinity Leave Management System
 - Team calendar view + leave conflicts detection
 """
 
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 from typing import Optional, List
 from pydantic import BaseModel
 import uuid
@@ -38,41 +38,6 @@ class LeaveUpdate(BaseModel):
     admin_note: Optional[str] = None
 
 
-class LeaveResponse(BaseModel):
-    """Response model for leave entries"""
-    id: str
-    user_id: str
-    user_name: Optional[str] = None
-    user_email: Optional[str] = None
-    leave_type: str
-    start_date: str
-    end_date: str
-    reason: Optional[str] = None
-    status: str  # "approved", "denied", "cancelled"
-    is_half_day: bool
-    half_day_type: Optional[str] = None
-    admin_note: Optional[str] = None
-    days_count: float
-    created_at: str
-    updated_at: str
-
-
-class TeamCalendarDay(BaseModel):
-    """Model for a day in the team calendar"""
-    date: str
-    leaves: List[dict]
-    conflict_level: str  # "none", "low", "medium", "high"
-    people_out: int
-
-
-class LeaveConflictCheck(BaseModel):
-    """Response for conflict checking"""
-    has_conflict: bool
-    conflict_level: str
-    people_on_leave: List[dict]
-    message: str
-
-
 # ============== Leave Manager Class ==============
 
 class LeaveManager:
@@ -83,23 +48,14 @@ class LeaveManager:
         
     def _calculate_days(self, start_date: str, end_date: str, is_half_day: bool) -> float:
         """Calculate the number of leave days"""
-        start = datetime.strptime(start_date, "%Y-%m-%d").date()
-        end = datetime.strptime(end_date, "%Y-%m-%d").date()
-        
         if is_half_day:
             return 0.5
         
-        # Count weekdays only
-        days = 0
-        current = start
-        while current <= end:
-            if current.weekday() < 5:  # Monday = 0, Friday = 4
-                days += 1
-            current = date(current.year, current.month, current.day + 1) if current.month == (current + __import__('datetime').timedelta(days=1)).month else date(current.year, current.month + 1, 1)
+        start = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end = datetime.strptime(end_date, "%Y-%m-%d").date()
         
-        # Simplified: just count all days for now
         delta = end - start
-        return max(1, delta.days + 1) if not is_half_day else 0.5
+        return max(1, delta.days + 1)
 
     async def create_leave(self, leave_data: LeaveRequest) -> dict:
         """Create a new leave entry (auto-approved)"""
@@ -107,7 +63,7 @@ class LeaveManager:
         now = datetime.now(timezone.utc).isoformat()
         
         # Get user info
-        user = await self.users_collection.find_one({"user_id": leave_data.user_id})
+        user = self.users_collection.find_one({"user_id": leave_data.user_id})
         user_name = user.get("name", "Unknown") if user else "Unknown"
         user_email = user.get("email", "") if user else ""
         
@@ -136,12 +92,12 @@ class LeaveManager:
             "updated_at": now
         }
         
-        await self.leaves_collection.insert_one(leave_doc)
+        self.leaves_collection.insert_one(leave_doc)
         return leave_doc
 
     async def get_leave(self, leave_id: str) -> Optional[dict]:
         """Get a single leave entry"""
-        return await self.leaves_collection.find_one({"id": leave_id})
+        return self.leaves_collection.find_one({"id": leave_id})
 
     async def get_leaves(
         self, 
@@ -161,21 +117,21 @@ class LeaveManager:
         if leave_type:
             query["leave_type"] = leave_type
             
-        # Date range filter
+        # Date range filter - get leaves that overlap with the date range
         if start_date or end_date:
-            date_query = {}
-            if start_date:
-                date_query["$gte"] = start_date
-            if end_date:
-                date_query["$lte"] = end_date
-            if date_query:
+            if start_date and end_date:
                 query["$or"] = [
-                    {"start_date": date_query},
-                    {"end_date": date_query}
+                    {"start_date": {"$gte": start_date, "$lte": end_date}},
+                    {"end_date": {"$gte": start_date, "$lte": end_date}},
+                    {"$and": [{"start_date": {"$lte": start_date}}, {"end_date": {"$gte": end_date}}]}
                 ]
+            elif start_date:
+                query["end_date"] = {"$gte": start_date}
+            elif end_date:
+                query["start_date"] = {"$lte": end_date}
         
         cursor = self.leaves_collection.find(query).sort("start_date", -1)
-        return await cursor.to_list(length=500)
+        return list(cursor)
 
     async def update_leave(self, leave_id: str, update_data: LeaveUpdate) -> Optional[dict]:
         """Update a leave entry (admin can edit/deny)"""
@@ -186,7 +142,7 @@ class LeaveManager:
         
         # Recalculate days if dates changed
         if "start_date" in update_dict or "end_date" in update_dict or "is_half_day" in update_dict:
-            existing = await self.get_leave(leave_id)
+            existing = self.leaves_collection.find_one({"id": leave_id})
             if existing:
                 start = update_dict.get("start_date", existing["start_date"])
                 end = update_dict.get("end_date", existing["end_date"])
@@ -195,7 +151,7 @@ class LeaveManager:
         
         update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
         
-        await self.leaves_collection.update_one(
+        self.leaves_collection.update_one(
             {"id": leave_id},
             {"$set": update_dict}
         )
@@ -204,7 +160,7 @@ class LeaveManager:
 
     async def delete_leave(self, leave_id: str) -> bool:
         """Delete a leave entry"""
-        result = await self.leaves_collection.delete_one({"id": leave_id})
+        result = self.leaves_collection.delete_one({"id": leave_id})
         return result.deleted_count > 0
 
     async def get_team_calendar(self, year: int, month: int) -> List[dict]:
@@ -217,14 +173,14 @@ class LeaveManager:
         end_date = f"{year}-{month:02d}-{last_day:02d}"
         
         # Get all approved leaves that overlap with this month
-        leaves = await self.leaves_collection.find({
+        leaves = list(self.leaves_collection.find({
             "status": "approved",
             "$or": [
                 {"start_date": {"$lte": end_date, "$gte": start_date}},
                 {"end_date": {"$lte": end_date, "$gte": start_date}},
                 {"$and": [{"start_date": {"$lte": start_date}}, {"end_date": {"$gte": end_date}}]}
             ]
-        }).to_list(length=500)
+        }))
         
         # Build calendar
         calendar_days = []
@@ -273,18 +229,20 @@ class LeaveManager:
     async def check_conflicts(self, start_date: str, end_date: str, exclude_user_id: Optional[str] = None) -> dict:
         """Check for leave conflicts on given dates"""
         # Find approved leaves that overlap
-        leaves = await self.leaves_collection.find({
+        query = {
             "status": "approved",
             "$or": [
                 {"start_date": {"$lte": end_date, "$gte": start_date}},
                 {"end_date": {"$lte": end_date, "$gte": start_date}},
                 {"$and": [{"start_date": {"$lte": start_date}}, {"end_date": {"$gte": end_date}}]}
             ]
-        }).to_list(length=100)
+        }
         
         # Exclude the requesting user if specified
         if exclude_user_id:
-            leaves = [l for l in leaves if l["user_id"] != exclude_user_id]
+            query["user_id"] = {"$ne": exclude_user_id}
+        
+        leaves = list(self.leaves_collection.find(query))
         
         people_on_leave = [{
             "user_id": l["user_id"],
@@ -333,10 +291,10 @@ class LeaveManager:
         start_date = f"{year}-01-01"
         end_date = f"{year}-12-31"
         
-        leaves = await self.leaves_collection.find({
+        leaves = list(self.leaves_collection.find({
             "user_id": user_id,
             "start_date": {"$gte": start_date, "$lte": end_date}
-        }).to_list(length=500)
+        }))
         
         # Group by type
         by_type = {}
@@ -364,7 +322,7 @@ class LeaveManager:
 
     async def get_leave_types(self) -> List[str]:
         """Get all unique leave types used in the system"""
-        types = await self.leaves_collection.distinct("leave_type")
+        types = self.leaves_collection.distinct("leave_type")
         
         # Add common defaults if none exist
         default_types = ["Sick Leave", "Vacation", "Personal", "Work from Home", "Other"]
