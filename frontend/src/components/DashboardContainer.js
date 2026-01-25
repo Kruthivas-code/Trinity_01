@@ -124,7 +124,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
     }
   };
 
-  const handleUpdateTicket = async (ticketId, updates) => {
+  const handleUpdateTicket = async (ticketId, updates, closeDrawer = false) => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}`, {
         method: 'PUT',
@@ -135,9 +135,20 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
 
       if (!response.ok) throw new Error('Failed to update ticket');
       
+      const updatedTicket = await response.json();
+      
+      // Update the selected ticket with new data (keep drawer open)
+      if (selectedTicket && selectedTicket.id === ticketId) {
+        setSelectedTicket(updatedTicket);
+      }
+      
       await fetchTickets();
       await fetchAnalytics();
-      setIsDrawerOpen(false);
+      
+      // Only close drawer if explicitly requested
+      if (closeDrawer) {
+        setIsDrawerOpen(false);
+      }
     } catch (error) {
       console.error('Failed to update ticket:', error);
     }
