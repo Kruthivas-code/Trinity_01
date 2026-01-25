@@ -1,23 +1,38 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, 
-  User, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, 
-  Menu, X, LogOut, Users, Shield, CalendarDays 
+  User, ChevronDown, Menu, X, LogOut, Users, Shield, CalendarDays,
+  GripVertical
 } from 'lucide-react';
 
 import { TridentIcon } from './TridentIcon';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Sidebar width constraints
+const MIN_WIDTH = 56;  // Collapsed width
+const MAX_WIDTH = 280; // Maximum expanded width
+const DEFAULT_WIDTH = 220; // Default expanded width
+const COLLAPSE_THRESHOLD = 100; // Below this, snap to collapsed
+
 const Sidebar = ({ user }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem('sidebarWidth');
+    return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+  });
+  const [isDragging, setIsDragging] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isTicketsExpanded, setIsTicketsExpanded] = useState(true);
   const [isCollapsedMenuOpen, setIsCollapsedMenuOpen] = useState(false);
   const collapsedMenuRef = useRef(null);
+  const sidebarRef = useRef(null);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
+
+  const isExpanded = sidebarWidth > COLLAPSE_THRESHOLD;
 
   const ticketViews = [
     { id: 'all-tickets', label: 'All Tickets', icon: List, path: '/all-tickets' },
@@ -33,6 +48,64 @@ const Sidebar = ({ user }) => {
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
     { id: 'admin', label: 'Admin', icon: Shield, path: '/admin' },
   ];
+
+  // Save width to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarWidth', sidebarWidth.toString());
+  }, [sidebarWidth]);
+
+  // Handle drag start
+  const handleDragStart = useCallback((e) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartX.current = e.clientX || e.touches?.[0]?.clientX || 0;
+    dragStartWidth.current = sidebarWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [sidebarWidth]);
+
+  // Handle drag move
+  const handleDragMove = useCallback((e) => {
+    if (!isDragging) return;
+    
+    const clientX = e.clientX || e.touches?.[0]?.clientX || 0;
+    const delta = clientX - dragStartX.current;
+    let newWidth = dragStartWidth.current + delta;
+    
+    // Snap to collapsed if below threshold
+    if (newWidth < COLLAPSE_THRESHOLD) {
+      newWidth = MIN_WIDTH;
+    } else {
+      // Clamp between threshold and max
+      newWidth = Math.min(Math.max(newWidth, COLLAPSE_THRESHOLD), MAX_WIDTH);
+    }
+    
+    setSidebarWidth(newWidth);
+  }, [isDragging]);
+
+  // Handle drag end
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, []);
+
+  // Add/remove event listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleDragMove);
+      window.addEventListener('mouseup', handleDragEnd);
+      window.addEventListener('touchmove', handleDragMove);
+      window.addEventListener('touchend', handleDragEnd);
+    }
+    
+    return () => {
+      window.removeEventListener('mousemove', handleDragMove);
+      window.removeEventListener('mouseup', handleDragEnd);
+      window.removeEventListener('touchmove', handleDragMove);
+      window.removeEventListener('touchend', handleDragEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
 
   // Close collapsed menu when clicking outside
   useEffect(() => {
@@ -69,11 +142,19 @@ const Sidebar = ({ user }) => {
         credentials: 'include'
       });
       localStorage.removeItem('theme');
-      // Logged out
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
       navigate('/login', { replace: true });
+    }
+  };
+
+  // Double-click to toggle between collapsed and default
+  const handleDoubleClick = () => {
+    if (sidebarWidth <= MIN_WIDTH) {
+      setSidebarWidth(DEFAULT_WIDTH);
+    } else {
+      setSidebarWidth(MIN_WIDTH);
     }
   };
 
@@ -99,7 +180,7 @@ const Sidebar = ({ user }) => {
         title={!isExpanded ? item.label : undefined}
       >
         <Icon size={16} className={`shrink-0 ${active ? 'text-primary' : ''}`} />
-        {(isExpanded || nested) && <span>{item.label}</span>}
+        {(isExpanded || nested) && <span className="truncate">{item.label}</span>}
       </button>
     );
   };
@@ -184,16 +265,15 @@ const Sidebar = ({ user }) => {
                         key={view.id}
                         onClick={() => handleNavigate(view.path)}
                         className={`
-                          w-full flex items-center gap-2.5 px-2.5 h-8 rounded-md text-[13px]
-                          transition-interactive text-left focus-ring
+                          w-full flex items-center gap-2.5 px-2.5 h-9 rounded-md text-[13px]
+                          transition-interactive focus-ring
                           ${active 
                             ? 'bg-primary/12 text-primary font-medium' 
                             : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'
                           }
                         `}
-                        data-testid={`collapsed-nav-${view.id}`}
                       >
-                        <Icon size={14} />
+                        <Icon size={16} className={active ? 'text-primary' : ''} />
                         <span>{view.label}</span>
                       </button>
                     );
@@ -249,15 +329,6 @@ const Sidebar = ({ user }) => {
           <LogOut size={16} />
           {isExpanded && <span>Sign Out</span>}
         </button>
-        
-        {/* Toggle */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full flex items-center justify-center h-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-interactive mt-1"
-          data-testid="sidebar-toggle"
-        >
-          {isExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-        </button>
       </div>
     </div>
   );
@@ -280,7 +351,6 @@ const Sidebar = ({ user }) => {
           <span>Dashboard</span>
         </button>
 
-        {/* Tickets */}
         <div>
           <button
             onClick={() => setIsTicketsExpanded(!isTicketsExpanded)}
@@ -315,7 +385,7 @@ const Sidebar = ({ user }) => {
                       }
                     `}
                   >
-                    <Icon size={14} />
+                    <Icon size={16} />
                     <span>{view.label}</span>
                   </button>
                 );
@@ -398,14 +468,14 @@ const Sidebar = ({ user }) => {
       )}
 
       {/* Desktop Sidebar */}
-      <div className={`shrink-0 transition-all duration-200 ${isExpanded ? 'w-56' : 'w-14'} hidden lg:block`}>
+      <div 
+        className="shrink-0 hidden lg:block"
+        style={{ width: sidebarWidth }}
+      >
         <aside
-          className={`
-            fixed top-0 left-0 h-screen z-40 
-            bg-card/80 backdrop-blur-xl border-r border-border/50
-            transition-all duration-200 ease-out flex flex-col
-            ${isExpanded ? 'w-56' : 'w-14'}
-          `}
+          ref={sidebarRef}
+          className="fixed top-0 left-0 h-screen z-40 bg-card/80 backdrop-blur-xl border-r border-border/50 flex flex-col"
+          style={{ width: sidebarWidth }}
           data-testid="sidebar"
         >
           {/* Header */}
@@ -421,8 +491,28 @@ const Sidebar = ({ user }) => {
           </div>
 
           {renderDesktopNav()}
+          
+          {/* Drag Handle */}
+          <div
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group hover:bg-primary/30 transition-colors"
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+            onDoubleClick={handleDoubleClick}
+            title="Drag to resize • Double-click to toggle"
+            data-testid="sidebar-drag-handle"
+          >
+            {/* Visual indicator on hover */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="w-1 h-8 rounded-full bg-primary/50" />
+            </div>
+          </div>
         </aside>
       </div>
+
+      {/* Drag overlay to prevent text selection during drag */}
+      {isDragging && (
+        <div className="fixed inset-0 z-50 cursor-col-resize" />
+      )}
 
       {/* Mobile Sidebar */}
       <aside
