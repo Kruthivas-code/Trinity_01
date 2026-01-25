@@ -1047,16 +1047,27 @@ async def get_all_shifts(current_user: dict = Depends(get_current_user)):
     """Get all shifts"""
     shifts = list(shifts_collection.find({}, {"_id": 0}))
     
-    # Enrich with team name and assigned user count
+    # Enrich with team name, assigned user count, and user details
     for shift in shifts:
         team = teams_collection.find_one({"team_id": shift.get("team_id")}, {"_id": 0, "name": 1, "escalation_level": 1})
         if team:
             shift["team_name"] = team.get("name")
             shift["team_escalation_level"] = team.get("escalation_level")
         
-        # Count users assigned to this shift
-        assigned_count = user_shifts_collection.count_documents({"shift_id": shift.get("shift_id")})
-        shift["assigned_users_count"] = assigned_count
+        # Get users assigned to this shift
+        user_shift_docs = list(user_shifts_collection.find({"shift_id": shift.get("shift_id")}, {"_id": 0}))
+        user_ids = [us["user_id"] for us in user_shift_docs]
+        
+        shift["assigned_users_count"] = len(user_ids)
+        
+        if user_ids:
+            users = list(users_collection.find(
+                {"user_id": {"$in": user_ids}},
+                {"_id": 0, "user_id": 1, "name": 1, "email": 1}
+            ))
+            shift["assigned_users"] = [serialize_doc(u) for u in users]
+        else:
+            shift["assigned_users"] = []
     
     return [serialize_doc(s) for s in shifts]
 
