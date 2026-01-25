@@ -143,6 +143,35 @@ const LeavePage = ({ user }) => {
     loadData();
   }, [fetchLeaves, fetchCalendar, fetchLeaveTypes, fetchUsers]);
 
+  // Real-time updates subscription
+  useEffect(() => {
+    if (!onLeaveUpdate) return;
+    
+    const unsubscribe = onLeaveUpdate((data) => {
+      // Refresh data on any leave event
+      fetchLeaves();
+      fetchCalendar();
+      
+      // Show toast for real-time updates (from other users)
+      const currentUserId = user?.user_id;
+      const eventUserId = data.created_by?.user_id || data.updated_by?.user_id || data.deleted_by?.user_id;
+      
+      if (eventUserId && eventUserId !== currentUserId) {
+        const actionUser = data.created_by?.name || data.updated_by?.name || data.deleted_by?.name || 'Someone';
+        
+        if (data.leave) {
+          toast.info(`${actionUser} ${data.leave_id ? 'updated' : 'added'} a leave`, {
+            description: `${data.leave.user_name} - ${data.leave.leave_type}`
+          });
+        } else if (data.leave_id) {
+          toast.info(`${actionUser} deleted a leave`);
+        }
+      }
+    });
+    
+    return unsubscribe;
+  }, [onLeaveUpdate, fetchLeaves, fetchCalendar, user]);
+
   useEffect(() => {
     fetchCalendar();
   }, [viewYear, viewMonth, fetchCalendar]);
