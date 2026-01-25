@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import { 
   X, Save, Trash2, Send, ChevronDown, ChevronRight,
   Loader2, Star, MoreHorizontal, Mail, AlertCircle, 
