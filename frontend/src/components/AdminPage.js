@@ -330,33 +330,23 @@ const AdminPage = ({ user }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex bg-background">
-        <Sidebar user={user} />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 size={32} className="animate-spin text-primary" />
-        </div>
+      <div className="h-full flex items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
-      <div className="gradient-overlay" />
-      
-      {/* Main Sidebar Navigation */}
-      <Sidebar user={user} />
-      
-      {/* Admin Content */}
-      <div className="flex-1 flex flex-col relative z-10">
-        {/* Header */}
-        <header className="h-14 px-6 flex items-center justify-between border-b border-border/40 shrink-0 bg-background/80 backdrop-blur-sm">
-          <div className="flex items-center gap-3">
-            <Settings size={20} className="text-primary" />
-            <h1 className="text-lg font-semibold">Admin Settings</h1>
-          </div>
-        </header>
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <header className="h-14 px-6 flex items-center justify-between border-b border-border/40 shrink-0 glass">
+        <div className="flex items-center gap-3">
+          <Settings size={20} className="text-primary" />
+          <h1 className="text-lg font-semibold">Admin</h1>
+        </div>
+      </header>
 
-        <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden">
           {/* Admin Sidebar */}
           <aside className="w-56 border-r border-border/40 p-4 shrink-0 bg-card/50">
             <nav className="space-y-1">
