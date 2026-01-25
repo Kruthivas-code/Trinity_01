@@ -93,6 +93,8 @@ class LeaveManager:
         }
         
         self.leaves_collection.insert_one(leave_doc)
+        # Remove _id before returning
+        leave_doc.pop('_id', None)
         return leave_doc
 
     async def get_leave(self, leave_id: str) -> Optional[dict]:
