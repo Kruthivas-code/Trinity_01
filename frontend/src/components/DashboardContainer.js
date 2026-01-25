@@ -546,7 +546,6 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                 await fetchTickets();
                 await fetchAnalytics();
                 setIsRefreshing(false);
-                toast.success('Dashboard refreshed');
               }}
               disabled={isRefreshing}
               className="h-9 px-3 flex items-center gap-2 rounded-lg bg-secondary/70 text-secondary-foreground text-sm border border-white/10 hover:bg-secondary/90 transition-interactive disabled:opacity-50"
