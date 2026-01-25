@@ -162,11 +162,17 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
   const [customFields, setCustomFields] = useState([]);
   const [customFieldValues, setCustomFieldValues] = useState({});
   
+  // Assignment options (team members + other teams)
+  const [assignmentOptions, setAssignmentOptions] = useState(null);
+  const [showAssignDropdown, setShowAssignDropdown] = useState(false);
+  const [escalating, setEscalating] = useState(false);
+  
   // Collapsible sections
   const [sectionsExpanded, setSectionsExpanded] = useState({
     links: false,
     attributes: true,
-    customFields: true
+    customFields: true,
+    escalation: true
   });
   
   // Refs
@@ -179,7 +185,9 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
         description: ticket.description || '',
         status: ticket.status || 'todo',
         assignee_id: ticket.assignee_id || null,
-        priority: ticket.priority || 'medium'
+        priority: ticket.priority || 'medium',
+        escalation_level: ticket.escalation_level || 'L1',
+        team_id: ticket.team_id || null
       });
       setShowDeleteConfirm(false);
       setInputText('');
@@ -187,6 +195,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
       fetchNotes(ticket.id);
       fetchRelatedTickets(ticket.id);
       fetchCustomFields();
+      fetchAssignmentOptions(ticket.id);
     }
   }, [ticket]);
 
@@ -202,6 +211,71 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
     } catch (error) {
       console.error('Failed to fetch custom fields:', error);
     }
+  };
+
+  const fetchAssignmentOptions = async (ticketId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}/assignment-options`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAssignmentOptions(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch assignment options:', error);
+    }
+  };
+
+  const handleEscalate = async (newLevel) => {
+    if (!ticket || escalating) return;
+    
+    setEscalating(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/escalate`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          escalation_level: newLevel,
+          reason: `Escalated to ${newLevel}`
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Update form data with new escalation level and team
+        setFormData(prev => ({
+          ...prev,
+          escalation_level: newLevel,
+          team_id: data.assignment?.team_id || prev.team_id,
+          assignee_id: data.assignment?.assignee_id || null
+        }));
+        // Refresh assignment options
+        fetchAssignmentOptions(ticket.id);
+        // Trigger parent refresh
+        if (onUpdate) {
+          onUpdate(ticket.id, { 
+            escalation_level: newLevel,
+            team_id: data.assignment?.team_id,
+            assignee_id: data.assignment?.assignee_id
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to escalate ticket:', error);
+    } finally {
+      setEscalating(false);
+    }
+  };
+
+  const handleAssignToTeam = async (teamId) => {
+    // When assigning to another team, find the team's escalation level and escalate
+    const team = assignmentOptions?.other_teams?.find(t => t.team_id === teamId);
+    if (team && team.escalation_level) {
+      await handleEscalate(team.escalation_level);
+    }
+    setShowAssignDropdown(false);
   };
 
   const fetchRelatedTickets = async (ticketId) => {
