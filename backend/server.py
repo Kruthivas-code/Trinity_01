@@ -4095,7 +4095,7 @@ async def bulk_update_tickets(
     for ticket_id in request.ticket_ids:
         for field, new_value in update_fields.items():
             if field != "updated_at":
-                changelog_collection.insert_one({
+                ticket_changelog_collection.insert_one({
                     "changelog_id": f"cl_{uuid.uuid4().hex[:12]}",
                     "ticket_id": ticket_id,
                     "field": field,
