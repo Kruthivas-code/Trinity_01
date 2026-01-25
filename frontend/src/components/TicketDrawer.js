@@ -619,22 +619,168 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
 
           {/* Details Content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Assignee */}
+            {/* Escalation Level */}
             <div>
-              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 block">
+              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <ArrowUpCircle size={11} />
+                Escalation Level
+              </label>
+              <div className="flex gap-1">
+                {ESCALATION_LEVELS.map(level => (
+                  <button
+                    key={level.value}
+                    onClick={() => handleEscalate(level.value)}
+                    disabled={escalating || formData.escalation_level === level.value}
+                    className={`flex-1 h-8 px-2 text-[11px] font-medium rounded-md transition-colors ${
+                      formData.escalation_level === level.value
+                        ? `${level.color} text-white`
+                        : 'bg-secondary/30 text-muted-foreground hover:bg-secondary/50'
+                    } ${escalating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    data-testid={`escalation-${level.value}`}
+                  >
+                    {escalating && formData.escalation_level !== level.value ? (
+                      <Loader2 size={12} className="animate-spin mx-auto" />
+                    ) : (
+                      level.value
+                    )}
+                  </button>
+                ))}
+              </div>
+              {assignmentOptions?.current_team && (
+                <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-muted-foreground">
+                  <Users size={10} />
+                  <span>Team: {assignmentOptions.current_team.name}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Assignee - Enhanced with team members and other teams */}
+            <div className="relative">
+              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <UserCheck size={11} />
                 Assignee
               </label>
-              <select
-                value={formData.assignee_id || ''}
-                onChange={(e) => setFormData({ ...formData, assignee_id: e.target.value || null })}
-                className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
-                data-testid="drawer-assignee-select"
+              
+              {/* Custom dropdown */}
+              <button
+                onClick={() => setShowAssignDropdown(!showAssignDropdown)}
+                className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50 text-left flex items-center justify-between"
+                data-testid="drawer-assignee-dropdown"
               >
-                <option value="">Unassigned</option>
-                {users.map(user => (
-                  <option key={user.id} value={user.id}>{user.name}</option>
-                ))}
-              </select>
+                <span className={formData.assignee_id ? '' : 'text-muted-foreground'}>
+                  {assignee ? assignee.name : 'Unassigned'}
+                </span>
+                <ChevronDown size={14} className="text-muted-foreground" />
+              </button>
+
+              {/* Dropdown menu */}
+              {showAssignDropdown && (
+                <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                  {/* Unassign option */}
+                  <button
+                    onClick={() => {
+                      setFormData({ ...formData, assignee_id: null });
+                      setShowAssignDropdown(false);
+                    }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 text-muted-foreground"
+                  >
+                    Unassigned
+                  </button>
+                  
+                  {/* Team Members Section */}
+                  {assignmentOptions?.team_members?.length > 0 && (
+                    <>
+                      <div className="px-3 py-1.5 text-[10px] font-medium uppercase text-muted-foreground bg-secondary/30 flex items-center gap-1.5">
+                        <Users size={10} />
+                        Team Members
+                        {assignmentOptions.current_team && (
+                          <span className="ml-auto opacity-60">({assignmentOptions.current_team.name})</span>
+                        )}
+                      </div>
+                      {assignmentOptions.team_members.map(member => (
+                        <button
+                          key={member.user_id}
+                          onClick={() => {
+                            setFormData({ ...formData, assignee_id: member.user_id });
+                            setShowAssignDropdown(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 flex items-center justify-between ${
+                            formData.assignee_id === member.user_id ? 'bg-primary/10 text-primary' : ''
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 flex items-center justify-center text-[9px] font-medium">
+                              {member.name?.charAt(0).toUpperCase()}
+                            </div>
+                            {member.name}
+                          </span>
+                          {member.is_on_shift ? (
+                            <span className="flex items-center gap-1 text-[10px] text-emerald-500">
+                              <Clock size={10} />
+                              On Shift
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground/50">Off Shift</span>
+                          )}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  
+                  {/* Other Teams Section */}
+                  {assignmentOptions?.other_teams?.length > 0 && (
+                    <>
+                      <div className="px-3 py-1.5 text-[10px] font-medium uppercase text-muted-foreground bg-secondary/30 flex items-center gap-1.5">
+                        <ArrowUpCircle size={10} />
+                        Escalate to Team
+                      </div>
+                      {assignmentOptions.other_teams.map(team => (
+                        <button
+                          key={team.team_id}
+                          onClick={() => handleAssignToTeam(team.team_id)}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 flex items-center justify-between"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${
+                              team.escalation_level === 'L1' ? 'bg-blue-500' :
+                              team.escalation_level === 'L2' ? 'bg-amber-500' : 'bg-red-500'
+                            }`} />
+                            {team.name}
+                            <span className="text-[10px] text-muted-foreground">({team.escalation_level})</span>
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {team.on_shift_count} on shift
+                          </span>
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  
+                  {/* Fallback to all users if no assignment options */}
+                  {!assignmentOptions && users.length > 0 && (
+                    <>
+                      <div className="px-3 py-1.5 text-[10px] font-medium uppercase text-muted-foreground bg-secondary/30">
+                        All Users
+                      </div>
+                      {users.map(user => (
+                        <button
+                          key={user.id}
+                          onClick={() => {
+                            setFormData({ ...formData, assignee_id: user.id });
+                            setShowAssignDropdown(false);
+                          }}
+                          className={`w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 ${
+                            formData.assignee_id === user.id ? 'bg-primary/10 text-primary' : ''
+                          }`}
+                        >
+                          {user.name}
+                        </button>
+                      ))}
+                    </>
+                  )}
+                </div>
+              )}
+
               {assignee && (
                 <div className="flex items-center gap-2 mt-1.5">
                   <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 flex items-center justify-center text-[9px] font-medium">
