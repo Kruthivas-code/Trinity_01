@@ -4,7 +4,8 @@ import {
   Loader2, Star, MoreHorizontal, Mail, AlertCircle, 
   Sparkles, PenLine, Command, Link2, Settings, Users,
   Clock, ArrowUpCircle, UserCheck, AtSign, Copy, Printer,
-  BellOff, Merge, ExternalLink
+  BellOff, Merge, ExternalLink, Split, Link, FileText, 
+  Tag, Bookmark, Download, UserPlus, Scissors
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import MentionInput, { renderTextWithMentions } from './MentionInput';
