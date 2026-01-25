@@ -243,7 +243,7 @@ class LeaveManager:
         if exclude_user_id:
             query["user_id"] = {"$ne": exclude_user_id}
         
-        leaves = list(self.leaves_collection.find(query))
+        leaves = list(self.leaves_collection.find(query, {"_id": 0}))
         
         people_on_leave = [{
             "user_id": l["user_id"],
