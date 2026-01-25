@@ -859,6 +859,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   content={msg.content}
                   timestamp={msg.timestamp}
                   isFirst={idx === 0}
+                  isAgentMessage={msg.isAgentMessage}
                 />
               ))
             )}
