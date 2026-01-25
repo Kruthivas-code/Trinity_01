@@ -5494,9 +5494,8 @@ async def export_full_data(
         csat_responses = list(csat_responses_collection.find({}, {"_id": 0}))
         export_data["csat_responses"] = [serialize_for_export(c) for c in csat_responses]
     
-    # Leaves
-    from leave_management import leaves_collection
-    leaves = list(leaves_collection.find({}, {"_id": 0}))
+    # Leaves - directly access the collection
+    leaves = list(db.leaves.find({}, {"_id": 0}))
     export_data["leaves"] = [serialize_for_export(l) for l in leaves]
     
     # Generate export
