@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+
 import Header from './Header';
 import KanbanBoard from './KanbanBoard';
 import TicketDrawer from './TicketDrawer';
@@ -27,7 +27,7 @@ const Dashboard = ({ user, token, onLogout }) => {
       const data = await response.json();
       setTickets(data);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Operation failed');
     }
   };
 
@@ -40,7 +40,7 @@ const Dashboard = ({ user, token, onLogout }) => {
       const data = await response.json();
       setUsers(data);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Operation failed');
     }
   };
 
@@ -85,12 +85,12 @@ const Dashboard = ({ user, token, onLogout }) => {
 
       if (!response.ok) throw new Error('Failed to create ticket');
       
-      toast.success('Ticket created successfully');
+      // Success
       await fetchTickets();
       await fetchAnalytics();
       setIsCreateModalOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Operation failed');
     }
   };
 
@@ -107,12 +107,12 @@ const Dashboard = ({ user, token, onLogout }) => {
 
       if (!response.ok) throw new Error('Failed to update ticket');
       
-      toast.success('Ticket updated successfully');
+      // Success
       await fetchTickets();
       await fetchAnalytics();
       setIsDrawerOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Operation failed');
     }
   };
 
@@ -125,12 +125,12 @@ const Dashboard = ({ user, token, onLogout }) => {
 
       if (!response.ok) throw new Error('Failed to delete ticket');
       
-      toast.success('Ticket deleted successfully');
+      // Success
       await fetchTickets();
       await fetchAnalytics();
       setIsDrawerOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Operation failed');
     }
   };
 
@@ -154,7 +154,7 @@ const Dashboard = ({ user, token, onLogout }) => {
       await fetchTickets();
       await fetchAnalytics();
     } catch (error) {
-      toast.error(error.message);
+      console.error('Operation failed');
       await fetchTickets(); // Refresh to revert optimistic update
     }
   };
@@ -179,7 +179,7 @@ const Dashboard = ({ user, token, onLogout }) => {
       
       toast.success(`Tickets exported as ${format.toUpperCase()}`);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Operation failed');
     }
   };
 
@@ -200,12 +200,12 @@ const Dashboard = ({ user, token, onLogout }) => {
       }
       
       const data = await response.json();
-      toast.success(data.message);
+      // Success
       await fetchTickets();
       await fetchAnalytics();
       setIsImportModalOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Operation failed');
     }
   };
 
