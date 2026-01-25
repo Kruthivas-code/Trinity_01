@@ -156,45 +156,82 @@ const CommandPalette = ({ isOpen, onClose }) => {
       localStorage.setItem('trinity_recent_searches', JSON.stringify([query, ...filtered].slice(0, 10)));
     }
 
-    // Handle different action types
-    if (item.type === 'action') {
-      // Execute action
-      switch (item.action) {
-        case 'create_ticket':
+    // Handle different result types
+    switch (item.type) {
+      case 'ticket':
+        // Open ticket drawer
+        onClose();
+        navigate(`/all-tickets?ticket=${item.id}`);
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('trinity:open-ticket', { detail: { ticketId: item.id } }));
+        }, 100);
+        break;
+      
+      case 'user':
+        // Navigate to user profile
+        onClose();
+        navigate(`/profile?user=${item.id}`);
+        break;
+      
+      case 'team':
+        // Navigate to teams page and highlight
+        onClose();
+        navigate(`/teams?team=${item.id}`);
+        break;
+      
+      case 'customer':
+        // Search for customer's tickets
+        onClose();
+        navigate(`/search?q=customer:${encodeURIComponent(item.email || item.id)}`);
+        break;
+      
+      case 'action':
+        // Execute action
+        switch (item.action) {
+          case 'create_ticket':
+            onClose();
+            window.dispatchEvent(new CustomEvent('trinity:create-ticket'));
+            break;
+          case 'create_team':
+            onClose();
+            navigate('/teams');
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('trinity:create-team'));
+            }, 100);
+            break;
+          case 'export':
+          case 'export_tickets':
+          case 'export_users':
+            onClose();
+            navigate('/settings');
+            break;
+          case 'toggle_theme':
+          case 'theme_light':
+          case 'theme_dark':
+            setTheme(theme === 'dark' ? 'light' : 'dark');
+            onClose();
+            break;
+          case 'logout':
+            onClose();
+            window.location.href = '/login';
+            break;
+          default:
+            break;
+        }
+        break;
+      
+      case 'command':
+      case 'filter':
+      case 'shift':
+      case 'routing_rule':
+      case 'custom_field':
+      default:
+        // Navigation - use the action URL
+        if (item.action?.startsWith('/')) {
           onClose();
-          // Dispatch custom event to open create ticket modal
-          window.dispatchEvent(new CustomEvent('trinity:create-ticket'));
-          break;
-        case 'create_team':
-          onClose();
-          navigate('/teams');
-          window.dispatchEvent(new CustomEvent('trinity:create-team'));
-          break;
-        case 'export':
-          onClose();
-          navigate('/settings');
-          break;
-        case 'toggle_theme':
-          setTheme(theme === 'dark' ? 'light' : 'dark');
-          onClose();
-          break;
-        case 'logout':
-          onClose();
-          window.location.href = '/login';
-          break;
-        default:
-          break;
-      }
-    } else if (item.action?.startsWith('/')) {
-      // Navigation
-      onClose();
-      navigate(item.action);
-    } else if (item.type === 'ticket') {
-      // Open ticket
-      onClose();
-      const ticketPath = `/all-tickets?ticket=${item.id}`;
-      navigate(ticketPath);
-      window.dispatchEvent(new CustomEvent('trinity:open-ticket', { detail: { ticketId: item.id } }));
+          navigate(item.action);
+        }
+        break;
     }
   };
 
