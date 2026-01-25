@@ -107,16 +107,19 @@ const FeatureRequestsPage = ({ user }) => {
     planned: featureRequests.filter(fr => fr.status === 'planned').length,
     inProgress: featureRequests.filter(fr => fr.status === 'in_progress').length,
     completed: featureRequests.filter(fr => fr.status === 'completed').length,
-    totalMentions: featureRequests.reduce((sum, fr) => sum + (fr.mentions_count || 0), 0)
+    totalMentions: featureRequests.reduce((sum, fr) => sum + (fr.mentions_count || 0), 0),
+    features: featureRequests.filter(fr => fr.request_type === 'feature').length,
+    bugFixes: featureRequests.filter(fr => fr.request_type === 'bug_fix').length,
+    enhancements: featureRequests.filter(fr => fr.request_type === 'enhancement').length,
   };
 
-  const handleCreateRequest = async (title, description) => {
+  const handleCreateRequest = async (data) => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/feature-requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ title, description })
+        body: JSON.stringify(data)
       });
       if (response.ok) {
         fetchFeatureRequests();
