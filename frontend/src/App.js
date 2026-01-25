@@ -30,7 +30,11 @@ function AppRouter() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <MainLayout view="dashboard" />
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <MainLayout view="dashboard" user={user} />
+              </AppWithRealtime>
+            )}
           </ProtectedRoute>
         }
       />
@@ -38,7 +42,11 @@ function AppRouter() {
         path="/all-tickets"
         element={
           <ProtectedRoute>
-            <MainLayout view="all-tickets" />
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <MainLayout view="all-tickets" user={user} />
+              </AppWithRealtime>
+            )}
           </ProtectedRoute>
         }
       />
@@ -46,7 +54,11 @@ function AppRouter() {
         path="/open-tickets"
         element={
           <ProtectedRoute>
-            <MainLayout view="open-tickets" />
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <MainLayout view="open-tickets" user={user} />
+              </AppWithRealtime>
+            )}
           </ProtectedRoute>
         }
       />
@@ -54,7 +66,11 @@ function AppRouter() {
         path="/waiting-tickets"
         element={
           <ProtectedRoute>
-            <MainLayout view="waiting-tickets" />
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <MainLayout view="waiting-tickets" user={user} />
+              </AppWithRealtime>
+            )}
           </ProtectedRoute>
         }
       />
@@ -62,7 +78,11 @@ function AppRouter() {
         path="/closed-tickets"
         element={
           <ProtectedRoute>
-            <MainLayout view="closed-tickets" />
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <MainLayout view="closed-tickets" user={user} />
+              </AppWithRealtime>
+            )}
           </ProtectedRoute>
         }
       />
@@ -71,9 +91,11 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             {(user) => (
-              <PageLayout user={user}>
-                <ProfilePage user={user} />
-              </PageLayout>
+              <AppWithRealtime user={user}>
+                <PageLayout user={user}>
+                  <ProfilePage user={user} />
+                </PageLayout>
+              </AppWithRealtime>
             )}
           </ProtectedRoute>
         }
