@@ -176,3 +176,49 @@ Major design refresh completed:
 - [ ] AI-powered escalation level prediction
 - [ ] More sophisticated routing rules with ML
 - [ ] Email integration (currently mocked)
+
+---
+
+## Phase 6: Leave Management System ✅ COMPLETED (1/25/2026)
+
+### Backend (`/app/backend/leave_management.py`)
+- [x] Leave CRUD operations (create, read, update, delete)
+- [x] Auto-approval workflow (minimal friction)
+- [x] Custom leave types (not fixed categories)
+- [x] No limits - just track usage
+- [x] Team calendar API with conflict detection
+- [x] Leave conflicts check API
+- [x] User leave summary API
+- [x] Real-time broadcasting for leave events
+
+### Frontend (`/app/frontend/src/components/LeavePage.js`)
+- [x] Team Calendar View - Visual monthly calendar
+  - Color-coded leaves by type
+  - Conflict level indicators (green/amber/red)
+  - Click-to-add leaves on any date
+- [x] Summary Dashboard with Charts
+  - Stats cards (total leaves, days off, types used, team members)
+  - Leave by Type progress bars
+  - Leave by Team Member progress bars
+  - Monthly Leave Trend bar chart
+- [x] Leave Editing functionality
+  - Edit existing leaves
+  - Pre-filled form with current values
+  - Conflict detection during edit
+- [x] Upcoming Leaves panel
+  - Shows next 10 upcoming leaves
+  - Edit and delete buttons on hover
+- [x] Real-time updates via WebSocket
+  - Live refresh when others add/edit/delete leaves
+  - Toast notifications for changes by other users
+  - Connection status indicator (Live/Offline)
+
+### API Endpoints
+- `POST /api/leaves` - Create leave (auto-approved)
+- `GET /api/leaves` - List leaves with filters
+- `GET /api/leaves/types` - Get available leave types
+- `GET /api/leaves/calendar/{year}/{month}` - Team calendar
+- `GET /api/leaves/conflicts` - Check conflicts
+- `GET /api/leaves/summary/{user_id}` - User summary
+- `PUT /api/leaves/{leave_id}` - Update leave
+- `DELETE /api/leaves/{leave_id}` - Delete leave
