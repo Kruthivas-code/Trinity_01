@@ -139,6 +139,9 @@ export const RealtimeProvider = ({ children, user }) => {
     };
   }, [user]);
 
+  // Update socket reference for external use
+  const socketRef = useRef(socket);
+
   // Join a location (ticket, dashboard, etc.)
   const joinLocation = useCallback((type, id = null) => {
     if (socket?.connected) {
