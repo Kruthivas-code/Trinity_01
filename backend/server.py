@@ -3815,10 +3815,29 @@ async def get_analytics_overview(
     """Get overview analytics for the dashboard"""
     from_date = datetime.now(timezone.utc) - timedelta(days=days)
     
+    def parse_date(date_val):
+        """Safely parse date and make it timezone-aware"""
+        if date_val is None:
+            return None
+        if isinstance(date_val, datetime):
+            if date_val.tzinfo is None:
+                return date_val.replace(tzinfo=timezone.utc)
+            return date_val
+        try:
+            dt = datetime.fromisoformat(str(date_val).replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+        except:
+            return None
+    
     # Get all tickets in range
     all_tickets = list(tickets_collection.find({}, {"_id": 0}))
-    recent_tickets = [t for t in all_tickets if t.get("created_at") and 
-                      datetime.fromisoformat(str(t["created_at"]).replace("Z", "+00:00")) >= from_date]
+    recent_tickets = []
+    for t in all_tickets:
+        created = parse_date(t.get("created_at"))
+        if created and created >= from_date:
+            recent_tickets.append(t)
     
     # Basic counts
     total_tickets = len(all_tickets)
