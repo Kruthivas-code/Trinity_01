@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Mail, Calendar, Clock, Users, Plus, X, Check, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Mail, Calendar, Clock, Users, Plus, X, Check, Loader2, User as UserIcon } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -14,24 +14,87 @@ const DAYS_OF_WEEK = [
   { value: 7, label: 'Sun' }
 ];
 
-const ProfilePage = ({ user }) => {
+const ProfilePage = ({ user: currentUser }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [viewedUser, setViewedUser] = useState(null);
+  const [isViewingOther, setIsViewingOther] = useState(false);
   const [myShifts, setMyShifts] = useState([]);
   const [availableShifts, setAvailableShifts] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [userTeams, setUserTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddShift, setShowAddShift] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState('');
   const [joiningShift, setJoiningShift] = useState(null);
   const [leavingShift, setLeavingShift] = useState(null);
 
+  // Determine which user to display
   useEffect(() => {
-    if (user) {
+    const userIdFromUrl = searchParams.get('user');
+    if (userIdFromUrl && userIdFromUrl !== currentUser?.user_id) {
+      // Viewing another user's profile
+      setIsViewingOther(true);
+      fetchUserProfile(userIdFromUrl);
+    } else {
+      // Viewing own profile
+      setIsViewingOther(false);
+      setViewedUser(currentUser);
+    }
+  }, [searchParams, currentUser]);
+
+  // Fetch another user's profile
+  const fetchUserProfile = async (userId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/users`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const users = await response.json();
+        const foundUser = users.find(u => u.user_id === userId);
+        if (foundUser) {
+          setViewedUser(foundUser);
+          // Fetch their teams
+          fetchUserTeams(userId);
+        } else {
+          setViewedUser(null);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch teams a user belongs to
+  const fetchUserTeams = async (userId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/teams`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const allTeams = await response.json();
+        const teamsWithUser = allTeams.filter(t => t.members?.includes(userId));
+        setUserTeams(teamsWithUser);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user teams:', error);
+    }
+  };
+
+  // Use viewedUser for display, fall back to currentUser
+  const user = viewedUser || currentUser;
+
+  useEffect(() => {
+    if (user && !isViewingOther) {
       fetchMyShifts();
       fetchTeams();
       fetchAllShifts();
+    } else if (user && isViewingOther) {
+      setLoading(false);
     }
-  }, [user]);
+  }, [user, isViewingOther]);
 
   const fetchMyShifts = async () => {
     try {
