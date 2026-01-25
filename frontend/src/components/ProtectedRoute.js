@@ -54,6 +54,10 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // Authenticated - render children with user prop
+  // Support both component children and render function patterns
+  if (typeof children === 'function') {
+    return children(user);
+  }
   return React.cloneElement(children, { user });
 };
 
