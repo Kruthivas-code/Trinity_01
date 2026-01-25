@@ -97,7 +97,8 @@ class LeaveManager:
 
     async def get_leave(self, leave_id: str) -> Optional[dict]:
         """Get a single leave entry"""
-        return self.leaves_collection.find_one({"id": leave_id})
+        leave = self.leaves_collection.find_one({"id": leave_id}, {"_id": 0})
+        return leave
 
     async def get_leaves(
         self, 
@@ -130,7 +131,7 @@ class LeaveManager:
             elif end_date:
                 query["start_date"] = {"$lte": end_date}
         
-        cursor = self.leaves_collection.find(query).sort("start_date", -1)
+        cursor = self.leaves_collection.find(query, {"_id": 0}).sort("start_date", -1)
         return list(cursor)
 
     async def update_leave(self, leave_id: str, update_data: LeaveUpdate) -> Optional[dict]:
