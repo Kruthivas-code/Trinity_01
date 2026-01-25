@@ -57,7 +57,7 @@ const stripHtml = (html) => {
 };
 
 // Email-style message component
-const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, isFirst }) => {
+const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, isFirst, isAgentMessage }) => {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', { 
@@ -71,6 +71,9 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
   };
 
   const isNote = type === 'internal_note';
+  const isReply = type === 'reply';
+  const isCustomerMessage = type === 'original' || type === 'customer_reply';
+  const isAgent = isAgentMessage || isReply || isNote;
   
   // Render HTML content safely, with mention support for notes
   const renderContent = (html) => {
@@ -109,44 +112,83 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
     }
     return <p className="whitespace-pre-wrap">{html}</p>;
   };
+
+  // Determine styling based on message type
+  const getMessageStyles = () => {
+    if (isNote) {
+      // Internal note - centered with amber accent
+      return {
+        container: 'bg-amber-500/10 border border-amber-400/30 rounded-lg',
+        alignment: 'mx-auto max-w-[90%]',
+        avatar: 'bg-amber-400/20 text-amber-400',
+        badge: 'bg-amber-400/20 text-amber-400'
+      };
+    }
+    if (isAgent || isReply) {
+      // Agent reply - right aligned with primary/teal accent
+      return {
+        container: 'bg-primary/10 border border-primary/20 rounded-lg rounded-tr-sm',
+        alignment: 'ml-auto max-w-[85%]',
+        avatar: 'bg-primary/30 text-primary',
+        badge: 'bg-primary/20 text-primary'
+      };
+    }
+    // Customer message - left aligned with neutral styling
+    return {
+      container: 'bg-secondary/30 border border-border/40 rounded-lg rounded-tl-sm',
+      alignment: 'mr-auto max-w-[85%]',
+      avatar: 'bg-slate-500/30 text-slate-300',
+      badge: null
+    };
+  };
+
+  const styles = getMessageStyles();
   
   return (
-    <div className={`rounded-lg ${isNote ? 'bg-amber-500/5 border-l-2 border-l-amber-400' : 'bg-secondary/20'} p-4`}>
-      {/* Email Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-start gap-3">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium shrink-0 ${
-            isNote 
-              ? 'bg-amber-400/20 text-amber-400' 
-              : 'bg-gradient-to-br from-primary/40 to-accent/40 text-white'
-          }`}>
-            {sender?.charAt(0).toUpperCase() || 'U'}
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-sm">{sender || 'Unknown'}</span>
-              {isNote && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-400 font-medium">
-                  Internal Note
-                </span>
+    <div className={`${styles.alignment}`}>
+      <div className={`${styles.container} p-4`}>
+        {/* Message Header */}
+        <div className={`flex items-start justify-between mb-3 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
+          <div className={`flex items-start gap-3 ${isAgent && !isNote ? 'flex-row-reverse text-right' : ''}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium shrink-0 ${styles.avatar}`}>
+              {sender?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            <div className="min-w-0">
+              <div className={`flex items-center gap-2 flex-wrap ${isAgent && !isNote ? 'justify-end' : ''}`}>
+                <span className="font-medium text-sm">{sender || 'Unknown'}</span>
+                {isNote && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-400 font-medium">
+                    Internal Note
+                  </span>
+                )}
+                {isReply && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
+                    Agent Reply
+                  </span>
+                )}
+                {isCustomerMessage && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-400 font-medium">
+                    Customer
+                  </span>
+                )}
+              </div>
+              {senderEmail && (
+                <p className="text-xs text-muted-foreground">{senderEmail}</p>
+              )}
+              {subject && isFirst && (
+                <p className="text-xs text-muted-foreground mt-0.5">Subject: {subject}</p>
               )}
             </div>
-            {senderEmail && (
-              <p className="text-xs text-muted-foreground">{senderEmail}</p>
-            )}
-            {subject && isFirst && (
-              <p className="text-xs text-muted-foreground mt-0.5">Subject: {subject}</p>
-            )}
           </div>
+          <span className="text-[11px] text-muted-foreground shrink-0">
+            {formatDate(timestamp)}
+          </span>
         </div>
-        <span className="text-[11px] text-muted-foreground shrink-0">
-          {formatDate(timestamp)}
-        </span>
-      </div>
-      
-      {/* Email Body */}
-      <div className="pl-11 text-sm text-foreground/90 leading-relaxed">
-        {renderContent(content)}
+        
+        {/* Message Body */}
+        <div className={`text-sm text-foreground/90 leading-relaxed ${isNote ? 'pl-11' : isAgent ? 'pr-11' : 'pl-11'}`}>
+          {renderContent(content)}
+        </div>
       </div>
     </div>
   );
