@@ -159,25 +159,27 @@ const CreateTicketModal = ({ isOpen, users = [], onClose, onCreate, onCreated })
               </div>
 
               {/* Assignee */}
-              <div>
-                <label className="block text-sm font-medium mb-2" htmlFor="modal-assignee-select">
-                  Assignee
-                </label>
-                <select
-                  id="modal-assignee-select"
-                  className="w-full h-10 px-4 rounded-lg bg-secondary/70 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-interactive"
-                  value={formData.assignee_id || ''}
-                  onChange={(e) => setFormData({ ...formData, assignee_id: e.target.value || null })}
-                  data-testid="modal-assignee-select"
-                >
-                  <option value="">Unassigned</option>
-                  {users.map(user => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} ({user.email})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {users.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium mb-2" htmlFor="modal-assignee-select">
+                    Assignee
+                  </label>
+                  <select
+                    id="modal-assignee-select"
+                    className="w-full h-10 px-4 rounded-lg bg-secondary/70 border border-white/10 text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-interactive"
+                    value={formData.assignee_id || ''}
+                    onChange={(e) => setFormData({ ...formData, assignee_id: e.target.value || null })}
+                    data-testid="modal-assignee-select"
+                  >
+                    <option value="">Unassigned</option>
+                    {users.map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.name} ({user.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Footer */}
