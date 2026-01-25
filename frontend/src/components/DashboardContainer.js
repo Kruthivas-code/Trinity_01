@@ -382,48 +382,159 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                 )}
               </button>
             </div>
+            
+            {/* Search by Ticket ID / UUID */}
+            <div className="hidden md:flex items-center">
+              <input
+                type="text"
+                placeholder="Search by Ticket ID or UUID..."
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                className="h-9 px-3 w-56 rounded-lg bg-secondary/70 text-sm border border-white/10 placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                data-testid="search-ticket-id"
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Priority Filter */}
+            {/* Active Filter Count Badge */}
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="h-9 px-3 flex items-center gap-2 rounded-lg text-sm bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30 transition-interactive"
+                data-testid="clear-filters"
+              >
+                <X size={14} />
+                <span>{activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''}</span>
+              </button>
+            )}
+            
+            {/* Filters Dropdown */}
             <div className="relative">
               <button
                 onClick={() => setShowFilterMenu(!showFilterMenu)}
                 className={`h-9 px-3 flex items-center gap-2 rounded-lg text-sm border transition-interactive ${
-                  priorityFilter !== 'all' 
+                  activeFilterCount > 0 
                     ? 'bg-primary/20 text-primary border-primary/30' 
                     : 'bg-secondary/70 text-secondary-foreground border-white/10 hover:bg-secondary/90'
                 }`}
                 data-testid="filter-button"
               >
                 <Filter size={16} />
-                <span className="hidden sm:inline">
-                  {priorityFilter === 'all' ? 'Filter' : priorityFilter.charAt(0).toUpperCase() + priorityFilter.slice(1)}
-                </span>
+                <span className="hidden sm:inline">Filter</span>
               </button>
 
               {showFilterMenu && (
-                <div className="absolute right-0 top-12 glass rounded-lg border border-border/60 p-2 min-w-[140px] z-50">
-                  <div className="text-[10px] text-muted-foreground uppercase font-medium px-3 py-1">Priority</div>
-                  {['all', 'urgent', 'high', 'medium', 'low'].map(priority => (
-                    <button
-                      key={priority}
-                      onClick={() => {
-                        setPriorityFilter(priority);
-                        setShowFilterMenu(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-sm rounded transition-colors flex items-center gap-2 ${
-                        priorityFilter === priority ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
-                      }`}
-                      data-testid={`filter-${priority}`}
-                    >
-                      {priority === 'urgent' && <span className="w-2 h-2 rounded-full bg-red-400" />}
-                      {priority === 'high' && <span className="w-2 h-2 rounded-full bg-orange-400" />}
-                      {priority === 'medium' && <span className="w-2 h-2 rounded-full bg-amber-400" />}
-                      {priority === 'low' && <span className="w-2 h-2 rounded-full bg-slate-400" />}
-                      {priority === 'all' ? 'All Priorities' : priority.charAt(0).toUpperCase() + priority.slice(1)}
-                    </button>
-                  ))}
+                <div className="absolute right-0 top-12 glass rounded-lg border border-border/60 p-3 w-72 z-50 space-y-4">
+                  {/* Priority Filter */}
+                  <div>
+                    <div className="text-[10px] text-muted-foreground uppercase font-medium mb-2">Priority</div>
+                    <div className="flex flex-wrap gap-1">
+                      {['all', 'urgent', 'high', 'medium', 'low'].map(priority => (
+                        <button
+                          key={priority}
+                          onClick={() => setFilters(prev => ({ ...prev, priority }))}
+                          className={`px-2 py-1 text-xs rounded flex items-center gap-1 transition-colors ${
+                            filters.priority === priority ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
+                          }`}
+                          data-testid={`filter-priority-${priority}`}
+                        >
+                          {priority === 'urgent' && <span className="w-1.5 h-1.5 rounded-full bg-red-400" />}
+                          {priority === 'high' && <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />}
+                          {priority === 'medium' && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                          {priority === 'low' && <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />}
+                          {priority === 'all' ? 'All' : priority.charAt(0).toUpperCase() + priority.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Status Filter */}
+                  <div>
+                    <div className="text-[10px] text-muted-foreground uppercase font-medium mb-2">Status</div>
+                    <div className="flex flex-wrap gap-1">
+                      {['all', 'todo', 'in_progress', 'waiting_on_customer', 'review', 'resolved'].map(status => (
+                        <button
+                          key={status}
+                          onClick={() => setFilters(prev => ({ ...prev, status }))}
+                          className={`px-2 py-1 text-xs rounded transition-colors ${
+                            filters.status === status ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
+                          }`}
+                          data-testid={`filter-status-${status}`}
+                        >
+                          {status === 'all' ? 'All' : 
+                           status === 'todo' ? 'To Do' :
+                           status === 'in_progress' ? 'In Progress' :
+                           status === 'waiting_on_customer' ? 'Waiting' :
+                           status === 'review' ? 'Review' : 'Resolved'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Date Range Filter */}
+                  <div>
+                    <div className="text-[10px] text-muted-foreground uppercase font-medium mb-2 flex items-center gap-1">
+                      <Calendar size={12} />
+                      Created Date
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {['all', 'today', 'week', 'month'].map(range => (
+                        <button
+                          key={range}
+                          onClick={() => setFilters(prev => ({ ...prev, dateRange: range }))}
+                          className={`px-2 py-1 text-xs rounded transition-colors ${
+                            filters.dateRange === range ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
+                          }`}
+                          data-testid={`filter-date-${range}`}
+                        >
+                          {range === 'all' ? 'All Time' : 
+                           range === 'today' ? 'Today' :
+                           range === 'week' ? 'This Week' : 'This Month'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Tag Filter */}
+                  {availableTags.length > 0 && (
+                    <div>
+                      <div className="text-[10px] text-muted-foreground uppercase font-medium mb-2 flex items-center gap-1">
+                        <Tag size={12} />
+                        Tags
+                      </div>
+                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                        <button
+                          onClick={() => setFilters(prev => ({ ...prev, tag: '' }))}
+                          className={`px-2 py-1 text-xs rounded transition-colors ${
+                            filters.tag === '' ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
+                          }`}
+                        >
+                          All
+                        </button>
+                        {availableTags.map(tag => (
+                          <button
+                            key={tag}
+                            onClick={() => setFilters(prev => ({ ...prev, tag }))}
+                            className={`px-2 py-1 text-xs rounded transition-colors ${
+                              filters.tag === tag ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
+                            }`}
+                            data-testid={`filter-tag-${tag}`}
+                          >
+                            #{tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Close button */}
+                  <button
+                    onClick={() => setShowFilterMenu(false)}
+                    className="w-full mt-2 px-3 py-2 text-sm bg-secondary/50 rounded hover:bg-secondary/70 transition-colors"
+                  >
+                    Close
+                  </button>
                 </div>
               )}
             </div>
