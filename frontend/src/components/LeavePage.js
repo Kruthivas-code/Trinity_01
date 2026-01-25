@@ -5,7 +5,7 @@ import {
   AlertTriangle, Clock, Trash2, Edit2, BarChart3,
   Users, TrendingUp, PieChart, Wifi, WifiOff
 } from 'lucide-react';
-import { toast } from 'sonner';
+
 import { useRealtime } from '../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -164,7 +164,7 @@ const LeavePage = ({ user }) => {
             description: `${data.leave.user_name} - ${data.leave.leave_type}`
           });
         } else if (data.leave_id) {
-          toast.info(`${actionUser} deleted a leave`);
+          // Notification
         }
       }
     });
@@ -226,17 +226,17 @@ const LeavePage = ({ user }) => {
       });
       
       if (response.ok) {
-        toast.success(editingLeave ? 'Leave updated successfully' : 'Leave added successfully');
+        // Success
         setShowModal(false);
         resetForm();
         fetchLeaves();
         fetchCalendar();
       } else {
         const error = await response.json();
-        toast.error(error.detail || 'Failed to save leave');
+        console.error('Operation failed');
       }
     } catch (error) {
-      toast.error('Failed to save leave');
+      console.error('Operation failed');
     }
   };
 
@@ -262,12 +262,12 @@ const LeavePage = ({ user }) => {
       });
       
       if (response.ok) {
-        toast.success('Leave deleted');
+        // Success
         fetchLeaves();
         fetchCalendar();
       }
     } catch (error) {
-      toast.error('Failed to delete leave');
+      console.error('Operation failed');
     }
   };
 
@@ -281,12 +281,12 @@ const LeavePage = ({ user }) => {
       });
       
       if (response.ok) {
-        toast.success(`Leave ${newStatus}`);
+        // Success
         fetchLeaves();
         fetchCalendar();
       }
     } catch (error) {
-      toast.error('Failed to update leave status');
+      console.error('Operation failed');
     }
   };
 
