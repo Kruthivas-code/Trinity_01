@@ -5156,22 +5156,29 @@ async def split_ticket(
 class FeatureRequestCreate(BaseModel):
     title: str
     description: Optional[str] = None
+    request_type: str = "feature"  # feature, bug_fix, enhancement
+    priority: Optional[str] = "medium"  # low, medium, high, critical
     linked_ticket_id: Optional[str] = None
 
 class FeatureRequestUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    request_type: Optional[str] = None  # feature, bug_fix, enhancement
+    priority: Optional[str] = None
     status: Optional[str] = None  # new, planned, in_progress, completed, archived
 
 @app.get("/api/feature-requests")
 async def get_feature_requests(
     status: Optional[str] = None,
+    request_type: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     """Get all feature requests"""
     query = {}
     if status:
         query["status"] = status
+    if request_type:
+        query["request_type"] = request_type
     
     requests = list(feature_requests_collection.find(query, {"_id": 0}).sort("mentions_count", DESCENDING))
     return [serialize_doc(r) for r in requests]
@@ -5188,6 +5195,8 @@ async def create_feature_request(
         "feature_request_id": feature_request_id,
         "title": data.title,
         "description": data.description or "",
+        "request_type": data.request_type,
+        "priority": data.priority or "medium",
         "status": "new",
         "mentions_count": 1 if data.linked_ticket_id else 0,
         "linked_tickets": [data.linked_ticket_id] if data.linked_ticket_id else [],
@@ -5198,11 +5207,11 @@ async def create_feature_request(
     
     feature_requests_collection.insert_one(feature_request)
     
-    # If linked_ticket_id provided, update the ticket
+    # If linked_ticket_id provided, update the ticket to add to its feature_request_ids array
     if data.linked_ticket_id:
         tickets_collection.update_one(
             {"ticket_id": data.linked_ticket_id},
-            {"$set": {"feature_request_id": feature_request_id}}
+            {"$addToSet": {"feature_request_ids": feature_request_id}}
         )
     
     return serialize_doc(feature_request)
