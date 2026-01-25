@@ -361,6 +361,66 @@ Major design refresh completed:
 
 ---
 
+## Phase 12: Customer Profiles, Analytics & Operations ✅ COMPLETED (1/25/2026)
+
+### Customer Profiles Module
+- [x] **CustomersPage** (`/customers`) - List all customers with search/filter
+  - Customer cards showing name, email, domain, ticket count
+  - Search by name, email, or domain
+  - Sort by ticket count, recent activity, or name
+- [x] **Customer Detail Drawer** - Full customer profile view
+  - Customer metrics: total tickets, open, resolved, avg resolution time
+  - Priority and status breakdown
+  - First/last contact dates
+  - List of all customer tickets with click-through
+- [x] **Backend API**: `GET /api/customers/{email}` - Detailed customer data
+
+### Analytics Dashboard Module
+- [x] **AnalyticsPage** (`/analytics`) - Real-time metrics dashboard
+  - Summary cards: Total tickets, Open, Resolved, Avg Resolution
+  - SLA Compliance gauge (based on 24h target)
+  - Ticket Volume Trend chart (bar chart by day)
+  - Priority breakdown with progress bars
+  - Status distribution
+  - Top Performers leaderboard
+  - Agent Performance table (assigned, resolved, rate, avg time)
+- [x] **Backend APIs**:
+  - `GET /api/analytics/overview` - Dashboard summary data
+  - `GET /api/analytics/agents` - Per-agent performance metrics
+- [x] **Period selector** - 7, 14, 30, 90 days
+
+### SLA Management System
+- [x] **Backend APIs**:
+  - `GET /api/sla-policies` - List SLA policies
+  - `POST /api/sla-policies` - Create new policy
+  - `PUT /api/sla-policies/{id}` - Update policy
+  - `DELETE /api/sla-policies/{id}` - Delete policy
+  - `GET /api/sla/ticket/{id}` - Get ticket SLA status
+- [x] SLA tracking for first response and resolution
+- [x] Status: pending, at_risk, met, breached
+
+### Bulk Operations
+- [x] **Backend APIs**:
+  - `POST /api/tickets/bulk-update` - Update multiple tickets at once
+  - `POST /api/tickets/bulk-tag` - Add/remove tags from multiple tickets
+  - `POST /api/tickets/bulk-close` - Close multiple tickets
+- [x] Maximum 100 tickets per operation
+- [x] Changelog logging for bulk operations
+
+### Reply Templates System
+- [x] **Backend APIs**:
+  - `GET /api/templates` - List templates (with category filter)
+  - `POST /api/templates` - Create template
+  - `PUT /api/templates/{id}` - Update template
+  - `DELETE /api/templates/{id}` - Delete template
+- [x] Template fields: name, category, content, shortcut
+
+### Navigation Updates
+- [x] Added "Customers" to sidebar navigation
+- [x] Added "Analytics" to sidebar navigation
+
+---
+
 ## Phase 6: Leave Management System ✅ COMPLETED (1/25/2026)
 
 ### Backend (`/app/backend/leave_management.py`)
