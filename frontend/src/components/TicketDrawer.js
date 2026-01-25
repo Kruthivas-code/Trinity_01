@@ -238,13 +238,13 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
       });
       
       if (response.ok) {
-        toast.success(newStarred ? 'Ticket starred' : 'Ticket unstarred');
+        // Silent operation
       } else {
         setIsStarred(!newStarred); // Revert on error
       }
     } catch (error) {
       setIsStarred(!newStarred);
-      toast.error('Failed to update star status');
+      console.error('Operation failed');
     }
   };
 
@@ -252,7 +252,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
   const handleCopyLink = () => {
     const url = `${window.location.origin}/all-tickets?ticket=${ticket.ticket_id || ticket.id}`;
     navigator.clipboard.writeText(url);
-    toast.success('Link copied to clipboard');
+    // Silent operation
     setShowMoreMenu(false);
   };
 
@@ -271,13 +271,13 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
       });
       
       if (response.ok) {
-        toast.success(newSnoozed ? 'Ticket snoozed - hidden from main view' : 'Ticket unsnoozed');
+        // Silent operation
       } else {
         setSnoozed(!newSnoozed);
       }
     } catch (error) {
       setSnoozed(!newSnoozed);
-      toast.error('Failed to update snooze status');
+      console.error('Operation failed');
     }
     setShowMoreMenu(false);
   };
@@ -605,7 +605,7 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
                     <div className="h-px bg-border my-1" />
                     <button
                       onClick={() => {
-                        toast.info('Merge feature coming soon');
+                        // Feature placeholder
                         setShowMoreMenu(false);
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-secondary/50 transition-colors text-left text-muted-foreground"
