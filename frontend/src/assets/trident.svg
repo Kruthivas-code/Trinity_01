@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Minimalist Trident Logo for Trinity -->
+  <!-- Inspired by Maserati - sleek and powerful -->
+  
+  <!-- Center prong (tallest) -->
+  <path 
+    d="M50 8 L50 70 M50 8 L46 20 M50 8 L54 20" 
+    stroke="currentColor" 
+    stroke-width="3" 
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  
+  <!-- Left prong -->
+  <path 
+    d="M50 35 Q35 25 30 12 M30 12 L28 22 M30 12 L35 18" 
+    stroke="currentColor" 
+    stroke-width="3" 
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  
+  <!-- Right prong -->
+  <path 
+    d="M50 35 Q65 25 70 12 M70 12 L72 22 M70 12 L65 18" 
+    stroke="currentColor" 
+    stroke-width="3" 
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  
+  <!-- Handle base -->
+  <path 
+    d="M50 70 L50 92" 
+    stroke="currentColor" 
+    stroke-width="4" 
+    stroke-linecap="round"
+  />
+  
+  <!-- Decorative cross guard -->
+  <path 
+    d="M42 70 L58 70" 
+    stroke="currentColor" 
+    stroke-width="2.5" 
+    stroke-linecap="round"
+  />
+</svg>
