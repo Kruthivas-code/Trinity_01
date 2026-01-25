@@ -135,7 +135,7 @@ API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 # ==================== Utility Functions ====================
 
-def log_ticket_change(ticket_id: str, uuid: str, field: str, old_value: Any, new_value: Any, changed_by: str, change_type: str = "update"):
+def log_ticket_change(ticket_id: str, uuid: str, field: str, old_value: Any, new_value: Any, changed_by: str, change_type: str = "update", metadata: dict = None):
     """Log a change to a ticket's metadata for audit purposes"""
     changelog_entry = {
         "changelog_id": f"cl_{uuid4().hex[:12]}",
@@ -144,10 +144,12 @@ def log_ticket_change(ticket_id: str, uuid: str, field: str, old_value: Any, new
         "field": field,
         "old_value": old_value,
         "new_value": new_value,
-        "change_type": change_type,  # create, update, delete
+        "change_type": change_type,  # create, update, delete, auto_reassign
         "changed_by": changed_by,
         "changed_at": datetime.now(timezone.utc)
     }
+    if metadata:
+        changelog_entry["metadata"] = metadata
     ticket_changelog_collection.insert_one(changelog_entry)
     return changelog_entry
 
