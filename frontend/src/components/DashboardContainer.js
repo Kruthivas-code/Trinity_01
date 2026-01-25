@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Download, Upload, AtSign, User, Bell } from 'lucide-react';
+import { Download, Upload, AtSign, User, RefreshCw, Filter } from 'lucide-react';
 import KanbanBoard from './KanbanBoard';
 import TicketDrawer from './TicketDrawer';
 import CreateTicketModal from './CreateTicketModal';
