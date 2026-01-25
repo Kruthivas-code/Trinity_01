@@ -73,7 +73,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       const data = await response.json();
       setUsers(data);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Failed to fetch users:', error);
     }
   };
 
@@ -116,12 +116,11 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
 
       if (!response.ok) throw new Error('Failed to create ticket');
       
-      toast.success('Ticket created successfully');
       await fetchTickets();
       await fetchAnalytics();
       setIsCreateModalOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Failed to create ticket:', error);
     }
   };
 
