@@ -810,11 +810,12 @@ async def create_team(
     team_doc = {
         "team_id": team_id,
         "name": team_data.name,
-        "type": team_data.type,
+        "escalation_level": team_data.escalation_level,  # L1, L2, L3
         "description": team_data.description,
         "members": [],
         "lead_id": None,
         "last_assigned_idx": -1,  # For round-robin
+        "timezone": SYSTEM_TIMEZONE,  # Default to IST
         "created_by": current_user["user_id"],
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc)
@@ -831,13 +832,18 @@ async def get_teams(current_user: dict = Depends(get_current_user)):
     # Enrich with member count and member details
     for team in teams:
         team["member_count"] = len(team.get("members", []))
-        # Get member details
+        # Get member details with on-shift status
         if team.get("members"):
             members = list(users_collection.find(
                 {"user_id": {"$in": team["members"]}},
                 {"_id": 0, "user_id": 1, "name": 1, "email": 1, "role": 1}
             ))
+            # Add on-shift status to each member
+            for member in members:
+                member["is_on_shift"] = is_user_on_shift(member["user_id"], team.get("team_id"))
             team["member_details"] = members
+        # Count on-shift members
+        team["on_shift_count"] = len(get_on_shift_members(team.get("team_id")))
     
     return [serialize_doc(team) for team in teams]
 
