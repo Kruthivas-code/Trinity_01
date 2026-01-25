@@ -3,9 +3,10 @@ import {
   X, Save, Trash2, Send, ChevronDown, ChevronRight,
   Loader2, Star, MoreHorizontal, Mail, AlertCircle, 
   Sparkles, PenLine, Command, Link2, Settings, Users,
-  Clock, ArrowUpCircle, UserCheck
+  Clock, ArrowUpCircle, UserCheck, AtSign
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
+import MentionInput, { renderTextWithMentions } from './MentionInput';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
