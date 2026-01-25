@@ -47,10 +47,12 @@ const Sidebar = ({ user }) => {
 
   // Close collapsed menu when sidebar expands
   useEffect(() => {
-    if (isExpanded) {
-      setIsCollapsedMenuOpen(false);
+    if (isExpanded && isCollapsedMenuOpen) {
+      // Use setTimeout to defer state update and avoid cascading renders
+      const timer = setTimeout(() => setIsCollapsedMenuOpen(false), 0);
+      return () => clearTimeout(timer);
     }
-  }, [isExpanded]);
+  }, [isExpanded, isCollapsedMenuOpen]);
 
   const isActive = (path) => location.pathname === path;
   const isTicketViewActive = ticketViews.some(view => isActive(view.path));
