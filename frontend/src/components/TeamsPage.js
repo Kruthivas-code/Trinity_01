@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Users, Plus, Trash2, UserPlus, UserMinus, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const TeamsPage = ({ user }) => {
+  const [searchParams] = useSearchParams();
   const [teams, setTeams] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,11 +14,34 @@ const TeamsPage = ({ user }) => {
   const [showAddMemberModal, setShowAddMemberModal] = useState(null);
   const [newTeam, setNewTeam] = useState({ name: '', type: '', description: '' });
   const [creating, setCreating] = useState(false);
+  const [highlightedTeamId, setHighlightedTeamId] = useState(null);
+  const teamRefs = useRef({});
 
   useEffect(() => {
     fetchTeams();
     fetchUsers();
+    
+    // Listen for create team events
+    const handleCreateTeam = () => setShowCreateModal(true);
+    window.addEventListener('trinity:create-team', handleCreateTeam);
+    return () => window.removeEventListener('trinity:create-team', handleCreateTeam);
   }, []);
+
+  // Handle team highlight from URL params
+  useEffect(() => {
+    const teamId = searchParams.get('team');
+    if (teamId && teams.length > 0) {
+      setHighlightedTeamId(teamId);
+      // Scroll to the team card
+      setTimeout(() => {
+        if (teamRefs.current[teamId]) {
+          teamRefs.current[teamId].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      // Remove highlight after a few seconds
+      setTimeout(() => setHighlightedTeamId(null), 3000);
+    }
+  }, [searchParams, teams]);
 
   const fetchTeams = async () => {
     try {
