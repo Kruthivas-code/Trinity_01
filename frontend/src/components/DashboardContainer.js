@@ -22,6 +22,9 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const [analytics, setAnalytics] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const [viewMode, setViewMode] = useState('assigned'); // 'assigned' | 'mentioned' | 'all'
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState('all'); // 'all' | 'urgent' | 'high' | 'medium' | 'low'
 
   const fetchTickets = useCallback(async () => {
     try {
