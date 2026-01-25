@@ -184,6 +184,11 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
   const [showAssignDropdown, setShowAssignDropdown] = useState(false);
   const [escalating, setEscalating] = useState(false);
   
+  // Star and More menu state
+  const [isStarred, setIsStarred] = useState(false);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [snoozed, setSnoozed] = useState(false);
+  
   // Collapsible sections
   const [sectionsExpanded, setSectionsExpanded] = useState({
     links: false,
