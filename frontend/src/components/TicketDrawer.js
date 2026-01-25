@@ -910,13 +910,20 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                           <span className="ml-auto opacity-60">({assignmentOptions.current_team.name})</span>
                         )}
                       </div>
+                      {/* Assign to me - quick action */}
+                      {currentUser && !assignmentOptions.team_members.find(m => m.user_id === (currentUser.user_id || currentUser.id)) && (
+                        <button
+                          onClick={handleAssignToMe}
+                          className="w-full px-3 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-2 text-primary border-b border-border/30"
+                        >
+                          <UserPlus size={14} />
+                          <span>Assign to me</span>
+                        </button>
+                      )}
                       {assignmentOptions.team_members.map(member => (
                         <button
                           key={member.user_id}
-                          onClick={() => {
-                            setFormData({ ...formData, assignee_id: member.user_id });
-                            setShowAssignDropdown(false);
-                          }}
+                          onClick={() => handleAssign(member.user_id)}
                           className={`w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 flex items-center justify-between ${
                             formData.assignee_id === member.user_id ? 'bg-primary/10 text-primary' : ''
                           }`}
@@ -926,6 +933,9 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                               {member.name?.charAt(0).toUpperCase()}
                             </div>
                             {member.name}
+                            {member.user_id === (currentUser?.user_id || currentUser?.id) && (
+                              <span className="text-[10px] text-primary">(me)</span>
+                            )}
                           </span>
                           {member.is_on_shift ? (
                             <span className="flex items-center gap-1 text-[10px] text-emerald-500">
@@ -975,6 +985,14 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                       <div className="px-3 py-1.5 text-[10px] font-medium uppercase text-muted-foreground bg-secondary/30">
                         All Users
                       </div>
+                      {/* Assign to me - quick action */}
+                      <button
+                        onClick={handleAssignToMe}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-2 text-primary border-b border-border/30"
+                      >
+                        <UserPlus size={14} />
+                        <span>Assign to me</span>
+                      </button>
                       {users.map(user => (
                         <button
                           key={user.id}
