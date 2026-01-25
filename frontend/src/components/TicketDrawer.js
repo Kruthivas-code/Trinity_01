@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { toast } from 'sonner';
 import { 
   X, Save, Trash2, Send, ChevronDown, ChevronRight,
   Loader2, Star, MoreHorizontal, Mail, AlertCircle, 
