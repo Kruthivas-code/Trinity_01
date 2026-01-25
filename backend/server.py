@@ -3863,11 +3863,10 @@ async def get_analytics_overview(
     # Volume by day (last N days)
     volume_by_day = {}
     for t in recent_tickets:
-        try:
-            date = datetime.fromisoformat(str(t["created_at"]).replace("Z", "+00:00")).strftime("%Y-%m-%d")
+        created = parse_date(t.get("created_at"))
+        if created:
+            date = created.strftime("%Y-%m-%d")
             volume_by_day[date] = volume_by_day.get(date, 0) + 1
-        except:
-            pass
     
     # Sort by date
     volume_trend = [{"date": k, "count": v} for k, v in sorted(volume_by_day.items())]
@@ -3875,13 +3874,10 @@ async def get_analytics_overview(
     # Average resolution time
     resolution_times = []
     for t in recent_tickets:
-        if t.get("resolved_at") and t.get("created_at"):
-            try:
-                created = datetime.fromisoformat(str(t["created_at"]).replace("Z", "+00:00"))
-                resolved = datetime.fromisoformat(str(t["resolved_at"]).replace("Z", "+00:00"))
-                resolution_times.append((resolved - created).total_seconds() / 3600)
-            except:
-                pass
+        created = parse_date(t.get("created_at"))
+        resolved = parse_date(t.get("resolved_at"))
+        if created and resolved:
+            resolution_times.append((resolved - created).total_seconds() / 3600)
     
     avg_resolution_hours = sum(resolution_times) / len(resolution_times) if resolution_times else None
     
@@ -3889,18 +3885,15 @@ async def get_analytics_overview(
     sla_met = 0
     sla_breached = 0
     for t in recent_tickets:
-        if t.get("resolved_at") and t.get("created_at"):
-            try:
-                created = datetime.fromisoformat(str(t["created_at"]).replace("Z", "+00:00"))
-                resolved = datetime.fromisoformat(str(t["resolved_at"]).replace("Z", "+00:00"))
-                hours = (resolved - created).total_seconds() / 3600
-                # Default SLA: 24 hours for resolution
-                if hours <= 24:
-                    sla_met += 1
-                else:
-                    sla_breached += 1
-            except:
-                pass
+        created = parse_date(t.get("created_at"))
+        resolved = parse_date(t.get("resolved_at"))
+        if created and resolved:
+            hours = (resolved - created).total_seconds() / 3600
+            # Default SLA: 24 hours for resolution
+            if hours <= 24:
+                sla_met += 1
+            else:
+                sla_breached += 1
     
     sla_compliance = (sla_met / (sla_met + sla_breached) * 100) if (sla_met + sla_breached) > 0 else None
     
