@@ -332,15 +332,6 @@ const SettingsPage = ({ user }) => {
                   </button>
                   
                   <button
-                    onClick={() => navigate('/emails')}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary/50 hover:bg-secondary/70 transition-interactive"
-                    data-testid="view-emails-button"
-                  >
-                    <ExternalLink size={16} />
-                    <span>View Emails</span>
-                  </button>
-                  
-                  <button
                     onClick={handleDisconnectGmail}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg border border-destructive/50 text-destructive hover:bg-destructive/10 transition-interactive"
                     data-testid="disconnect-gmail-button"
