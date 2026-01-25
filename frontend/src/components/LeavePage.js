@@ -29,6 +29,7 @@ const getTypeColor = (type) => {
 
 const LeavePage = ({ user }) => {
   const [searchParams] = useSearchParams();
+  const { onLeaveUpdate, isConnected } = useRealtime();
   const [leaves, setLeaves] = useState([]);
   const [calendar, setCalendar] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
