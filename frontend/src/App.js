@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import './App.css';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { RealtimeProvider } from './contexts/RealtimeContext';
 import LoginPage from './components/LoginPage';
 import AuthCallback from './components/AuthCallback';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -11,6 +12,8 @@ import ProfilePage from './components/ProfilePage';
 import SettingsPage from './components/SettingsPage';
 import TeamsPage from './components/TeamsPage';
 import AdminPage from './components/AdminPage';
+import CommandPalette from './components/CommandPalette';
+import { Toaster } from './components/ui/sonner';
 
 function AppRouter() {
   const location = useLocation();
