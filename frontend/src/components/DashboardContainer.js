@@ -135,12 +135,11 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
 
       if (!response.ok) throw new Error('Failed to update ticket');
       
-      toast.success('Ticket updated successfully');
       await fetchTickets();
       await fetchAnalytics();
       setIsDrawerOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Failed to update ticket:', error);
     }
   };
 
@@ -153,12 +152,11 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
 
       if (!response.ok) throw new Error('Failed to delete ticket');
       
-      toast.success('Ticket deleted successfully');
       await fetchTickets();
       await fetchAnalytics();
       setIsDrawerOpen(false);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Failed to delete ticket:', error);
     }
   };
 
