@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Download, Upload, AtSign, User, RefreshCw, Filter } from 'lucide-react';
+import { Download, Upload, AtSign, User, RefreshCw, Filter, Calendar, Tag, X } from 'lucide-react';
 import KanbanBoard from './KanbanBoard';
 import TicketDrawer from './TicketDrawer';
 import CreateTicketModal from './CreateTicketModal';
@@ -24,7 +23,18 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const [viewMode, setViewMode] = useState('assigned'); // 'assigned' | 'mentioned' | 'all'
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
-  const [priorityFilter, setPriorityFilter] = useState('all'); // 'all' | 'urgent' | 'high' | 'medium' | 'low'
+  
+  // Enhanced filters
+  const [filters, setFilters] = useState({
+    priority: 'all',
+    status: 'all',
+    tag: '',
+    dateRange: 'all', // 'all' | 'today' | 'week' | 'month'
+    search: '' // Search by ticket_id or uuid
+  });
+  
+  // Available tags from tickets
+  const [availableTags, setAvailableTags] = useState([]);
 
   const fetchTickets = useCallback(async () => {
     try {
@@ -33,6 +43,11 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       });
       if (!response.ok) throw new Error('Failed to fetch tickets');
       const data = await response.json();
+      
+      // Collect all unique tags
+      const tags = new Set();
+      data.forEach(t => (t.tags || []).forEach(tag => tags.add(tag)));
+      setAvailableTags(Array.from(tags).sort());
       
       // Filter to show only tickets assigned to current user
       const myTickets = data.filter(t => t.assignee_id === user?.user_id || t.assignee_id === user?.id);
@@ -45,7 +60,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       );
       setMentionedTickets(mentioned);
     } catch (error) {
-      toast.error(error.message);
+      console.error('Failed to fetch tickets:', error);
     }
   }, [user]);
 
