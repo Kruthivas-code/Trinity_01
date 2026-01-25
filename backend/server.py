@@ -18,10 +18,15 @@ import re
 import secrets
 import hashlib
 import pytz
+import asyncio
 from email.utils import parseaddr
 from html import unescape
 from dotenv import load_dotenv
 from functools import wraps
+
+# Real-time and Search imports
+from realtime import sio, socket_app, broadcast_ticket_update, broadcast_ticket_created, broadcast_ticket_deleted, get_presence_stats, get_users_viewing_ticket
+from search import get_search_engine
 
 # Load environment variables from .env file
 load_dotenv()
