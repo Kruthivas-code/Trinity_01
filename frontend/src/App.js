@@ -6,6 +6,7 @@ import LoginPage from './components/LoginPage';
 import AuthCallback from './components/AuthCallback';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './components/MainLayout';
+import PageLayout from './components/PageLayout';
 import ProfilePage from './components/ProfilePage';
 import SettingsPage from './components/SettingsPage';
 import TeamsPage from './components/TeamsPage';
