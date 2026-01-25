@@ -2027,11 +2027,24 @@ async def update_ticket(
     ticket_data: TicketUpdate,
     current_user: dict = Depends(get_current_user)
 ):
+    # Get current ticket state for changelog
+    current_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not current_ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
     update_data = {k: v for k, v in ticket_data.dict().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
     
-    update_data["updated_at"] = datetime.utcnow()
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    # Build changelog entries for changed fields
+    changes = {}
+    for field, new_value in update_data.items():
+        if field != "updated_at":
+            old_value = current_ticket.get(field)
+            if old_value != new_value:
+                changes[field] = (old_value, new_value)
     
     result = tickets_collection.update_one(
         {"ticket_id": ticket_id},
@@ -2040,6 +2053,16 @@ async def update_ticket(
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    # Log changes to changelog
+    if changes:
+        log_ticket_changes_batch(
+            ticket_id=ticket_id,
+            uuid=current_ticket.get("uuid", ""),
+            changes=changes,
+            changed_by=current_user["user_id"],
+            change_type="update"
+        )
     
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     serialized = serialize_doc(ticket)
