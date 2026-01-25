@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Sun, Moon, Mail, CheckCircle, XCircle, Loader2, RefreshCw, ExternalLink, LogOut, Key, Copy, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Mail, CheckCircle, XCircle, Loader2, RefreshCw, ExternalLink, LogOut, Key, Copy, Trash2, Plus, Download, FileText, Users, Ticket } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -27,6 +27,9 @@ const SettingsPage = ({ user }) => {
   const [creatingKey, setCreatingKey] = useState(false);
   const [newKeyName, setNewKeyName] = useState('');
   const [showNewKey, setShowNewKey] = useState(null);
+  
+  // Export state
+  const [exporting, setExporting] = useState(null);
 
   useEffect(() => {
     if (user) {
