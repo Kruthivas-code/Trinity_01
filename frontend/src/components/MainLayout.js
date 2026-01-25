@@ -188,6 +188,7 @@ const MainLayout = ({ user, view }) => {
         <TicketDrawer
           ticket={selectedTicket}
           users={users}
+          currentUser={user}
           isOpen={isDrawerOpen}
           onClose={handleCloseDrawer}
           onUpdate={handleUpdateTicket}
