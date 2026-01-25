@@ -1363,19 +1363,120 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                       {new Date(ticket.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  {ticket.tags && ticket.tags.length > 0 && (
-                    <div className="flex items-start justify-between">
-                      <span className="text-muted-foreground">Tags</span>
-                      <div className="flex flex-wrap gap-1 justify-end max-w-[100px]">
-                        {ticket.tags.map((tag, i) => (
-                          <span key={i} className="text-[9px] px-1 py-0.5 rounded bg-primary/20 text-primary">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-border/30" />
+
+            {/* Tags Section - Interactive */}
+            <div>
+              <div className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2">
+                  <Tag size={12} className="text-muted-foreground" />
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Tags</span>
+                </div>
+                {loadingTags && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
+              </div>
+              
+              {/* Current Tags */}
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {ticketTags.map((tag, i) => (
+                  <span 
+                    key={i} 
+                    className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full bg-primary/20 text-primary group"
+                  >
+                    #{tag}
+                    <button
+                      onClick={() => handleRemoveTag(tag)}
+                      className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                      title="Remove tag"
+                      data-testid={`remove-tag-${tag}`}
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))}
+                {ticketTags.length === 0 && (
+                  <span className="text-[10px] text-muted-foreground/50 italic">No tags</span>
+                )}
+              </div>
+              
+              {/* Add Tag Input */}
+              <div className="mt-2 relative">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={(e) => {
+                    setTagInput(e.target.value);
+                    setShowTagDropdown(true);
+                  }}
+                  onFocus={() => setShowTagDropdown(true)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && tagInput.trim()) {
+                      e.preventDefault();
+                      handleAddTag(tagInput);
+                    }
+                    if (e.key === 'Escape') {
+                      setShowTagDropdown(false);
+                    }
+                  }}
+                  placeholder="Add tag..."
+                  className="w-full h-7 px-2 text-xs rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-muted-foreground/50"
+                  data-testid="tag-input"
+                />
+                
+                {/* Tag Dropdown */}
+                {showTagDropdown && (tagInput.trim() || filteredTags.length > 0) && (
+                  <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                    {/* Create new tag option */}
+                    {tagInput.trim() && !availableTags.includes(tagInput.trim().toLowerCase().replace(/\s+/g, '-')) && (
+                      <button
+                        onClick={() => handleAddTag(tagInput)}
+                        className="w-full px-3 py-2 text-left text-xs hover:bg-primary/10 flex items-center gap-2 text-primary border-b border-border/30"
+                        data-testid="create-new-tag"
+                      >
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20">+ Create</span>
+                        <span>#{tagInput.trim().toLowerCase().replace(/\s+/g, '-')}</span>
+                      </button>
+                    )}
+                    
+                    {/* Existing tags */}
+                    {filteredTags.length > 0 && (
+                      <>
+                        <div className="px-3 py-1.5 text-[10px] font-medium uppercase text-muted-foreground bg-secondary/30">
+                          Existing Tags
+                        </div>
+                        {filteredTags.slice(0, 10).map(tag => (
+                          <button
+                            key={tag}
+                            onClick={() => handleAddTag(tag)}
+                            className="w-full px-3 py-2 text-left text-xs hover:bg-secondary/50 flex items-center gap-2"
+                            data-testid={`add-tag-${tag}`}
+                          >
+                            <span className="text-primary">#{tag}</span>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    
+                    {/* No matches */}
+                    {tagInput.trim() && filteredTags.length === 0 && availableTags.includes(tagInput.trim().toLowerCase().replace(/\s+/g, '-')) && (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">
+                        Tag already added
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Click outside to close dropdown */}
+              {showTagDropdown && (
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setShowTagDropdown(false)}
+                />
               )}
             </div>
 
