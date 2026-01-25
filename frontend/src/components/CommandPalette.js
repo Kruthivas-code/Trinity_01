@@ -344,7 +344,7 @@ const CommandPalette = ({ isOpen, onClose }) => {
           {query && query.length >= 2 && !loading && results.length === 0 && (
             <div className="p-8 text-center text-muted-foreground">
               <Search size={32} className="mx-auto mb-3 opacity-30" />
-              <p>No results found for "{query}"</p>
+              <p>No results found for &quot;{query}&quot;</p>
               <p className="text-sm mt-1">Try searching for tickets, users, or commands</p>
             </div>
           )}
