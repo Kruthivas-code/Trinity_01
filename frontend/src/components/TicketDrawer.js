@@ -298,8 +298,51 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       fetchCustomFields();
       fetchAssignmentOptions(ticket.id);
       fetchAvailableTags();
+      fetchCsatData(ticket.id);
     }
   }, [ticket]);
+
+  // Fetch CSAT data for ticket
+  const fetchCsatData = async (ticketId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/csat/ticket/${ticketId}`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCsatData(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch CSAT data:', error);
+    }
+  };
+
+  // Send CSAT survey
+  const handleSendCsat = async () => {
+    if (!ticket || sendingCsat) return;
+    
+    setSendingCsat(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/csat/send/${ticket.id}`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCsatData({
+          has_response: false,
+          survey_sent: true,
+          sent_at: new Date().toISOString(),
+          expires_at: data.expires_at
+        });
+      }
+    } catch (error) {
+      console.error('Failed to send CSAT:', error);
+    } finally {
+      setSendingCsat(false);
+    }
+  };
 
   // Fetch all available tags from existing tickets
   const fetchAvailableTags = async () => {
