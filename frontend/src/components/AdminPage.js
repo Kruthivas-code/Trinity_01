@@ -879,6 +879,202 @@ const AdminPage = ({ user }) => {
           </div>
         </>
       )}
+
+      {/* Create Shift Modal */}
+      {showShiftModal && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            onClick={() => setShowShiftModal(false)}
+          />
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="bg-card rounded-2xl border border-border w-full max-w-lg shadow-2xl">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                <div>
+                  <h3 className="font-semibold text-lg">Create New Shift</h3>
+                  <p className="text-sm text-muted-foreground">Define a shift schedule for a team</p>
+                </div>
+                <button
+                  onClick={() => setShowShiftModal(false)}
+                  className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-secondary transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              
+              <form onSubmit={handleCreateShift} className="p-6 space-y-5">
+                {/* Team Selection */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Team</label>
+                  <select
+                    value={newShift.team_id}
+                    onChange={(e) => setNewShift({ ...newShift, team_id: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                    required
+                  >
+                    <option value="">Select a team</option>
+                    {teams.map(team => (
+                      <option key={team.team_id} value={team.team_id}>
+                        {team.name} ({team.escalation_level || 'N/A'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Shift Name */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Shift Name</label>
+                  <input
+                    type="text"
+                    value={newShift.name}
+                    onChange={(e) => setNewShift({ ...newShift, name: e.target.value })}
+                    className="w-full h-10 px-3 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                    placeholder="e.g., Morning Shift, Night Shift"
+                    required
+                  />
+                </div>
+
+                {/* Time Range */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Start Time (IST)</label>
+                    <input
+                      type="time"
+                      value={newShift.start_time}
+                      onChange={(e) => setNewShift({ ...newShift, start_time: e.target.value })}
+                      className="w-full h-10 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">End Time (IST)</label>
+                    <input
+                      type="time"
+                      value={newShift.end_time}
+                      onChange={(e) => setNewShift({ ...newShift, end_time: e.target.value })}
+                      className="w-full h-10 px-3 rounded-lg bg-background border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Days of Week */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Working Days</label>
+                  <div className="flex gap-2">
+                    {DAYS_OF_WEEK.map(day => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => toggleDayOfWeek(day.value)}
+                        className={`flex-1 h-10 rounded-lg text-sm font-medium transition-colors ${
+                          newShift.days_of_week.includes(day.value)
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowShiftModal(false)}
+                    className="flex-1 h-11 rounded-lg border border-border font-medium hover:bg-secondary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creatingShift || !newShift.team_id || !newShift.name.trim()}
+                    className="flex-1 h-11 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {creatingShift ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Plus size={16} />
+                    )}
+                    Create Shift
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Assign User to Shift Modal */}
+      {showAssignUserModal && selectedShiftForAssign && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            onClick={() => {
+              setShowAssignUserModal(false);
+              setSelectedShiftForAssign(null);
+            }}
+          />
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <div className="bg-card rounded-2xl border border-border w-full max-w-md shadow-2xl">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                <div>
+                  <h3 className="font-semibold text-lg">Assign User to Shift</h3>
+                  <p className="text-sm text-muted-foreground">{selectedShiftForAssign.name} • {selectedShiftForAssign.team_name}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowAssignUserModal(false);
+                    setSelectedShiftForAssign(null);
+                  }}
+                  className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-secondary transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              
+              <div className="p-4 max-h-80 overflow-y-auto">
+                {allUsers.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">No users available</p>
+                ) : (
+                  <div className="space-y-2">
+                    {allUsers.map(user => {
+                      const isAssigned = selectedShiftForAssign.assigned_users?.some(u => u.user_id === user.user_id);
+                      return (
+                        <button
+                          key={user.user_id}
+                          onClick={() => !isAssigned && handleAssignUserToShift(user.user_id)}
+                          disabled={isAssigned}
+                          className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
+                            isAssigned 
+                              ? 'bg-primary/10 text-primary cursor-default' 
+                              : 'hover:bg-secondary/50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 flex items-center justify-center text-xs font-medium">
+                              {user.name?.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="text-left">
+                              <div className="text-sm font-medium">{user.name}</div>
+                              <div className="text-xs text-muted-foreground">{user.email}</div>
+                            </div>
+                          </div>
+                          {isAssigned && (
+                            <span className="text-xs bg-primary/20 px-2 py-1 rounded">Assigned</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
