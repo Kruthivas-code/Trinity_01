@@ -739,6 +739,11 @@ const AdminPage = ({ user }) => {
                 </div>
               </div>
             )}
+            
+            {/* Export Tab */}
+            {activeTab === 'export' && (
+              <ExportDataTab />
+            )}
           </main>
         </div>
       
