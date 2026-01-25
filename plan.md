@@ -324,6 +324,43 @@ Major design refresh completed:
 
 ---
 
+## Phase 11: Security & Architecture Review ✅ COMPLETED (1/25/2026)
+
+### Security Fixes Applied
+- [x] **CORS Configuration Fixed** - Changed from `allow_origins=["*"]` to specific allowed origins
+  - Preview URL, localhost:3000, 127.0.0.1:3000
+  - Environment variable support for custom domains
+- [x] **XSS Prevention** - Added DOMPurify HTML sanitization
+  - Installed dompurify@3.3.1
+  - Sanitizes all HTML content before rendering in TicketDrawer
+  - Whitelist of allowed HTML tags and attributes
+
+### UI Improvements
+- [x] **Message Differentiation** - Customer vs Agent messages now visually distinct
+  - Customer messages: Left-aligned, gray avatar, "Customer" badge
+  - Agent replies: Right-aligned, primary color accent, "Agent Reply" badge
+  - Internal notes: Centered, amber accent, "Internal Note" badge
+
+### Architecture Review Findings
+- **Backend Modules**: Well-separated (server.py, search.py, realtime.py, leave_management.py)
+- **Database**: MongoDB queries properly parameterized, no injection risks found
+- **Authentication**: Session-based with external Emergent Auth validation, secure
+- **API Key System**: Uses SHA-256 hashing, secure
+
+### Orphan/Unused Code Identified
+- `AuthPage.js` - Not imported anywhere (legacy component)
+- `PresenceIndicator.js` - Not imported anywhere (planned but not integrated)
+- Minor linter warnings in server.py (bare except, variable shadowing)
+
+### Comprehensive Testing Results
+- ✅ Authentication flow (test-login, protected endpoints)
+- ✅ Tickets CRUD (Create, Read, Update, Delete)
+- ✅ Feature Requests CRUD
+- ✅ Search API functionality
+- ✅ UI rendering without errors
+
+---
+
 ## Phase 6: Leave Management System ✅ COMPLETED (1/25/2026)
 
 ### Backend (`/app/backend/leave_management.py`)
