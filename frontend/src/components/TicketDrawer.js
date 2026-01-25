@@ -349,11 +349,13 @@ const TicketDrawer = ({ ticket, users, isOpen, onClose, onUpdate, onDelete }) =>
         credentials: 'include',
         body: JSON.stringify({ 
           content: inputText.trim(), 
-          type: inputMode === 'reply' ? 'reply' : 'internal_note' 
+          type: inputMode === 'reply' ? 'reply' : 'internal_note',
+          mentions: inputMentions
         })
       });
       if (response.ok) {
         setInputText('');
+        setInputMentions([]);
         fetchNotes(ticket.id);
         // Scroll to bottom after adding
         setTimeout(() => {
