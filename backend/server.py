@@ -47,10 +47,19 @@ app = FastAPI(
 # Socket.IO will handle /socket.io/ routes
 app.mount("/socket.io", socket_app)
 
-# CORS
+# CORS - Allow specific origins for security
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "").split(",")
+# Default to preview URL if not set
+if not ALLOWED_ORIGINS or ALLOWED_ORIGINS == [""]:
+    ALLOWED_ORIGINS = [
+        "https://ticket-fixit.preview.emergentagent.com",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
