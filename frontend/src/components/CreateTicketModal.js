@@ -187,15 +187,17 @@ const CreateTicketModal = ({ isOpen, users = [], onClose, onCreate, onCreated })
                 onClick={handleClose}
                 className="flex-1 h-10 px-4 rounded-lg bg-secondary/70 text-secondary-foreground border border-white/10 hover:bg-secondary/90 transition-interactive"
                 data-testid="modal-cancel-button"
+                disabled={isSubmitting}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 h-10 px-4 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-cyan-400/90 transition-interactive"
+                className="flex-1 h-10 px-4 rounded-lg bg-primary text-primary-foreground font-medium hover:bg-cyan-400/90 transition-interactive disabled:opacity-50"
                 data-testid="modal-create-button"
+                disabled={isSubmitting}
               >
-                Create Ticket
+                {isSubmitting ? 'Creating...' : 'Create Ticket'}
               </button>
             </div>
           </form>
