@@ -335,7 +335,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       {/* Kanban Board */}
       <div className="flex-1 overflow-hidden">
         <KanbanBoard
-          tickets={tickets}
+          tickets={displayTickets}
           users={users}
           onTicketClick={handleTicketClick}
           onDragEnd={handleDragEnd}
