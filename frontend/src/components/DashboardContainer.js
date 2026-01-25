@@ -244,10 +244,21 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
     }
   };
 
-  // Get tickets to display based on viewMode
-  const displayTickets = viewMode === 'mentioned' ? mentionedTickets : 
-                         viewMode === 'all' ? [...tickets, ...mentionedTickets.filter(t => !tickets.find(mt => mt.id === t.id))] :
-                         tickets;
+  // Get tickets to display based on viewMode and priority filter
+  const getFilteredTickets = () => {
+    let baseTickets = viewMode === 'mentioned' ? mentionedTickets : 
+                      viewMode === 'all' ? [...tickets, ...mentionedTickets.filter(t => !tickets.find(mt => mt.id === t.id))] :
+                      tickets;
+    
+    // Apply priority filter
+    if (priorityFilter !== 'all') {
+      baseTickets = baseTickets.filter(t => t.priority === priorityFilter);
+    }
+    
+    return baseTickets;
+  };
+  
+  const displayTickets = getFilteredTickets();
 
   if (loading) {
     return (
