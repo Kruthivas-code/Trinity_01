@@ -729,8 +729,7 @@ const AdminPage = ({ user }) => {
             )}
           </main>
         </div>
-      </div>
-
+      
       {/* Create Field Modal */}
       {showCreateModal && (
         <>
