@@ -123,6 +123,10 @@ ticket_changelog_collection = db.ticket_changelog  # All metadata changes for ti
 # Phase 8: Feature Requests
 feature_requests_collection = db.feature_requests  # Product feature requests linked to tickets
 
+# Phase 13: CSAT (Customer Satisfaction)
+csat_responses_collection = db.csat_responses  # CSAT ratings and feedback
+csat_tokens_collection = db.csat_tokens  # Secure tokens for email rating links
+
 # System timezone - IST
 SYSTEM_TIMEZONE = "Asia/Kolkata"
 
