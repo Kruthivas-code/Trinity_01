@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Upload } from 'lucide-react';
-import { toast } from 'sonner';
+
 
 const ImportModal = ({ isOpen, onClose, onImport }) => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -23,7 +23,7 @@ const ImportModal = ({ isOpen, onClose, onImport }) => {
     if (hasValidType || hasValidExtension) {
       setSelectedFile(file);
     } else {
-      toast.error('Please select a JSON or CSV file');
+      console.error('Invalid file type');
     }
   };
 
