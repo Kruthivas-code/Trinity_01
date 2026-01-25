@@ -493,6 +493,32 @@ class TicketEscalate(BaseModel):
     escalation_level: str  # L1, L2, L3
     reason: Optional[str] = None
 
+# Phase 5: Routing Rule Models
+class RoutingRuleCondition(BaseModel):
+    field: str  # priority, tags, customer_email, escalation_level, title, description
+    operator: str  # equals, contains, starts_with, ends_with, in, not_in, greater_than, less_than
+    value: Any  # The value to compare against
+
+class RoutingRuleAction(BaseModel):
+    type: str  # assign_team, assign_user, set_priority, set_escalation, add_tag
+    value: str  # team_id, user_id, priority value, escalation level, or tag name
+
+class RoutingRuleCreate(BaseModel):
+    name: str
+    description: Optional[str] = ""
+    conditions: List[Dict[str, Any]]  # List of conditions (all must match - AND logic)
+    actions: List[Dict[str, Any]]  # List of actions to perform
+    priority: int = 0  # Higher priority rules run first
+    is_active: bool = True
+
+class RoutingRuleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    conditions: Optional[List[Dict[str, Any]]] = None
+    actions: Optional[List[Dict[str, Any]]] = None
+    priority: Optional[int] = None
+    is_active: Optional[bool] = None
+
 # Routes
 @app.get("/api/health")
 async def health():
