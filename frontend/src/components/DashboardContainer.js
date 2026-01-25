@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Download, Upload } from 'lucide-react';
+import { Plus, Download, Upload, AtSign, User, Bell } from 'lucide-react';
 import KanbanBoard from './KanbanBoard';
 import TicketDrawer from './TicketDrawer';
 import CreateTicketModal from './CreateTicketModal';
@@ -12,6 +12,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
+  const [mentionedTickets, setMentionedTickets] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -20,21 +21,30 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [analytics, setAnalytics] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
+  const [viewMode, setViewMode] = useState('assigned'); // 'assigned' | 'mentioned' | 'all'
 
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/tickets`, {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to fetch tickets');
       const data = await response.json();
+      
       // Filter to show only tickets assigned to current user
-      const myTickets = data.filter(t => t.assignee_id === user.id);
+      const myTickets = data.filter(t => t.assignee_id === user?.user_id || t.assignee_id === user?.id);
       setTickets(myTickets);
+      
+      // Also get mentioned tickets
+      const mentioned = data.filter(t => 
+        t.mentioned_users?.includes(user?.user_id) || 
+        t.mentioned_users?.includes(user?.id)
+      );
+      setMentionedTickets(mentioned);
     } catch (error) {
       toast.error(error.message);
     }
-  };
+  }, [user]);
 
   const fetchUsers = async () => {
     try {
