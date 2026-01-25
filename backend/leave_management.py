@@ -181,7 +181,7 @@ class LeaveManager:
                 {"end_date": {"$lte": end_date, "$gte": start_date}},
                 {"$and": [{"start_date": {"$lte": start_date}}, {"end_date": {"$gte": end_date}}]}
             ]
-        }))
+        }, {"_id": 0}))
         
         # Build calendar
         calendar_days = []
