@@ -331,6 +331,145 @@ def auto_assign_on_escalation(ticket_id: str, escalation_level: str) -> dict:
         "assignee_id": assignee_id
     }
 
+# ==================== Routing Rule Engine ====================
+
+def evaluate_condition(ticket: dict, condition: dict) -> bool:
+    """Evaluate a single routing rule condition against a ticket"""
+    field = condition.get("field", "")
+    operator = condition.get("operator", "")
+    value = condition.get("value")
+    
+    # Get ticket field value
+    ticket_value = ticket.get(field)
+    
+    # Handle special fields
+    if field == "tags":
+        ticket_value = ticket.get("tags", [])
+    elif field == "customer_email":
+        ticket_value = ticket.get("customer_email", "")
+    elif field == "domain":
+        # Extract domain from customer email
+        email = ticket.get("customer_email", "")
+        ticket_value = email.split("@")[-1] if "@" in email else ""
+    
+    # Evaluate based on operator
+    try:
+        if operator == "equals":
+            return str(ticket_value).lower() == str(value).lower()
+        elif operator == "not_equals":
+            return str(ticket_value).lower() != str(value).lower()
+        elif operator == "contains":
+            if isinstance(ticket_value, list):
+                return any(str(value).lower() in str(v).lower() for v in ticket_value)
+            return str(value).lower() in str(ticket_value).lower()
+        elif operator == "not_contains":
+            if isinstance(ticket_value, list):
+                return not any(str(value).lower() in str(v).lower() for v in ticket_value)
+            return str(value).lower() not in str(ticket_value).lower()
+        elif operator == "starts_with":
+            return str(ticket_value).lower().startswith(str(value).lower())
+        elif operator == "ends_with":
+            return str(ticket_value).lower().endswith(str(value).lower())
+        elif operator == "in":
+            # Value should be a list
+            if isinstance(value, list):
+                return str(ticket_value).lower() in [str(v).lower() for v in value]
+            return str(ticket_value).lower() == str(value).lower()
+        elif operator == "not_in":
+            if isinstance(value, list):
+                return str(ticket_value).lower() not in [str(v).lower() for v in value]
+            return str(ticket_value).lower() != str(value).lower()
+        elif operator == "exists":
+            return ticket_value is not None and ticket_value != "" and ticket_value != []
+        elif operator == "not_exists":
+            return ticket_value is None or ticket_value == "" or ticket_value == []
+        elif operator == "tag_includes":
+            # Check if tags list includes the value
+            tags = ticket.get("tags", [])
+            return str(value).lower() in [str(t).lower() for t in tags]
+        elif operator == "tag_excludes":
+            tags = ticket.get("tags", [])
+            return str(value).lower() not in [str(t).lower() for t in tags]
+    except Exception as e:
+        print(f"[ROUTING] Error evaluating condition: {e}")
+        return False
+    
+    return False
+
+def apply_routing_actions(ticket_id: str, actions: list) -> dict:
+    """Apply routing rule actions to a ticket"""
+    updates = {}
+    results = []
+    
+    for action in actions:
+        action_type = action.get("type", "")
+        action_value = action.get("value")
+        
+        if action_type == "assign_team":
+            updates["team_id"] = action_value
+            results.append(f"Assigned to team {action_value}")
+        elif action_type == "assign_user":
+            updates["assignee_id"] = action_value
+            updates["assigned_at"] = datetime.now(timezone.utc)
+            results.append(f"Assigned to user {action_value}")
+        elif action_type == "set_priority":
+            updates["priority"] = action_value
+            results.append(f"Set priority to {action_value}")
+        elif action_type == "set_escalation":
+            updates["escalation_level"] = action_value
+            results.append(f"Set escalation to {action_value}")
+        elif action_type == "add_tag":
+            # Need to append to existing tags
+            ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+            existing_tags = ticket.get("tags", []) if ticket else []
+            if action_value not in existing_tags:
+                updates["tags"] = existing_tags + [action_value]
+                results.append(f"Added tag {action_value}")
+        elif action_type == "set_status":
+            updates["status"] = action_value
+            results.append(f"Set status to {action_value}")
+    
+    if updates:
+        updates["updated_at"] = datetime.now(timezone.utc)
+        updates["routed_at"] = datetime.now(timezone.utc)
+        tickets_collection.update_one(
+            {"ticket_id": ticket_id},
+            {"$set": updates}
+        )
+    
+    return {"updates": updates, "results": results}
+
+def run_routing_rules(ticket: dict) -> dict:
+    """Run all active routing rules against a ticket, return first matching rule's actions"""
+    # Get all active rules, sorted by priority (higher first)
+    rules = list(routing_rules_collection.find(
+        {"is_active": True}, 
+        {"_id": 0}
+    ).sort("priority", -1))
+    
+    for rule in rules:
+        conditions = rule.get("conditions", [])
+        
+        # All conditions must match (AND logic)
+        all_match = True
+        for condition in conditions:
+            if not evaluate_condition(ticket, condition):
+                all_match = False
+                break
+        
+        if all_match:
+            # Apply actions
+            actions = rule.get("actions", [])
+            result = apply_routing_actions(ticket.get("ticket_id"), actions)
+            return {
+                "matched": True,
+                "rule_id": rule.get("rule_id"),
+                "rule_name": rule.get("name"),
+                **result
+            }
+    
+    return {"matched": False, "rule_id": None, "rule_name": None, "updates": {}, "results": []}
+
 async def get_api_key_user(api_key: str = Security(API_KEY_HEADER)) -> Optional[dict]:
     """Authenticate via API key - returns None if no key provided"""
     if not api_key:
