@@ -3576,23 +3576,42 @@ async def get_leave(
 async def update_leave(
     leave_id: str,
     update_data: LeaveUpdate,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user)
 ):
     """Update a leave entry (admin can edit/deny)"""
     leave = await leave_manager.update_leave(leave_id, update_data)
     if not leave:
         raise HTTPException(status_code=404, detail="Leave not found")
+    
+    # Broadcast update
+    background_tasks.add_task(
+        broadcast_leave_updated,
+        leave_id,
+        leave,
+        {"user_id": current_user.get("user_id"), "name": current_user.get("name")}
+    )
+    
     return leave
 
 @app.delete("/api/leaves/{leave_id}")
 async def delete_leave(
     leave_id: str,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user)
 ):
     """Delete a leave entry"""
     deleted = await leave_manager.delete_leave(leave_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Leave not found")
+    
+    # Broadcast deletion
+    background_tasks.add_task(
+        broadcast_leave_deleted,
+        leave_id,
+        {"user_id": current_user.get("user_id"), "name": current_user.get("name")}
+    )
+    
     return {"message": "Leave deleted successfully"}
 
 
