@@ -509,6 +509,137 @@ const AdminPage = ({ user }) => {
               </div>
             )}
 
+            {/* Shifts Tab */}
+            {activeTab === 'shifts' && (
+              <div className="max-w-5xl">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-lg font-medium">Shifts & Schedules</h2>
+                    <p className="text-sm text-muted-foreground mt-1">Manage team shifts and assign users to schedules</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <select
+                      value={selectedTeamForShifts}
+                      onChange={(e) => setSelectedTeamForShifts(e.target.value)}
+                      className="h-9 px-3 rounded-lg bg-secondary/50 border border-border/50 text-sm"
+                    >
+                      <option value="all">All Teams</option>
+                      {teams.map(team => (
+                        <option key={team.team_id} value={team.team_id}>
+                          {team.name} ({team.escalation_level || 'N/A'})
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => setShowShiftModal(true)}
+                      className="h-9 px-4 flex items-center gap-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                      data-testid="new-shift-button"
+                    >
+                      <Plus size={16} />
+                      New Shift
+                    </button>
+                  </div>
+                </div>
+
+                {/* Shifts Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {filteredShifts.length === 0 ? (
+                    <div className="col-span-2 text-center py-12 bg-card rounded-xl border border-border/50">
+                      <Clock size={40} className="mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-muted-foreground">No shifts configured</p>
+                      <p className="text-sm text-muted-foreground/70 mt-1">Create a shift to start managing schedules</p>
+                    </div>
+                  ) : (
+                    filteredShifts.map(shift => (
+                      <div key={shift.shift_id} className="bg-card rounded-xl border border-border/50 overflow-hidden">
+                        {/* Shift Header */}
+                        <div className="p-4 border-b border-border/30">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-medium">{shift.name}</h3>
+                              <p className="text-sm text-muted-foreground mt-0.5">
+                                {shift.team_name} • {shift.team_escalation_level || 'N/A'}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleDeleteShift(shift.shift_id)}
+                              className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-4 mt-3 text-sm">
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <Clock size={14} />
+                              <span>{shift.start_time} - {shift.end_time} IST</span>
+                            </div>
+                            <div className="flex gap-1">
+                              {DAYS_OF_WEEK.map(day => (
+                                <span
+                                  key={day.value}
+                                  className={`w-6 h-6 flex items-center justify-center text-[10px] rounded ${
+                                    shift.days_of_week?.includes(day.value)
+                                      ? 'bg-primary/20 text-primary font-medium'
+                                      : 'bg-secondary/30 text-muted-foreground/50'
+                                  }`}
+                                >
+                                  {day.label[0]}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Assigned Users */}
+                        <div className="p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                              Assigned Users ({shift.assigned_users_count || 0})
+                            </span>
+                            <button
+                              onClick={() => {
+                                setSelectedShiftForAssign(shift);
+                                setShowAssignUserModal(true);
+                              }}
+                              className="text-xs text-primary hover:underline flex items-center gap-1"
+                            >
+                              <UserPlus size={12} />
+                              Add User
+                            </button>
+                          </div>
+                          
+                          {shift.assigned_users?.length > 0 ? (
+                            <div className="space-y-2">
+                              {shift.assigned_users.map(user => (
+                                <div key={user.user_id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/50 to-accent/50 flex items-center justify-center text-[10px] font-medium">
+                                      {user.name?.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="text-sm">{user.name}</span>
+                                  </div>
+                                  <button
+                                    onClick={() => handleRemoveUserFromShift(user.user_id, shift.shift_id)}
+                                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground/50 text-center py-4">
+                              No users assigned to this shift
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
             {activeTab === 'general' && (
               <div className="max-w-2xl">
                 <h2 className="text-lg font-medium mb-6">General Settings</h2>
