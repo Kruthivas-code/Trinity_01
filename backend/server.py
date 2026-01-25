@@ -3485,7 +3485,8 @@ async def update_admin_settings(
         upsert=True
     )
     
-    return admin_settings_collection.find_one({"type": "global"})
+    updated_settings = admin_settings_collection.find_one({"type": "global"}, {"_id": 0})
+    return serialize_doc(updated_settings) if updated_settings else settings
 
 # ==================== Routing Rules Endpoints ====================
 
