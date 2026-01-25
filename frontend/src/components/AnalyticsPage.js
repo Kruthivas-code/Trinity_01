@@ -3,7 +3,7 @@ import {
   BarChart3, TrendingUp, TrendingDown, Clock, Users, 
   TicketIcon, CheckCircle2, AlertCircle, Target,
   ArrowUpRight, ArrowDownRight, Loader2, Calendar,
-  PieChart, Activity, Zap
+  PieChart, Activity, Zap, Star, MessageSquareHeart
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
