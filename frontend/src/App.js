@@ -105,9 +105,11 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             {(user) => (
-              <PageLayout user={user}>
-                <SettingsPage user={user} />
-              </PageLayout>
+              <AppWithRealtime user={user}>
+                <PageLayout user={user}>
+                  <SettingsPage user={user} />
+                </PageLayout>
+              </AppWithRealtime>
             )}
           </ProtectedRoute>
         }
@@ -117,9 +119,11 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             {(user) => (
-              <PageLayout user={user}>
-                <TeamsPage user={user} />
-              </PageLayout>
+              <AppWithRealtime user={user}>
+                <PageLayout user={user}>
+                  <TeamsPage user={user} />
+                </PageLayout>
+              </AppWithRealtime>
             )}
           </ProtectedRoute>
         }
@@ -129,9 +133,11 @@ function AppRouter() {
         element={
           <ProtectedRoute>
             {(user) => (
-              <PageLayout user={user}>
-                <AdminPage user={user} />
-              </PageLayout>
+              <AppWithRealtime user={user}>
+                <PageLayout user={user}>
+                  <AdminPage user={user} />
+                </PageLayout>
+              </AppWithRealtime>
             )}
           </ProtectedRoute>
         }
