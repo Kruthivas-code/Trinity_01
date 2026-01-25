@@ -1876,6 +1876,7 @@ async def create_ticket(
         "status": ticket_data.status,
         "assignee_id": ticket_data.assignee_id,
         "priority": ticket_data.priority,
+        "escalation_level": ticket_data.escalation_level or "L1",
         "order": next_order,
         "created_by": current_user["user_id"],
         "created_at": datetime.now(timezone.utc),
@@ -1888,7 +1889,18 @@ async def create_ticket(
     }
     
     tickets_collection.insert_one(ticket_doc)
-    return serialize_doc(ticket_doc)
+    
+    # Run routing rules on newly created ticket
+    routing_result = run_routing_rules(ticket_doc)
+    
+    # Get the potentially updated ticket
+    final_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    
+    result = serialize_doc(final_ticket)
+    result["routing_applied"] = routing_result.get("matched", False)
+    result["routing_rule"] = routing_result.get("rule_name")
+    
+    return result
 
 @app.get("/api/tickets/{ticket_id}")
 async def get_ticket(
