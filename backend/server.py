@@ -5370,7 +5370,7 @@ async def export_tickets(
         
         # Add notes/replies
         if request.include_notes:
-            notes = list(ticket_notes_collection.find(
+            notes = list(messages_collection.find(
                 {"ticket_id": ticket_id}, {"_id": 0}
             ))
             ticket_export["notes"] = [serialize_for_export(n) for n in notes]
@@ -5431,7 +5431,7 @@ async def export_full_data(
         ticket_id = ticket.get("ticket_id")
         
         if request.include_notes:
-            notes = list(ticket_notes_collection.find({"ticket_id": ticket_id}, {"_id": 0}))
+            notes = list(messages_collection.find({"ticket_id": ticket_id}, {"_id": 0}))
             ticket_export["notes"] = [serialize_for_export(n) for n in notes]
         
         if request.include_changelog:
