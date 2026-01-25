@@ -162,6 +162,11 @@ function AppRouter() {
   );
 }
 
+// Create a context to share command palette state
+export const CommandPaletteContext = React.createContext({
+  openCommandPalette: () => {},
+});
+
 // Wrapper component that provides realtime context to authenticated routes
 function AppWithRealtime({ user, children }) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -187,9 +192,15 @@ function AppWithRealtime({ user, children }) {
     }
   }, [user]);
 
+  const openCommandPalette = useCallback(() => {
+    setCommandPaletteOpen(true);
+  }, []);
+
   return (
     <RealtimeProvider user={user}>
-      {children}
+      <CommandPaletteContext.Provider value={{ openCommandPalette }}>
+        {children}
+      </CommandPaletteContext.Provider>
       <CommandPalette 
         isOpen={commandPaletteOpen} 
         onClose={() => setCommandPaletteOpen(false)} 
