@@ -196,7 +196,7 @@ def extract_domain(email: str) -> Optional[str]:
         _, addr = parseaddr(email)
         if '@' in addr:
             return addr.split('@')[1].lower()
-    except:
+    except Exception:
         pass
     return None
 
