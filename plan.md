@@ -309,6 +309,31 @@ Major design refresh completed:
 
 ---
 
+## Phase 14: Starred Tickets Feature ✅ COMPLETED (1/26/2026)
+
+### Backend Implementation
+- [x] **GET /api/tickets/starred** - New endpoint to fetch all starred tickets
+- [x] **Extended /api/tickets** - Added `is_starred` query parameter support
+
+### Frontend Implementation
+- [x] **StarredTicketsPage** (`/starred-tickets`) - Dedicated view for starred tickets
+  - Displays all starred tickets regardless of status (open, closed, resolved)
+  - Shows ticket count in header
+  - Star icon indicator on each ticket card
+  - Click to open ticket drawer
+  - Pagination/infinite scroll support
+  - Empty state with helpful instructions
+- [x] **Sidebar Navigation** - Added "Starred" item under Tickets section with Star icon
+- [x] **App.js Route** - Added `/starred-tickets` route with MainLayout
+
+### User Flow
+1. Users can star any ticket from the TicketDrawer header (existing functionality)
+2. Starred tickets appear in the new "Starred" view in sidebar
+3. Starred tickets persist across sessions
+4. Tickets can be starred/unstarred regardless of their status
+
+---
+
 ## Next Steps / Future Enhancements
 - [ ] Real-time presence indicators (avatars showing who's viewing a ticket)
 - [ ] Live update notifications (non-toast based)
@@ -321,6 +346,7 @@ Major design refresh completed:
 - [x] Ticket UUID and changelog system (COMPLETED)
 - [x] Advanced ticket actions - Merge, Link, Split (COMPLETED)
 - [x] Feature Requests module (COMPLETED)
+- [x] Starred Tickets functionality (COMPLETED)
 
 ---
 
