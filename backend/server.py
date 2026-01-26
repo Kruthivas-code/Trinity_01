@@ -5980,7 +5980,7 @@ def generate_csv_export(data, filename_prefix):
         flat_item = {}
         for key, value in item.items():
             if isinstance(value, (list, dict)):
-                flat_item[key] = json_module.dumps(value)
+                flat_item[key] = json.dumps(value)
             else:
                 flat_item[key] = value
         flat_data.append(flat_item)
