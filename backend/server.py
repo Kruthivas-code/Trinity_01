@@ -2271,6 +2271,13 @@ async def create_ticket(
     # Extract domain from customer email if provided
     domain = extract_domain(ticket_data.customer_email) if ticket_data.customer_email else None
     
+    # Auto-create or link customer
+    customer_id = None
+    if ticket_data.customer_email:
+        customer = get_or_create_customer(ticket_data.customer_email)
+        if customer:
+            customer_id = customer.get("customer_id")
+    
     now = datetime.now(timezone.utc)
     
     ticket_doc = {
@@ -2290,6 +2297,7 @@ async def create_ticket(
         "source": ticket_data.source or "manual",
         "tags": ticket_data.tags or [],
         "customer_email": ticket_data.customer_email,
+        "customer_id": customer_id,  # Link to customer entity
         "domain": domain,
         "is_starred": False,
         "snoozed": False
