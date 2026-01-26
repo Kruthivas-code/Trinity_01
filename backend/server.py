@@ -5388,7 +5388,7 @@ async def split_ticket(
     log_ticket_change(ticket_id, original_ticket.get("uuid", ""), "split", None, new_ticket_id, current_user["user_id"], "split")
     
     return {
-        "message": f"Ticket split successfully",
+        "message": "Ticket split successfully",
         "new_ticket_id": new_ticket_id,
         "messages_moved": len(messages_to_move)
     }
