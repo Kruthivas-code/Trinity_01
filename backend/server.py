@@ -5951,7 +5951,7 @@ async def export_analytics(
 
 def generate_json_export(data, filename_prefix):
     """Generate JSON file download response"""
-    json_str = json_module.dumps(data, indent=2, default=str)
+    json_str = json.dumps(data, indent=2, default=str)
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{filename_prefix}_{timestamp}.json"
