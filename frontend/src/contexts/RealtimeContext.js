@@ -73,8 +73,24 @@ export const RealtimeProvider = ({ children, user }) => {
     });
 
     // Authentication response
-    newSocket.on('authenticated', (data) => {
+    newSocket.on('authenticated', async (data) => {
       console.log('✅ Authenticated:', data);
+      
+      // Trigger shift-start auto-assignment
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/auth/shift-start`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const result = await response.json();
+          if (result.tickets_assigned > 0) {
+            console.log(`📋 Shift start: ${result.tickets_assigned} tickets assigned`);
+          }
+        }
+      } catch (error) {
+        console.log('Shift-start trigger skipped:', error.message);
+      }
     });
 
     // User presence events
