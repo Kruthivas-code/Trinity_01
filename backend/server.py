@@ -5605,9 +5605,6 @@ async def get_ticket_feature_requests(
 
 # ==================== Data Export System ====================
 
-import csv
-import io
-import json as json_module
 from fastapi.responses import StreamingResponse
 
 class ExportRequest(BaseModel):
