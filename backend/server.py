@@ -5635,7 +5635,7 @@ def serialize_for_export(doc):
     return result
 
 @app.post("/api/admin/export/tickets")
-async def export_tickets(
+async def admin_export_tickets(
     request: ExportRequest,
     current_user: dict = Depends(get_current_user)
 ):
