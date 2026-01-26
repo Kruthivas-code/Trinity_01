@@ -101,11 +101,21 @@ const MainLayout = ({ user, view }) => {
   const handleTicketClick = (ticket) => {
     setSelectedTicket(ticket);
     setIsDrawerOpen(true);
+    // Update URL to unique ticket URL
+    window.history.pushState({}, '', `/ticket/${ticket.ticket_id}`);
   };
 
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false);
     setSelectedTicket(null);
+    // Navigate back to the appropriate view when closing
+    if (view === 'ticket' || window.location.pathname.startsWith('/ticket/')) {
+      // Navigate to all-tickets when closing from unique ticket URL
+      navigate('/all-tickets');
+    } else {
+      // Just update URL back to current view
+      window.history.pushState({}, '', `/${view === 'dashboard' ? 'dashboard' : view}`);
+    }
   };
 
   const handleUpdateTicket = async (ticketId, updatedData) => {
