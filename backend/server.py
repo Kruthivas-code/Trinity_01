@@ -5651,13 +5651,13 @@ async def admin_export_tickets(
             try:
                 from_date = datetime.fromisoformat(request.date_from.replace("Z", "+00:00"))
                 date_query["$gte"] = from_date
-            except:
+            except ValueError:
                 pass
         if request.date_to:
             try:
                 to_date = datetime.fromisoformat(request.date_to.replace("Z", "+00:00"))
                 date_query["$lte"] = to_date
-            except:
+            except ValueError:
                 pass
         if date_query:
             query["created_at"] = date_query
