@@ -96,6 +96,18 @@ function AppRouter() {
         }
       />
       <Route
+        path="/starred-tickets"
+        element={
+          <ProtectedRoute>
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <MainLayout view="starred-tickets" user={user} />
+              </AppWithRealtime>
+            )}
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/profile"
         element={
           <ProtectedRoute>
