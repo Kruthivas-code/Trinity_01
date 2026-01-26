@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import GlobalHeader from './GlobalHeader';
 import DashboardContainer from './DashboardContainer';
@@ -15,6 +15,8 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const MainLayout = ({ user, view }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { ticketId: urlTicketId } = useParams(); // Get ticketId from URL path
+  const navigate = useNavigate();
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [users, setUsers] = useState([]);
@@ -32,13 +34,24 @@ const MainLayout = ({ user, view }) => {
         const ticket = await response.json();
         setSelectedTicket(ticket);
         setIsDrawerOpen(true);
+        // Update URL to unique ticket URL (without full page reload)
+        if (window.location.pathname !== `/ticket/${ticketId}`) {
+          window.history.pushState({}, '', `/ticket/${ticketId}`);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch ticket:', error);
     }
   }, []);
 
-  // Handle URL query param for opening a ticket
+  // Handle URL path for opening a ticket (e.g., /ticket/TKT-000001)
+  useEffect(() => {
+    if (urlTicketId) {
+      openTicketById(urlTicketId);
+    }
+  }, [urlTicketId, openTicketById]);
+
+  // Handle URL query param for opening a ticket (legacy support)
   useEffect(() => {
     const ticketId = searchParams.get('ticket');
     if (ticketId) {
