@@ -3033,7 +3033,7 @@ async def reply_to_ticket(
     
     if EMAIL_MOCK_MODE:
         # Mock mode - just store the reply
-        print(f"[EMAIL MOCK] Would send email to {reply.to_email}: {reply.subject}")
+        logger.info(f"[EMAIL MOCK] Would send email to {reply.to_email}: {reply.subject}")
         reply_doc["status"] = "mocked"
         email_replies_collection.insert_one(reply_doc)
         
@@ -3106,7 +3106,7 @@ async def reply_to_ticket(
             }
             
         except Exception as e:
-            print(f"[EMAIL] Error sending: {str(e)}")
+            logger.error(f"[EMAIL] Error sending: {str(e)}")
             reply_doc["status"] = "failed"
             reply_doc["error"] = str(e)
             email_replies_collection.insert_one(reply_doc)
@@ -3178,7 +3178,7 @@ async def simulate_incoming_email(
     }
     
     tickets_collection.insert_one(ticket_doc)
-    print(f"[EMAIL SIM] Created ticket {ticket_id} from simulated email")
+    logger.info(f"[EMAIL SIM] Created ticket {ticket_id} from simulated email")
     
     return {
         "status": "created",
@@ -3203,7 +3203,7 @@ async def inbound_email_webhook(request: Request):
             form = await request.form()
             data = dict(form)
         
-        print(f"[EMAIL WEBHOOK] Received: {data}")
+        logger.info(f"[EMAIL WEBHOOK] Received: {data}")
         
         # Extract email fields (handles multiple formats)
         from_email = data.get('from') or data.get('sender') or data.get('from_email', 'unknown@example.com')
@@ -3263,12 +3263,12 @@ async def inbound_email_webhook(request: Request):
         }
         
         tickets_collection.insert_one(ticket_doc)
-        print(f"[EMAIL WEBHOOK] Created ticket {ticket_id}")
+        logger.info(f"[EMAIL WEBHOOK] Created ticket {ticket_id}")
         
         return {"status": "created", "ticket_id": ticket_id}
         
     except Exception as e:
-        print(f"[EMAIL WEBHOOK] Error: {str(e)}")
+        logger.info(f"[EMAIL WEBHOOK] Error: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 # ==================== Gmail Push Notifications (Webhooks) ====================
@@ -3281,7 +3281,7 @@ async def gmail_webhook(request: Request):
     """
     try:
         body = await request.json()
-        print(f"[GMAIL WEBHOOK] Received notification: {body}")
+        logger.info(f"[GMAIL WEBHOOK] Received notification: {body}")
         
         # Decode the Pub/Sub message
         if 'message' in body:
@@ -3290,7 +3290,7 @@ async def gmail_webhook(request: Request):
             if message_data:
                 decoded = base64.urlsafe_b64decode(message_data).decode('utf-8')
                 notification = json.loads(decoded)
-                print(f"[GMAIL WEBHOOK] Decoded notification: {notification}")
+                logger.info(f"[GMAIL WEBHOOK] Decoded notification: {notification}")
                 
                 # Get the history ID to fetch new messages
                 history_id = notification.get('historyId')
@@ -3304,7 +3304,7 @@ async def gmail_webhook(request: Request):
         return {"status": "ok"}
     
     except Exception as e:
-        print(f"[GMAIL WEBHOOK] Error processing notification: {str(e)}")
+        logger.info(f"[GMAIL WEBHOOK] Error processing notification: {str(e)}")
         # Still return 200 to prevent retries
         return {"status": "error", "message": str(e)}
 
@@ -3312,7 +3312,7 @@ async def process_gmail_notification(history_id: str, email_address: str):
     """Process a Gmail push notification by fetching new messages"""
     token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
     if not token_doc or "access_token" not in token_doc:
-        print("[GMAIL WEBHOOK] No Gmail tokens found")
+        logger.warning("[GMAIL WEBHOOK] No Gmail tokens found")
         return
     
     try:
@@ -3335,7 +3335,7 @@ async def process_gmail_notification(history_id: str, email_address: str):
                 for msg in record.get('messagesAdded', []):
                     messages_added.append(msg['message']['id'])
             
-            print(f"[GMAIL WEBHOOK] Found {len(messages_added)} new messages")
+            logger.info(f"[GMAIL WEBHOOK] Found {len(messages_added)} new messages")
             
             # Create tickets for new messages
             for msg_id in messages_added:
@@ -3384,7 +3384,7 @@ async def process_gmail_notification(history_id: str, email_address: str):
                 }
                 
                 tickets_collection.insert_one(ticket_doc)
-                print(f"[GMAIL WEBHOOK] Created ticket {ticket_id} from email {msg_id}")
+                logger.info(f"[GMAIL WEBHOOK] Created ticket {ticket_id} from email {msg_id}")
         
         # Update stored history ID
         gmail_tokens_collection.update_one(
@@ -3394,7 +3394,7 @@ async def process_gmail_notification(history_id: str, email_address: str):
         )
         
     except Exception as e:
-        print(f"[GMAIL WEBHOOK] Error processing: {str(e)}")
+        logger.info(f"[GMAIL WEBHOOK] Error processing: {str(e)}")
 
 @app.post("/api/gmail/watch/start")
 async def start_gmail_watch(current_user: dict = Depends(get_current_user)):
