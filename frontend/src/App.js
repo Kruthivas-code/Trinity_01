@@ -19,6 +19,7 @@ import FeatureRequestsPage from './components/FeatureRequestsPage';
 import CustomersPage from './components/CustomersPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import CSATPage from './components/CSATPage';
+import StarredTicketsPage from './components/StarredTicketsPage';
 import { Toaster } from './components/ui/sonner';
 
 function AppRouter() {
