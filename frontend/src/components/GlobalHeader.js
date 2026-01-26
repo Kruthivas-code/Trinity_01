@@ -240,7 +240,7 @@ const GlobalHeader = ({ user, onCreateTicket, onOpenCommandPalette }) => {
                   onClick={handleSearchSubmit}
                   className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm text-primary hover:bg-primary/5 border-t border-border/40"
                 >
-                  View all results for "{searchQuery}"
+                  View all results for &ldquo;{searchQuery}&rdquo;
                   <ChevronDown size={14} className="rotate-[-90deg]" />
                 </button>
               </div>
