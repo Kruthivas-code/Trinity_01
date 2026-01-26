@@ -204,6 +204,13 @@ const MainLayout = ({ user, view }) => {
               onTicketClick={handleTicketClick}
             />
           )}
+          {view === 'starred-tickets' && (
+            <StarredTicketsPage 
+              key={refreshKey}
+              user={user} 
+              onTicketClick={handleTicketClick}
+            />
+          )}
         </main>
       </div>
 
