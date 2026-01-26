@@ -205,6 +205,16 @@ def generate_ticket_id() -> str:
     )
     return f"TKT-{counter['seq']:06d}"
 
+def generate_customer_id() -> str:
+    """Generate sequential customer ID (CUST-000001 format)"""
+    counter = counters_collection.find_one_and_update(
+        {"_id": "customer_id"},
+        {"$inc": {"seq": 1}},
+        upsert=True,
+        return_document=True
+    )
+    return f"CUST-{counter['seq']:06d}"
+
 def extract_domain(email: str) -> Optional[str]:
     """Extract domain from email address"""
     if not email:
@@ -217,6 +227,73 @@ def extract_domain(email: str) -> Optional[str]:
     except Exception:
         pass
     return None
+
+def is_b2c_email(email: str) -> bool:
+    """Check if email is from a common B2C provider"""
+    domain = extract_domain(email)
+    if not domain:
+        return True  # Default to B2C if unknown
+    return domain.lower() in B2C_EMAIL_DOMAINS
+
+def detect_company_from_domain(domain: str) -> Optional[str]:
+    """Try to extract company name from domain"""
+    if not domain or domain.lower() in B2C_EMAIL_DOMAINS:
+        return None
+    # Extract company name from domain (e.g., acme.com -> Acme)
+    parts = domain.split('.')
+    if len(parts) >= 2:
+        company = parts[0].replace('-', ' ').replace('_', ' ')
+        return company.title()
+    return None
+
+def get_or_create_customer(email: str, name: str = None) -> dict:
+    """
+    Get existing customer by email or create new one.
+    Checks primary_email and linked_emails.
+    """
+    if not email:
+        return None
+    
+    email_lower = email.lower().strip()
+    
+    # Check if customer exists with this email (primary or linked)
+    customer = customers_collection.find_one({
+        "$or": [
+            {"primary_email": email_lower},
+            {"linked_emails": email_lower}
+        ]
+    })
+    
+    if customer:
+        return serialize_doc(customer)
+    
+    # Create new customer
+    domain = extract_domain(email_lower)
+    is_b2c = is_b2c_email(email_lower)
+    company_name = detect_company_from_domain(domain) if not is_b2c else None
+    
+    new_customer = {
+        "customer_id": generate_customer_id(),
+        "name": name or email_lower.split('@')[0].replace('.', ' ').replace('_', ' ').title(),
+        "primary_email": email_lower,
+        "linked_emails": [],
+        "company_name": company_name,
+        "company_domain": domain if not is_b2c else None,
+        "customer_type": "b2b" if not is_b2c else "b2c",
+        "priority_level": "standard",  # standard, priority, vip
+        "net_payments": 0.0,  # Total payments received
+        "assigned_agents": [],  # User IDs of agents assigned to this customer
+        "tags": [],
+        "notes": "",
+        "custom_fields": {},  # User-defined fields
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    customers_collection.insert_one(new_customer)
+    logger.info(f"Created new customer: {new_customer['customer_id']} for {email_lower}")
+    
+    return serialize_doc(new_customer)
 
 def generate_api_key() -> tuple:
     """Generate API key and its hash"""
