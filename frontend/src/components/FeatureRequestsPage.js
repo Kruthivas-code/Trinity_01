@@ -564,11 +564,7 @@ const FeatureRequestDrawer = ({ request, onClose, onStatusChange, onRefresh }) =
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchDetails();
-  }, [request.feature_request_id]);
-
-  const fetchDetails = async () => {
+  const fetchDetails = useCallback(async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/feature-requests/${request.feature_request_id}`, {
         credentials: 'include'
@@ -581,7 +577,11 @@ const FeatureRequestDrawer = ({ request, onClose, onStatusChange, onRefresh }) =
       console.error('Failed to fetch details:', error);
     }
     setLoading(false);
-  };
+  }, [request.feature_request_id]);
+
+  useEffect(() => {
+    fetchDetails();
+  }, [fetchDetails]);
 
   const statusConfig = STATUS_CONFIG[request.status || 'new'];
 
