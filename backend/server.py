@@ -4543,6 +4543,531 @@ async def bulk_close_tickets(
     }
 
 
+# ==================== Customer Management System ====================
+
+class CustomerCreate(BaseModel):
+    name: str
+    primary_email: EmailStr
+    company_name: Optional[str] = None
+    company_domain: Optional[str] = None
+    priority_level: Optional[str] = "standard"
+    net_payments: Optional[float] = 0.0
+    assigned_agents: Optional[List[str]] = []
+    tags: Optional[List[str]] = []
+    notes: Optional[str] = ""
+    custom_fields: Optional[Dict[str, Any]] = {}
+
+class CustomerUpdate(BaseModel):
+    name: Optional[str] = None
+    company_name: Optional[str] = None
+    company_domain: Optional[str] = None
+    priority_level: Optional[str] = None
+    net_payments: Optional[float] = None
+    assigned_agents: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+    notes: Optional[str] = None
+    custom_fields: Optional[Dict[str, Any]] = None
+
+class LinkEmailRequest(BaseModel):
+    email: EmailStr
+
+class MergeCustomersRequest(BaseModel):
+    source_customer_id: str  # Will be merged into target
+    target_customer_id: str  # Will keep this customer
+
+@app.get("/api/customers")
+async def list_customers(
+    search: Optional[str] = None,
+    customer_type: Optional[str] = None,
+    priority_level: Optional[str] = None,
+    assigned_agent: Optional[str] = None,
+    limit: int = 50,
+    skip: int = 0,
+    current_user: dict = Depends(get_current_user)
+):
+    """List all customers with filtering and stats"""
+    query = {}
+    
+    if search:
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"primary_email": {"$regex": search, "$options": "i"}},
+            {"linked_emails": {"$regex": search, "$options": "i"}},
+            {"company_name": {"$regex": search, "$options": "i"}},
+            {"customer_id": {"$regex": search, "$options": "i"}}
+        ]
+    
+    if customer_type:
+        query["customer_type"] = customer_type
+    
+    if priority_level:
+        query["priority_level"] = priority_level
+    
+    if assigned_agent:
+        query["assigned_agents"] = assigned_agent
+    
+    customers = list(customers_collection.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit))
+    total = customers_collection.count_documents(query)
+    
+    # Add stats for each customer
+    result = []
+    for customer in customers:
+        customer_emails = [customer["primary_email"]] + customer.get("linked_emails", [])
+        
+        # Get ticket stats
+        ticket_stats = tickets_collection.aggregate([
+            {"$match": {"customer_email": {"$in": customer_emails}}},
+            {"$group": {
+                "_id": None,
+                "total_tickets": {"$sum": 1},
+                "open_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["todo", "in_progress", "waiting", "review"]]}, 1, 0]}},
+                "resolved_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["resolved", "closed"]]}, 1, 0]}}
+            }}
+        ])
+        stats = list(ticket_stats)
+        
+        # Get CSAT average
+        csat_stats = csat_responses_collection.aggregate([
+            {"$match": {"customer_email": {"$in": customer_emails}, "rating": {"$ne": None}}},
+            {"$group": {"_id": None, "avg_rating": {"$avg": "$rating"}, "count": {"$sum": 1}}}
+        ])
+        csat = list(csat_stats)
+        
+        customer_data = serialize_doc(customer)
+        customer_data["stats"] = {
+            "total_tickets": stats[0]["total_tickets"] if stats else 0,
+            "open_tickets": stats[0]["open_tickets"] if stats else 0,
+            "resolved_tickets": stats[0]["resolved_tickets"] if stats else 0,
+            "avg_csat": round(csat[0]["avg_rating"], 1) if csat else None,
+            "csat_count": csat[0]["count"] if csat else 0
+        }
+        result.append(customer_data)
+    
+    return {
+        "customers": result,
+        "total": total,
+        "limit": limit,
+        "skip": skip
+    }
+
+@app.get("/api/customers/b2b-prospects")
+async def list_b2b_prospects(
+    limit: int = 50,
+    current_user: dict = Depends(get_current_user)
+):
+    """List B2B prospects (business domain customers) sorted by potential value"""
+    pipeline = [
+        {"$match": {"customer_type": "b2b"}},
+        {"$lookup": {
+            "from": "tickets",
+            "let": {"emails": {"$concatArrays": [["$primary_email"], {"$ifNull": ["$linked_emails", []]}]}},
+            "pipeline": [
+                {"$match": {"$expr": {"$in": ["$customer_email", "$$emails"]}}}
+            ],
+            "as": "tickets"
+        }},
+        {"$addFields": {
+            "ticket_count": {"$size": "$tickets"},
+            "engagement_score": {"$add": [
+                {"$multiply": [{"$size": "$tickets"}, 10]},
+                {"$ifNull": ["$net_payments", 0]}
+            ]}
+        }},
+        {"$sort": {"engagement_score": -1}},
+        {"$limit": limit},
+        {"$project": {"tickets": 0}}
+    ]
+    
+    prospects = list(customers_collection.aggregate(pipeline))
+    return [serialize_doc(p) for p in prospects]
+
+@app.get("/api/customers/{customer_id}")
+async def get_customer(
+    customer_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get customer details with full stats"""
+    customer = customers_collection.find_one({"customer_id": customer_id}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    customer_emails = [customer["primary_email"]] + customer.get("linked_emails", [])
+    
+    # Get detailed ticket stats
+    ticket_pipeline = [
+        {"$match": {"customer_email": {"$in": customer_emails}}},
+        {"$group": {
+            "_id": "$status",
+            "count": {"$sum": 1}
+        }}
+    ]
+    status_counts = {s["_id"]: s["count"] for s in tickets_collection.aggregate(ticket_pipeline)}
+    
+    # Get recent tickets
+    recent_tickets = list(tickets_collection.find(
+        {"customer_email": {"$in": customer_emails}},
+        {"_id": 0, "ticket_id": 1, "title": 1, "status": 1, "priority": 1, "created_at": 1, "customer_email": 1}
+    ).sort("created_at", -1).limit(10))
+    
+    # Get CSAT history
+    csat_history = list(csat_responses_collection.find(
+        {"customer_email": {"$in": customer_emails}},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(10))
+    
+    # Get assigned agent details
+    assigned_agents_details = []
+    if customer.get("assigned_agents"):
+        agents = list(users_collection.find(
+            {"user_id": {"$in": customer["assigned_agents"]}},
+            {"_id": 0, "user_id": 1, "name": 1, "email": 1, "picture": 1}
+        ))
+        assigned_agents_details = agents
+    
+    result = serialize_doc(customer)
+    result["stats"] = {
+        "by_status": status_counts,
+        "total_tickets": sum(status_counts.values()),
+        "open_tickets": sum(status_counts.get(s, 0) for s in ["todo", "in_progress", "waiting", "review"]),
+        "resolved_tickets": sum(status_counts.get(s, 0) for s in ["resolved", "closed"])
+    }
+    result["recent_tickets"] = [serialize_doc(t) for t in recent_tickets]
+    result["csat_history"] = [serialize_doc(c) for c in csat_history]
+    result["assigned_agents_details"] = assigned_agents_details
+    
+    return result
+
+@app.post("/api/customers")
+async def create_customer(
+    customer_data: CustomerCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new customer"""
+    email_lower = customer_data.primary_email.lower().strip()
+    
+    # Check if customer already exists
+    existing = customers_collection.find_one({
+        "$or": [
+            {"primary_email": email_lower},
+            {"linked_emails": email_lower}
+        ]
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Customer with this email already exists")
+    
+    domain = extract_domain(email_lower)
+    is_b2c = is_b2c_email(email_lower)
+    
+    new_customer = {
+        "customer_id": generate_customer_id(),
+        "name": customer_data.name,
+        "primary_email": email_lower,
+        "linked_emails": [],
+        "company_name": customer_data.company_name or (detect_company_from_domain(domain) if not is_b2c else None),
+        "company_domain": customer_data.company_domain or (domain if not is_b2c else None),
+        "customer_type": "b2b" if (customer_data.company_domain or not is_b2c) else "b2c",
+        "priority_level": customer_data.priority_level,
+        "net_payments": customer_data.net_payments,
+        "assigned_agents": customer_data.assigned_agents or [],
+        "tags": customer_data.tags or [],
+        "notes": customer_data.notes or "",
+        "custom_fields": customer_data.custom_fields or {},
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    customers_collection.insert_one(new_customer)
+    logger.info(f"Created customer {new_customer['customer_id']} by {current_user['user_id']}")
+    
+    return serialize_doc(new_customer)
+
+@app.put("/api/customers/{customer_id}")
+async def update_customer(
+    customer_id: str,
+    customer_data: CustomerUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update customer details"""
+    customer = customers_collection.find_one({"customer_id": customer_id})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    update_data = {k: v for k, v in customer_data.dict().items() if v is not None}
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No data to update")
+    
+    update_data["updated_at"] = datetime.now(timezone.utc)
+    
+    # If company_domain is set and was B2C, upgrade to B2B
+    if "company_domain" in update_data and update_data["company_domain"]:
+        update_data["customer_type"] = "b2b"
+    
+    customers_collection.update_one(
+        {"customer_id": customer_id},
+        {"$set": update_data}
+    )
+    
+    updated = customers_collection.find_one({"customer_id": customer_id}, {"_id": 0})
+    return serialize_doc(updated)
+
+@app.post("/api/customers/{customer_id}/link-email")
+async def link_email_to_customer(
+    customer_id: str,
+    request: LinkEmailRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Link an additional email address to a customer"""
+    customer = customers_collection.find_one({"customer_id": customer_id})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    email_lower = request.email.lower().strip()
+    
+    # Check if email is already linked to another customer
+    existing = customers_collection.find_one({
+        "customer_id": {"$ne": customer_id},
+        "$or": [
+            {"primary_email": email_lower},
+            {"linked_emails": email_lower}
+        ]
+    })
+    if existing:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Email already belongs to customer {existing['customer_id']}. Use merge instead."
+        )
+    
+    # Check if already linked
+    if email_lower == customer["primary_email"] or email_lower in customer.get("linked_emails", []):
+        raise HTTPException(status_code=400, detail="Email already linked to this customer")
+    
+    customers_collection.update_one(
+        {"customer_id": customer_id},
+        {
+            "$addToSet": {"linked_emails": email_lower},
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
+    
+    logger.info(f"Linked email {email_lower} to customer {customer_id}")
+    
+    updated = customers_collection.find_one({"customer_id": customer_id}, {"_id": 0})
+    return serialize_doc(updated)
+
+@app.delete("/api/customers/{customer_id}/unlink-email/{email}")
+async def unlink_email_from_customer(
+    customer_id: str,
+    email: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Remove a linked email from a customer"""
+    customer = customers_collection.find_one({"customer_id": customer_id})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    email_lower = email.lower().strip()
+    
+    if email_lower == customer["primary_email"]:
+        raise HTTPException(status_code=400, detail="Cannot unlink primary email")
+    
+    customers_collection.update_one(
+        {"customer_id": customer_id},
+        {
+            "$pull": {"linked_emails": email_lower},
+            "$set": {"updated_at": datetime.now(timezone.utc)}
+        }
+    )
+    
+    updated = customers_collection.find_one({"customer_id": customer_id}, {"_id": 0})
+    return serialize_doc(updated)
+
+@app.post("/api/customers/merge")
+async def merge_customers(
+    request: MergeCustomersRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Merge source customer into target customer"""
+    source = customers_collection.find_one({"customer_id": request.source_customer_id})
+    target = customers_collection.find_one({"customer_id": request.target_customer_id})
+    
+    if not source:
+        raise HTTPException(status_code=404, detail="Source customer not found")
+    if not target:
+        raise HTTPException(status_code=404, detail="Target customer not found")
+    
+    # Collect all emails from source
+    source_emails = [source["primary_email"]] + source.get("linked_emails", [])
+    
+    # Add to target's linked emails (excluding duplicates)
+    existing_emails = set([target["primary_email"]] + target.get("linked_emails", []))
+    new_emails = [e for e in source_emails if e not in existing_emails]
+    
+    # Merge other fields
+    merged_tags = list(set(target.get("tags", []) + source.get("tags", [])))
+    merged_agents = list(set(target.get("assigned_agents", []) + source.get("assigned_agents", [])))
+    merged_notes = target.get("notes", "")
+    if source.get("notes"):
+        merged_notes += f"\n\n--- Merged from {source['customer_id']} ---\n{source['notes']}"
+    
+    # Combine net_payments
+    merged_payments = (target.get("net_payments", 0) or 0) + (source.get("net_payments", 0) or 0)
+    
+    # Merge custom fields (target takes precedence)
+    merged_custom = {**source.get("custom_fields", {}), **target.get("custom_fields", {})}
+    
+    # Update target
+    customers_collection.update_one(
+        {"customer_id": request.target_customer_id},
+        {
+            "$addToSet": {"linked_emails": {"$each": new_emails}},
+            "$set": {
+                "tags": merged_tags,
+                "assigned_agents": merged_agents,
+                "notes": merged_notes,
+                "net_payments": merged_payments,
+                "custom_fields": merged_custom,
+                "updated_at": datetime.now(timezone.utc)
+            }
+        }
+    )
+    
+    # Delete source customer
+    customers_collection.delete_one({"customer_id": request.source_customer_id})
+    
+    logger.info(f"Merged customer {request.source_customer_id} into {request.target_customer_id}")
+    
+    updated = customers_collection.find_one({"customer_id": request.target_customer_id}, {"_id": 0})
+    return {
+        "message": "Customers merged successfully",
+        "customer": serialize_doc(updated),
+        "emails_added": new_emails
+    }
+
+@app.get("/api/customers/{customer_id}/tickets")
+async def get_customer_tickets(
+    customer_id: str,
+    status: Optional[str] = None,
+    limit: int = 50,
+    skip: int = 0,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all tickets for a customer (across all linked emails)"""
+    customer = customers_collection.find_one({"customer_id": customer_id}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    customer_emails = [customer["primary_email"]] + customer.get("linked_emails", [])
+    
+    query = {"customer_email": {"$in": customer_emails}}
+    if status:
+        query["status"] = status
+    
+    tickets = list(tickets_collection.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit))
+    total = tickets_collection.count_documents(query)
+    
+    return {
+        "tickets": [serialize_doc(t) for t in tickets],
+        "total": total,
+        "customer_emails": customer_emails
+    }
+
+@app.post("/api/tickets/{ticket_id}/merge-consecutive")
+async def merge_consecutive_tickets(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Merge consecutive tickets from the same customer into this ticket.
+    Useful for when customer sends multiple emails that should be one conversation.
+    """
+    target_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not target_ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    customer_email = target_ticket.get("customer_email")
+    if not customer_email:
+        raise HTTPException(status_code=400, detail="Ticket has no customer email")
+    
+    # Get customer to find all their emails
+    customer = customers_collection.find_one({
+        "$or": [
+            {"primary_email": customer_email.lower()},
+            {"linked_emails": customer_email.lower()}
+        ]
+    })
+    
+    customer_emails = [customer_email.lower()]
+    if customer:
+        customer_emails = [customer["primary_email"]] + customer.get("linked_emails", [])
+    
+    # Find consecutive tickets from same customer within 24 hours
+    target_created = target_ticket.get("created_at")
+    if isinstance(target_created, str):
+        target_created = datetime.fromisoformat(target_created.replace("Z", "+00:00"))
+    
+    time_window_start = target_created - timedelta(hours=24)
+    time_window_end = target_created + timedelta(hours=24)
+    
+    consecutive_tickets = list(tickets_collection.find({
+        "ticket_id": {"$ne": ticket_id},
+        "customer_email": {"$in": customer_emails},
+        "created_at": {"$gte": time_window_start, "$lte": time_window_end},
+        "status": {"$nin": ["resolved", "closed"]}
+    }).sort("created_at", 1))
+    
+    if not consecutive_tickets:
+        return {"message": "No consecutive tickets found to merge", "merged_count": 0}
+    
+    merged_content = []
+    merged_ticket_ids = []
+    
+    for ticket in consecutive_tickets:
+        # Add ticket content to merged content
+        merged_content.append({
+            "from_ticket": ticket["ticket_id"],
+            "title": ticket.get("title"),
+            "content": ticket.get("content"),
+            "created_at": ticket.get("created_at")
+        })
+        merged_ticket_ids.append(ticket["ticket_id"])
+        
+        # Mark source ticket as merged
+        tickets_collection.update_one(
+            {"ticket_id": ticket["ticket_id"]},
+            {
+                "$set": {
+                    "status": "closed",
+                    "merged_into": ticket_id,
+                    "updated_at": datetime.now(timezone.utc)
+                }
+            }
+        )
+    
+    # Add merged content as a note on target ticket
+    if merged_content:
+        note_content = "### Merged consecutive emails:\n\n"
+        for item in merged_content:
+            note_content += f"**From {item['from_ticket']}**: {item['title']}\n"
+            note_content += f"{item['content']}\n\n---\n\n"
+        
+        messages_collection.insert_one({
+            "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+            "ticket_id": ticket_id,
+            "type": "note",
+            "content": note_content,
+            "author_id": "system",
+            "author_name": "System",
+            "is_internal": True,
+            "created_at": datetime.now(timezone.utc)
+        })
+    
+    return {
+        "message": f"Merged {len(merged_ticket_ids)} consecutive tickets",
+        "merged_count": len(merged_ticket_ids),
+        "merged_tickets": merged_ticket_ids
+    }
+
+
 # ==================== CSAT (Customer Satisfaction) System ====================
 
 class CSATRequest(BaseModel):
