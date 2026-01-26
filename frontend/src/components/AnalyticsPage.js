@@ -551,7 +551,7 @@ const AnalyticsPage = ({ user }) => {
                     {item.resolved_by_name && ` → ${item.resolved_by_name}`}
                   </p>
                   {item.feedback && (
-                    <p className="text-xs text-red-300 mt-1 italic">"{item.feedback}"</p>
+                    <p className="text-xs text-red-300 mt-1 italic">&ldquo;{item.feedback}&rdquo;</p>
                   )}
                   <p className="text-[10px] text-muted-foreground/60 mt-1">
                     {new Date(item.created_at).toLocaleDateString()}
