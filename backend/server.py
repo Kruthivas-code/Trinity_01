@@ -128,6 +128,19 @@ ticket_changelog_collection = db.ticket_changelog  # All metadata changes for ti
 # Phase 8: Feature Requests
 feature_requests_collection = db.feature_requests  # Product feature requests linked to tickets
 
+# Phase 9: Customers
+customers_collection = db.customers  # Customer profiles with linked emails
+
+# Common B2C email domains (for B2B prospect detection)
+B2C_EMAIL_DOMAINS = {
+    'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.co.uk', 'yahoo.co.in',
+    'hotmail.com', 'hotmail.co.uk', 'outlook.com', 'outlook.co.uk', 'live.com',
+    'msn.com', 'aol.com', 'icloud.com', 'me.com', 'mac.com', 'protonmail.com',
+    'proton.me', 'zoho.com', 'yandex.com', 'mail.com', 'gmx.com', 'gmx.net',
+    'fastmail.com', 'tutanota.com', 'hey.com', 'pm.me', 'inbox.com',
+    'rediffmail.com', 'qq.com', '163.com', '126.com', 'sina.com', 'sohu.com'
+}
+
 # Phase 13: CSAT (Customer Satisfaction)
 csat_responses_collection = db.csat_responses  # CSAT ratings and feedback
 csat_tokens_collection = db.csat_tokens  # Secure tokens for email rating links
