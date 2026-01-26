@@ -4229,7 +4229,7 @@ async def get_agent_analytics(
                     agent_stats[assignee]["resolution_times"].append(
                         (resolved - created).total_seconds() / 3600
                     )
-                except:
+                except (ValueError, TypeError, KeyError):
                     pass
     
     # Calculate averages
