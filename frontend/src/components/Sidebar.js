@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, 
   User, ChevronDown, Menu, X, LogOut, Users, Shield, CalendarDays,
-  GripVertical, Bookmark, BarChart3, UserCircle
+  GripVertical, Bookmark, BarChart3, UserCircle, Star
 } from 'lucide-react';
 
 import { TridentIcon } from './TridentIcon';
@@ -36,6 +36,7 @@ const Sidebar = ({ user }) => {
 
   const ticketViews = [
     { id: 'all-tickets', label: 'All Tickets', icon: List, path: '/all-tickets' },
+    { id: 'starred-tickets', label: 'Starred', icon: Star, path: '/starred-tickets' },
     { id: 'open-tickets', label: 'Open', icon: UserCheck, path: '/open-tickets' },
     { id: 'waiting-tickets', label: 'Waiting', icon: Clock, path: '/waiting-tickets' },
     { id: 'closed-tickets', label: 'Closed', icon: CheckCircle, path: '/closed-tickets' },
