@@ -4451,9 +4451,6 @@ async def bulk_close_tickets(
 
 # ==================== CSAT (Customer Satisfaction) System ====================
 
-import secrets
-import hashlib
-
 class CSATRequest(BaseModel):
     ticket_id: str
     customer_email: str
