@@ -4076,7 +4076,7 @@ async def get_analytics_overview(
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             return dt
-        except:
+        except (ValueError, TypeError):
             return None
     
     # Get all tickets in range
