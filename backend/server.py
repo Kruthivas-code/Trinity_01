@@ -5803,7 +5803,7 @@ async def export_full_data(
     
     # Leaves - directly access the collection
     leaves = list(db.leaves.find({}, {"_id": 0}))
-    export_data["leaves"] = [serialize_for_export(l) for l in leaves]
+    export_data["leaves"] = [serialize_for_export(leave) for leave in leaves]
     
     # Generate export
     if request.format == "csv":
