@@ -3193,7 +3193,7 @@ async def inbound_email_webhook(request: Request):
         # Try to parse as JSON first
         try:
             data = await request.json()
-        except:
+        except Exception:
             # Fall back to form data (common for email webhooks)
             form = await request.form()
             data = dict(form)
