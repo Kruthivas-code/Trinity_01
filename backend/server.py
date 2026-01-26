@@ -2289,11 +2289,22 @@ async def remove_tag(
     return {"tags": ticket.get("tags", [])}
 
 # Ticket endpoints (protected)
+@app.get("/api/tickets/starred")
+async def get_starred_tickets(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get all starred tickets for display, regardless of status"""
+    query = {"is_starred": True}
+    tickets = list(tickets_collection.find(query).sort("updated_at", DESCENDING))
+    return [serialize_doc(ticket) for ticket in tickets]
+
+
 @app.get("/api/tickets")
 async def get_tickets(
     status: Optional[str] = None,
     assignee_id: Optional[str] = None,
     mentioned_user_id: Optional[str] = None,
+    is_starred: Optional[bool] = None,
     current_user: dict = Depends(get_current_user)
 ):
     query = {}
@@ -2303,6 +2314,8 @@ async def get_tickets(
         query["assignee_id"] = assignee_id
     if mentioned_user_id:
         query["mentioned_users"] = mentioned_user_id
+    if is_starred is not None:
+        query["is_starred"] = is_starred
     
     tickets = list(tickets_collection.find(query).sort("order", ASCENDING))
     return [serialize_doc(ticket) for ticket in tickets]
