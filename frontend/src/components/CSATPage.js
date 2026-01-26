@@ -171,7 +171,7 @@ const CSATPage = () => {
           </div>
           <h1 className="text-2xl font-bold text-white mb-3">Already Submitted</h1>
           <p className="text-white/70 mb-6">
-            You've already rated this ticket. Thank you for your feedback!
+            You&apos;ve already rated this ticket. Thank you for your feedback!
           </p>
           <div className="flex justify-center mb-4">
             <StarRating rating={rating} interactive={false} size="lg" />
