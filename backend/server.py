@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, status as http_status, File, UploadFile, Response, Request, Cookie, Header, Security, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Response, Request, Cookie, Header, Security, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import APIKeyHeader
