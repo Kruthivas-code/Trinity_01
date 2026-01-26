@@ -964,7 +964,7 @@ async def create_session(session_data: SessionCreate, response: Response):
         
         # Create or update user in database
         logger.info(f"[AUTH] Upserting user: {email}")
-        result = users_collection.update_one(
+        users_collection.update_one(
             {"email": email},
             {
                 "$set": {
