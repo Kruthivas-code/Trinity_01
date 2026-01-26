@@ -650,7 +650,7 @@ def evaluate_condition(ticket: dict, condition: dict) -> bool:
             tags = ticket.get("tags", [])
             return str(value).lower() not in [str(t).lower() for t in tags]
     except Exception as e:
-        print(f"[ROUTING] Error evaluating condition: {e}")
+        logger.error(f"[ROUTING] Error evaluating condition: {e}")
         return False
     
     return False
@@ -929,41 +929,41 @@ async def health():
 async def create_session(session_data: SessionCreate, response: Response):
     """Exchange session_id for session_token"""
     try:
-        print(f"[AUTH] Received session_id: {session_data.session_id[:20]}...")
+        logger.info(f"[AUTH] Received session_id: {session_data.session_id[:20]}...")
         
         # Call Emergent Auth API to get user data
         async with httpx.AsyncClient(timeout=30.0) as client:
-            print(f"[AUTH] Calling Emergent Auth API: {EMERGENT_AUTH_URL}")
+            logger.info(f"[AUTH] Calling Emergent Auth API: {EMERGENT_AUTH_URL}")
             auth_response = await client.get(
                 EMERGENT_AUTH_URL,
                 headers={"X-Session-ID": session_data.session_id}
             )
-            print(f"[AUTH] Emergent Auth response status: {auth_response.status_code}")
+            logger.info(f"[AUTH] Emergent Auth response status: {auth_response.status_code}")
         
         if auth_response.status_code != 200:
-            print(f"[AUTH] Invalid session_id, status: {auth_response.status_code}")
+            logger.info(f"[AUTH] Invalid session_id, status: {auth_response.status_code}")
             raise HTTPException(status_code=401, detail="Invalid session_id")
         
         user_data = auth_response.json()
-        print(f"[AUTH] Got user data: {user_data.get('email')}")
+        logger.info(f"[AUTH] Got user data: {user_data.get('email')}")
         
         # Verify email domain (skip if ALLOWED_DOMAIN is None)
         email = user_data.get("email", "")
         if ALLOWED_DOMAIN and not email.endswith(f"@{ALLOWED_DOMAIN}"):
-            print(f"[AUTH] Domain mismatch: {email} vs @{ALLOWED_DOMAIN}")
+            logger.info(f"[AUTH] Domain mismatch: {email} vs @{ALLOWED_DOMAIN}")
             raise HTTPException(
                 status_code=403,
                 detail=f"Access restricted to @{ALLOWED_DOMAIN} emails only"
             )
         
-        print(f"[AUTH] Email verified: {email}")
+        logger.info(f"[AUTH] Email verified: {email}")
         session_token = user_data["session_token"]
         
         # Generate user_id if new user
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         
         # Create or update user in database
-        print(f"[AUTH] Upserting user: {email}")
+        logger.info(f"[AUTH] Upserting user: {email}")
         result = users_collection.update_one(
             {"email": email},
             {
@@ -983,14 +983,14 @@ async def create_session(session_data: SessionCreate, response: Response):
         )
         
         # Get the user document to get the actual user_id
-        print("[AUTH] Fetching user document")
+        logger.info("[AUTH] Fetching user document")
         user_doc = users_collection.find_one({"email": email}, {"_id": 0})
         if not user_doc:
             raise Exception(f"User document not found after upsert: {email}")
         
         # If user_id doesn't exist (old user from previous auth system), add it
         if "user_id" not in user_doc:
-            print("[AUTH] Old user detected, adding user_id field")
+            logger.info("[AUTH] Old user detected, adding user_id field")
             new_user_id = f"user_{uuid.uuid4().hex[:12]}"
             users_collection.update_one(
                 {"email": email},
@@ -999,10 +999,10 @@ async def create_session(session_data: SessionCreate, response: Response):
             user_doc["user_id"] = new_user_id
         
         actual_user_id = user_doc["user_id"]
-        print(f"[AUTH] User ID: {actual_user_id}")
+        logger.info(f"[AUTH] User ID: {actual_user_id}")
         
         # Store session
-        print("[AUTH] Storing session")
+        logger.info("[AUTH] Storing session")
         sessions_collection.update_one(
             {"session_token": session_token},
             {
@@ -1017,7 +1017,7 @@ async def create_session(session_data: SessionCreate, response: Response):
         )
         
         # Set httpOnly cookie
-        print("[AUTH] Setting cookie")
+        logger.info("[AUTH] Setting cookie")
         response.set_cookie(
             key="session_token",
             value=session_token,
@@ -1028,13 +1028,13 @@ async def create_session(session_data: SessionCreate, response: Response):
             path="/"
         )
         
-        print("[AUTH] Success! Returning user data")
+        logger.info("[AUTH] Success! Returning user data")
         return serialize_doc(user_doc)
     
     except HTTPException:
         raise
     except Exception as e:
-        print(f"[AUTH] ERROR: {type(e).__name__}: {str(e)}")
+        logger.info(f"[AUTH] ERROR: {type(e).__name__}: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
@@ -2709,11 +2709,11 @@ async def gmail_callback(code: str = None, state: str = None, error: str = None)
             upsert=True
         )
         
-        print("[GMAIL] OAuth tokens stored successfully")
+        logger.info("[GMAIL] OAuth tokens stored successfully")
         return RedirectResponse(url=f"{frontend_url}/settings?gmail_connected=true")
     
     except Exception as e:
-        print(f"[GMAIL] OAuth error: {str(e)}")
+        logger.info(f"[GMAIL] OAuth error: {str(e)}")
         return RedirectResponse(url=f"{frontend_url}/settings?gmail_error={str(e)}")
 
 @app.post("/api/gmail/disconnect")
@@ -2772,7 +2772,7 @@ async def get_gmail_emails(
         return {"emails": emails, "count": len(emails)}
     
     except Exception as e:
-        print(f"[GMAIL] Error fetching emails: {str(e)}")
+        logger.info(f"[GMAIL] Error fetching emails: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch emails: {str(e)}")
 
 @app.get("/api/gmail/email/{message_id}")
@@ -2809,7 +2809,7 @@ async def get_gmail_email_detail(
         }
     
     except Exception as e:
-        print(f"[GMAIL] Error fetching email detail: {str(e)}")
+        logger.info(f"[GMAIL] Error fetching email detail: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch email: {str(e)}")
 
 @app.post("/api/gmail/create-ticket/{message_id}")
@@ -2871,12 +2871,12 @@ async def create_ticket_from_email(
         }
         
         tickets_collection.insert_one(ticket_doc)
-        print(f"[GMAIL] Created ticket {ticket_id} from email {message_id}")
+        logger.info(f"[GMAIL] Created ticket {ticket_id} from email {message_id}")
         
         return serialize_doc(ticket_doc)
     
     except Exception as e:
-        print(f"[GMAIL] Error creating ticket from email: {str(e)}")
+        logger.info(f"[GMAIL] Error creating ticket from email: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create ticket: {str(e)}")
 
 @app.post("/api/gmail/sync")
@@ -2895,7 +2895,7 @@ async def sync_emails_to_tickets(
         
         # Use provided query or default support query
         search_query = query if query else GMAIL_SYNC_QUERY
-        print(f"[GMAIL] Syncing with query: {search_query}")
+        logger.info(f"[GMAIL] Syncing with query: {search_query}")
         
         results = service.users().messages().list(
             userId='me',
@@ -2904,7 +2904,7 @@ async def sync_emails_to_tickets(
         ).execute()
         
         messages = results.get('messages', [])
-        print(f"[GMAIL] Found {len(messages)} emails matching query")
+        logger.info(f"[GMAIL] Found {len(messages)} emails matching query")
         created_tickets = []
         skipped = 0
         
@@ -2962,7 +2962,7 @@ async def sync_emails_to_tickets(
         }
     
     except Exception as e:
-        print(f"[GMAIL] Error syncing emails: {str(e)}")
+        logger.info(f"[GMAIL] Error syncing emails: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to sync emails: {str(e)}")
 
 @app.get("/api/settings/email")
@@ -3426,7 +3426,7 @@ async def start_gmail_watch(current_user: dict = Depends(get_current_user)):
             }
         ).execute()
         
-        print(f"[GMAIL] Watch started: {watch_response}")
+        logger.info(f"[GMAIL] Watch started: {watch_response}")
         
         # Store watch info
         gmail_tokens_collection.update_one(
@@ -3448,7 +3448,7 @@ async def start_gmail_watch(current_user: dict = Depends(get_current_user)):
         }
     
     except Exception as e:
-        print(f"[GMAIL] Error starting watch: {str(e)}")
+        logger.info(f"[GMAIL] Error starting watch: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to start watch: {str(e)}")
 
 @app.post("/api/gmail/watch/stop")
@@ -3467,7 +3467,7 @@ async def stop_gmail_watch(current_user: dict = Depends(get_current_user)):
         return {"status": "stopped"}
     
     except Exception as e:
-        print(f"[GMAIL] Error stopping watch: {str(e)}")
+        logger.info(f"[GMAIL] Error stopping watch: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to stop watch: {str(e)}")
 
 # ==================== Admin Panel Endpoints ====================
@@ -4719,7 +4719,7 @@ async def submit_csat_rating(
         }
         # Store in a notifications collection (or could be sent via WebSocket)
         db.notifications.insert_one(alert_doc)
-        print(f"[LOW CSAT ALERT] Rating {rating}/5 for ticket {token_doc.get('ticket_id')} - Manager notified")
+        logger.warning(f"[LOW CSAT ALERT] Rating {rating}/5 for ticket {token_doc.get('ticket_id')} - Manager notified")
     
     return {
         "message": "Thank you for your feedback!",
