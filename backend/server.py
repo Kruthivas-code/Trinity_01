@@ -790,6 +790,60 @@ def apply_routing_actions(ticket_id: str, actions: list) -> dict:
 
 def run_routing_rules(ticket: dict) -> dict:
     """Run all active routing rules against a ticket, return first matching rule's actions"""
+    
+    # First, check if customer has assigned agents (takes priority)
+    customer_email = ticket.get("customer_email")
+    if customer_email:
+        customer = customers_collection.find_one({
+            "$or": [
+                {"primary_email": customer_email.lower()},
+                {"linked_emails": customer_email.lower()}
+            ]
+        })
+        
+        if customer and customer.get("assigned_agents"):
+            # Route to one of the customer's assigned agents using round-robin
+            assigned_agents = customer["assigned_agents"]
+            
+            # Find agent with least tickets among assigned agents who are on shift
+            best_agent = None
+            min_tickets = float('inf')
+            
+            for agent_id in assigned_agents:
+                # Check if agent is on shift for any team
+                if is_user_on_shift(agent_id):
+                    ticket_count = tickets_collection.count_documents({
+                        "assignee_id": agent_id,
+                        "status": {"$nin": ["resolved", "closed"]}
+                    })
+                    if ticket_count < min_tickets:
+                        min_tickets = ticket_count
+                        best_agent = agent_id
+            
+            if best_agent:
+                # Assign to customer's preferred agent
+                tickets_collection.update_one(
+                    {"ticket_id": ticket["ticket_id"]},
+                    {"$set": {
+                        "assignee_id": best_agent,
+                        "status": "assigned",
+                        "updated_at": datetime.now(timezone.utc)
+                    }}
+                )
+                
+                agent = users_collection.find_one({"user_id": best_agent}, {"_id": 0})
+                agent_name = agent.get("name", "Unknown") if agent else "Unknown"
+                
+                logger.info(f"[ROUTING] Assigned ticket {ticket['ticket_id']} to customer's preferred agent {best_agent}")
+                
+                return {
+                    "matched": True,
+                    "rule_id": "customer_assigned_agent",
+                    "rule_name": f"Customer preferred agent: {agent_name}",
+                    "updates": {"assignee_id": best_agent, "status": "assigned"},
+                    "results": [f"Routed to customer's assigned agent: {agent_name}"]
+                }
+    
     # Get all active rules, sorted by priority (higher first)
     rules = list(routing_rules_collection.find(
         {"is_active": True}, 
