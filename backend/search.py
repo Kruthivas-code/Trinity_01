@@ -374,6 +374,8 @@ class SearchEngine:
                 for doc in cursor:
                     results.append({
                         "id": doc.get("ticket_id", str(doc.get("_id"))),
+                        "ticket_id": doc.get("ticket_id", str(doc.get("_id"))),  # Add ticket_id
+                        "uuid": doc.get("uuid"),
                         "type": "ticket",
                         "result_type": "ticket",
                         "category": "Tickets",
