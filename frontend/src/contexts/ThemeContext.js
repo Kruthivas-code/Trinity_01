@@ -1,9 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useLayoutEffect, useCallback } from 'react';
 
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState(() => {
+    // Initialize theme from localStorage during state initialization
+    return localStorage.getItem('theme') || 'dark';
+  });
 
   const applyTheme = useCallback((newTheme) => {
     const root = window.document.documentElement;
@@ -11,24 +14,20 @@ export const ThemeProvider = ({ children }) => {
     root.classList.add(newTheme);
   }, []);
 
-  useEffect(() => {
-    // Load theme from localStorage
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme);
-    applyTheme(savedTheme);
-  }, [applyTheme]);
+  // Apply theme on initial render and when theme changes
+  useLayoutEffect(() => {
+    applyTheme(theme);
+  }, [theme, applyTheme]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
-    applyTheme(newTheme);
   };
 
   const setThemeMode = (newTheme) => {
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
-    applyTheme(newTheme);
   };
 
   return (
