@@ -491,6 +491,100 @@ def handle_ticket_reopen_reassignment(ticket: dict, new_status: str, changed_by:
             "reason": "no_agents_on_shift"
         }
 
+def trigger_shift_start_assignment(user_id: str) -> List[dict]:
+    """
+    Triggered when a user starts their shift (e.g., on login, WebSocket connect).
+    Assigns queued/unassigned tickets to the user using round-robin.
+    
+    Returns list of assigned tickets.
+    """
+    # Check if auto-assignment setting is enabled
+    settings = admin_settings_collection.find_one({"type": "global"})
+    if not settings or not settings.get("auto_assignment", True):
+        return []
+    
+    # Check if auto-reassign reopened is enabled (this setting also enables shift-start assignment)
+    if not settings.get("auto_reassign_reopened", False):
+        return []
+    
+    # Get user's teams
+    user_shifts = list(user_shifts_collection.find({"user_id": user_id}))
+    if not user_shifts:
+        return []
+    
+    # Check if user is actually on shift right now
+    team_ids = []
+    for shift_assignment in user_shifts:
+        team_id = shift_assignment.get("team_id")
+        if team_id and is_user_on_shift(user_id, team_id):
+            team_ids.append(team_id)
+    
+    if not team_ids:
+        return []
+    
+    # Find queued/unassigned tickets for these teams
+    queued_tickets = list(tickets_collection.find({
+        "team_id": {"$in": team_ids},
+        "$or": [
+            {"assignee_id": None},
+            {"assignee_id": ""},
+            {"status": "queued"}
+        ],
+        "status": {"$nin": ["resolved", "closed"]}
+    }).sort("created_at", 1).limit(5))  # Limit to 5 tickets per shift start
+    
+    assigned_tickets = []
+    
+    for ticket in queued_tickets:
+        # Use shift-based round-robin for the ticket's team
+        new_assignee_id = shift_based_round_robin(ticket.get("team_id"))
+        
+        if new_assignee_id:
+            # Assign the ticket
+            tickets_collection.update_one(
+                {"ticket_id": ticket["ticket_id"]},
+                {
+                    "$set": {
+                        "assignee_id": new_assignee_id,
+                        "status": "assigned" if ticket.get("status") == "queued" else ticket.get("status"),
+                        "updated_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            
+            # Log to changelog
+            log_ticket_change(
+                ticket_id=ticket["ticket_id"],
+                uuid=ticket.get("uuid", ""),
+                field="assignee_id",
+                old_value=None,
+                new_value=new_assignee_id,
+                changed_by="system",
+                change_type="shift_start_assignment",
+                metadata={"trigger": "shift_start", "user_id": user_id}
+            )
+            
+            # Create notification
+            notification_doc = {
+                "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
+                "type": "ticket_assigned",
+                "user_id": new_assignee_id,
+                "ticket_id": ticket["ticket_id"],
+                "ticket_title": ticket.get("title"),
+                "message": f"Ticket '{ticket.get('title')}' has been assigned to you at shift start.",
+                "read": False,
+                "created_at": datetime.now(timezone.utc)
+            }
+            db.notifications.insert_one(notification_doc)
+            
+            assigned_tickets.append({
+                "ticket_id": ticket["ticket_id"],
+                "title": ticket.get("title"),
+                "assigned_to": new_assignee_id
+            })
+    
+    return assigned_tickets
+
 # ==================== Routing Rule Engine ====================
 
 def evaluate_condition(ticket: dict, condition: dict) -> bool:
