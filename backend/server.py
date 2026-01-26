@@ -4621,8 +4621,8 @@ This survey expires in 7 days.
     }
     
     # LOG THE EMAIL (MOCKED - NOT ACTUALLY SENT)
-    print(f"[MOCKED EMAIL] CSAT survey for ticket {ticket_id} to {customer_email}")
-    print(f"[MOCKED EMAIL] Rating links generated with token: {token}")
+    logger.info(f"[MOCKED EMAIL] CSAT survey for ticket {ticket_id} to {customer_email}")
+    logger.info(f"[MOCKED EMAIL] Rating links generated with token: {token}")
     
     return {
         "message": "CSAT survey generated (email MOCKED - not actually sent)",
