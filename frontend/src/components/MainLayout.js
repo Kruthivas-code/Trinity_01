@@ -7,6 +7,7 @@ import AllTicketsPage from './AllTicketsPage';
 import OpenTicketsPage from './OpenTicketsPage';
 import WaitingTicketsPage from './WaitingTicketsPage';
 import ClosedTicketsPage from './ClosedTicketsPage';
+import StarredTicketsPage from './StarredTicketsPage';
 import TicketDrawer from './TicketDrawer';
 import CreateTicketModal from './CreateTicketModal';
 import { CommandPaletteContext } from '../App';
