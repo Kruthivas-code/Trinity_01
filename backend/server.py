@@ -2480,9 +2480,9 @@ async def reorder_tickets(
 @app.get("/api/analytics/summary")
 async def get_analytics_summary(current_user: dict = Depends(get_current_user)):
     status_counts = {}
-    for status in ["todo", "in_progress", "waiting", "review", "resolved"]:
-        count = tickets_collection.count_documents({" status": status})
-        status_counts[status] = count
+    for ticket_status in ["todo", "in_progress", "waiting", "review", "resolved"]:
+        count = tickets_collection.count_documents({"status": ticket_status})
+        status_counts[ticket_status] = count
     
     pipeline = [
         {"$match": {"assignee_id": {"$ne": None}}},
