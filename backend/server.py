@@ -1116,6 +1116,28 @@ async def test_login(response: Response):
         "session_token": session_token
     }
 
+# ==================== Shift-Start Assignment Trigger ====================
+
+@app.post("/api/auth/shift-start")
+async def trigger_shift_assignment(current_user: dict = Depends(get_current_user)):
+    """
+    Trigger shift-start auto-assignment of queued tickets.
+    Called when a user logs in or connects to real-time (WebSocket).
+    
+    Only assigns tickets if:
+    1. Auto-assignment and auto-reassign settings are enabled
+    2. User is currently on shift for their team(s)
+    3. There are queued/unassigned tickets
+    """
+    assigned = trigger_shift_start_assignment(current_user["user_id"])
+    
+    return {
+        "triggered": True,
+        "user_id": current_user["user_id"],
+        "tickets_assigned": len(assigned),
+        "assigned_tickets": assigned
+    }
+
 # ==================== API Key Management ====================
 
 @app.post("/api/auth/api-keys")
