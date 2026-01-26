@@ -4839,7 +4839,7 @@ async def search(
     Example: /api/search?q=billing status:open priority:urgent
     """
     if not q or len(q) < 1:
-        return {"results": [], "total": 0, "by_category": {}, "operators": {}}
+        return {"results": [], "total": 0, "by_category": {}, "operators": {}, "tickets": []}
     
     results = search_engine.search_all(
         q, 
@@ -4847,6 +4847,8 @@ async def search(
         current_user_id=current_user.get("user_id"),
         type_filter=type
     )
+    # Add top-level tickets for backward compatibility with merge/link modals
+    results["tickets"] = results.get("by_category", {}).get("tickets", [])
     return results
 
 @app.get("/api/search/suggestions")
