@@ -220,6 +220,19 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
+      {/* Individual ticket view with unique URL */}
+      <Route
+        path="/ticket/:ticketId"
+        element={
+          <ProtectedRoute>
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <MainLayout view="ticket" user={user} />
+              </AppWithRealtime>
+            )}
+          </ProtectedRoute>
+        }
+      />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
