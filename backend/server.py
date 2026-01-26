@@ -2456,7 +2456,6 @@ async def reorder_tickets(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
-    old_status = ticket["status"]
     new_status = reorder_data.new_status
     
     tickets_collection.update_one(
