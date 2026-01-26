@@ -3882,7 +3882,7 @@ async def get_customer_detail(
                 created = datetime.fromisoformat(str(t["created_at"]).replace("Z", "+00:00"))
                 resolved = datetime.fromisoformat(str(t["resolved_at"]).replace("Z", "+00:00"))
                 resolution_times.append((resolved - created).total_seconds() / 3600)  # hours
-            except:
+            except (ValueError, TypeError, KeyError):
                 pass
     
     avg_resolution_hours = sum(resolution_times) / len(resolution_times) if resolution_times else None
