@@ -199,60 +199,43 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
 
   const styles = getMessageStyles();
   
-  // Get merge color styling if this message came from a merged ticket
-  const mergeColor = originalTicketId ? getMergeColor(mergeColorIndex || 0) : null;
-  const mergeStyles = mergeColor ? `border-l-4 ${mergeColor.border}` : '';
+  // Subtle left accent for merged messages (thin line, not thick border)
+  const mergeAccent = isFromMergedTicket ? `border-l-2 ${mergeColor.border}` : '';
   
   return (
-    <div className={`${styles.alignment}`}>
-      <div className={`${styles.container} ${mergeStyles} p-4`}>
-        {/* Merged from indicator */}
-        {originalTicketId && (
-          <div className={`flex items-center gap-1.5 mb-2 text-[10px] ${mergeColor?.text || 'text-muted-foreground'}`}>
-            <GitMerge size={10} />
-            <span>From {originalTicketId}</span>
-          </div>
-        )}
-        {/* Message Header */}
-        <div className={`flex items-start justify-between mb-3 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
-          <div className={`flex items-start gap-3 ${isAgent && !isNote ? 'flex-row-reverse text-right' : ''}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium shrink-0 ${styles.avatar}`}>
+    <div className={`${styles.alignment}`} data-testid="message-item">
+      <div className={`${styles.container} ${mergeAccent} p-3`}>
+        {/* Message Header - Compact */}
+        <div className={`flex items-center justify-between mb-2 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
+          <div className={`flex items-center gap-2 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium shrink-0 ${styles.avatar}`}>
               {sender?.charAt(0).toUpperCase() || 'U'}
             </div>
-            <div className="min-w-0">
-              <div className={`flex items-center gap-2 flex-wrap ${isAgent && !isNote ? 'justify-end' : ''}`}>
-                <span className="font-medium text-sm">{sender || 'Unknown'}</span>
-                {isNote && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-400 font-medium">
-                    Internal Note
-                  </span>
-                )}
-                {isReply && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-medium">
-                    Agent Reply
-                  </span>
-                )}
-                {isCustomerMessage && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-400 font-medium">
-                    Customer
-                  </span>
-                )}
-              </div>
-              {senderEmail && (
-                <p className="text-xs text-muted-foreground">{senderEmail}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-medium text-sm">{sender || 'Unknown'}</span>
+              {isNote && (
+                <span className="text-[10px] px-1 py-0.5 rounded bg-amber-400/20 text-amber-400">Note</span>
               )}
-              {subject && isFirst && (
-                <p className="text-xs text-muted-foreground mt-0.5">Subject: {subject}</p>
+              {isReply && (
+                <span className="text-[10px] px-1 py-0.5 rounded bg-primary/20 text-primary">Reply</span>
               )}
             </div>
           </div>
-          <span className="text-[11px] text-muted-foreground shrink-0">
-            {formatDate(timestamp)}
-          </span>
+          <div className={`flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
+            {isFromMergedTicket && (
+              <span className={`font-mono ${mergeColor.text}`}>{originalTicketId}</span>
+            )}
+            <span>{formatDate(timestamp)}</span>
+          </div>
         </div>
         
+        {/* Subject line for first message */}
+        {subject && isFirst && (
+          <p className="text-xs text-muted-foreground mb-2 pl-8">Re: {subject}</p>
+        )}
+        
         {/* Message Body */}
-        <div className={`text-sm text-foreground/90 leading-relaxed ${isNote ? 'pl-11' : isAgent ? 'pr-11' : 'pl-11'}`}>
+        <div className="text-sm text-foreground/90 leading-relaxed pl-8">
           {renderContent(content)}
         </div>
       </div>
