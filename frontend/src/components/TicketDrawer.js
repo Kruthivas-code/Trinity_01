@@ -2207,12 +2207,12 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               });
               if (response.ok) {
                 setShowMergeModal(false);
-                onClose();
-                // Signal parent to refresh ticket list by calling onUpdate with a special flag
-                // This will trigger a refetch which will exclude the merged ticket
+                // Signal parent to refresh FIRST, then close
+                // This ensures the parent gets the signal before drawer unmounts
                 if (onUpdate) {
-                  onUpdate(ticket.id, { _merged: true, _mergedInto: targetTicketId }, true);
+                  await onUpdate(ticket.id, { _merged: true, _mergedInto: targetTicketId }, true);
                 }
+                onClose();
               }
             } catch (error) {
               console.error('Merge failed:', error);
