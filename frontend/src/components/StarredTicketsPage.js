@@ -58,7 +58,7 @@ const formatTimeAgo = (dateString) => {
   return date.toLocaleDateString();
 };
 
-const StarredTicketsPage = ({ user, onTicketClick }) => {
+const StarredTicketsPage = ({ user, onTicketClick, refreshKey }) => {
   const [tickets, setTickets] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +114,16 @@ const StarredTicketsPage = ({ user, onTicketClick }) => {
     fetchUsers();
     fetchStarredTickets(1);
   }, []);
+
+  // Re-fetch when refreshKey changes (e.g., after merge)
+  useEffect(() => {
+    if (refreshKey !== undefined && refreshKey > 0) {
+      setTickets([]);
+      setPage(1);
+      setHasMore(true);
+      fetchStarredTickets(1);
+    }
+  }, [refreshKey]);
 
   useEffect(() => {
     if (page > 1) {
