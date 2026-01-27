@@ -272,6 +272,9 @@ class SearchEngine:
         # Build MongoDB query
         mongo_query = {}
         
+        # Exclude merged tickets from search results (they should be found via parent)
+        mongo_query['status'] = {'$ne': 'merged'}
+        
         # Apply operators
         if 'status' in operators:
             mongo_query['status'] = operators['status']
@@ -307,7 +310,12 @@ class SearchEngine:
             mongo_query['tags'] = {'$regex': operators['tag'], '$options': 'i'}
         
         if 'customer' in operators:
-            mongo_query['customer_email'] = {'$regex': operators['customer'], '$options': 'i'}
+            # Search both customer_email and associated_emails
+            email_pattern = operators['customer']
+            mongo_query['$or'] = [
+                {'customer_email': {'$regex': email_pattern, '$options': 'i'}},
+                {'associated_emails': {'$regex': email_pattern, '$options': 'i'}}
+            ]
         
         if 'domain' in operators:
             mongo_query['domain'] = {'$regex': operators['domain'], '$options': 'i'}
@@ -323,6 +331,42 @@ class SearchEngine:
                 mongo_query['updated_at'] = {'$gte': start, '$lt': end}
         
         try:
+            # First check if query matches a search_identifier directly (merged ticket lookup)
+            if query and len(query) >= 3:
+                identifier_match = self.tickets.find_one({
+                    'search_identifiers': {'$regex': f'^{re.escape(query)}', '$options': 'i'},
+                    'status': {'$ne': 'merged'}
+                })
+                if identifier_match:
+                    # Found via merged ticket identifier - add to results with high score
+                    merged_ids = [m.get('ticket_id') for m in identifier_match.get('merged_tickets', [])]
+                    matched_merged = query.upper() if query.upper().startswith('TKT-') else query
+                    contains_merged = matched_merged in merged_ids or any(query.lower() in mid.lower() for mid in merged_ids)
+                    
+                    results.append({
+                        "id": identifier_match.get("ticket_id", str(identifier_match.get("_id"))),
+                        "ticket_id": identifier_match.get("ticket_id", str(identifier_match.get("_id"))),
+                        "uuid": identifier_match.get("uuid"),
+                        "type": "ticket",
+                        "result_type": "ticket",
+                        "category": "Tickets",
+                        "title": identifier_match.get("title", "Untitled"),
+                        "subtitle": f"#{identifier_match.get('ticket_id', 'N/A')} • {identifier_match.get('status', 'unknown')}",
+                        "status": identifier_match.get("status"),
+                        "priority": identifier_match.get("priority"),
+                        "escalation_level": identifier_match.get("escalation_level"),
+                        "assignee_id": identifier_match.get("assignee_id"),
+                        "customer_email": identifier_match.get("customer_email"),
+                        "associated_emails": identifier_match.get("associated_emails", []),
+                        "domain": identifier_match.get("domain"),
+                        "tags": identifier_match.get("tags", []),
+                        "merged_tickets": identifier_match.get("merged_tickets", []),
+                        "contains_merged_ticket": contains_merged,
+                        "created_at": identifier_match.get("created_at").isoformat() if identifier_match.get("created_at") else None,
+                        "action": f"/all-tickets?ticket={identifier_match.get('ticket_id')}",
+                        "score": 20.0  # High score for direct identifier match
+                    })
+            
             # Text search if there's a query
             if query and len(query) >= 2:
                 mongo_query['$text'] = {'$search': query}
@@ -334,10 +378,18 @@ class SearchEngine:
                 # Just filter by operators
                 cursor = self.tickets.find(mongo_query).sort('created_at', -1).limit(limit)
             
+            seen_ids = {r['ticket_id'] for r in results}  # Don't duplicate identifier matches
+            
             for doc in cursor:
+                ticket_id = doc.get("ticket_id", str(doc.get("_id")))
+                if ticket_id in seen_ids:
+                    continue
+                seen_ids.add(ticket_id)
+                
+                merged_info = doc.get("merged_tickets", [])
                 results.append({
-                    "id": doc.get("ticket_id", str(doc.get("_id"))),
-                    "ticket_id": doc.get("ticket_id", str(doc.get("_id"))),  # Add ticket_id for modals
+                    "id": ticket_id,
+                    "ticket_id": ticket_id,
                     "uuid": doc.get("uuid"),
                     "type": "ticket",
                     "result_type": "ticket",
@@ -349,8 +401,11 @@ class SearchEngine:
                     "escalation_level": doc.get("escalation_level"),
                     "assignee_id": doc.get("assignee_id"),
                     "customer_email": doc.get("customer_email"),
+                    "associated_emails": doc.get("associated_emails", []),
                     "domain": doc.get("domain"),
                     "tags": doc.get("tags", []),
+                    "merged_tickets": merged_info,
+                    "contains_merged_ticket": len(merged_info) > 0,
                     "created_at": doc.get("created_at").isoformat() if doc.get("created_at") else None,
                     "action": f"/all-tickets?ticket={doc.get('ticket_id')}",
                     "score": doc.get("score", 0.5)
