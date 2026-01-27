@@ -856,16 +856,21 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       subject: ticket.title,
       content: ticket.description || '',
       timestamp: ticket.created_at,
-      isAgentMessage: false // Customer's original message
+      isAgentMessage: false, // Customer's original message
+      original_ticket_id: null, // Original ticket message, not merged
+      merge_color_index: null
     },
     ...notes.map(note => ({
       type: note.type || 'internal_note',
       sender: note.author_name || 'Unknown',
       senderEmail: null,
       subject: null,
-      content: note.content,
+      content: note.content || note.text,
       timestamp: note.created_at,
-      isAgentMessage: true // All notes/replies are from agents
+      isAgentMessage: note.type !== 'customer_reply',
+      original_ticket_id: note.original_ticket_id || null,
+      merge_color_index: note.merge_color_index,
+      merged_ticket_title: note.merged_ticket_title
     }))
   ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
