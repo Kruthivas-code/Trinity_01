@@ -438,6 +438,43 @@ Message {
 
 ---
 
+## Phase 17: Merged Ticket UX Improvements ✅ COMPLETED (1/27/2026)
+
+### Bug Fix: Merged Tickets Appearing on Kanban
+- [x] **Backend Change** (`GET /api/tickets`)
+  - Added `status: {"$ne": "merged"}` filter to exclude merged tickets by default
+  - Added optional `include_merged` query parameter for admin views
+  - Merged tickets now only live inside their parent ticket's conversation
+
+### Conversation UI Redesign
+- [x] **Cleaner Message Display**
+  - Reduced padding and made messages more compact
+  - Smaller avatars (24px vs 32px)
+  - Removed redundant "Customer" badge on customer messages
+  - Source ticket ID shown inline with timestamp (not as separate badge)
+  
+- [x] **Subtle Merge Indicators**
+  - Thin 2px left border for merged messages (not thick 4px)
+  - Merge divider is a simple horizontal line with ticket ID
+  - Color-coded ticket IDs (cyan, amber, violet) for quick scanning
+  
+- [x] **Compact Merged Tickets Panel**
+  - Single-line summary: "Contains X merged tickets TKT-XXX TKT-YYY"
+  - Expandable details on demand
+  - Unmerge action available in expanded view
+
+### Design Principles Applied
+- Space efficiency over visual prominence
+- Information density without clutter
+- Scrollable, clean timeline
+- No oversized icons or badges
+
+### Files Modified
+- `/app/backend/server.py` - Added merge exclusion filter
+- `/app/frontend/src/components/TicketDrawer.js` - Complete conversation UI redesign
+
+---
+
 ## Next Steps / Future Enhancements
 - [ ] Auto-Merge Suggestion Banner (backend API exists, needs frontend implementation)
 - [ ] Real-time presence indicators (avatars showing who's viewing a ticket)
