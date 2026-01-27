@@ -2309,11 +2309,15 @@ async def get_tickets(
     assignee_id: Optional[str] = None,
     mentioned_user_id: Optional[str] = None,
     is_starred: Optional[bool] = None,
+    include_merged: Optional[bool] = False,
     current_user: dict = Depends(get_current_user)
 ):
     query = {}
     if status:
         query["status"] = status
+    elif not include_merged:
+        # By default, exclude merged tickets from listings (they live inside their parent)
+        query["status"] = {"$ne": "merged"}
     if assignee_id:
         query["assignee_id"] = assignee_id
     if mentioned_user_id:
