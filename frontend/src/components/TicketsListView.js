@@ -63,7 +63,7 @@ const formatTimeAgo = (dateString) => {
   return date.toLocaleDateString();
 };
 
-const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick }) => {
+const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick, refreshKey }) => {
   const [tickets, setTickets] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
