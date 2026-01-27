@@ -1390,6 +1390,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   mergeColorIndex={msg.merge_color_index}
                   isMergeDivider={msg.type === 'merge_divider'}
                   mergedTicketTitle={msg.merged_ticket_title}
+                  currentTicketId={ticket?.ticket_id}
                 />
               ))
             )}
