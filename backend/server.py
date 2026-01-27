@@ -5783,7 +5783,7 @@ async def merge_tickets(
     existing_merged = target_ticket.get("merged_tickets", [])
     color_index = len(existing_merged) % 5
     
-    # Update messages: keep in source ticket but add merge metadata
+    # Update existing messages: move to target ticket with merge metadata
     messages_collection.update_many(
         {"ticket_id": ticket_id},
         {"$set": {
@@ -5794,7 +5794,26 @@ async def merge_tickets(
         }}
     )
     
-    # Add a system note about the merge (acts as a divider)
+    # Create a message from the source ticket's original content
+    # This preserves the original ticket's description in the conversation
+    if source_ticket.get("description"):
+        original_content_msg = {
+            "message_id": f"msg_{uuid4().hex[:12]}",
+            "ticket_id": target_ticket_id,
+            "type": "customer_reply",  # Treat as customer message for display
+            "content": source_ticket.get("description", ""),
+            "text": source_ticket.get("description", ""),
+            "author_name": source_ticket.get("customer_name") or source_ticket.get("created_by_name") or "Customer",
+            "author_email": source_ticket.get("customer_email"),
+            "original_ticket_id": ticket_id,
+            "merged_at": merge_timestamp,
+            "merge_color_index": color_index,
+            "created_by": source_ticket.get("created_by", "import"),
+            "created_at": source_ticket.get("created_at", merge_timestamp)
+        }
+        messages_collection.insert_one(original_content_msg)
+    
+    # Add a merge divider (visual separator showing when tickets were merged)
     merge_note = {
         "message_id": f"msg_{uuid4().hex[:12]}",
         "ticket_id": target_ticket_id,
@@ -5818,6 +5837,7 @@ async def merge_tickets(
         "message_count": messages_collection.count_documents({"original_ticket_id": ticket_id}),
         "original_status": source_ticket.get("status"),
         "original_priority": source_ticket.get("priority"),
+        "original_customer_email": source_ticket.get("customer_email"),
     }
     
     # Collect all search identifiers from source
