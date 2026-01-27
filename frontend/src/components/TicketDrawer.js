@@ -2207,7 +2207,13 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               });
               if (response.ok) {
                 setShowMergeModal(false);
-                onClose();
+                // Use onDelete to remove the merged (source) ticket from parent's list
+                // This triggers a refresh that will exclude the now-merged ticket
+                if (onDelete) {
+                  await onDelete(ticket.id);
+                } else {
+                  onClose();
+                }
               }
             } catch (error) {
               console.error('Merge failed:', error);
