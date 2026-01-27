@@ -412,7 +412,7 @@ class SearchEngine:
                 })
         except Exception as e:
             logger.error(f"Ticket search error: {e}")
-            # Fallback to regex search
+            # Fallback to regex search including search_identifiers and associated_emails
             if query:
                 regex = {"$regex": query, "$options": "i"}
                 fallback_query = {
@@ -420,16 +420,25 @@ class SearchEngine:
                         {"title": regex},
                         {"content": regex},
                         {"ticket_id": regex},
-                        {"customer_email": regex}
-                    ]
+                        {"customer_email": regex},
+                        {"search_identifiers": regex},
+                        {"associated_emails": regex},
+                        {"external_id": regex},
+                        {"uuid": regex}
+                    ],
+                    "status": {"$ne": "merged"}  # Exclude merged tickets
                 }
-                fallback_query.update({k: v for k, v in mongo_query.items() if k != '$text'})
+                fallback_query.update({k: v for k, v in mongo_query.items() if k not in ['$text', 'status']})
                 cursor = self.tickets.find(fallback_query).limit(limit)
                 
                 for doc in cursor:
+                    ticket_id = doc.get("ticket_id", str(doc.get("_id")))
+                    if ticket_id in seen_ids:
+                        continue
+                    merged_info = doc.get("merged_tickets", [])
                     results.append({
-                        "id": doc.get("ticket_id", str(doc.get("_id"))),
-                        "ticket_id": doc.get("ticket_id", str(doc.get("_id"))),  # Add ticket_id
+                        "id": ticket_id,
+                        "ticket_id": ticket_id,
                         "uuid": doc.get("uuid"),
                         "type": "ticket",
                         "result_type": "ticket",
@@ -438,6 +447,8 @@ class SearchEngine:
                         "subtitle": f"#{doc.get('ticket_id', 'N/A')} • {doc.get('status', 'unknown')}",
                         "status": doc.get("status"),
                         "priority": doc.get("priority"),
+                        "merged_tickets": merged_info,
+                        "contains_merged_ticket": len(merged_info) > 0,
                         "action": f"/all-tickets?ticket={doc.get('ticket_id')}",
                         "score": 0.5
                     })
