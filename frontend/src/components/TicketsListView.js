@@ -122,6 +122,16 @@ const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick,
     fetchTickets(1);
   }, []);
 
+  // Re-fetch tickets when refreshKey changes (e.g., after merge)
+  useEffect(() => {
+    if (refreshKey !== undefined && refreshKey > 0) {
+      setTickets([]);
+      setPage(1);
+      setHasMore(true);
+      fetchTickets(1);
+    }
+  }, [refreshKey]);
+
   useEffect(() => {
     if (page > 1) {
       fetchTickets(page);
