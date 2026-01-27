@@ -2316,16 +2316,14 @@ async def get_tickets(
     if status:
         query["status"] = status
     elif not include_merged:
-        # Exclude merged tickets: status is 'merged' OR merged_into has a value
+        # Exclude merged tickets:
+        # 1. status must not be 'merged'
+        # 2. merged_into must be empty/null/non-existent (not a ticket ID)
+        query["status"] = {"$ne": "merged"}
         query["$or"] = [
-            {"$and": [
-                {"status": {"$ne": "merged"}},
-                {"merged_into": {"$in": [None, "", False]}}
-            ]},
-            {"$and": [
-                {"status": {"$ne": "merged"}},
-                {"merged_into": {"$exists": False}}
-            ]}
+            {"merged_into": {"$exists": False}},
+            {"merged_into": None},
+            {"merged_into": ""}
         ]
     if assignee_id:
         query["assignee_id"] = assignee_id
