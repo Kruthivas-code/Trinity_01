@@ -72,37 +72,32 @@ const stripHtml = (html) => {
 };
 
 // Email-style message component with merge support
-const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, isFirst, isAgentMessage, originalTicketId, mergeColorIndex, isMergeDivider, mergedTicketTitle }) => {
+const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, isFirst, isAgentMessage, originalTicketId, mergeColorIndex, isMergeDivider, mergedTicketTitle, currentTicketId }) => {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', { 
       month: 'short', 
       day: 'numeric',
-      year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
     });
   };
 
-  // Handle merge divider - special visual separator
+  // Handle merge divider - clean, minimal separator
   if (isMergeDivider || type === 'merge_divider') {
     const mergeColor = getMergeColor(mergeColorIndex || 0);
     return (
-      <div className="my-4 flex items-center gap-2">
-        <div className={`flex-1 h-px ${mergeColor.bg} border-t border-dashed ${mergeColor.border.replace('border-l-', 'border-')}`} />
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${mergeColor.bg} border ${mergeColor.border.replace('border-l-', 'border-')}`}>
-          <GitMerge size={14} className={mergeColor.text} />
-          <span className={`text-xs font-medium ${mergeColor.text}`}>
-            Merged from {originalTicketId}
-          </span>
+      <div className="my-3 flex items-center gap-3" data-testid="merge-divider">
+        <div className="flex-1 h-px bg-border/50" />
+        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <GitMerge size={11} className={mergeColor.text} />
+          <span className={mergeColor.text}>{originalTicketId}</span>
           {mergedTicketTitle && (
-            <span className="text-xs text-muted-foreground truncate max-w-[150px]">
-              "{mergedTicketTitle}"
-            </span>
+            <span className="text-muted-foreground/60 truncate max-w-[180px]">· {mergedTicketTitle}</span>
           )}
         </div>
-        <div className={`flex-1 h-px ${mergeColor.bg} border-t border-dashed ${mergeColor.border.replace('border-l-', 'border-')}`} />
+        <div className="flex-1 h-px bg-border/50" />
       </div>
     );
   }
@@ -122,6 +117,10 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
   const isReply = type === 'reply';
   const isCustomerMessage = type === 'original' || type === 'customer_reply';
   const isAgent = isAgentMessage || isReply || isNote;
+  
+  // Check if this message is from a merged ticket (different from current)
+  const isFromMergedTicket = originalTicketId && originalTicketId !== currentTicketId;
+  const mergeColor = isFromMergedTicket ? getMergeColor(mergeColorIndex || 0) : null;
   
   // Render HTML content safely, with mention support for notes
   const renderContent = (html) => {
