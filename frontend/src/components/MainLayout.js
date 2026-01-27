@@ -196,6 +196,13 @@ const MainLayout = ({ user, view }) => {
 
   const handleUpdateTicket = async (ticketId, updatedData) => {
     try {
+      // Handle merge completion - just refresh without making an update API call
+      if (updatedData._merged) {
+        handleCloseDrawer();
+        setRefreshKey(prev => prev + 1); // Trigger list refresh
+        return;
+      }
+      
       const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
