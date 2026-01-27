@@ -6,7 +6,7 @@ const ClosedTicketsPage = ({ user, onTicketClick }) => {
     <TicketsListView
       title="Closed Tickets"
       subtitle="Resolved and completed tickets"
-      filterStatuses={['resolved']}
+      filterStatuses={['resolved', 'closed']}
       user={user}
       onTicketClick={onTicketClick}
     />
