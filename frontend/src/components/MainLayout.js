@@ -99,6 +99,81 @@ const MainLayout = ({ user, view }) => {
     fetchUsers();
   }, []);
 
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const activeElement = document.activeElement;
+      const isTyping = activeElement?.isContentEditable || 
+                       activeElement?.tagName === 'INPUT' || 
+                       activeElement?.tagName === 'TEXTAREA' ||
+                       activeElement?.tagName === 'SELECT';
+      
+      // Escape - close create modal
+      if (e.key === 'Escape' && isCreateModalOpen) {
+        e.preventDefault();
+        setIsCreateModalOpen(false);
+        return;
+      }
+      
+      // Only if not typing and drawer is not open
+      if (!isTyping && !isDrawerOpen) {
+        // Cmd/Ctrl + K for command palette
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+          e.preventDefault();
+          openCommandPalette();
+          return;
+        }
+        
+        // N for new ticket
+        if (e.key === 'n' || e.key === 'N') {
+          e.preventDefault();
+          setIsCreateModalOpen(true);
+          return;
+        }
+        
+        // / for search (opens command palette)
+        if (e.key === '/') {
+          e.preventDefault();
+          openCommandPalette();
+          return;
+        }
+        
+        // G + key for go to navigation
+        // We'll use simple shortcuts instead
+        // 1 for Dashboard, 2 for All Tickets, etc.
+        if (e.key === '1') {
+          e.preventDefault();
+          navigate('/dashboard');
+        }
+        if (e.key === '2') {
+          e.preventDefault();
+          navigate('/all-tickets');
+        }
+        if (e.key === '3') {
+          e.preventDefault();
+          navigate('/starred-tickets');
+        }
+        if (e.key === '4') {
+          e.preventDefault();
+          navigate('/open-tickets');
+        }
+        if (e.key === '5') {
+          e.preventDefault();
+          navigate('/closed-tickets');
+        }
+      }
+      
+      // Cmd/Ctrl + N for new ticket (works from anywhere except drawer)
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'n' || e.key === 'N') && !isDrawerOpen) {
+        e.preventDefault();
+        setIsCreateModalOpen(true);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDrawerOpen, isCreateModalOpen, openCommandPalette, navigate]);
+
   const handleTicketClick = (ticket) => {
     setSelectedTicket(ticket);
     setIsDrawerOpen(true);
