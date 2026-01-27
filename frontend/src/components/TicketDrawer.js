@@ -278,6 +278,13 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   // Linked Feature Requests state
   const [linkedFeatureRequests, setLinkedFeatureRequests] = useState([]);
   
+  // Merge-related state
+  const [mergedTickets, setMergedTickets] = useState([]);
+  const [mergeSuggestions, setMergeSuggestions] = useState([]);
+  const [dismissedMergeSuggestions, setDismissedMergeSuggestions] = useState([]);
+  const [messageSourceFilter, setMessageSourceFilter] = useState('all'); // 'all' or specific ticket_id
+  const [showMergedPanel, setShowMergedPanel] = useState(false);
+  
   // Collapsible sections
   const [sectionsExpanded, setSectionsExpanded] = useState({
     links: false,
