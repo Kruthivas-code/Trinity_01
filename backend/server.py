@@ -5877,6 +5877,167 @@ async def merge_tickets(
     }
 
 
+@app.post("/api/tickets/{ticket_id}/unmerge/{source_ticket_id}")
+async def unmerge_ticket(
+    ticket_id: str,
+    source_ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Unmerge a previously merged ticket, restoring it as a separate ticket"""
+    # Get the parent ticket
+    parent_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not parent_ticket:
+        raise HTTPException(status_code=404, detail="Parent ticket not found")
+    
+    # Check if source_ticket_id is in merged_tickets
+    merged_tickets = parent_ticket.get("merged_tickets", [])
+    merged_ref = next((m for m in merged_tickets if m["ticket_id"] == source_ticket_id), None)
+    
+    if not merged_ref:
+        raise HTTPException(status_code=400, detail=f"Ticket {source_ticket_id} was not merged into {ticket_id}")
+    
+    # Get the source ticket
+    source_ticket = tickets_collection.find_one({"ticket_id": source_ticket_id}, {"_id": 0})
+    if not source_ticket:
+        raise HTTPException(status_code=404, detail="Merged ticket record not found")
+    
+    unmerge_timestamp = datetime.now(timezone.utc)
+    
+    # Move messages back to source ticket
+    messages_collection.update_many(
+        {"ticket_id": ticket_id, "original_ticket_id": source_ticket_id},
+        {
+            "$set": {"ticket_id": source_ticket_id},
+            "$unset": {"original_ticket_id": "", "merged_at": "", "merge_color_index": ""}
+        }
+    )
+    
+    # Remove merge divider message
+    messages_collection.delete_many({
+        "ticket_id": ticket_id,
+        "type": "merge_divider",
+        "original_ticket_id": source_ticket_id
+    })
+    
+    # Remove from merged_tickets array
+    updated_merged = [m for m in merged_tickets if m["ticket_id"] != source_ticket_id]
+    
+    # Rebuild search_identifiers (remove source's identifiers)
+    source_identifiers = [source_ticket_id]
+    if source_ticket.get("external_id"):
+        source_identifiers.append(source_ticket["external_id"])
+    if source_ticket.get("uuid"):
+        source_identifiers.append(source_ticket["uuid"])
+    
+    current_identifiers = parent_ticket.get("search_identifiers", [])
+    updated_identifiers = [i for i in current_identifiers if i not in source_identifiers]
+    
+    # Rebuild associated_emails
+    source_email = source_ticket.get("customer_email")
+    current_emails = parent_ticket.get("associated_emails", [])
+    updated_emails = [e for e in current_emails if e != source_email] if source_email else current_emails
+    
+    # Update parent ticket
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {
+            "$set": {
+                "merged_tickets": updated_merged,
+                "search_identifiers": updated_identifiers,
+                "associated_emails": updated_emails,
+                "updated_at": unmerge_timestamp
+            }
+        }
+    )
+    
+    # Restore source ticket
+    restore_status = source_ticket.get("pre_merge_status", "todo")
+    tickets_collection.update_one(
+        {"ticket_id": source_ticket_id},
+        {
+            "$set": {
+                "status": restore_status,
+                "updated_at": unmerge_timestamp
+            },
+            "$unset": {
+                "merged_into": "",
+                "merged_at": "",
+                "merged_by": "",
+                "pre_merge_status": ""
+            }
+        }
+    )
+    
+    # Add system note to both tickets
+    unmerge_note_parent = {
+        "message_id": f"msg_{uuid4().hex[:12]}",
+        "ticket_id": ticket_id,
+        "type": "system",
+        "text": f"Unmerged ticket {source_ticket_id}: {merged_ref.get('original_title', 'Untitled')}",
+        "created_by": current_user["user_id"],
+        "created_at": unmerge_timestamp
+    }
+    messages_collection.insert_one(unmerge_note_parent)
+    
+    unmerge_note_source = {
+        "message_id": f"msg_{uuid4().hex[:12]}",
+        "ticket_id": source_ticket_id,
+        "type": "system",
+        "text": f"Unmerged from ticket {ticket_id}",
+        "created_by": current_user["user_id"],
+        "created_at": unmerge_timestamp
+    }
+    messages_collection.insert_one(unmerge_note_source)
+    
+    # Log the change
+    log_ticket_change(source_ticket_id, source_ticket.get("uuid", ""), "unmerge", ticket_id, None, current_user["user_id"], "unmerge")
+    
+    return {
+        "message": f"Ticket {source_ticket_id} unmerged from {ticket_id}",
+        "restored_ticket_id": source_ticket_id,
+        "restored_status": restore_status,
+        "remaining_merged": len(updated_merged)
+    }
+
+
+@app.get("/api/tickets/{ticket_id}/merge-suggestions")
+async def get_merge_suggestions(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get auto-merge suggestions for a ticket based on same customer email within 2 hours"""
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    customer_email = ticket.get("customer_email")
+    if not customer_email:
+        return {"suggestions": []}
+    
+    ticket_created = ticket.get("created_at")
+    if isinstance(ticket_created, str):
+        ticket_created = datetime.fromisoformat(ticket_created.replace("Z", "+00:00"))
+    
+    # Find other open tickets from same customer within 2 hours
+    two_hours_before = ticket_created - timedelta(hours=2)
+    two_hours_after = ticket_created + timedelta(hours=2)
+    
+    suggestions = list(tickets_collection.find({
+        "ticket_id": {"$ne": ticket_id},
+        "customer_email": customer_email,
+        "status": {"$nin": ["merged", "closed", "resolved"]},
+        "created_at": {
+            "$gte": two_hours_before,
+            "$lte": two_hours_after
+        }
+    }, {"_id": 0, "ticket_id": 1, "title": 1, "status": 1, "created_at": 1, "priority": 1}))
+    
+    return {
+        "suggestions": [serialize_doc(s) for s in suggestions],
+        "rule": "Same customer email within 2 hours"
+    }
+
+
 @app.post("/api/tickets/{ticket_id}/link")
 async def link_tickets(
     ticket_id: str,
