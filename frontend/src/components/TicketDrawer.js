@@ -317,6 +317,10 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       setTicketTags(ticket.tags || []);
       setTagInput('');
       setShowTagDropdown(false);
+      // Merged tickets data
+      setMergedTickets(ticket.merged_tickets || []);
+      setMessageSourceFilter('all');
+      setDismissedMergeSuggestions([]);
       fetchNotes(ticket.id);
       fetchRelatedTickets(ticket.id);
       fetchCustomFields();
@@ -324,8 +328,47 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       fetchAvailableTags();
       fetchCsatData(ticket.id);
       fetchLinkedFeatureRequests(ticket.id);
+      fetchMergeSuggestions(ticket.id);
     }
   }, [ticket]);
+
+  // Fetch merge suggestions for auto-merge
+  const fetchMergeSuggestions = async (ticketId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}/merge-suggestions`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setMergeSuggestions(data.suggestions || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch merge suggestions:', error);
+    }
+  };
+
+  // Unmerge a ticket
+  const handleUnmerge = async (sourceTicketId) => {
+    if (!ticket) return;
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/unmerge/${sourceTicketId}`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (response.ok) {
+        // Update local state
+        setMergedTickets(prev => prev.filter(m => m.ticket_id !== sourceTicketId));
+        // Refresh messages
+        fetchNotes(ticket.id);
+        // Notify parent
+        if (onUpdate) {
+          onUpdate(ticket.id, { merged_tickets: mergedTickets.filter(m => m.ticket_id !== sourceTicketId) });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to unmerge ticket:', error);
+    }
+  };
 
   // Fetch linked feature requests for ticket
   const fetchLinkedFeatureRequests = async (ticketId) => {
