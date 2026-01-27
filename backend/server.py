@@ -2473,6 +2473,43 @@ async def update_ticket(
             changed_by=current_user["user_id"],
             change_type="update"
         )
+        
+        # Create system messages for important changes (assignment, status)
+        # These appear in the conversation timeline
+        for field, (old_val, new_val) in changes.items():
+            if field == "assignee_id":
+                # Get assignee name
+                assignee_name = "Unassigned"
+                if new_val:
+                    assignee = users_collection.find_one({"user_id": new_val})
+                    assignee_name = assignee.get("name", new_val) if assignee else new_val
+                messages_collection.insert_one({
+                    "message_id": f"msg_{uuid4().hex[:12]}",
+                    "ticket_id": ticket_id,
+                    "type": "system",
+                    "text": f"Assigned to {assignee_name}",
+                    "created_by": current_user["user_id"],
+                    "created_at": datetime.now(timezone.utc)
+                })
+            elif field == "status":
+                status_label = new_val.replace("_", " ").title()
+                messages_collection.insert_one({
+                    "message_id": f"msg_{uuid4().hex[:12]}",
+                    "ticket_id": ticket_id,
+                    "type": "system",
+                    "text": f"Status changed to {status_label}",
+                    "created_by": current_user["user_id"],
+                    "created_at": datetime.now(timezone.utc)
+                })
+            elif field == "priority":
+                messages_collection.insert_one({
+                    "message_id": f"msg_{uuid4().hex[:12]}",
+                    "ticket_id": ticket_id,
+                    "type": "system",
+                    "text": f"Priority set to {new_val.title()}",
+                    "created_by": current_user["user_id"],
+                    "created_at": datetime.now(timezone.utc)
+                })
     
     # Log auto-reassignment to changelog if it occurred
     if reassignment_info and reassignment_info.get("reassigned"):
