@@ -6,12 +6,26 @@ import {
   Sparkles, PenLine, Command, Link2, Settings, Users,
   Clock, ArrowUpCircle, UserCheck, AtSign, Copy, Printer,
   BellOff, Merge, ExternalLink, Split, Link, FileText, 
-  Tag, Bookmark, Download, UserPlus, Scissors, MessageSquareHeart
+  Tag, Bookmark, Download, UserPlus, Scissors, MessageSquareHeart,
+  GitMerge, Filter, Unlink
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import MentionInput, { renderTextWithMentions } from './MentionInput';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Merge color palette for visual distinction of merged ticket sources
+const MERGE_COLORS = [
+  { bg: 'bg-cyan-500/10', border: 'border-l-cyan-500', text: 'text-cyan-400', label: 'Cyan' },
+  { bg: 'bg-amber-500/10', border: 'border-l-amber-500', text: 'text-amber-400', label: 'Amber' },
+  { bg: 'bg-violet-500/10', border: 'border-l-violet-500', text: 'text-violet-400', label: 'Violet' },
+  { bg: 'bg-emerald-500/10', border: 'border-l-emerald-500', text: 'text-emerald-400', label: 'Emerald' },
+  { bg: 'bg-rose-500/10', border: 'border-l-rose-500', text: 'text-rose-400', label: 'Rose' },
+];
+
+const getMergeColor = (colorIndex) => {
+  return MERGE_COLORS[colorIndex % MERGE_COLORS.length];
+};
 
 const STATUSES = [
   { value: 'todo', label: 'To Do', color: 'bg-slate-400' },
