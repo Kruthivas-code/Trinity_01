@@ -1,7 +1,7 @@
 import React from 'react';
 import TicketsListView from './TicketsListView';
 
-const ClosedTicketsPage = ({ user, onTicketClick }) => {
+const ClosedTicketsPage = ({ user, onTicketClick, refreshKey }) => {
   return (
     <TicketsListView
       title="Closed Tickets"
@@ -9,6 +9,7 @@ const ClosedTicketsPage = ({ user, onTicketClick }) => {
       filterStatuses={['resolved', 'closed']}
       user={user}
       onTicketClick={onTicketClick}
+      refreshKey={refreshKey}
     />
   );
 };
