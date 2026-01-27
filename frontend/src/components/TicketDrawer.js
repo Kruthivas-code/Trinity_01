@@ -1130,7 +1130,11 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 <Loader2 size={24} className="animate-spin text-muted-foreground" />
               </div>
             ) : (
-              conversationThread.map((msg, idx) => (
+              conversationThread
+                .filter(msg => messageSourceFilter === 'all' || 
+                  msg.original_ticket_id === messageSourceFilter || 
+                  (!msg.original_ticket_id && messageSourceFilter === ticket?.ticket_id))
+                .map((msg, idx) => (
                 <EmailMessage
                   key={idx}
                   type={msg.type}
@@ -1141,6 +1145,10 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   timestamp={msg.timestamp}
                   isFirst={idx === 0}
                   isAgentMessage={msg.isAgentMessage}
+                  originalTicketId={msg.original_ticket_id}
+                  mergeColorIndex={msg.merge_color_index}
+                  isMergeDivider={msg.type === 'merge_divider'}
+                  mergedTicketTitle={msg.merged_ticket_title}
                 />
               ))
             )}
