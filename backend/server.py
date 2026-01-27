@@ -5759,7 +5759,7 @@ async def merge_tickets(
     merge_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
-    """Merge this ticket into another ticket"""
+    """Merge this ticket into another ticket with full conversation consolidation"""
     target_ticket_id = merge_data.get("target_ticket_id")
     if not target_ticket_id:
         raise HTTPException(status_code=400, detail="Target ticket ID required")
@@ -5773,38 +5773,108 @@ async def merge_tickets(
     if not target_ticket:
         raise HTTPException(status_code=404, detail="Target ticket not found")
     
-    # Move all messages from source to target
+    merge_timestamp = datetime.now(timezone.utc)
+    
+    # Determine the color index for this merge (cycle through 0-4)
+    existing_merged = target_ticket.get("merged_tickets", [])
+    color_index = len(existing_merged) % 5
+    
+    # Update messages: keep in source ticket but add merge metadata
     messages_collection.update_many(
         {"ticket_id": ticket_id},
-        {"$set": {"ticket_id": target_ticket_id, "merged_from": ticket_id}}
+        {"$set": {
+            "ticket_id": target_ticket_id,
+            "original_ticket_id": ticket_id,
+            "merged_at": merge_timestamp,
+            "merge_color_index": color_index
+        }}
     )
     
-    # Add a system note about the merge
+    # Add a system note about the merge (acts as a divider)
     merge_note = {
         "message_id": f"msg_{uuid4().hex[:12]}",
         "ticket_id": target_ticket_id,
-        "type": "system",
-        "text": f"Merged from ticket {ticket_id}: {source_ticket.get('title')}",
+        "type": "merge_divider",
+        "text": f"Merged from {ticket_id}: {source_ticket.get('title', 'Untitled')}",
+        "original_ticket_id": ticket_id,
+        "merged_ticket_title": source_ticket.get("title", "Untitled"),
+        "merge_color_index": color_index,
         "created_by": current_user["user_id"],
-        "created_at": datetime.now(timezone.utc)
+        "created_at": merge_timestamp
     }
     messages_collection.insert_one(merge_note)
     
-    # Mark source ticket as merged (soft delete)
+    # Build merged ticket reference
+    merged_ticket_ref = {
+        "ticket_id": ticket_id,
+        "original_title": source_ticket.get("title", "Untitled"),
+        "merged_at": merge_timestamp,
+        "merged_by": current_user["user_id"],
+        "color_index": color_index,
+        "message_count": messages_collection.count_documents({"original_ticket_id": ticket_id}),
+        "original_status": source_ticket.get("status"),
+        "original_priority": source_ticket.get("priority"),
+    }
+    
+    # Collect all search identifiers from source
+    source_identifiers = [ticket_id]
+    if source_ticket.get("external_id"):
+        source_identifiers.append(source_ticket["external_id"])
+    if source_ticket.get("uuid"):
+        source_identifiers.append(source_ticket["uuid"])
+    # Include any identifiers source already had from previous merges
+    source_identifiers.extend(source_ticket.get("search_identifiers", []))
+    
+    # Collect associated emails
+    source_emails = []
+    if source_ticket.get("customer_email"):
+        source_emails.append(source_ticket["customer_email"])
+    source_emails.extend(source_ticket.get("associated_emails", []))
+    
+    # Collect tags
+    source_tags = source_ticket.get("tags", [])
+    target_tags = target_ticket.get("tags", [])
+    combined_tags = list(set(target_tags + source_tags))
+    
+    # Update target ticket with merged info
+    existing_identifiers = target_ticket.get("search_identifiers", [target_ticket_id])
+    existing_emails = target_ticket.get("associated_emails", [])
+    if target_ticket.get("customer_email") and target_ticket["customer_email"] not in existing_emails:
+        existing_emails.append(target_ticket["customer_email"])
+    
+    tickets_collection.update_one(
+        {"ticket_id": target_ticket_id},
+        {
+            "$push": {"merged_tickets": merged_ticket_ref},
+            "$set": {
+                "search_identifiers": list(set(existing_identifiers + source_identifiers)),
+                "associated_emails": list(set(existing_emails + source_emails)),
+                "tags": combined_tags,
+                "updated_at": merge_timestamp
+            }
+        }
+    )
+    
+    # Mark source ticket as merged (soft delete but keep for unmerge)
     tickets_collection.update_one(
         {"ticket_id": ticket_id},
         {"$set": {
             "status": "merged",
             "merged_into": target_ticket_id,
-            "merged_at": datetime.now(timezone.utc),
-            "merged_by": current_user["user_id"]
+            "merged_at": merge_timestamp,
+            "merged_by": current_user["user_id"],
+            "pre_merge_status": source_ticket.get("status", "todo")
         }}
     )
     
     # Log the change
     log_ticket_change(ticket_id, source_ticket.get("uuid", ""), "merge", None, target_ticket_id, current_user["user_id"], "merge")
     
-    return {"message": f"Ticket {ticket_id} merged into {target_ticket_id}"}
+    return {
+        "message": f"Ticket {ticket_id} merged into {target_ticket_id}",
+        "merged_ticket": merged_ticket_ref,
+        "total_merged": len(existing_merged) + 1
+    }
 
 
 @app.post("/api/tickets/{ticket_id}/link")
