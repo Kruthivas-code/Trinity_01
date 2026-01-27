@@ -189,9 +189,20 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
 
   const styles = getMessageStyles();
   
+  // Get merge color styling if this message came from a merged ticket
+  const mergeColor = originalTicketId ? getMergeColor(mergeColorIndex || 0) : null;
+  const mergeStyles = mergeColor ? `border-l-4 ${mergeColor.border}` : '';
+  
   return (
     <div className={`${styles.alignment}`}>
-      <div className={`${styles.container} p-4`}>
+      <div className={`${styles.container} ${mergeStyles} p-4`}>
+        {/* Merged from indicator */}
+        {originalTicketId && (
+          <div className={`flex items-center gap-1.5 mb-2 text-[10px] ${mergeColor?.text || 'text-muted-foreground'}`}>
+            <GitMerge size={10} />
+            <span>From {originalTicketId}</span>
+          </div>
+        )}
         {/* Message Header */}
         <div className={`flex items-start justify-between mb-3 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
           <div className={`flex items-start gap-3 ${isAgent && !isNote ? 'flex-row-reverse text-right' : ''}`}>
