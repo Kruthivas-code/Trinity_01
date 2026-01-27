@@ -748,23 +748,118 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!isOpen) return;
-      // N for note, R for reply when not typing
+      
       const activeElement = document.activeElement;
       const isTyping = activeElement?.isContentEditable || 
                        activeElement?.tagName === 'INPUT' || 
-                       activeElement?.tagName === 'TEXTAREA';
+                       activeElement?.tagName === 'TEXTAREA' ||
+                       activeElement?.tagName === 'SELECT';
+      
+      // Escape - close drawer/modals (works even when typing)
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        // Close modals first if any are open
+        if (showMergeModal) {
+          setShowMergeModal(false);
+          return;
+        }
+        if (showLinkModal) {
+          setShowLinkModal(false);
+          return;
+        }
+        if (showSplitModal) {
+          setShowSplitModal(false);
+          return;
+        }
+        if (showFeatureRequestModal) {
+          setShowFeatureRequestModal(false);
+          return;
+        }
+        if (showMoreMenu) {
+          setShowMoreMenu(false);
+          return;
+        }
+        if (showAssignDropdown) {
+          setShowAssignDropdown(false);
+          return;
+        }
+        if (showTagDropdown) {
+          setShowTagDropdown(false);
+          return;
+        }
+        // Close the drawer
+        onClose();
+        return;
+      }
+      
+      // Shortcuts that only work when not typing
       if (!isTyping) {
+        // N for note mode
         if (e.key === 'n' || e.key === 'N') {
+          e.preventDefault();
           setInputMode('note');
         }
+        // R for reply mode
         if (e.key === 'r' || e.key === 'R') {
+          e.preventDefault();
           setInputMode('reply');
         }
+        // S for star/unstar
+        if (e.key === 's' || e.key === 'S') {
+          e.preventDefault();
+          handleToggleStar();
+        }
+        // A for assign to me
+        if (e.key === 'a' || e.key === 'A') {
+          e.preventDefault();
+          handleAssignToMe();
+        }
+        // M for merge
+        if (e.key === 'm' || e.key === 'M') {
+          e.preventDefault();
+          setShowMergeModal(true);
+        }
+        // L for link
+        if (e.key === 'l' || e.key === 'L') {
+          e.preventDefault();
+          setShowLinkModal(true);
+        }
+        // C for copy link
+        if (e.key === 'c' || e.key === 'C') {
+          e.preventDefault();
+          handleCopyLink();
+        }
+        // D for delete (with confirmation)
+        if (e.key === 'd' || e.key === 'D') {
+          e.preventDefault();
+          setShowDeleteConfirm(true);
+        }
+        // Arrow keys for navigation (future: prev/next ticket)
+        // 1-5 for priority
+        if (e.key >= '1' && e.key <= '4') {
+          e.preventDefault();
+          const priorities = ['low', 'medium', 'high', 'urgent'];
+          const newPriority = priorities[parseInt(e.key) - 1];
+          setFormData(prev => ({ ...prev, priority: newPriority }));
+        }
+      }
+      
+      // Cmd/Ctrl + Enter to send (works when typing)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleSubmitInput();
+      }
+      
+      // Cmd/Ctrl + S to save (works when typing)
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        handleSaveChanges();
       }
     };
+    
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, showMergeModal, showLinkModal, showSplitModal, showFeatureRequestModal, showMoreMenu, showAssignDropdown, showTagDropdown, onClose, inputText]);
 
   const fetchNotes = async (ticketId) => {
     setLoadingNotes(true);
