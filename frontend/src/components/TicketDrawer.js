@@ -1207,6 +1207,23 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                     Unassigned
                   </button>
                   
+                  {/* Always show Assign to me at the top */}
+                  {currentUser && (
+                    <button
+                      onClick={handleAssignToMe}
+                      className={`w-full px-3 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-2 border-b border-border/30 ${
+                        formData.assignee_id === (currentUser.user_id || currentUser.id) ? 'bg-primary/10 text-primary' : 'text-primary'
+                      }`}
+                      data-testid="assign-to-me-button"
+                    >
+                      <UserPlus size={14} />
+                      <span>Assign to me</span>
+                      {formData.assignee_id === (currentUser.user_id || currentUser.id) && (
+                        <span className="ml-auto text-[10px]">✓</span>
+                      )}
+                    </button>
+                  )}
+                  
                   {/* Team Members Section */}
                   {assignmentOptions?.team_members?.length > 0 && (
                     <>
@@ -1217,17 +1234,9 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                           <span className="ml-auto opacity-60">({assignmentOptions.current_team.name})</span>
                         )}
                       </div>
-                      {/* Assign to me - quick action */}
-                      {currentUser && !assignmentOptions.team_members.find(m => m.user_id === (currentUser.user_id || currentUser.id)) && (
-                        <button
-                          onClick={handleAssignToMe}
-                          className="w-full px-3 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-2 text-primary border-b border-border/30"
-                        >
-                          <UserPlus size={14} />
-                          <span>Assign to me</span>
-                        </button>
-                      )}
-                      {assignmentOptions.team_members.map(member => (
+                      {assignmentOptions.team_members
+                        .filter(m => m.user_id !== (currentUser?.user_id || currentUser?.id))
+                        .map(member => (
                         <button
                           key={member.user_id}
                           onClick={() => handleAssign(member.user_id)}
@@ -1240,9 +1249,6 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                               {member.name?.charAt(0).toUpperCase()}
                             </div>
                             {member.name}
-                            {member.user_id === (currentUser?.user_id || currentUser?.id) && (
-                              <span className="text-[10px] text-primary">(me)</span>
-                            )}
                           </span>
                           {member.is_on_shift ? (
                             <span className="flex items-center gap-1 text-[10px] text-emerald-500">
