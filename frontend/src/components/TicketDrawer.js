@@ -107,6 +107,17 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
     );
   }
 
+  // Handle system messages (assignments, status changes, etc.) - minimal one-line display
+  if (type === 'system') {
+    return (
+      <div className="flex items-center justify-center py-1">
+        <span className="text-[11px] text-muted-foreground/60">
+          {content} • {formatDate(timestamp)}
+        </span>
+      </div>
+    );
+  }
+
   const isNote = type === 'internal_note';
   const isReply = type === 'reply';
   const isCustomerMessage = type === 'original' || type === 'customer_reply';
