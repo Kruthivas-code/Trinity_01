@@ -254,25 +254,48 @@ function AppRouter() {
 // Create a context to share command palette state
 export const CommandPaletteContext = React.createContext({
   openCommandPalette: () => {},
+  openKeyboardHelp: () => {},
 });
 
 // Wrapper component that provides realtime context to authenticated routes
 function AppWithRealtime({ user, children }) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [keyboardHelpOpen, setKeyboardHelpOpen] = useState(false);
 
-  // Global keyboard shortcut for Command Palette
+  // Global keyboard shortcut for Command Palette and Help
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Cmd+K (Mac) or Ctrl+K (Windows/Linux)
+      const activeElement = document.activeElement;
+      const isTyping = activeElement?.isContentEditable || 
+                       activeElement?.tagName === 'INPUT' || 
+                       activeElement?.tagName === 'TEXTAREA' ||
+                       activeElement?.tagName === 'SELECT';
+      
+      // Cmd+K (Mac) or Ctrl+K (Windows/Linux) for command palette
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setCommandPaletteOpen(prev => !prev);
+        return;
+      }
+      
+      // ? for keyboard shortcuts help (only when not typing)
+      if (e.key === '?' && !isTyping) {
+        e.preventDefault();
+        setKeyboardHelpOpen(prev => !prev);
+        return;
+      }
+      
+      // Escape to close help
+      if (e.key === 'Escape' && keyboardHelpOpen) {
+        e.preventDefault();
+        setKeyboardHelpOpen(false);
+        return;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [keyboardHelpOpen]);
 
   // Store current user ID for presence filtering
   useEffect(() => {
@@ -285,15 +308,28 @@ function AppWithRealtime({ user, children }) {
     setCommandPaletteOpen(true);
   }, []);
 
+  const openKeyboardHelp = useCallback(() => {
+    setKeyboardHelpOpen(true);
+  }, []);
+
+  // Dynamically import KeyboardShortcutsHelp
+  const KeyboardShortcutsHelp = React.lazy(() => import('./components/KeyboardShortcutsHelp'));
+
   return (
     <RealtimeProvider user={user}>
-      <CommandPaletteContext.Provider value={{ openCommandPalette }}>
+      <CommandPaletteContext.Provider value={{ openCommandPalette, openKeyboardHelp }}>
         {children}
       </CommandPaletteContext.Provider>
       <CommandPalette 
         isOpen={commandPaletteOpen} 
         onClose={() => setCommandPaletteOpen(false)} 
       />
+      <React.Suspense fallback={null}>
+        <KeyboardShortcutsHelp 
+          isOpen={keyboardHelpOpen} 
+          onClose={() => setKeyboardHelpOpen(false)} 
+        />
+      </React.Suspense>
     </RealtimeProvider>
   );
 }
