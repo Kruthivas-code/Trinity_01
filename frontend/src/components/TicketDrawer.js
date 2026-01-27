@@ -1254,91 +1254,57 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               </div>
             )}
             
-            {/* Merged Tickets Panel */}
+            {/* Merged Tickets Info - Compact inline display */}
             {mergedTickets.length > 0 && (
-              <div className="mb-4">
-                <button
-                  onClick={() => setShowMergedPanel(!showMergedPanel)}
-                  className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 hover:bg-cyan-500/20 transition-colors"
-                >
+              <div className="mb-3 p-2 rounded-lg bg-secondary/20 border border-border/30">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <GitMerge size={14} className="text-cyan-400" />
-                    <span className="text-xs font-medium text-cyan-400">Merged Tickets</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400">
-                      {mergedTickets.length}
+                    <GitMerge size={12} className="text-muted-foreground" />
+                    <span className="text-[11px] text-muted-foreground">
+                      Contains {mergedTickets.length} merged {mergedTickets.length === 1 ? 'ticket' : 'tickets'}
                     </span>
+                    <div className="flex items-center gap-1">
+                      {mergedTickets.slice(0, 3).map((m, idx) => {
+                        const color = getMergeColor(m.color_index || idx);
+                        return (
+                          <span key={m.ticket_id} className={`text-[10px] font-mono ${color.text}`}>
+                            {m.ticket_id}
+                          </span>
+                        );
+                      })}
+                      {mergedTickets.length > 3 && (
+                        <span className="text-[10px] text-muted-foreground">+{mergedTickets.length - 3}</span>
+                      )}
+                    </div>
                   </div>
-                  {showMergedPanel ? (
-                    <ChevronDown size={14} className="text-cyan-400" />
-                  ) : (
-                    <ChevronRight size={14} className="text-cyan-400" />
-                  )}
-                </button>
+                  <button
+                    onClick={() => setShowMergedPanel(!showMergedPanel)}
+                    className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showMergedPanel ? 'Hide' : 'Details'}
+                  </button>
+                </div>
                 
                 {showMergedPanel && (
-                  <div className="mt-2 space-y-1.5">
+                  <div className="mt-2 pt-2 border-t border-border/30 space-y-1.5">
                     {mergedTickets.map((merged, idx) => {
                       const color = getMergeColor(merged.color_index || idx);
                       return (
-                        <div
-                          key={merged.ticket_id}
-                          className={`p-2.5 rounded-lg ${color.bg} border-l-4 ${color.border} border border-border/20`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="min-w-0 flex-1">
-                              <p className="text-xs font-medium truncate">{merged.original_title}</p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {merged.ticket_id} • {merged.message_count || 0} messages
-                              </p>
-                              <p className="text-[10px] text-muted-foreground">
-                                Merged {new Date(merged.merged_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => handleUnmerge(merged.ticket_id)}
-                              className="text-[10px] px-2 py-1 rounded text-muted-foreground hover:bg-secondary/50 transition-colors flex items-center gap-1"
-                              title="Unmerge this ticket"
-                            >
-                              <Unlink size={12} />
-                              Unmerge
-                            </button>
+                        <div key={merged.ticket_id} className="flex items-center justify-between py-1">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`text-[10px] font-mono ${color.text}`}>{merged.ticket_id}</span>
+                            <span className="text-[11px] truncate">{merged.original_title}</span>
                           </div>
+                          <button
+                            onClick={() => handleUnmerge(merged.ticket_id)}
+                            className="text-[10px] text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                            title="Unmerge"
+                          >
+                            <Unlink size={11} />
+                          </button>
                         </div>
                       );
                     })}
-                    
-                    {/* Associated Emails */}
-                    {ticket?.associated_emails?.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-border/30">
-                        <p className="text-[10px] font-medium text-muted-foreground mb-1">Associated Emails</p>
-                        <div className="flex flex-wrap gap-1">
-                          {ticket.associated_emails.map(email => (
-                            <span key={email} className="text-[10px] px-1.5 py-0.5 rounded bg-secondary/50 text-muted-foreground">
-                              {email}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Search Identifiers */}
-                    {ticket?.search_identifiers?.length > 1 && (
-                      <div className="mt-2 pt-2 border-t border-border/30">
-                        <p className="text-[10px] font-medium text-muted-foreground mb-1">Searchable By</p>
-                        <div className="flex flex-wrap gap-1">
-                          {ticket.search_identifiers.slice(0, 5).map(id => (
-                            <span key={id} className="text-[10px] px-1.5 py-0.5 rounded bg-secondary/50 font-mono text-muted-foreground">
-                              {id}
-                            </span>
-                          ))}
-                          {ticket.search_identifiers.length > 5 && (
-                            <span className="text-[10px] text-muted-foreground">
-                              +{ticket.search_identifiers.length - 5} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -1346,8 +1312,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
             
             {/* Message Source Filter (when merged tickets exist) */}
             {mergedTickets.length > 0 && (
-              <div className="mb-4 flex items-center gap-2">
-                <Filter size={12} className="text-muted-foreground" />
+              <div className="mb-3 flex items-center gap-2">
+                <Filter size={11} className="text-muted-foreground" />
                 <select
                   value={messageSourceFilter}
                   onChange={(e) => setMessageSourceFilter(e.target.value)}
