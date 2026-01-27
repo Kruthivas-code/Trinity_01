@@ -334,6 +334,91 @@ Major design refresh completed:
 
 ---
 
+## Phase 15: Enhanced Merge System ✅ COMPLETED (1/27/2026)
+
+### Backend Implementation
+- [x] **Enhanced Merge API** (`POST /api/tickets/{id}/merge`)
+  - Consolidates conversations chronologically
+  - Assigns color index for visual distinction
+  - Tracks `merged_tickets` array with full metadata
+  - Builds `search_identifiers` for multi-ID search
+  - Combines `associated_emails` for customer lookup
+  - Creates merge divider messages
+  
+- [x] **Unmerge API** (`POST /api/tickets/{id}/unmerge/{source_id}`)
+  - Restores original ticket with messages
+  - Removes from search_identifiers
+  - Adds system notes to both tickets
+  
+- [x] **Merge Suggestions API** (`GET /api/tickets/{id}/merge-suggestions`)
+  - Deterministic rule: Same customer email within 2 hours
+  - Returns suggested tickets for auto-merge
+
+- [x] **Enhanced Search** (search.py)
+  - Search by any merged ticket ID returns parent
+  - Search by associated emails
+  - Search by external IDs (Atlas, UUID)
+  - Results show `contains_merged_ticket` flag
+
+### Frontend Implementation
+- [x] **Merged Conversation Timeline**
+  - Color-coded messages per source (cyan, amber, violet, emerald, rose)
+  - Merge divider lines showing "Merged from TKT-XXX"
+  - Origin badge on each message
+  - Chronological ordering across all sources
+
+- [x] **Merged Tickets Side Panel**
+  - Collapsible panel showing all merged tickets
+  - Color-coded by merge order
+  - Unmerge button per merged ticket
+  - Associated emails list
+  - Searchable identifiers list
+
+- [x] **Message Source Filter**
+  - Dropdown to filter by "All messages" or specific source ticket
+  - Quick focus on messages from specific merged ticket
+
+- [x] **Auto-Merge Suggestion Banner**
+  - Shows when duplicate tickets detected
+  - Quick merge/dismiss buttons
+  - Rule displayed: "Same customer email within 2 hours"
+
+- [x] **Enhanced Merge Modal**
+  - Merge preview showing source → target
+  - Combined tags preview
+  - Searchability info
+  - Shows "has merges" indicator on tickets
+
+### Data Model
+```javascript
+Ticket {
+  merged_tickets: [{
+    ticket_id, original_title, merged_at, merged_by,
+    color_index, message_count, original_status, original_priority
+  }],
+  search_identifiers: ["TKT-000113", "TKT-000098", "uuid..."],
+  associated_emails: ["john@example.com", "john.doe@example.com"]
+}
+
+Message {
+  original_ticket_id: "TKT-000098",  // For merged messages
+  merge_color_index: 0,  // Color palette index
+  merged_at: timestamp
+}
+```
+
+### Color Palette
+| Index | Color | Usage |
+|-------|-------|-------|
+| 0 | Cyan | First merged ticket |
+| 1 | Amber | Second merged ticket |
+| 2 | Violet | Third merged ticket |
+| 3 | Emerald | Fourth merged ticket |
+| 4 | Rose | Fifth merged ticket |
+| 5+ | Cycles | Continues from cyan |
+
+---
+
 ## Next Steps / Future Enhancements
 - [ ] Real-time presence indicators (avatars showing who's viewing a ticket)
 - [ ] Live update notifications (non-toast based)
@@ -347,6 +432,7 @@ Major design refresh completed:
 - [x] Advanced ticket actions - Merge, Link, Split (COMPLETED)
 - [x] Feature Requests module (COMPLETED)
 - [x] Starred Tickets functionality (COMPLETED)
+- [x] Enhanced Merge with Visual Consolidation (COMPLETED)
 
 ---
 
