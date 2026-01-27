@@ -2207,12 +2207,11 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               });
               if (response.ok) {
                 setShowMergeModal(false);
-                // Use onDelete to remove the merged (source) ticket from parent's list
-                // This triggers a refresh that will exclude the now-merged ticket
-                if (onDelete) {
-                  await onDelete(ticket.id);
-                } else {
-                  onClose();
+                onClose();
+                // Signal parent to refresh ticket list by calling onUpdate with a special flag
+                // This will trigger a refetch which will exclude the merged ticket
+                if (onUpdate) {
+                  onUpdate(ticket.id, { _merged: true, _mergedInto: targetTicketId }, true);
                 }
               }
             } catch (error) {
