@@ -261,6 +261,7 @@ const MainLayout = ({ user, view }) => {
           {view === 'all-tickets' && (
             <AllTicketsPage 
               key={refreshKey}
+              refreshKey={refreshKey}
               user={user} 
               onTicketClick={handleTicketClick}
             />
@@ -268,6 +269,7 @@ const MainLayout = ({ user, view }) => {
           {view === 'open-tickets' && (
             <OpenTicketsPage 
               key={refreshKey}
+              refreshKey={refreshKey}
               user={user} 
               onTicketClick={handleTicketClick}
             />
@@ -275,6 +277,7 @@ const MainLayout = ({ user, view }) => {
           {view === 'waiting-tickets' && (
             <WaitingTicketsPage 
               key={refreshKey}
+              refreshKey={refreshKey}
               user={user} 
               onTicketClick={handleTicketClick}
             />
@@ -282,6 +285,7 @@ const MainLayout = ({ user, view }) => {
           {view === 'closed-tickets' && (
             <ClosedTicketsPage 
               key={refreshKey}
+              refreshKey={refreshKey}
               user={user} 
               onTicketClick={handleTicketClick}
             />
@@ -289,6 +293,7 @@ const MainLayout = ({ user, view }) => {
           {view === 'starred-tickets' && (
             <StarredTicketsPage 
               key={refreshKey}
+              refreshKey={refreshKey}
               user={user} 
               onTicketClick={handleTicketClick}
             />
