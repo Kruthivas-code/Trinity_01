@@ -96,6 +96,14 @@ const Dashboard = ({ user, token, onLogout }) => {
 
   const handleUpdateTicket = async (ticketId, updates) => {
     try {
+      // Handle merge completion - just refresh without making an update API call
+      if (updates._merged) {
+        await fetchTickets();
+        await fetchAnalytics();
+        setIsDrawerOpen(false);
+        return;
+      }
+      
       const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}`, {
         method: 'PUT',
         headers: {
