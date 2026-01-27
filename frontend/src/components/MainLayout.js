@@ -198,8 +198,12 @@ const MainLayout = ({ user, view }) => {
     try {
       // Handle merge completion - just refresh without making an update API call
       if (updatedData._merged) {
+        console.log('[MainLayout] Merge detected, incrementing refreshKey');
         handleCloseDrawer();
-        setRefreshKey(prev => prev + 1); // Trigger list refresh
+        setRefreshKey(prev => {
+          console.log('[MainLayout] refreshKey changing from', prev, 'to', prev + 1);
+          return prev + 1;
+        });
         return;
       }
       
