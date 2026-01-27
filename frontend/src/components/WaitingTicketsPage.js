@@ -1,7 +1,7 @@
 import React from 'react';
 import TicketsListView from './TicketsListView';
 
-const WaitingTicketsPage = ({ user, onTicketClick }) => {
+const WaitingTicketsPage = ({ user, onTicketClick, refreshKey }) => {
   return (
     <TicketsListView
       title="Waiting on Customer"
@@ -9,6 +9,7 @@ const WaitingTicketsPage = ({ user, onTicketClick }) => {
       filterStatuses={['waiting']}
       user={user}
       onTicketClick={onTicketClick}
+      refreshKey={refreshKey}
     />
   );
 };
