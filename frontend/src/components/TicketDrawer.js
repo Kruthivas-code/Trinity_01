@@ -1292,21 +1292,22 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                     </>
                   )}
                   
-                  {/* Fallback to all users if no assignment options */}
-                  {!assignmentOptions && users.length > 0 && (
+                  {/* Show all users section when no team members or as additional option */}
+                  {users.length > 0 && (
                     <>
                       <div className="px-3 py-1.5 text-[10px] font-medium uppercase text-muted-foreground bg-secondary/30">
-                        All Users
+                        {assignmentOptions?.team_members?.length > 0 ? 'Other Users' : 'All Users'}
                       </div>
-                      {/* Assign to me - quick action */}
-                      <button
-                        onClick={handleAssignToMe}
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-2 text-primary border-b border-border/30"
-                      >
-                        <UserPlus size={14} />
-                        <span>Assign to me</span>
-                      </button>
-                      {users.map(user => (
+                      {users
+                        .filter(user => {
+                          const userId = user.id || user.user_id;
+                          // Don't show current user (already shown at top)
+                          if (userId === (currentUser?.user_id || currentUser?.id)) return false;
+                          // Don't show team members (already shown above)
+                          if (assignmentOptions?.team_members?.some(m => m.user_id === userId)) return false;
+                          return true;
+                        })
+                        .map(user => (
                         <button
                           key={user.id || user.user_id}
                           onClick={() => handleAssign(user.id || user.user_id)}
@@ -1318,9 +1319,6 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                             {user.name?.charAt(0).toUpperCase()}
                           </div>
                           {user.name}
-                          {(user.id || user.user_id) === (currentUser?.user_id || currentUser?.id) && (
-                            <span className="text-[10px] text-primary">(me)</span>
-                          )}
                         </button>
                       ))}
                     </>
