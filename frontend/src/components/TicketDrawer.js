@@ -71,8 +71,8 @@ const stripHtml = (html) => {
   return text.replace(/\s+/g, ' ').trim();
 };
 
-// Email-style message component
-const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, isFirst, isAgentMessage }) => {
+// Email-style message component with merge support
+const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, isFirst, isAgentMessage, originalTicketId, mergeColorIndex, isMergeDivider, mergedTicketTitle }) => {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', { 
@@ -84,6 +84,28 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
       hour12: true
     });
   };
+
+  // Handle merge divider - special visual separator
+  if (isMergeDivider || type === 'merge_divider') {
+    const mergeColor = getMergeColor(mergeColorIndex || 0);
+    return (
+      <div className="my-4 flex items-center gap-2">
+        <div className={`flex-1 h-px ${mergeColor.bg} border-t border-dashed ${mergeColor.border.replace('border-l-', 'border-')}`} />
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${mergeColor.bg} border ${mergeColor.border.replace('border-l-', 'border-')}`}>
+          <GitMerge size={14} className={mergeColor.text} />
+          <span className={`text-xs font-medium ${mergeColor.text}`}>
+            Merged from {originalTicketId}
+          </span>
+          {mergedTicketTitle && (
+            <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+              "{mergedTicketTitle}"
+            </span>
+          )}
+        </div>
+        <div className={`flex-1 h-px ${mergeColor.bg} border-t border-dashed ${mergeColor.border.replace('border-l-', 'border-')}`} />
+      </div>
+    );
+  }
 
   const isNote = type === 'internal_note';
   const isReply = type === 'reply';
