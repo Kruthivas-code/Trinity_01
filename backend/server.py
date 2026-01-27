@@ -2351,13 +2351,16 @@ async def create_ticket(
     
     now = datetime.now(timezone.utc)
     
+    # Auto-assign to creator if no assignee specified
+    assignee_id = ticket_data.assignee_id if ticket_data.assignee_id else current_user["user_id"]
+    
     ticket_doc = {
         "ticket_id": ticket_id,
         "uuid": ticket_uuid,
         "title": ticket_data.title,
         "description": ticket_data.description,
         "status": ticket_data.status,
-        "assignee_id": ticket_data.assignee_id,
+        "assignee_id": assignee_id,
         "priority": ticket_data.priority,
         "escalation_level": ticket_data.escalation_level or "L1",
         "order": next_order,
