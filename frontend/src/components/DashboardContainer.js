@@ -126,6 +126,14 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
 
   const handleUpdateTicket = async (ticketId, updates, closeDrawer = false) => {
     try {
+      // Handle merge completion - just refresh without making an update API call
+      if (updates._merged) {
+        await fetchTickets();
+        await fetchAnalytics();
+        setIsDrawerOpen(false);
+        return;
+      }
+      
       const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
