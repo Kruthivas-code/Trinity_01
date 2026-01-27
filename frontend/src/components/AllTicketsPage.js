@@ -1,7 +1,7 @@
 import React from 'react';
 import TicketsListView from './TicketsListView';
 
-const AllTicketsPage = ({ user, onTicketClick }) => {
+const AllTicketsPage = ({ user, onTicketClick, refreshKey }) => {
   return (
     <TicketsListView
       title="All Open Tickets"
@@ -9,6 +9,7 @@ const AllTicketsPage = ({ user, onTicketClick }) => {
       filterStatuses={['todo', 'in_progress', 'waiting', 'review']}
       user={user}
       onTicketClick={onTicketClick}
+      refreshKey={refreshKey}
     />
   );
 };
