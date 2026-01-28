@@ -2439,6 +2439,16 @@ async def update_ticket(
     
     update_data["updated_at"] = datetime.now(timezone.utc)
     
+    # Set resolved_at timestamp when ticket is marked as resolved
+    if "status" in update_data and update_data["status"] == "resolved":
+        if current_ticket.get("status") != "resolved":
+            update_data["resolved_at"] = datetime.now(timezone.utc)
+    
+    # Set closed_at timestamp when ticket is marked as closed
+    if "status" in update_data and update_data["status"] == "closed":
+        if current_ticket.get("status") != "closed":
+            update_data["closed_at"] = datetime.now(timezone.utc)
+    
     # Check for auto-reassignment on ticket reopen
     reassignment_info = None
     if "status" in update_data:
