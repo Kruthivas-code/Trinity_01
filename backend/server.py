@@ -6971,3 +6971,81 @@ def generate_csv_export(data, filename_prefix):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
+
+
+# Admin endpoint to check auto-close status and manually trigger
+@app.get("/api/admin/auto-close-status")
+async def get_auto_close_status(current_user: dict = Depends(get_current_user)):
+    """Get status of resolved tickets pending auto-close"""
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=AUTO_CLOSE_HOURS)
+    
+    # Tickets that will be auto-closed
+    pending_close = list(tickets_collection.find({
+        "status": "resolved",
+        "resolved_at": {"$lte": cutoff_time}
+    }, {"ticket_id": 1, "title": 1, "resolved_at": 1, "_id": 0}))
+    
+    # Tickets resolved but not yet 24 hours
+    recently_resolved = list(tickets_collection.find({
+        "status": "resolved",
+        "resolved_at": {"$gt": cutoff_time}
+    }, {"ticket_id": 1, "title": 1, "resolved_at": 1, "_id": 0}))
+    
+    # Recently auto-closed
+    auto_closed = list(tickets_collection.find({
+        "status": "closed",
+        "auto_closed": True
+    }, {"ticket_id": 1, "title": 1, "closed_at": 1, "_id": 0}).sort("closed_at", -1).limit(10))
+    
+    return {
+        "auto_close_hours": AUTO_CLOSE_HOURS,
+        "pending_auto_close": len(pending_close),
+        "pending_tickets": [serialize_doc(t) for t in pending_close],
+        "recently_resolved_count": len(recently_resolved),
+        "recently_auto_closed": [serialize_doc(t) for t in auto_closed]
+    }
+
+
+@app.post("/api/admin/trigger-auto-close")
+async def trigger_auto_close(current_user: dict = Depends(get_current_user)):
+    """Manually trigger the auto-close process (admin only)"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    cutoff_time = datetime.now(timezone.utc) - timedelta(hours=AUTO_CLOSE_HOURS)
+    
+    resolved_tickets = list(tickets_collection.find({
+        "status": "resolved",
+        "resolved_at": {"$lte": cutoff_time}
+    }))
+    
+    closed_count = 0
+    closed_tickets = []
+    
+    for ticket in resolved_tickets:
+        tickets_collection.update_one(
+            {"ticket_id": ticket["ticket_id"]},
+            {"$set": {
+                "status": "closed",
+                "closed_at": datetime.now(timezone.utc),
+                "auto_closed": True,
+                "updated_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        messages_collection.insert_one({
+            "message_id": f"msg_{uuid4().hex[:12]}",
+            "ticket_id": ticket["ticket_id"],
+            "type": "system",
+            "text": f"Auto-closed after {AUTO_CLOSE_HOURS} hours in resolved status",
+            "created_by": "system",
+            "created_at": datetime.now(timezone.utc)
+        })
+        
+        closed_count += 1
+        closed_tickets.append(ticket["ticket_id"])
+    
+    return {
+        "message": f"Auto-closed {closed_count} tickets",
+        "closed_tickets": closed_tickets
+    }
