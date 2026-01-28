@@ -257,7 +257,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const [notes, setNotes] = useState([]);
   const [inputText, setInputText] = useState('');
   const [inputMentions, setInputMentions] = useState([]);
-  const [inputMode, setInputMode] = useState('note');
+  const [inputMode, setInputMode] = useState('reply');
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
