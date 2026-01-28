@@ -70,6 +70,72 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Background task to auto-close resolved tickets after 24 hours
+AUTO_CLOSE_HOURS = 24
+auto_close_task = None
+
+async def auto_close_resolved_tickets():
+    """Background task that runs every hour to close tickets resolved more than 24 hours ago"""
+    while True:
+        try:
+            cutoff_time = datetime.now(timezone.utc) - timedelta(hours=AUTO_CLOSE_HOURS)
+            
+            # Find resolved tickets older than 24 hours
+            resolved_tickets = list(tickets_collection.find({
+                "status": "resolved",
+                "resolved_at": {"$lte": cutoff_time}
+            }))
+            
+            closed_count = 0
+            for ticket in resolved_tickets:
+                # Update to closed status
+                tickets_collection.update_one(
+                    {"ticket_id": ticket["ticket_id"]},
+                    {"$set": {
+                        "status": "closed",
+                        "closed_at": datetime.now(timezone.utc),
+                        "auto_closed": True,
+                        "updated_at": datetime.now(timezone.utc)
+                    }}
+                )
+                
+                # Add system message
+                messages_collection.insert_one({
+                    "message_id": f"msg_{uuid4().hex[:12]}",
+                    "ticket_id": ticket["ticket_id"],
+                    "type": "system",
+                    "text": f"Auto-closed after {AUTO_CLOSE_HOURS} hours in resolved status",
+                    "created_by": "system",
+                    "created_at": datetime.now(timezone.utc)
+                })
+                
+                closed_count += 1
+                logger.info(f"[AUTO-CLOSE] Closed ticket {ticket['ticket_id']} after 24 hours in resolved status")
+            
+            if closed_count > 0:
+                logger.info(f"[AUTO-CLOSE] Auto-closed {closed_count} resolved tickets")
+                
+        except Exception as e:
+            logger.error(f"[AUTO-CLOSE] Error in auto-close task: {e}")
+        
+        # Run every hour
+        await asyncio.sleep(3600)
+
+@app.on_event("startup")
+async def startup_event():
+    """Start background tasks on app startup"""
+    global auto_close_task
+    auto_close_task = asyncio.create_task(auto_close_resolved_tickets())
+    logger.info("[STARTUP] Auto-close background task started")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cancel background tasks on app shutdown"""
+    global auto_close_task
+    if auto_close_task:
+        auto_close_task.cancel()
+        logger.info("[SHUTDOWN] Auto-close background task cancelled")
+
 # MongoDB
 MONGO_URL = os.environ.get("MONGO_URL")
 client = MongoClient(MONGO_URL)
