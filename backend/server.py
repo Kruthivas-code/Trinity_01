@@ -158,18 +158,46 @@ async def auto_close_resolved_tickets():
 
 @app.on_event("startup")
 async def startup_event():
-    """Start background tasks on app startup"""
+    """Start background tasks and initialize distributed adapters on app startup"""
     global auto_close_task
+    
+    # Initialize distributed adapters with the database
+    # Note: We need to use async motor client for the adapters
+    from motor.motor_asyncio import AsyncIOMotorClient
+    motor_client = AsyncIOMotorClient(MONGO_URL)
+    motor_db = motor_client.get_database()
+    
+    # Set up adapters for distributed presence and locking
+    set_database(motor_db)
+    
+    # Initialize realtime module with async database
+    initialize_realtime(motor_db)
+    
+    # Start pub/sub listener for cross-instance messaging
+    await start_pubsub()
+    
+    # Start the background task (with distributed locking)
     auto_close_task = asyncio.create_task(auto_close_resolved_tickets())
-    logger.info("[STARTUP] Auto-close background task started")
+    
+    logger.info(f"[STARTUP] Instance {_instance_id} started with distributed adapters")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Cancel background tasks on app shutdown"""
+    """Cancel background tasks and cleanup on app shutdown"""
     global auto_close_task
+    
+    # Stop pub/sub listener
+    await stop_pubsub()
+    
     if auto_close_task:
         auto_close_task.cancel()
+        try:
+            await auto_close_task
+        except asyncio.CancelledError:
+            pass
         logger.info("[SHUTDOWN] Auto-close background task cancelled")
+    
+    logger.info(f"[SHUTDOWN] Instance {_instance_id} shutdown complete")
 
 # MongoDB
 MONGO_URL = os.environ.get("MONGO_URL")
