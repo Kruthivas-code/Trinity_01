@@ -6451,9 +6451,10 @@ async def split_ticket(
     if split_at_index <= 0 or split_at_index > len(messages):
         raise HTTPException(status_code=400, detail="Invalid split index")
     
-    # Create new ticket
+    # Create new ticket - assign to the person who performed the split
     new_ticket_id = generate_ticket_id()
     new_uuid = str(uuid4())
+    split_timestamp = datetime.now(timezone.utc)
     
     new_ticket = {
         "ticket_id": new_ticket_id,
@@ -6461,21 +6462,40 @@ async def split_ticket(
         "title": new_ticket_title or f"Split from {ticket_id}",
         "description": f"This ticket was split from {ticket_id}",
         "status": original_ticket.get("status", "todo"),
-        "assignee_id": original_ticket.get("assignee_id"),
+        "assignee_id": current_user["user_id"],  # Assign to who performed the split
         "priority": original_ticket.get("priority", "medium"),
         "escalation_level": original_ticket.get("escalation_level", "L1"),
         "customer_email": original_ticket.get("customer_email"),
+        "customer_name": original_ticket.get("customer_name"),
         "domain": original_ticket.get("domain"),
         "tags": original_ticket.get("tags", []),
         "created_by": current_user["user_id"],
-        "created_at": datetime.now(timezone.utc),
-        "updated_at": datetime.now(timezone.utc),
+        "created_at": split_timestamp,
+        "updated_at": split_timestamp,
         "split_from": ticket_id,
         "is_starred": False,
-        "snoozed": False
+        "snoozed": False,
+        # Auto-link back to original ticket
+        "linked_tickets": [{
+            "ticket_id": ticket_id,
+            "title": original_ticket.get("title"),
+            "link_type": "split_from",
+            "created_at": split_timestamp.isoformat()
+        }]
     }
     
     tickets_collection.insert_one(new_ticket)
+    
+    # Add link from original ticket to new ticket
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$addToSet": {"linked_tickets": {
+            "ticket_id": new_ticket_id,
+            "title": new_ticket.get("title"),
+            "link_type": "split_to",
+            "created_at": split_timestamp.isoformat()
+        }}}
+    )
     
     # Move messages after split point to new ticket
     messages_to_move = [m.get("message_id") for m in messages[split_at_index:]]
@@ -6492,7 +6512,7 @@ async def split_ticket(
         "type": "system",
         "text": f"Ticket split. {len(messages_to_move)} message(s) moved to {new_ticket_id}",
         "created_by": current_user["user_id"],
-        "created_at": datetime.now(timezone.utc)
+        "created_at": split_timestamp
     }
     messages_collection.insert_one(split_note_original)
     
@@ -6502,17 +6522,21 @@ async def split_ticket(
         "type": "system",
         "text": f"This ticket was split from {ticket_id}",
         "created_by": current_user["user_id"],
-        "created_at": datetime.now(timezone.utc)
+        "created_at": split_timestamp
     }
     messages_collection.insert_one(split_note_new)
     
     # Log the change
     log_ticket_change(ticket_id, original_ticket.get("uuid", ""), "split", None, new_ticket_id, current_user["user_id"], "split")
     
+    # Get updated original ticket for response
+    updated_original = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    
     return {
         "message": "Ticket split successfully",
         "new_ticket_id": new_ticket_id,
-        "messages_moved": len(messages_to_move)
+        "messages_moved": len(messages_to_move),
+        "updated_ticket": serialize_doc(updated_original) if updated_original else None
     }
 
 
