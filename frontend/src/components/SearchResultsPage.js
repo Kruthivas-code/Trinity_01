@@ -507,7 +507,7 @@ const SearchResultsPage = ({ user }) => {
                               <div className="text-right shrink-0">
                                 {result.created_at && (
                                   <p className="text-xs text-muted-foreground">
-                                    {new Date(result.created_at).toLocaleDateString()}
+                                    {new Date(result.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                                   </p>
                                 )}
                               </div>
