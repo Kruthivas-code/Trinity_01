@@ -6023,7 +6023,7 @@ async def get_ticket_viewers(
     current_user: dict = Depends(get_current_user)
 ):
     """Get users currently viewing a specific ticket"""
-    viewers = get_users_viewing_ticket(ticket_id)
+    viewers = await get_users_viewing_ticket(ticket_id)
     return {
         "ticket_id": ticket_id,
         "viewers": viewers,
