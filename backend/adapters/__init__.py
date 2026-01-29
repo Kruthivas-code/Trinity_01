@@ -23,7 +23,6 @@ from typing import Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from .base import PresenceAdapter, LockAdapter, PubSubAdapter
-from .mongodb_adapter import MongoPresenceAdapter, MongoLockAdapter, MongoPubSubAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +31,7 @@ _presence_adapter: Optional[PresenceAdapter] = None
 _lock_adapter: Optional[LockAdapter] = None
 _pubsub_adapter: Optional[PubSubAdapter] = None
 _db: Optional[AsyncIOMotorDatabase] = None
+_redis_url: Optional[str] = None
 
 
 def set_database(db: AsyncIOMotorDatabase):
@@ -39,6 +39,13 @@ def set_database(db: AsyncIOMotorDatabase):
     global _db
     _db = db
     logger.info("[ADAPTERS] Database configured")
+
+
+def set_redis_url(url: str):
+    """Set the Redis URL for Redis adapters"""
+    global _redis_url
+    _redis_url = url
+    logger.info("[ADAPTERS] Redis URL configured")
 
 
 def get_adapter_backend() -> str:
@@ -57,15 +64,15 @@ def get_presence_adapter() -> PresenceAdapter:
         backend = get_adapter_backend()
         
         if backend == "redis":
-            # Redis implementation (future)
-            # from .redis_adapter import RedisPresenceAdapter
-            # _presence_adapter = RedisPresenceAdapter(os.environ.get("REDIS_URL"))
-            raise NotImplementedError(
-                "Redis adapter not implemented yet. "
-                "Set ADAPTER_BACKEND=mongodb or implement RedisPresenceAdapter"
-            )
+            from .redis_adapter import RedisPresenceAdapter
+            redis_url = _redis_url or os.environ.get("REDIS_URL")
+            if not redis_url:
+                raise RuntimeError("REDIS_URL not configured. Set REDIS_URL environment variable or call set_redis_url()")
+            _presence_adapter = RedisPresenceAdapter(redis_url)
+            logger.info("[ADAPTERS] Using Redis presence adapter")
         else:
             # MongoDB implementation (default)
+            from .mongodb_adapter import MongoPresenceAdapter
             if _db is None:
                 raise RuntimeError("Database not configured. Call set_database() first.")
             _presence_adapter = MongoPresenceAdapter(_db)
@@ -85,15 +92,15 @@ def get_lock_adapter() -> LockAdapter:
         backend = get_adapter_backend()
         
         if backend == "redis":
-            # Redis implementation (future)
-            # from .redis_adapter import RedisLockAdapter
-            # _lock_adapter = RedisLockAdapter(os.environ.get("REDIS_URL"))
-            raise NotImplementedError(
-                "Redis adapter not implemented yet. "
-                "Set ADAPTER_BACKEND=mongodb or implement RedisLockAdapter"
-            )
+            from .redis_adapter import RedisLockAdapter
+            redis_url = _redis_url or os.environ.get("REDIS_URL")
+            if not redis_url:
+                raise RuntimeError("REDIS_URL not configured. Set REDIS_URL environment variable or call set_redis_url()")
+            _lock_adapter = RedisLockAdapter(redis_url)
+            logger.info("[ADAPTERS] Using Redis lock adapter")
         else:
             # MongoDB implementation (default)
+            from .mongodb_adapter import MongoLockAdapter
             if _db is None:
                 raise RuntimeError("Database not configured. Call set_database() first.")
             _lock_adapter = MongoLockAdapter(_db)
@@ -109,7 +116,7 @@ def get_pubsub_adapter(use_polling: bool = False) -> PubSubAdapter:
     
     Args:
         use_polling: For MongoDB, use polling instead of change streams
-                    (required if not using replica set)
+                    (required if not using replica set). Ignored for Redis.
     """
     global _pubsub_adapter
     
@@ -117,15 +124,15 @@ def get_pubsub_adapter(use_polling: bool = False) -> PubSubAdapter:
         backend = get_adapter_backend()
         
         if backend == "redis":
-            # Redis implementation (future)
-            # from .redis_adapter import RedisPubSubAdapter
-            # _pubsub_adapter = RedisPubSubAdapter(os.environ.get("REDIS_URL"))
-            raise NotImplementedError(
-                "Redis adapter not implemented yet. "
-                "Set ADAPTER_BACKEND=mongodb or implement RedisPubSubAdapter"
-            )
+            from .redis_adapter import RedisPubSubAdapter
+            redis_url = _redis_url or os.environ.get("REDIS_URL")
+            if not redis_url:
+                raise RuntimeError("REDIS_URL not configured. Set REDIS_URL environment variable or call set_redis_url()")
+            _pubsub_adapter = RedisPubSubAdapter(redis_url)
+            logger.info("[ADAPTERS] Using Redis pubsub adapter (native pub/sub)")
         else:
             # MongoDB implementation (default)
+            from .mongodb_adapter import MongoPubSubAdapter
             if _db is None:
                 raise RuntimeError("Database not configured. Call set_database() first.")
             _pubsub_adapter = MongoPubSubAdapter(_db, use_polling=use_polling)
@@ -135,7 +142,7 @@ def get_pubsub_adapter(use_polling: bool = False) -> PubSubAdapter:
 
 
 def reset_adapters():
-    """Reset all adapter singletons (useful for testing)"""
+    """Reset all adapter singletons (useful for testing or switching backends)"""
     global _presence_adapter, _lock_adapter, _pubsub_adapter
     _presence_adapter = None
     _lock_adapter = None
@@ -149,6 +156,7 @@ __all__ = [
     'LockAdapter', 
     'PubSubAdapter',
     'set_database',
+    'set_redis_url',
     'get_presence_adapter',
     'get_lock_adapter',
     'get_pubsub_adapter',
