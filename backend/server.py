@@ -176,10 +176,91 @@ async def startup_event():
     # Start pub/sub listener for cross-instance messaging
     await start_pubsub()
     
+    # Create MongoDB indexes for query performance (idempotent - safe to call multiple times)
+    await create_mongodb_indexes()
+    
     # Start the background task (with distributed locking)
     auto_close_task = asyncio.create_task(auto_close_resolved_tickets())
     
     logger.info(f"[STARTUP] Instance {_instance_id} started with distributed adapters")
+
+
+async def create_mongodb_indexes():
+    """
+    Create MongoDB indexes for optimal query performance.
+    These indexes improve performance for the most common queries.
+    """
+    try:
+        # Tickets collection indexes
+        tickets_collection.create_index([("status", ASCENDING)], background=True)
+        tickets_collection.create_index([("status", ASCENDING), ("resolved_at", ASCENDING)], background=True)
+        tickets_collection.create_index([("assignee_id", ASCENDING), ("status", ASCENDING)], background=True)
+        tickets_collection.create_index([("customer_email", ASCENDING)], background=True)
+        tickets_collection.create_index([("customer_email", ASCENDING), ("created_at", DESCENDING)], background=True)
+        tickets_collection.create_index([("created_at", DESCENDING)], background=True)
+        tickets_collection.create_index([("updated_at", DESCENDING)], background=True)
+        tickets_collection.create_index([("priority", ASCENDING)], background=True)
+        tickets_collection.create_index([("team_id", ASCENDING)], background=True)
+        tickets_collection.create_index([("is_starred", ASCENDING)], background=True)
+        tickets_collection.create_index([("mentioned_users", ASCENDING)], background=True)
+        tickets_collection.create_index("ticket_id", unique=True, background=True)
+        tickets_collection.create_index("uuid", unique=True, sparse=True, background=True)
+        logger.info("[INDEXES] Created tickets collection indexes")
+        
+        # User sessions collection indexes  
+        sessions_collection.create_index("session_token", unique=True, background=True)
+        sessions_collection.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0, background=True)
+        sessions_collection.create_index([("user_id", ASCENDING)], background=True)
+        logger.info("[INDEXES] Created user_sessions collection indexes")
+        
+        # Users collection indexes
+        users_collection.create_index("user_id", unique=True, background=True)
+        users_collection.create_index("email", unique=True, sparse=True, background=True)
+        logger.info("[INDEXES] Created users collection indexes")
+        
+        # Messages collection indexes
+        messages_collection.create_index([("ticket_id", ASCENDING), ("created_at", ASCENDING)], background=True)
+        messages_collection.create_index([("ticket_id", ASCENDING)], background=True)
+        logger.info("[INDEXES] Created messages collection indexes")
+        
+        # Ticket changelog indexes
+        ticket_changelog_collection.create_index([("ticket_id", ASCENDING), ("changed_at", DESCENDING)], background=True)
+        ticket_changelog_collection.create_index([("ticket_uuid", ASCENDING)], background=True)
+        logger.info("[INDEXES] Created ticket_changelog collection indexes")
+        
+        # Teams collection indexes
+        teams_collection.create_index("team_id", unique=True, background=True)
+        logger.info("[INDEXES] Created teams collection indexes")
+        
+        # API keys collection indexes
+        api_keys_collection.create_index("key_hash", unique=True, background=True)
+        api_keys_collection.create_index([("user_id", ASCENDING)], background=True)
+        logger.info("[INDEXES] Created api_keys collection indexes")
+        
+        # Feature requests collection indexes
+        feature_requests_collection.create_index("feature_id", unique=True, background=True)
+        feature_requests_collection.create_index([("status", ASCENDING)], background=True)
+        logger.info("[INDEXES] Created feature_requests collection indexes")
+        
+        # CSAT collections indexes
+        csat_responses_collection.create_index([("ticket_id", ASCENDING)], background=True)
+        csat_tokens_collection.create_index("token", unique=True, background=True)
+        csat_tokens_collection.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0, background=True)
+        logger.info("[INDEXES] Created CSAT collection indexes")
+        
+        # Routing rules indexes
+        routing_rules_collection.create_index("rule_id", unique=True, background=True)
+        routing_rules_collection.create_index([("is_active", ASCENDING), ("priority", DESCENDING)], background=True)
+        logger.info("[INDEXES] Created routing_rules collection indexes")
+        
+        # Shifts indexes
+        shifts_collection.create_index("shift_id", unique=True, background=True)
+        shifts_collection.create_index([("team_id", ASCENDING)], background=True)
+        logger.info("[INDEXES] Created shifts collection indexes")
+        
+        logger.info("[INDEXES] All MongoDB indexes created successfully")
+    except Exception as e:
+        logger.warning(f"[INDEXES] Some indexes may already exist: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
