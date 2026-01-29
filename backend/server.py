@@ -1409,13 +1409,23 @@ async def logout(response: Response, session_token: Optional[str] = Cookie(None)
 
 # ==================== Test Authentication (Development Only) ====================
 
+# Test login is disabled by default in production
+# Set ENABLE_TEST_LOGIN=true in environment to enable (for automated testing only)
+TEST_LOGIN_ENABLED = os.environ.get("ENABLE_TEST_LOGIN", "false").lower() == "true"
+
 @app.post("/api/auth/test-login")
 async def test_login(response: Response):
     """
     Create a test session for automated testing.
-    This endpoint should be disabled in production.
+    SECURITY: This endpoint is DISABLED by default.
+    To enable: Set ENABLE_TEST_LOGIN=true in environment variables.
+    WARNING: Never enable in production environments!
     """
-    import os
+    if not TEST_LOGIN_ENABLED:
+        raise HTTPException(
+            status_code=403, 
+            detail="Test login is disabled. Set ENABLE_TEST_LOGIN=true to enable (development only)."
+        )
     
     # Create or get test user
     test_user_id = "test_user_automation"
@@ -1463,6 +1473,8 @@ async def test_login(response: Response):
         max_age=86400,
         path="/"
     )
+    
+    logger.warning(f"[SECURITY] Test login used - this should NOT happen in production!")
     
     return {
         "message": "Test session created",
