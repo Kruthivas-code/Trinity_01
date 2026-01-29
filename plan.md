@@ -796,7 +796,20 @@ The application was designed for single-instance deployment. With 2 load-balance
 - Background tasks would run on BOTH machines (race conditions)
 - Sessions were already in MongoDB (✅ correct)
 
-### Solution: Adapter Pattern with MongoDB Backend
+### Solution: Adapter Pattern with Redis Backend (Updated 1/29/2026)
+
+**Originally implemented with MongoDB adapters, now upgraded to Redis for:**
+- True push-based pub/sub (no polling)
+- Native distributed locking with automatic TTL
+- Efficient presence management with sorted sets and hashes
+- Production-ready scalability
+
+**Redis Cloud Configuration:**
+- Host: `redis-11283.c238.us-central1-2.gce.cloud.redislabs.com:11283`
+- Database: `database-MKZUKP8Z`
+- Environment variable: `REDIS_URL` in backend/.env
+
+### Original Solution: Adapter Pattern (MongoDB fallback available)
 
 #### New Architecture (`/app/backend/adapters/`)
 Created abstraction layer that can be swapped to Redis later:
