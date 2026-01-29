@@ -30,9 +30,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Real-time and Search imports
-from realtime import sio, socket_app, broadcast_ticket_update, broadcast_ticket_created, broadcast_ticket_deleted, get_presence_stats, get_users_viewing_ticket, broadcast_leave_created, broadcast_leave_updated, broadcast_leave_deleted, broadcast_mention_notification
+from realtime import (
+    sio, socket_app, broadcast_ticket_update, broadcast_ticket_created, 
+    broadcast_ticket_deleted, get_presence_stats, get_users_viewing_ticket, 
+    broadcast_leave_created, broadcast_leave_updated, broadcast_leave_deleted, 
+    broadcast_mention_notification, initialize_realtime, start_pubsub, stop_pubsub
+)
 from search import get_search_engine
 from leave_management import get_leave_manager, LeaveRequest, LeaveUpdate
+
+# Distributed adapters for multi-instance support
+from adapters import set_database, get_lock_adapter
 
 # Load environment variables from .env file
 load_dotenv()
