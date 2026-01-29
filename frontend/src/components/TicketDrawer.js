@@ -1931,6 +1931,17 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                       {new Date(ticket.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">URL</span>
+                    <button
+                      onClick={handleCopyLink}
+                      className="text-[10px] text-primary hover:text-primary/80 hover:underline transition-colors flex items-center gap-1"
+                      title="Click to copy URL"
+                    >
+                      <Copy size={10} />
+                      Copy URL
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
