@@ -723,3 +723,42 @@ Message {
 - `/app/frontend/src/components/ActivityTimeline.js` (NEW)
 - `/app/frontend/src/components/TicketDrawer.js` - Added tabs and state
 - `/app/backend/server.py` - Added activity-feed endpoint
+
+---
+
+## Phase 19: Split Ticket & Linking Enhancements ✅ COMPLETED (1/29/2026)
+
+### Split Ticket Improvements
+- [x] **Assignee Change**: Split tickets now auto-assign to the person who performed the split (not the original assignee)
+- [x] **Bidirectional Linking**: Split creates automatic links between original and new ticket
+  - Original ticket gets `split_to` link type
+  - New ticket gets `split_from` link type
+- [x] **Customer Info Preserved**: Split tickets now include `customer_name` from original
+- [x] **UI Refresh After Split**: Fixed using `_split` flag similar to merge refresh pattern
+  - Triggers list refresh immediately
+  - Updates current ticket drawer with new linked_tickets data
+
+### Linked Tickets Display (Right Panel)
+- [x] **New Section**: Added "LINKED TICKETS" section under LINKS
+  - Shows count of linked tickets
+  - Color-coded badges by link type:
+    - `split_from`: Violet (scissors icon)
+    - `split_to`: Emerald (scissors icon)
+    - `blocks`: Red (alert icon)
+    - `blocked_by`: Orange (alert icon)
+    - `duplicates`: Amber (copy icon)
+    - `related`: Primary/teal (link icon)
+- [x] **Ticket Details**: Each link shows title, ticket ID, and type badge
+- [x] **Click to Navigate**: Clicking opens the linked ticket in new tab
+- [x] **Unlink Button**: X button appears on hover to remove link
+
+### Link Types Support
+- Added `split_from` and `split_to` as new link relationship types
+- Updated LinkTicketModal to display friendly labels for all link types
+
+### Files Modified
+- `/app/backend/server.py` - Enhanced split endpoint with assignee logic and bidirectional linking
+- `/app/frontend/src/components/TicketDrawer.js` - Added linked tickets display, handleUnlinkTicket function
+- `/app/frontend/src/components/MainLayout.js` - Added _split flag handling for UI refresh
+
+---
