@@ -1474,7 +1474,7 @@ async def test_login(response: Response):
         path="/"
     )
     
-    logger.warning(f"[SECURITY] Test login used - this should NOT happen in production!")
+    logger.warning("[SECURITY] Test login used - this should NOT happen in production!")
     
     return {
         "message": "Test session created",
