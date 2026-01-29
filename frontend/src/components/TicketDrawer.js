@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import { 
   X, Save, Trash2, Send, ChevronDown, ChevronRight,
@@ -12,6 +12,7 @@ import {
 import RichTextEditor from './RichTextEditor';
 import MentionInput, { renderTextWithMentions } from './MentionInput';
 import ActivityTimeline from './ActivityTimeline';
+import { useRealtime } from '../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
