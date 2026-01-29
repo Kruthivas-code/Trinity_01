@@ -6015,7 +6015,7 @@ async def get_presence_statistics(
     current_user: dict = Depends(get_current_user)
 ):
     """Get real-time presence statistics"""
-    return get_presence_stats()
+    return await get_presence_stats()
 
 @app.get("/api/presence/ticket/{ticket_id}")
 async def get_ticket_viewers(
