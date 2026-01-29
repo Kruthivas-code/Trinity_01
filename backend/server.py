@@ -5903,6 +5903,14 @@ async def merge_tickets(
     existing_merged = target_ticket.get("merged_tickets", [])
     color_index = len(existing_merged) % 5
     
+    # Get the earliest timestamp from the source ticket for proper timeline ordering
+    # The merge divider should appear BEFORE the source ticket's messages
+    source_created_at = source_ticket.get("created_at", merge_timestamp)
+    if isinstance(source_created_at, str):
+        source_created_at = datetime.fromisoformat(source_created_at.replace("Z", "+00:00"))
+    # Subtract 1 second so divider appears just before the first message
+    divider_timestamp = source_created_at - timedelta(seconds=1)
+    
     # Update existing messages: move to target ticket with merge metadata
     messages_collection.update_many(
         {"ticket_id": ticket_id},
@@ -5928,12 +5936,14 @@ async def merge_tickets(
             "original_ticket_id": ticket_id,
             "merged_at": merge_timestamp,
             "merge_color_index": color_index,
+            "merged_ticket_title": source_ticket.get("title", "Untitled"),
             "created_by": source_ticket.get("created_by", "import"),
             "created_at": source_ticket.get("created_at", merge_timestamp)
         }
         messages_collection.insert_one(original_content_msg)
     
-    # Add a merge divider (visual separator showing when tickets were merged)
+    # Add a merge divider (visual separator showing the start of merged ticket messages)
+    # Timestamp is set to just BEFORE the source ticket's creation so it appears first in timeline
     merge_note = {
         "message_id": f"msg_{uuid4().hex[:12]}",
         "ticket_id": target_ticket_id,
@@ -5943,7 +5953,7 @@ async def merge_tickets(
         "merged_ticket_title": source_ticket.get("title", "Untitled"),
         "merge_color_index": color_index,
         "created_by": current_user["user_id"],
-        "created_at": merge_timestamp
+        "created_at": divider_timestamp  # Use earlier timestamp so divider appears before messages
     }
     messages_collection.insert_one(merge_note)
     
