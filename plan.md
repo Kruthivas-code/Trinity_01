@@ -859,19 +859,31 @@ Created abstraction layer that can be swapped to Redis later:
 | `INSTANCE_ID` | auto-generated | Unique instance identifier |
 
 ### How to Switch to Redis Later
-1. Create `adapters/redis_adapter.py` implementing same interfaces
-2. Set `ADAPTER_BACKEND=redis`
-3. Set `REDIS_URL=redis://your-redis-server`
-4. Optionally use `socketio.AsyncRedisManager` for Socket.IO
+1. Create `adapters/redis_adapter.py` implementing same interfaces ✅ DONE
+2. Set `ADAPTER_BACKEND=redis` ✅ DONE
+3. Set `REDIS_URL=redis://your-redis-server` ✅ DONE
+4. Optionally use `socketio.AsyncRedisManager` for Socket.IO (future enhancement)
+
+### Redis Keys Structure
+| Key Pattern | Purpose |
+|-------------|---------|
+| `presence:connections` | Hash: socket_id → user data |
+| `presence:users` | Hash: user_id → socket_id |
+| `presence:location:{key}` | Set: users at location |
+| `presence:typing:{key}` | Sorted set: user_id → expiry |
+| `lock:{name}` | String: holder_id with TTL |
+| `pubsub:{channel}` | Native Redis pub/sub channels |
 
 ### Files Created
-- `/app/backend/adapters/__init__.py`
+- `/app/backend/adapters/__init__.py` (updated for Redis support)
 - `/app/backend/adapters/base.py`
 - `/app/backend/adapters/mongodb_adapter.py`
+- `/app/backend/adapters/redis_adapter.py` ← NEW
 
 ### Files Modified
 - `/app/backend/realtime.py` - Complete rewrite for distributed adapters
 - `/app/backend/server.py` - Startup/shutdown with adapters, distributed locking
+- `/app/backend/.env` - Added REDIS_URL and ADAPTER_BACKEND=redis
 
 ---
 
