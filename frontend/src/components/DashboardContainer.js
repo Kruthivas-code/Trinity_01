@@ -101,8 +101,14 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   }, []);
 
   const handleTicketClick = (ticket) => {
-    setSelectedTicket(ticket);
-    setIsDrawerOpen(true);
+    // If external handler provided (from MainLayout), use it for URL updates
+    if (onTicketClickFromExternal) {
+      onTicketClickFromExternal(ticket);
+    } else {
+      // Fallback to internal state
+      setSelectedTicket(ticket);
+      setIsDrawerOpen(true);
+    }
   };
 
   const handleCreateTicket = async (ticketData) => {
