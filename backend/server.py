@@ -99,7 +99,7 @@ async def auto_close_resolved_tickets():
             acquired = await lock_adapter.acquire(lock_name, _instance_id, lock_ttl)
             
             if not acquired:
-                logger.info(f"[AUTO-CLOSE] Another instance holds the lock, skipping this run")
+                logger.info("[AUTO-CLOSE] Another instance holds the lock, skipping this run")
                 await asyncio.sleep(3600)  # Wait an hour before trying again
                 continue
             
