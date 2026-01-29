@@ -638,8 +638,14 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const handleCopyLink = () => {
     const url = `${window.location.origin}/all-tickets?ticket=${ticket.ticket_id || ticket.id}`;
     navigator.clipboard.writeText(url);
-    // Silent operation
+    // Show brief feedback
     setShowMoreMenu(false);
+  };
+
+  // Handle copy ticket ID only
+  const handleCopyTicketId = () => {
+    const ticketId = ticket.ticket_id || ticket.id;
+    navigator.clipboard.writeText(ticketId);
   };
 
   // Handle snooze toggle
