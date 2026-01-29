@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Download, Upload, AtSign, User, RefreshCw, Filter, Calendar, Tag, X } from 'lucide-react';
 import KanbanBoard from './KanbanBoard';
 import TicketDrawer from './TicketDrawer';
@@ -10,6 +10,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [tickets, setTickets] = useState([]);
   const [mentionedTickets, setMentionedTickets] = useState([]);
   const [users, setUsers] = useState([]);
