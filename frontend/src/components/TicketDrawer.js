@@ -448,6 +448,21 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     }
   };
 
+  // Unlink a ticket from this ticket
+  const handleUnlinkTicket = async (targetTicketId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/unlink/${targetTicketId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (response.ok) {
+        setLinkedTickets(prev => prev.filter(t => t.ticket_id !== targetTicketId));
+      }
+    } catch (error) {
+      console.error('Failed to unlink ticket:', error);
+    }
+  };
+
   // Fetch activity feed for Activity tab
   const fetchActivityFeed = async (ticketId) => {
     try {
