@@ -444,6 +444,25 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     }
   };
 
+  // Fetch activity feed for Activity tab
+  const fetchActivityFeed = async (ticketId) => {
+    try {
+      setLoadingActivity(true);
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}/activity-feed`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setActivityFeed(data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch activity feed:', error);
+      setActivityFeed([]);
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
   // Fetch CSAT data for ticket
   const fetchCsatData = async (ticketId) => {
     try {
