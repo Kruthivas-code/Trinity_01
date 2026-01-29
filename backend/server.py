@@ -81,11 +81,30 @@ app.add_middleware(
 # Background task to auto-close resolved tickets after 24 hours
 AUTO_CLOSE_HOURS = 24
 auto_close_task = None
+_instance_id = os.environ.get('INSTANCE_ID', os.environ.get('HOSTNAME', f'instance_{secrets.token_hex(4)}'))
 
 async def auto_close_resolved_tickets():
-    """Background task that runs every hour to close tickets resolved more than 24 hours ago"""
+    """
+    Background task that runs every hour to close tickets resolved more than 24 hours ago.
+    Uses distributed locking to ensure only one instance runs this task.
+    """
+    lock_adapter = get_lock_adapter()
+    lock_name = "auto_close_resolved_tickets"
+    lock_ttl = 3600  # 1 hour lock
+    
     while True:
+        acquired = False
         try:
+            # Try to acquire distributed lock
+            acquired = await lock_adapter.acquire(lock_name, _instance_id, lock_ttl)
+            
+            if not acquired:
+                logger.info(f"[AUTO-CLOSE] Another instance holds the lock, skipping this run")
+                await asyncio.sleep(3600)  # Wait an hour before trying again
+                continue
+            
+            logger.info(f"[AUTO-CLOSE] Lock acquired by {_instance_id}, running auto-close task")
+            
             cutoff_time = datetime.now(timezone.utc) - timedelta(hours=AUTO_CLOSE_HOURS)
             
             # Find resolved tickets older than 24 hours
@@ -123,8 +142,16 @@ async def auto_close_resolved_tickets():
             if closed_count > 0:
                 logger.info(f"[AUTO-CLOSE] Auto-closed {closed_count} resolved tickets")
                 
+        except asyncio.CancelledError:
+            logger.info("[AUTO-CLOSE] Task cancelled")
+            raise
         except Exception as e:
             logger.error(f"[AUTO-CLOSE] Error in auto-close task: {e}")
+        finally:
+            # Release lock if we acquired it
+            if acquired:
+                await lock_adapter.release(lock_name, _instance_id)
+                logger.info(f"[AUTO-CLOSE] Lock released by {_instance_id}")
         
         # Run every hour
         await asyncio.sleep(3600)
