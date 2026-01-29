@@ -204,12 +204,21 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
 
   const styles = getMessageStyles();
   
-  // Subtle left accent for merged messages (thin line, not thick border)
-  const mergeAccent = isFromMergedTicket ? `border-l-2 ${mergeColor.border}` : '';
+  // More pronounced styling for merged messages - background tint + left border
+  const mergeStyles = isFromMergedTicket 
+    ? `${mergeColor.bg} border-l-4 ${mergeColor.border}` 
+    : '';
   
   return (
     <div className={`${styles.alignment}`} data-testid="message-item">
-      <div className={`${styles.container} ${mergeAccent} p-3`}>
+      <div className={`${styles.container} ${mergeStyles} p-3`}>
+        {/* Merged ticket indicator - shown prominently at top of message */}
+        {isFromMergedTicket && (
+          <div className={`flex items-center gap-1.5 mb-2 text-[10px] ${mergeColor.text}`}>
+            <GitMerge size={10} />
+            <span className="font-mono">{originalTicketId}</span>
+          </div>
+        )}
         {/* Message Header - Compact */}
         <div className={`flex items-center justify-between mb-2 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
           <div className={`flex items-center gap-2 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
