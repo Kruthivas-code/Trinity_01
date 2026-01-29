@@ -309,6 +309,11 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const [availableTags, setAvailableTags] = useState([]);
   const [loadingTags, setLoadingTags] = useState(false);
   
+  // Activity tab state
+  const [activeTab, setActiveTab] = useState('conversation'); // 'conversation' | 'activity'
+  const [activityFeed, setActivityFeed] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+  
   // CSAT state
   const [csatData, setCsatData] = useState(null);
   const [sendingCsat, setSendingCsat] = useState(false);
