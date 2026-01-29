@@ -2308,13 +2308,160 @@ async def get_ticket_activity(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get all activity (notes, replies, system messages) for a ticket"""
+    """Get all activity (notes, replies, system messages) for a ticket - for conversation view"""
     messages = list(messages_collection.find(
         {"ticket_id": ticket_id},
         {"_id": 0}
     ).sort("created_at", ASCENDING))
     
     return [serialize_doc(m) for m in messages]
+
+
+@app.get("/api/tickets/{ticket_id}/activity-feed")
+async def get_ticket_activity_feed(
+    ticket_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get comprehensive activity feed combining changelog and events for Activity tab"""
+    
+    # Get the main ticket
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+    
+    activities = []
+    
+    # 1. Add ticket creation event
+    activities.append({
+        "type": "created",
+        "field": "ticket",
+        "description": "Ticket created",
+        "timestamp": ticket.get("created_at"),
+        "user_id": ticket.get("created_by"),
+        "icon": "plus"
+    })
+    
+    # 2. Get changelog entries for this ticket
+    changelog = list(ticket_changelog_collection.find(
+        {"ticket_id": ticket_id},
+        {"_id": 0}
+    ))
+    
+    # Also get changelog for any merged tickets
+    merged_tickets = ticket.get("merged_tickets", [])
+    merged_ticket_ids = [m.get("ticket_id") for m in merged_tickets if m.get("ticket_id")]
+    
+    if merged_ticket_ids:
+        merged_changelog = list(ticket_changelog_collection.find(
+            {"ticket_id": {"$in": merged_ticket_ids}},
+            {"_id": 0}
+        ))
+        changelog.extend(merged_changelog)
+    
+    # Map changelog to activity format
+    field_icons = {
+        "status": "activity",
+        "assignee_id": "user",
+        "priority": "alert-triangle",
+        "team_id": "users",
+        "tags": "tag",
+        "merge": "git-merge",
+        "unmerge": "git-branch",
+        "split": "scissors",
+        "is_starred": "star",
+        "custom_fields": "file-text"
+    }
+    
+    field_labels = {
+        "status": "Status changed",
+        "assignee_id": "Assigned",
+        "priority": "Priority changed",
+        "team_id": "Team changed",
+        "tags": "Tags updated",
+        "merge": "Ticket merged",
+        "unmerge": "Ticket unmerged",
+        "split": "Ticket split",
+        "is_starred": "Starred",
+        "custom_fields": "Custom field updated"
+    }
+    
+    for entry in changelog:
+        field = entry.get("field", "")
+        old_val = entry.get("old_value")
+        new_val = entry.get("new_value")
+        
+        # Format description based on field type
+        if field == "assignee_id":
+            # Get assignee name if possible
+            assignee_name = None
+            if new_val:
+                assignee = users_collection.find_one({"user_id": new_val})
+                assignee_name = assignee.get("name") if assignee else new_val
+            if old_val is None or old_val == "None":
+                description = f"Assigned to {assignee_name or 'Unknown'}"
+            else:
+                old_assignee = users_collection.find_one({"user_id": old_val})
+                old_name = old_assignee.get("name") if old_assignee else old_val
+                description = f"Reassigned from {old_name} to {assignee_name or 'Unknown'}"
+        elif field == "status":
+            description = f"Status: {old_val or 'none'} → {new_val}"
+        elif field == "priority":
+            description = f"Priority: {old_val} → {new_val}"
+        elif field == "merge":
+            description = f"Merged ticket {entry.get('metadata', {}).get('source_ticket_id', new_val)}"
+        elif field == "unmerge":
+            description = f"Unmerged ticket {new_val}"
+        elif field == "is_starred":
+            description = "Starred" if new_val else "Unstarred"
+        else:
+            description = f"{field_labels.get(field, field)}: {old_val} → {new_val}"
+        
+        activities.append({
+            "type": entry.get("change_type", "update"),
+            "field": field,
+            "description": description,
+            "old_value": old_val,
+            "new_value": new_val,
+            "timestamp": entry.get("changed_at"),
+            "user_id": entry.get("changed_by"),
+            "user_name": entry.get("changed_by_name"),
+            "icon": field_icons.get(field, "edit"),
+            "source_ticket_id": entry.get("ticket_id") if entry.get("ticket_id") != ticket_id else None,
+            "metadata": entry.get("metadata")
+        })
+    
+    # 3. Add merge events from messages (merge_divider type)
+    merge_messages = list(messages_collection.find(
+        {"ticket_id": ticket_id, "type": "merge_divider"},
+        {"_id": 0}
+    ))
+    
+    for msg in merge_messages:
+        # Only add if not already in changelog
+        source_id = msg.get("original_ticket_id")
+        if source_id and not any(a.get("field") == "merge" and a.get("metadata", {}).get("source_ticket_id") == source_id for a in activities):
+            activities.append({
+                "type": "merge",
+                "field": "merge",
+                "description": f"Merged ticket {source_id}: {msg.get('merged_ticket_title', '')}",
+                "timestamp": msg.get("created_at"),
+                "user_id": msg.get("created_by"),
+                "icon": "git-merge",
+                "source_ticket_id": source_id
+            })
+    
+    # Resolve user names for activities without them
+    user_ids = list(set(a.get("user_id") for a in activities if a.get("user_id") and not a.get("user_name")))
+    if user_ids:
+        users = {u["user_id"]: u.get("name", u["user_id"]) for u in users_collection.find({"user_id": {"$in": user_ids}})}
+        for activity in activities:
+            if activity.get("user_id") and not activity.get("user_name"):
+                activity["user_name"] = users.get(activity["user_id"], activity["user_id"])
+    
+    # Sort by timestamp
+    activities.sort(key=lambda x: x.get("timestamp") or datetime.min.replace(tzinfo=timezone.utc))
+    
+    return [serialize_doc(a) for a in activities]
 
 # ==================== Tag Management ====================
 
