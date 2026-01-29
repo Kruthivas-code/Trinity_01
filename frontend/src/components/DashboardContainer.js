@@ -637,7 +637,12 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
         users={users}
         currentUser={user}
         isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
+        onClose={() => {
+          setIsDrawerOpen(false);
+          setSelectedTicket(null);
+          // Reset URL to dashboard without ticket param
+          window.history.pushState({}, '', '/dashboard');
+        }}
         onUpdate={handleUpdateTicket}
         onDelete={handleDeleteTicket}
       />
