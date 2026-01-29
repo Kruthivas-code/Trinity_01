@@ -2079,7 +2079,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                           </p>
                         )}
                         <p className="text-[10px] text-muted-foreground/60 mt-2">
-                          by {csatData.customer_name} · {new Date(csatData.submitted_at).toLocaleDateString()}
+                          by {csatData.customer_name} · {new Date(csatData.submitted_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                         </p>
                       </div>
                     ) : csatData?.survey_sent ? (
@@ -2090,7 +2090,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                           <span className="text-xs font-medium">Survey sent</span>
                         </div>
                         <p className="text-[10px] text-muted-foreground mt-1">
-                          Awaiting response · Expires {new Date(csatData.expires_at).toLocaleDateString()}
+                          Awaiting response · Expires {new Date(csatData.expires_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                         </p>
                       </div>
                     ) : formData.status === 'resolved' ? (
