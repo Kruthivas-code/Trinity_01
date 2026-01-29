@@ -1,10 +1,18 @@
 """
 Trinity Real-time Collaboration Module
 Production-ready WebSocket implementation with Socket.IO
+
+This module now uses the adapter pattern for distributed presence management.
+Supports MongoDB (default) or Redis backends for multi-instance deployments.
+
+Configuration:
+    ADAPTER_BACKEND: 'mongodb' or 'redis' (default: mongodb)
+    MONGODB_PUBSUB_POLLING: 'true' for non-replica MongoDB (default: false)
 """
 
 import socketio
 import asyncio
+import os
 from datetime import datetime, timezone
 from typing import Dict, Set, Optional, Any
 import json
@@ -15,7 +23,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create Socket.IO server with async mode
-# For production with Redis: sio = socketio.AsyncServer(async_mode='asgi', client_manager=socketio.AsyncRedisManager('redis://localhost'))
+# Note: For Redis pub/sub across instances, configure client_manager:
+# sio = socketio.AsyncServer(async_mode='asgi', client_manager=socketio.AsyncRedisManager('redis://...'))
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins='*',
@@ -23,134 +32,102 @@ sio = socketio.AsyncServer(
     engineio_logger=True
 )
 
-# In-memory presence store (for single instance)
-# For production scaling, use Redis
-class PresenceManager:
-    def __init__(self):
-        # user_id -> {socket_id, location, last_heartbeat, user_info}
-        self.users: Dict[str, Dict[str, Any]] = {}
-        # location_key -> set of user_ids (e.g., "ticket:uuid" -> {user1, user2})
-        self.locations: Dict[str, Set[str]] = {}
-        # socket_id -> user_id mapping
-        self.socket_to_user: Dict[str, str] = {}
-        # Typing indicators: location_key -> {user_id: timestamp}
-        self.typing: Dict[str, Dict[str, datetime]] = {}
-    
-    def add_user(self, user_id: str, socket_id: str, user_info: dict):
-        """Register a user connection"""
-        self.users[user_id] = {
-            "socket_id": socket_id,
-            "location": None,
-            "last_heartbeat": datetime.now(timezone.utc),
-            "user_info": user_info,
-            "connected_at": datetime.now(timezone.utc)
-        }
-        self.socket_to_user[socket_id] = user_id
-        logger.info(f"User {user_id} connected via socket {socket_id}")
-    
-    def remove_user(self, socket_id: str) -> Optional[str]:
-        """Remove user on disconnect"""
-        user_id = self.socket_to_user.pop(socket_id, None)
-        if user_id:
-            user_data = self.users.pop(user_id, None)
-            if user_data and user_data.get("location"):
-                self._leave_location(user_id, user_data["location"])
-            logger.info(f"User {user_id} disconnected")
-        return user_id
-    
-    def set_location(self, user_id: str, location_type: str, location_id: Optional[str] = None):
-        """Update user's current location"""
-        if user_id not in self.users:
-            return
-        
-        old_location = self.users[user_id].get("location")
-        if old_location:
-            self._leave_location(user_id, old_location)
-        
-        new_location = f"{location_type}:{location_id}" if location_id else location_type
-        self.users[user_id]["location"] = new_location
-        
-        if new_location not in self.locations:
-            self.locations[new_location] = set()
-        self.locations[new_location].add(user_id)
-        
-        logger.info(f"User {user_id} moved to {new_location}")
-    
-    def _leave_location(self, user_id: str, location: str):
-        """Remove user from a location"""
-        if location in self.locations:
-            self.locations[location].discard(user_id)
-            if not self.locations[location]:
-                del self.locations[location]
-        # Clear typing indicator
-        if location in self.typing:
-            self.typing[location].pop(user_id, None)
-    
-    def get_users_at_location(self, location_type: str, location_id: Optional[str] = None) -> list:
-        """Get all users at a specific location"""
-        location_key = f"{location_type}:{location_id}" if location_id else location_type
-        user_ids = self.locations.get(location_key, set())
-        return [
-            {
-                "user_id": uid,
-                **self.users[uid]["user_info"],
-                "connected_at": self.users[uid]["connected_at"].isoformat()
-            }
-            for uid in user_ids if uid in self.users
-        ]
-    
-    def set_typing(self, user_id: str, location_type: str, location_id: str, is_typing: bool):
-        """Update typing indicator"""
-        location_key = f"{location_type}:{location_id}"
-        if location_key not in self.typing:
-            self.typing[location_key] = {}
-        
-        if is_typing:
-            self.typing[location_key][user_id] = datetime.now(timezone.utc)
-        else:
-            self.typing[location_key].pop(user_id, None)
-    
-    def get_typing_users(self, location_type: str, location_id: str) -> list:
-        """Get users currently typing at a location"""
-        location_key = f"{location_type}:{location_id}"
-        typing_users = self.typing.get(location_key, {})
-        # Filter out stale typing indicators (>5 seconds old)
-        now = datetime.now(timezone.utc)
-        active_typing = []
-        for uid, timestamp in list(typing_users.items()):
-            if (now - timestamp).total_seconds() < 5:
-                if uid in self.users:
-                    active_typing.append({
-                        "user_id": uid,
-                        **self.users[uid]["user_info"]
-                    })
-            else:
-                del typing_users[uid]
-        return active_typing
-    
-    def heartbeat(self, user_id: str):
-        """Update user heartbeat"""
-        if user_id in self.users:
-            self.users[user_id]["last_heartbeat"] = datetime.now(timezone.utc)
-    
-    def get_online_users(self) -> list:
-        """Get all online users"""
-        return [
-            {
-                "user_id": uid,
-                "location": data.get("location"),
-                **data["user_info"]
-            }
-            for uid, data in self.users.items()
-        ]
-    
-    def get_user_count(self) -> int:
-        """Get count of online users"""
-        return len(self.users)
+# Presence adapter (initialized later when DB is available)
+_presence_adapter = None
+_pubsub_adapter = None
+
+# Local socket-to-user mapping (required for Socket.IO event handling)
+# This is instance-local but presence state is in the distributed adapter
+_socket_to_user: Dict[str, str] = {}
+_user_to_socket: Dict[str, str] = {}
 
 
-# Global presence manager
-presence = PresenceManager()
+def initialize_realtime(db):
+    """
+    Initialize realtime module with database connection.
+    Must be called from server.py after database is connected.
+    """
+    global _presence_adapter, _pubsub_adapter
+    
+    from adapters import set_database, get_presence_adapter, get_pubsub_adapter
+    
+    set_database(db)
+    _presence_adapter = get_presence_adapter()
+    
+    # Check if we should use polling mode for MongoDB (for non-replica setups)
+    use_polling = os.environ.get('MONGODB_PUBSUB_POLLING', 'true').lower() == 'true'
+    _pubsub_adapter = get_pubsub_adapter(use_polling=use_polling)
+    
+    logger.info("[REALTIME] Initialized with distributed adapters")
+    return _presence_adapter, _pubsub_adapter
+
+
+async def start_pubsub():
+    """Start the pub/sub listener for cross-instance messaging"""
+    global _pubsub_adapter
+    if _pubsub_adapter:
+        # Subscribe to cross-instance events
+        await _pubsub_adapter.subscribe('ticket_updates', _handle_cross_instance_ticket_update)
+        await _pubsub_adapter.subscribe('typing_updates', _handle_cross_instance_typing)
+        await _pubsub_adapter.subscribe('notifications', _handle_cross_instance_notification)
+        await _pubsub_adapter.start()
+        logger.info("[REALTIME] Pub/sub listener started")
+
+
+async def stop_pubsub():
+    """Stop the pub/sub listener"""
+    global _pubsub_adapter
+    if _pubsub_adapter:
+        await _pubsub_adapter.stop()
+        logger.info("[REALTIME] Pub/sub listener stopped")
+
+
+async def _handle_cross_instance_ticket_update(message: dict):
+    """Handle ticket updates from other instances"""
+    room = message.get('room')
+    event = message.get('event')
+    data = message.get('data')
+    source_instance = message.get('source')
+    
+    # Don't re-broadcast our own messages
+    if source_instance == _get_instance_id():
+        return
+    
+    if room and event and data:
+        await sio.emit(event, data, room=room)
+
+
+async def _handle_cross_instance_typing(message: dict):
+    """Handle typing indicators from other instances"""
+    room = message.get('room')
+    data = message.get('data')
+    source_instance = message.get('source')
+    
+    if source_instance == _get_instance_id():
+        return
+    
+    if room and data:
+        await sio.emit('user:typing', data, room=room)
+
+
+async def _handle_cross_instance_notification(message: dict):
+    """Handle notifications from other instances"""
+    user_id = message.get('user_id')
+    notification = message.get('notification')
+    source_instance = message.get('source')
+    
+    if source_instance == _get_instance_id():
+        return
+    
+    # Check if user is connected to THIS instance
+    if user_id in _user_to_socket:
+        socket_id = _user_to_socket[user_id]
+        await sio.emit('notification:new', notification, to=socket_id)
+
+
+def _get_instance_id() -> str:
+    """Get unique identifier for this server instance"""
+    return os.environ.get('INSTANCE_ID', os.environ.get('HOSTNAME', 'default'))
 
 
 # Socket.IO Event Handlers
@@ -158,15 +135,22 @@ presence = PresenceManager()
 async def connect(sid, environ, auth):
     """Handle new connection"""
     logger.info(f"Client connecting: {sid}")
-    # Auth will be validated when user sends 'authenticate' event
     await sio.emit('connected', {'sid': sid}, to=sid)
 
 
 @sio.event
 async def disconnect(sid):
     """Handle disconnection"""
-    user_id = presence.remove_user(sid)
+    global _presence_adapter
+    
+    user_id = _socket_to_user.pop(sid, None)
     if user_id:
+        _user_to_socket.pop(user_id, None)
+        
+        # Remove from distributed presence
+        if _presence_adapter:
+            await _presence_adapter.remove_user(sid)
+        
         # Notify others about user leaving
         await sio.emit('user:offline', {
             'user_id': user_id,
@@ -177,6 +161,8 @@ async def disconnect(sid):
 @sio.event
 async def authenticate(sid, data):
     """Authenticate user and register presence"""
+    global _presence_adapter
+    
     user_id = data.get('user_id')
     user_info = {
         'name': data.get('name', 'Unknown'),
@@ -188,12 +174,21 @@ async def authenticate(sid, data):
         await sio.emit('auth_error', {'message': 'user_id required'}, to=sid)
         return
     
-    presence.add_user(user_id, sid, user_info)
+    # Local mapping
+    _socket_to_user[sid] = user_id
+    _user_to_socket[user_id] = sid
+    
+    # Distributed presence
+    if _presence_adapter:
+        await _presence_adapter.add_user(user_id, sid, user_info)
+    
+    # Get online count
+    online_count = await _presence_adapter.get_user_count() if _presence_adapter else 1
     
     # Send confirmation
     await sio.emit('authenticated', {
         'user_id': user_id,
-        'online_count': presence.get_user_count()
+        'online_count': online_count
     }, to=sid)
     
     # Notify others
@@ -207,21 +202,27 @@ async def authenticate(sid, data):
 @sio.event
 async def join_location(sid, data):
     """User joins a location (ticket, dashboard, etc.)"""
-    user_id = presence.socket_to_user.get(sid)
+    global _presence_adapter
+    
+    user_id = _socket_to_user.get(sid)
     if not user_id:
         return
     
-    location_type = data.get('type', 'unknown')  # 'ticket', 'dashboard', 'admin'
-    location_id = data.get('id')  # ticket_id, etc.
+    location_type = data.get('type', 'unknown')
+    location_id = data.get('id')
     
-    presence.set_location(user_id, location_type, location_id)
+    # Update distributed presence
+    if _presence_adapter:
+        await _presence_adapter.set_location(user_id, location_type, location_id)
     
     # Join Socket.IO room for this location
     room = f"{location_type}:{location_id}" if location_id else location_type
     sio.enter_room(sid, room)
     
     # Get other users at this location
-    users_here = presence.get_users_at_location(location_type, location_id)
+    users_here = []
+    if _presence_adapter:
+        users_here = await _presence_adapter.get_users_at_location(location_type, location_id)
     
     # Send current presence to the joining user
     await sio.emit('presence:sync', {
@@ -229,20 +230,28 @@ async def join_location(sid, data):
         'users': users_here
     }, to=sid)
     
+    # Get user info for notification
+    user_info = {}
+    if _presence_adapter:
+        info = await _presence_adapter.get_user_info(user_id)
+        if info:
+            user_info = info.get('user_info', {})
+    
     # Notify others in the room
-    if user_id in presence.users:
-        await sio.emit('user:joined', {
-            'user_id': user_id,
-            **presence.users[user_id]['user_info'],
-            'location': room,
-            'timestamp': datetime.now(timezone.utc).isoformat()
-        }, room=room, skip_sid=sid)
+    await sio.emit('user:joined', {
+        'user_id': user_id,
+        **user_info,
+        'location': room,
+        'timestamp': datetime.now(timezone.utc).isoformat()
+    }, room=room, skip_sid=sid)
 
 
 @sio.event
 async def leave_location(sid, data):
     """User leaves a location"""
-    user_id = presence.socket_to_user.get(sid)
+    global _presence_adapter
+    
+    user_id = _socket_to_user.get(sid)
     if not user_id:
         return
     
@@ -250,7 +259,12 @@ async def leave_location(sid, data):
     location_id = data.get('id')
     room = f"{location_type}:{location_id}" if location_id else location_type
     
+    # Leave Socket.IO room
     sio.leave_room(sid, room)
+    
+    # Update distributed presence
+    if _presence_adapter:
+        await _presence_adapter.leave_location(user_id)
     
     # Notify others
     await sio.emit('user:left', {
@@ -263,7 +277,9 @@ async def leave_location(sid, data):
 @sio.event
 async def typing(sid, data):
     """User is typing"""
-    user_id = presence.socket_to_user.get(sid)
+    global _presence_adapter, _pubsub_adapter
+    
+    user_id = _socket_to_user.get(sid)
     if not user_id:
         return
     
@@ -274,74 +290,138 @@ async def typing(sid, data):
     if not location_id:
         return
     
-    presence.set_typing(user_id, location_type, location_id, is_typing)
+    # Get user name
+    user_name = 'Unknown'
+    if _presence_adapter:
+        info = await _presence_adapter.get_user_info(user_id)
+        if info:
+            user_name = info.get('user_info', {}).get('name', 'Unknown')
+        
+        # Update typing status in distributed store
+        await _presence_adapter.set_typing(user_id, location_type, location_id, is_typing)
     
     room = f"{location_type}:{location_id}"
-    
-    # Broadcast to room
-    await sio.emit('user:typing', {
+    typing_data = {
         'user_id': user_id,
-        'name': presence.users.get(user_id, {}).get('user_info', {}).get('name', 'Unknown'),
+        'name': user_name,
         'is_typing': is_typing,
         'location': room,
         'timestamp': datetime.now(timezone.utc).isoformat()
-    }, room=room, skip_sid=sid)
+    }
+    
+    # Broadcast to local room
+    await sio.emit('user:typing', typing_data, room=room, skip_sid=sid)
+    
+    # Also publish to other instances via pub/sub
+    if _pubsub_adapter:
+        await _pubsub_adapter.publish('typing_updates', {
+            'room': room,
+            'data': typing_data,
+            'source': _get_instance_id()
+        })
 
 
 @sio.event
 async def heartbeat(sid):
     """Heartbeat to keep connection alive"""
-    user_id = presence.socket_to_user.get(sid)
-    if user_id:
-        presence.heartbeat(user_id)
+    global _presence_adapter
+    
+    user_id = _socket_to_user.get(sid)
+    if user_id and _presence_adapter:
+        await _presence_adapter.heartbeat(user_id)
 
 
 # Broadcast functions for use from FastAPI endpoints
 async def broadcast_ticket_update(ticket_id: str, action: str, ticket_data: dict, updated_by: dict):
     """Broadcast ticket update to all users viewing the ticket"""
-    room = f"ticket:{ticket_id}"
-    await sio.emit('ticket:update', {
-        'ticket_id': ticket_id,
-        'action': action,  # 'created', 'updated', 'deleted', 'status_changed', 'assigned'
-        'ticket': ticket_data,
-        'updated_by': updated_by,
-        'timestamp': datetime.now(timezone.utc).isoformat()
-    }, room=room)
+    global _pubsub_adapter
     
-    # Also broadcast to dashboard for list updates
-    await sio.emit('ticket:update', {
+    room = f"ticket:{ticket_id}"
+    event_data = {
         'ticket_id': ticket_id,
         'action': action,
         'ticket': ticket_data,
         'updated_by': updated_by,
         'timestamp': datetime.now(timezone.utc).isoformat()
-    }, room='dashboard')
+    }
+    
+    # Broadcast locally
+    await sio.emit('ticket:update', event_data, room=room)
+    await sio.emit('ticket:update', event_data, room='dashboard')
+    
+    # Broadcast to other instances
+    if _pubsub_adapter:
+        await _pubsub_adapter.publish('ticket_updates', {
+            'room': room,
+            'event': 'ticket:update',
+            'data': event_data,
+            'source': _get_instance_id()
+        })
+        await _pubsub_adapter.publish('ticket_updates', {
+            'room': 'dashboard',
+            'event': 'ticket:update',
+            'data': event_data,
+            'source': _get_instance_id()
+        })
 
 
 async def broadcast_ticket_created(ticket_data: dict, created_by: dict):
     """Broadcast new ticket creation"""
-    await sio.emit('ticket:created', {
+    global _pubsub_adapter
+    
+    event_data = {
         'ticket': ticket_data,
         'created_by': created_by,
         'timestamp': datetime.now(timezone.utc).isoformat()
-    }, room='dashboard')
+    }
+    
+    await sio.emit('ticket:created', event_data, room='dashboard')
+    
+    if _pubsub_adapter:
+        await _pubsub_adapter.publish('ticket_updates', {
+            'room': 'dashboard',
+            'event': 'ticket:created',
+            'data': event_data,
+            'source': _get_instance_id()
+        })
 
 
 async def broadcast_ticket_deleted(ticket_id: str, deleted_by: dict):
     """Broadcast ticket deletion"""
-    await sio.emit('ticket:deleted', {
+    global _pubsub_adapter
+    
+    event_data = {
         'ticket_id': ticket_id,
         'deleted_by': deleted_by,
         'timestamp': datetime.now(timezone.utc).isoformat()
-    })
+    }
+    
+    await sio.emit('ticket:deleted', event_data)
+    
+    if _pubsub_adapter:
+        await _pubsub_adapter.publish('ticket_updates', {
+            'room': 'all',
+            'event': 'ticket:deleted',
+            'data': event_data,
+            'source': _get_instance_id()
+        })
 
 
 async def broadcast_notification(user_id: str, notification: dict):
     """Send notification to specific user"""
-    # Find user's socket
-    if user_id in presence.users:
-        socket_id = presence.users[user_id]['socket_id']
+    global _pubsub_adapter
+    
+    # Try local first
+    if user_id in _user_to_socket:
+        socket_id = _user_to_socket[user_id]
         await sio.emit('notification:new', notification, to=socket_id)
+    elif _pubsub_adapter:
+        # User might be on another instance
+        await _pubsub_adapter.publish('notifications', {
+            'user_id': user_id,
+            'notification': notification,
+            'source': _get_instance_id()
+        })
 
 
 # ==================== Leave Broadcasting ====================
@@ -376,6 +456,8 @@ async def broadcast_leave_deleted(leave_id: str, deleted_by: dict):
 
 async def broadcast_mention_notification(user_id: str, ticket_id: str, ticket_title: str, mentioned_by: str, note_preview: str):
     """Send notification to a user when they are mentioned in a ticket"""
+    global _pubsub_adapter
+    
     notification = {
         'type': 'mention',
         'ticket_id': ticket_id,
@@ -385,12 +467,19 @@ async def broadcast_mention_notification(user_id: str, ticket_id: str, ticket_ti
         'timestamp': datetime.now(timezone.utc).isoformat()
     }
     
-    # Send to specific user if they're connected
-    if user_id in presence.users:
-        socket_id = presence.users[user_id]['socket_id']
+    # Try local first
+    if user_id in _user_to_socket:
+        socket_id = _user_to_socket[user_id]
         await sio.emit('notification:mention', notification, to=socket_id)
+    elif _pubsub_adapter:
+        # User might be on another instance
+        await _pubsub_adapter.publish('notifications', {
+            'user_id': user_id,
+            'notification': notification,
+            'source': _get_instance_id()
+        })
     
-    # Also broadcast to the ticket room so anyone viewing sees it
+    # Also broadcast to the ticket room
     await sio.emit('ticket:mention', {
         'ticket_id': ticket_id,
         'mentioned_user_id': user_id,
@@ -399,23 +488,36 @@ async def broadcast_mention_notification(user_id: str, ticket_id: str, ticket_ti
     })
 
 
-def get_presence_stats() -> dict:
+async def get_presence_stats() -> dict:
     """Get presence statistics"""
-    return {
-        'online_users': presence.get_user_count(),
-        'active_locations': len(presence.locations),
-        'users': presence.get_online_users()
-    }
+    global _presence_adapter
+    
+    if _presence_adapter:
+        online_users = await _presence_adapter.get_online_users()
+        return {
+            'online_users': len(online_users),
+            'active_locations': 0,  # Would need to track this
+            'users': online_users
+        }
+    return {'online_users': 0, 'active_locations': 0, 'users': []}
 
 
-def get_users_viewing_ticket(ticket_id: str) -> list:
+async def get_users_viewing_ticket(ticket_id: str) -> list:
     """Get users currently viewing a specific ticket"""
-    return presence.get_users_at_location('ticket', ticket_id)
+    global _presence_adapter
+    
+    if _presence_adapter:
+        return await _presence_adapter.get_users_at_location('ticket', ticket_id)
+    return []
 
 
-def get_typing_in_ticket(ticket_id: str) -> list:
+async def get_typing_in_ticket(ticket_id: str) -> list:
     """Get users typing in a specific ticket"""
-    return presence.get_typing_users('ticket', ticket_id)
+    global _presence_adapter
+    
+    if _presence_adapter:
+        return await _presence_adapter.get_typing_users('ticket', ticket_id)
+    return []
 
 
 # Create ASGI app for Socket.IO
