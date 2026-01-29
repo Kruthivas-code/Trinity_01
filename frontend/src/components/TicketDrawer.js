@@ -978,6 +978,9 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     const plainText = stripHtml(inputText);
     if (!plainText.trim() || !ticket) return;
     
+    // Stop typing indicator when submitting
+    handleTypingChange(false);
+    
     setSubmitting(true);
     try {
       const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/notes`, {
