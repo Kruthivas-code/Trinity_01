@@ -1029,9 +1029,14 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
             <div className="flex items-center gap-2 min-w-0">
               <Mail size={15} className="text-primary shrink-0" />
               <span className="text-sm font-medium truncate">{ticket.title}</span>
-              <span className="text-[11px] text-muted-foreground font-mono bg-secondary/40 px-1.5 py-0.5 rounded shrink-0">
+              <button
+                onClick={handleCopyTicketId}
+                className="text-[11px] text-muted-foreground font-mono bg-secondary/40 px-1.5 py-0.5 rounded shrink-0 hover:bg-secondary/70 hover:text-foreground transition-colors cursor-pointer"
+                title="Click to copy ticket ID"
+                data-testid="copy-ticket-id"
+              >
                 {ticket.ticket_id || `#${ticket.id?.slice(-8)}`}
-              </span>
+              </button>
               {snoozed && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-400 font-medium">
                   Snoozed
