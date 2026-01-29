@@ -1917,7 +1917,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Created</span>
                     <span className="text-foreground/80 text-[10px]">
-                      {new Date(ticket.created_at).toLocaleDateString()}
+                      {new Date(ticket.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                     </span>
                   </div>
                 </div>
