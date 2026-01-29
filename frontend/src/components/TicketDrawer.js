@@ -1606,6 +1606,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 onChange={(text, mentions) => {
                   setInputText(text);
                   setInputMentions(mentions);
+                  // Trigger typing indicator
+                  handleTypingChange(text.length > 0);
                 }}
                 onSubmit={handleSubmitInput}
                 placeholder="Add an internal note... Use @ to mention someone"
@@ -1615,7 +1617,11 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
             ) : (
               <RichTextEditor
                 value={inputText}
-                onChange={setInputText}
+                onChange={(text) => {
+                  setInputText(text);
+                  // Trigger typing indicator
+                  handleTypingChange(stripHtml(text).trim().length > 0);
+                }}
                 placeholder="Type your reply..."
                 mode={inputMode}
                 onSubmit={handleSubmitInput}
