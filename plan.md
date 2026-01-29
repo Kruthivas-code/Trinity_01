@@ -762,3 +762,28 @@ Message {
 - `/app/frontend/src/components/MainLayout.js` - Added _split flag handling for UI refresh
 
 ---
+
+## Phase 20: Dashboard URL & Typing Indicators ✅ COMPLETED (1/29/2026)
+
+### Dashboard URL Updates
+- [x] **URL now updates when clicking a ticket**: `/dashboard?ticket=TKT-XXXXXX`
+- [x] **URL resets when closing drawer**: Back to `/dashboard` without query param
+- [x] **Shareable links work**: Opening `/dashboard?ticket=TKT-XXX` directly loads ticket in drawer
+- [x] **Consistent with All Tickets behavior**: Both views now update URL on ticket click
+
+### Typing Indicator (Real-time Collaboration)
+- [x] **Infrastructure added to TicketDrawer**:
+  - Joins/leaves ticket room via RealtimeContext when drawer opens/closes
+  - Sends typing events via WebSocket when user types in reply/note input
+  - Auto-stops typing indicator after 3 seconds of inactivity
+- [x] **Typing bubble UI**: Shows animated "X is typing..." bubble above input when others are typing
+  - Avatar initials of typers
+  - Animated bouncing dots
+  - Filters out current user (only shows others typing)
+- [x] **Stops typing on submit**: Clears typing state when message is sent
+
+### Files Modified
+- `/app/frontend/src/components/DashboardContainer.js` - Added URL handling, useSearchParams for ticket query param
+- `/app/frontend/src/components/TicketDrawer.js` - Added RealtimeContext integration, typing indicator bubble UI
+
+---
