@@ -1194,8 +1194,49 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
             </div>
           </div>
 
+          {/* Tab Navigation */}
+          <div className="flex items-center gap-1 px-4 py-2 border-b border-border/30 bg-secondary/10">
+            <button
+              onClick={() => setActiveTab('conversation')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'conversation'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+              }`}
+              data-testid="tab-conversation"
+            >
+              <MessageCircle size={14} />
+              Conversation
+            </button>
+            <button
+              onClick={() => setActiveTab('activity')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'activity'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+              }`}
+              data-testid="tab-activity"
+            >
+              <Activity size={14} />
+              Activity
+              {activityFeed.length > 0 && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
+                  {activityFeed.length}
+                </span>
+              )}
+            </button>
+          </div>
+
           {/* Conversation Thread - Scrollable */}
           <div ref={conversationRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+            {/* Activity Tab Content */}
+            {activeTab === 'activity' && (
+              <ActivityTimeline activities={activityFeed} loading={loadingActivity} />
+            )}
+            
+            {/* Conversation Tab Content */}
+            {activeTab === 'conversation' && (
+              <>
             {/* Recent Conversations from Same Customer */}
             {(relatedTickets.length > 0 || loadingRelated) && (
               <div className="mb-4">
