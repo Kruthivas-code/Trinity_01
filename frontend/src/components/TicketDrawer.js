@@ -364,6 +364,9 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       setMergedTickets(ticket.merged_tickets || []);
       setMessageSourceFilter('all');
       setDismissedMergeSuggestions([]);
+      // Reset active tab to conversation when switching tickets
+      setActiveTab('conversation');
+      setActivityFeed([]);
       fetchNotes(ticket.id);
       fetchRelatedTickets(ticket.id);
       fetchCustomFields();
@@ -372,6 +375,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       fetchCsatData(ticket.id);
       fetchLinkedFeatureRequests(ticket.id);
       fetchMergeSuggestions(ticket.id);
+      fetchActivityFeed(ticket.id);
     }
   }, [ticket]);
 
