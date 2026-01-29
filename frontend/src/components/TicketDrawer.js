@@ -1514,6 +1514,39 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
             )}
           </div>
 
+          {/* Typing Indicator Bubble */}
+          {othersTyping.length > 0 && (
+            <div className="shrink-0 px-3 py-2 border-t border-border/20 bg-secondary/20">
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-1">
+                  {othersTyping.slice(0, 3).map((typer, idx) => (
+                    <div 
+                      key={typer.user_id || idx}
+                      className="w-6 h-6 rounded-full bg-primary/30 flex items-center justify-center text-[10px] font-medium text-primary ring-2 ring-background"
+                      title={typer.name || typer.user_id}
+                    >
+                      {(typer.name || typer.user_id || '?').charAt(0).toUpperCase()}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    {othersTyping.length === 1 
+                      ? (othersTyping[0].name || 'Someone')
+                      : `${othersTyping.length} people`
+                    }
+                  </span>
+                  <span>{othersTyping.length === 1 ? 'is' : 'are'} typing</span>
+                  <span className="flex gap-0.5">
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Input Area - Fixed at bottom */}
           <div className="shrink-0 border-t border-border/30 bg-background p-3">
             {/* Mode Toggle */}
