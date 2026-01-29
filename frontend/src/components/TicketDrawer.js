@@ -1419,6 +1419,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               </div>
             ) : (
               conversationThread
+                // Filter out system messages - they now appear in Activity tab
+                .filter(msg => msg.type !== 'system')
                 .filter(msg => messageSourceFilter === 'all' || 
                   msg.original_ticket_id === messageSourceFilter || 
                   (!msg.original_ticket_id && messageSourceFilter === ticket?.ticket_id))
@@ -1440,6 +1442,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   currentTicketId={ticket?.ticket_id}
                 />
               ))
+            )}
+              </>
             )}
           </div>
 
