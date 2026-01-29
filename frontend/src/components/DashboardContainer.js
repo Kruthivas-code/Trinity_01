@@ -101,6 +101,36 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Handle opening ticket from URL query param
+  useEffect(() => {
+    const ticketId = searchParams.get('ticket');
+    if (ticketId && tickets.length > 0) {
+      // Find ticket in loaded tickets or fetch it
+      const ticket = tickets.find(t => t.ticket_id === ticketId || t.id === ticketId);
+      if (ticket) {
+        setSelectedTicket(ticket);
+        setIsDrawerOpen(true);
+      } else {
+        // Ticket not in current view, fetch it directly
+        const fetchTicket = async () => {
+          try {
+            const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}`, {
+              credentials: 'include'
+            });
+            if (response.ok) {
+              const data = await response.json();
+              setSelectedTicket(data);
+              setIsDrawerOpen(true);
+            }
+          } catch (error) {
+            console.error('Failed to fetch ticket from URL:', error);
+          }
+        };
+        fetchTicket();
+      }
+    }
+  }, [searchParams, tickets]);
+
   const handleTicketClick = (ticket) => {
     setSelectedTicket(ticket);
     setIsDrawerOpen(true);
