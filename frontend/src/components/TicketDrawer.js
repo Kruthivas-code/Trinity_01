@@ -257,6 +257,10 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
 };
 
 const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, onDelete }) => {
+  // Real-time context for typing indicators
+  const realtimeContext = useRealtime();
+  const { joinLocation, leaveLocation, sendTyping, typingUsers, isConnected } = realtimeContext || {};
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -339,6 +343,42 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   
   // Refs
   const conversationRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+
+  // Join/leave ticket room for real-time presence
+  useEffect(() => {
+    if (isOpen && ticket && joinLocation && leaveLocation) {
+      joinLocation('ticket', ticket.ticket_id || ticket.id);
+      return () => {
+        leaveLocation('ticket', ticket.ticket_id || ticket.id);
+      };
+    }
+  }, [isOpen, ticket, joinLocation, leaveLocation]);
+
+  // Handle typing indicator - debounced
+  const handleTypingChange = useCallback((isTyping) => {
+    if (!sendTyping || !ticket) return;
+    
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // Send typing indicator
+    sendTyping('ticket', ticket.ticket_id || ticket.id, isTyping);
+    
+    // Auto-stop typing after 3 seconds of inactivity
+    if (isTyping) {
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTyping('ticket', ticket.ticket_id || ticket.id, false);
+      }, 3000);
+    }
+  }, [sendTyping, ticket]);
+
+  // Filter out current user from typing users
+  const othersTyping = (typingUsers || []).filter(u => 
+    u.user_id !== currentUser?.user_id && u.user_id !== currentUser?.id
+  );
 
   useEffect(() => {
     if (ticket) {
