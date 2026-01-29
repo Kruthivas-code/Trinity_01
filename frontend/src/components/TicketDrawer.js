@@ -235,12 +235,9 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
               )}
             </div>
           </div>
-          <div className={`flex items-center gap-1.5 text-[10px] text-muted-foreground shrink-0 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
-            {isFromMergedTicket && (
-              <span className={`font-mono ${mergeColor.text}`}>{originalTicketId}</span>
-            )}
-            <span>{formatDate(timestamp)}</span>
-          </div>
+          <span className="text-[10px] text-muted-foreground shrink-0">
+            {formatDate(timestamp)}
+          </span>
         </div>
         
         {/* Subject line for first message */}
