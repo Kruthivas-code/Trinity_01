@@ -2439,16 +2439,23 @@ async def get_ticket_activity_feed(
     for msg in merge_messages:
         # Only add if not already in changelog
         source_id = msg.get("original_ticket_id")
-        if source_id and not any(a.get("field") == "merge" and a.get("metadata", {}).get("source_ticket_id") == source_id for a in activities):
-            activities.append({
-                "type": "merge",
-                "field": "merge",
-                "description": f"Merged ticket {source_id}: {msg.get('merged_ticket_title', '')}",
-                "timestamp": msg.get("created_at"),
-                "user_id": msg.get("created_by"),
-                "icon": "git-merge",
-                "source_ticket_id": source_id
-            })
+        if source_id:
+            # Check if this merge is already recorded in activities
+            already_recorded = any(
+                a.get("field") == "merge" and 
+                (a.get("metadata") or {}).get("source_ticket_id") == source_id 
+                for a in activities
+            )
+            if not already_recorded:
+                activities.append({
+                    "type": "merge",
+                    "field": "merge",
+                    "description": f"Merged ticket {source_id}: {msg.get('merged_ticket_title', '')}",
+                    "timestamp": msg.get("created_at"),
+                    "user_id": msg.get("created_by"),
+                    "icon": "git-merge",
+                    "source_ticket_id": source_id
+                })
     
     # Resolve user names for activities without them
     user_ids = list(set(a.get("user_id") for a in activities if a.get("user_id") and not a.get("user_name")))
