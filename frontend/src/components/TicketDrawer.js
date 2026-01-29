@@ -84,20 +84,25 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
     });
   };
 
-  // Handle merge divider - clean, minimal separator
+  // Handle merge divider - clear section header for merged ticket messages
   if (isMergeDivider || type === 'merge_divider') {
     const mergeColor = getMergeColor(mergeColorIndex || 0);
     return (
-      <div className="my-3 flex items-center gap-3" data-testid="merge-divider">
-        <div className="flex-1 h-px bg-border/50" />
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <GitMerge size={11} className={mergeColor.text} />
-          <span className={mergeColor.text}>{originalTicketId}</span>
-          {mergedTicketTitle && (
-            <span className="text-muted-foreground/60 truncate max-w-[180px]">· {mergedTicketTitle}</span>
-          )}
+      <div className="my-4" data-testid="merge-divider">
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${mergeColor.bg} border ${mergeColor.border.replace('border-l-', 'border-')}`}>
+          <GitMerge size={14} className={mergeColor.text} />
+          <div className="flex-1 min-w-0">
+            <span className={`text-xs font-medium ${mergeColor.text}`}>
+              Messages from merged ticket
+            </span>
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <span className="font-mono">{originalTicketId}</span>
+              {mergedTicketTitle && (
+                <span className="truncate">· {mergedTicketTitle}</span>
+              )}
+            </div>
+          </div>
         </div>
-        <div className="flex-1 h-px bg-border/50" />
       </div>
     );
   }
