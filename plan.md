@@ -476,10 +476,10 @@ Message {
 ---
 
 ## Next Steps / Future Enhancements
-- [ ] Auto-Merge Suggestion Banner (backend API exists, needs frontend implementation)
+- [x] Auto-Merge Suggestion Banner (COMPLETED - already implemented in TicketDrawer)
 - [ ] Real-time presence indicators (avatars showing who's viewing a ticket)
 - [ ] Live update notifications (non-toast based)
-- [ ] "Someone is editing" indicators
+- [x] "Someone is editing" indicators (COMPLETED - typing indicators)
 - [ ] Real-time Kanban board updates via WebSocket
 - [ ] AI-powered escalation level prediction
 - [ ] More sophisticated routing rules with ML
@@ -491,6 +491,42 @@ Message {
 - [x] Starred Tickets functionality (COMPLETED)
 - [x] Enhanced Merge with Visual Consolidation (COMPLETED)
 - [x] Auto-Assign to Creator (COMPLETED)
+- [x] Redis Integration for real-time features (COMPLETED)
+- [x] MongoDB indexes for query performance (COMPLETED)
+- [x] Test login endpoint security (COMPLETED - protected by ENABLE_TEST_LOGIN)
+
+---
+
+## Phase 22: Performance & Security Hardening ✅ COMPLETED (1/29/2026)
+
+### MongoDB Performance Indexes
+Created comprehensive indexes for optimal query performance:
+- **tickets**: status, assignee_id, customer_email, created_at, updated_at, priority, team_id, is_starred, mentioned_users, ticket_id (unique), uuid (unique)
+- **user_sessions**: session_token (unique), expires_at (TTL), user_id
+- **users**: user_id (unique), email (unique)
+- **messages**: ticket_id + created_at compound index
+- **ticket_changelog**: ticket_id + changed_at compound index
+- **teams**: team_id (unique)
+- **api_keys**: key_hash (unique), user_id
+- **feature_requests**: feature_id (unique), status
+- **csat_responses**: ticket_id
+- **csat_tokens**: token (unique), expires_at (TTL)
+- **routing_rules**: rule_id (unique), is_active + priority compound
+- **shifts**: shift_id (unique), team_id
+
+### Test Login Security
+- Protected `/api/auth/test-login` with `ENABLE_TEST_LOGIN` environment variable
+- Default: **disabled** (safe for production)
+- Enable for testing: Set `ENABLE_TEST_LOGIN=true`
+- Warning logged when test login is used
+
+### Async API Fixes
+- Fixed `/api/presence/stats` endpoint to properly await async Redis adapter
+- Fixed `/api/presence/ticket/{ticket_id}` endpoint to properly await async Redis adapter
+
+### Files Modified
+- `/app/backend/server.py` - Added indexes, secured test-login, fixed async calls
+- `/app/backend/.env` - Added ENABLE_TEST_LOGIN=true for current environment
 
 ---
 
