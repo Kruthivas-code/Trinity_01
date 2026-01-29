@@ -683,3 +683,43 @@ Message {
 - `GET /api/leaves/summary/{user_id}` - User summary
 - `PUT /api/leaves/{leave_id}` - Update leave
 - `DELETE /api/leaves/{leave_id}` - Delete leave
+
+---
+
+## Phase 18: Activity Timeline Sidebar ✅ COMPLETED (1/29/2026)
+
+### Problem Solved
+- System messages (assignments, status changes) were cluttering the conversation view
+- Duplicate assignment messages appeared in succession (one from original ticket, one from merged)
+- Users couldn't easily distinguish between conversation and administrative events
+
+### Solution: Separate Conversation and Activity Tabs
+
+**Backend Changes:**
+- Created new `/api/tickets/{ticket_id}/activity-feed` endpoint
+- Combines changelog entries + merge events into unified activity feed
+- Includes user names, icons, and source ticket indicators
+- Sorted chronologically with proper metadata
+
+**Frontend Changes:**
+- Added [Conversation] [Activity] tabs to TicketDrawer
+- Created new `ActivityTimeline.js` component
+- System messages filtered OUT of conversation view
+- Activity shows all events grouped by date with icons
+
+### Activity Tab Features
+- Events grouped by date (Today, Yesterday, or specific date)
+- Different colored icons for different event types:
+  - 🟢 Created (plus icon)
+  - 🔵 Status changes (activity icon)
+  - 🟣 Assignments (user icon)
+  - 🟠 Priority changes (alert icon)
+  - 🩵 Merge events (git-merge icon)
+  - 🌟 Starred (star icon)
+- User name and relative timestamp for each event
+- Source ticket ID shown when event came from merged ticket
+
+### Files Created/Modified
+- `/app/frontend/src/components/ActivityTimeline.js` (NEW)
+- `/app/frontend/src/components/TicketDrawer.js` - Added tabs and state
+- `/app/backend/server.py` - Added activity-feed endpoint
