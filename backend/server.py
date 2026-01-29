@@ -3571,7 +3571,6 @@ async def get_email_settings(current_user: dict = Depends(get_current_user)):
         "watch_email": GMAIL_WATCH_EMAIL,
         "configured": bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET),
         "watch_active": watch_doc is not None and watch_doc.get("expiration", 0) > datetime.now(timezone.utc).timestamp() * 1000,
-        "mock_mode": EMAIL_MOCK_MODE,
         "sync_query": GMAIL_SYNC_QUERY
     }
 
@@ -3585,7 +3584,7 @@ async def update_email_settings(
     # For now, just return success as the email is set via env var
     return {"message": "Email settings updated"}
 
-# ==================== Email Reply (with Mock Mode) ====================
+# ==================== Email Reply ====================
 
 # Collection for storing email replies
 email_replies_collection = db.email_replies
