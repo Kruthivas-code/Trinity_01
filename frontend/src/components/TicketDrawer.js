@@ -1287,7 +1287,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                               {related.ticket_id || `#${related.id?.slice(-6)}`}
                             </p>
                             <p className="text-[10px] text-muted-foreground">
-                              {new Date(related.created_at).toLocaleDateString()}
+                              {new Date(related.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                             </p>
                           </div>
                         </div>
