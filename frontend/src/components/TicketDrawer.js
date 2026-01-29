@@ -7,10 +7,11 @@ import {
   Clock, ArrowUpCircle, UserCheck, AtSign, Copy, Printer,
   BellOff, Merge, ExternalLink, Split, Link, FileText, 
   Tag, Bookmark, Download, UserPlus, Scissors, MessageSquareHeart,
-  GitMerge, Filter, Unlink
+  GitMerge, Filter, Unlink, MessageCircle, Activity
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import MentionInput, { renderTextWithMentions } from './MentionInput';
+import ActivityTimeline from './ActivityTimeline';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
