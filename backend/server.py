@@ -165,7 +165,7 @@ async def startup_event():
     # Note: We need to use async motor client for the adapters
     from motor.motor_asyncio import AsyncIOMotorClient
     motor_client = AsyncIOMotorClient(MONGO_URL)
-    motor_db = motor_client.get_database()
+    motor_db = motor_client.tickflow  # Use same database as sync client
     
     # Set up adapters for distributed presence and locking
     set_database(motor_db)
