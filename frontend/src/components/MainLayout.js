@@ -203,6 +203,22 @@ const MainLayout = ({ user, view }) => {
         return;
       }
       
+      // Handle split completion - refresh without making an update API call
+      if (updatedData._split) {
+        setRefreshKey(prev => prev + 1); // Trigger list refresh to show new ticket
+        // Optionally refresh the current ticket data
+        if (selectedTicket) {
+          const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}`, {
+            credentials: 'include'
+          });
+          if (response.ok) {
+            const refreshedTicket = await response.json();
+            setSelectedTicket(refreshedTicket);
+          }
+        }
+        return;
+      }
+      
       const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
