@@ -787,3 +787,78 @@ Message {
 - `/app/frontend/src/components/TicketDrawer.js` - Added RealtimeContext integration, typing indicator bubble UI
 
 ---
+
+## Phase 21: Scalability & Multi-Instance Support ✅ COMPLETED (1/29/2026)
+
+### Problem
+The application was designed for single-instance deployment. With 2 load-balanced machines:
+- In-memory presence/typing would be inconsistent across instances
+- Background tasks would run on BOTH machines (race conditions)
+- Sessions were already in MongoDB (✅ correct)
+
+### Solution: Adapter Pattern with MongoDB Backend
+
+#### New Architecture (`/app/backend/adapters/`)
+Created abstraction layer that can be swapped to Redis later:
+
+1. **`base.py`** - Abstract interfaces:
+   - `PresenceAdapter`: Online users, locations, typing indicators
+   - `LockAdapter`: Distributed locking for background tasks
+   - `PubSubAdapter`: Cross-instance event messaging
+
+2. **`mongodb_adapter.py`** - MongoDB implementations:
+   - `MongoPresenceAdapter`: Uses TTL collections for auto-cleanup
+   - `MongoLockAdapter`: Atomic `find_one_and_update` for locks
+   - `MongoPubSubAdapter`: Polling mode for non-replica MongoDB
+
+3. **`__init__.py`** - Factory pattern:
+   - `set_database(db)`: Configure database
+   - `get_presence_adapter()`: Get/create presence singleton
+   - `get_lock_adapter()`: Get/create lock singleton
+   - `get_pubsub_adapter()`: Get/create pubsub singleton
+
+#### Updated `realtime.py`
+- Now uses `MongoPresenceAdapter` instead of in-memory dict
+- Cross-instance typing/notifications via pub/sub
+- `initialize_realtime(db)` must be called on startup
+
+#### Updated `server.py`
+- Startup initializes Motor (async MongoDB) client
+- Background task uses distributed locking:
+  - Only one instance runs `auto_close_resolved_tickets`
+  - Lock TTL = 1 hour, auto-released on completion
+  - Other instances skip and wait
+
+### New MongoDB Collections (Auto-Created)
+| Collection | Purpose | Indexes |
+|------------|---------|---------|
+| `presence_connections` | Online users | socket_id (unique), user_id, expires_at (TTL) |
+| `presence_locations` | Who's viewing what | (location_key, user_id) unique |
+| `presence_typing` | Typing indicators | location_key, expires_at (5s TTL) |
+| `distributed_locks` | Background task locks | lock_name (unique), expires_at (TTL) |
+| `pubsub_messages` | Cross-instance events | channel, created_at (capped 10MB) |
+
+### Environment Variables
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ADAPTER_BACKEND` | mongodb | Backend type ('mongodb' or 'redis') |
+| `MONGODB_PUBSUB_POLLING` | true | Use polling vs change streams |
+| `INSTANCE_ID` | auto-generated | Unique instance identifier |
+
+### How to Switch to Redis Later
+1. Create `adapters/redis_adapter.py` implementing same interfaces
+2. Set `ADAPTER_BACKEND=redis`
+3. Set `REDIS_URL=redis://your-redis-server`
+4. Optionally use `socketio.AsyncRedisManager` for Socket.IO
+
+### Files Created
+- `/app/backend/adapters/__init__.py`
+- `/app/backend/adapters/base.py`
+- `/app/backend/adapters/mongodb_adapter.py`
+
+### Files Modified
+- `/app/backend/realtime.py` - Complete rewrite for distributed adapters
+- `/app/backend/server.py` - Startup/shutdown with adapters, distributed locking
+
+---
+
