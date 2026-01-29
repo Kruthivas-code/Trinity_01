@@ -2383,9 +2383,16 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 body: JSON.stringify({ split_at_index: splitIndex, new_ticket_title: newTicketTitle })
               });
               if (response.ok) {
+                const data = await response.json();
                 setShowSplitModal(false);
-                // Refresh the current ticket
-                onUpdate && onUpdate(ticket.id, {});
+                // Update linked tickets in local state from updated ticket
+                if (data.updated_ticket?.linked_tickets) {
+                  setLinkedTickets(data.updated_ticket.linked_tickets);
+                }
+                // Refresh notes to show the system message
+                fetchNotes(ticket.id);
+                // Trigger parent refresh with _split flag to refresh the list
+                onUpdate && onUpdate(ticket.id, { _split: true, new_ticket_id: data.new_ticket_id });
               }
             } catch (error) {
               console.error('Split failed:', error);
