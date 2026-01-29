@@ -2743,20 +2743,33 @@ const LinkTicketModal = ({ ticket, linkedTickets, onClose, onLink, onUnlink }) =
             <div>
               <label className="text-sm font-medium mb-2 block">Linked Tickets</label>
               <div className="space-y-1">
-                {linkedTickets.map(link => (
-                  <div key={link.ticket_id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30">
-                    <div>
-                      <span className="text-xs text-muted-foreground">{link.link_type}</span>
-                      <p className="text-sm font-medium">{link.ticket_id} - {link.title}</p>
+                {linkedTickets.map(link => {
+                  // Get label for link type
+                  const getLinkTypeLabel = (type) => {
+                    switch (type) {
+                      case 'split_from': return 'Split from';
+                      case 'split_to': return 'Split to';
+                      case 'blocks': return 'Blocks';
+                      case 'blocked_by': return 'Blocked by';
+                      case 'duplicates': return 'Duplicates';
+                      default: return 'Related to';
+                    }
+                  };
+                  return (
+                    <div key={link.ticket_id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/30">
+                      <div>
+                        <span className="text-xs text-muted-foreground">{getLinkTypeLabel(link.link_type)}</span>
+                        <p className="text-sm font-medium">{link.ticket_id} - {link.title}</p>
+                      </div>
+                      <button 
+                        onClick={() => onUnlink(link.ticket_id)}
+                        className="h-7 w-7 flex items-center justify-center rounded hover:bg-red-500/20 text-red-400"
+                      >
+                        <X size={14} />
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => onUnlink(link.ticket_id)}
-                      className="h-7 w-7 flex items-center justify-center rounded hover:bg-red-500/20 text-red-400"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
