@@ -857,7 +857,7 @@ No mock_mode in settings: ✅
 
 ---
 
-## Phase 21: Scalability & Multi-Instance Support ✅ COMPLETED (1/29/2026)
+## Phase 21: Scalability & Multi-Instance Support ✅ COMPLETED (1/30/2026)
 
 ### Problem
 The application was designed for single-instance deployment. With 2 load-balanced machines:
@@ -865,23 +865,14 @@ The application was designed for single-instance deployment. With 2 load-balance
 - Background tasks would run on BOTH machines (race conditions)
 - Sessions were already in MongoDB (✅ correct)
 
-### Solution: Adapter Pattern with Redis Backend (Updated 1/29/2026)
+### Solution: MongoDB Adapter Pattern
 
-**Originally implemented with MongoDB adapters, now upgraded to Redis for:**
-- True push-based pub/sub (no polling)
-- Native distributed locking with automatic TTL
-- Efficient presence management with sorted sets and hashes
-- Production-ready scalability
+**Using MongoDB for all distributed features:**
+- Presence tracking with TTL collections
+- Distributed locking using atomic operations
+- Pub/sub via change streams (replica set) or polling fallback
 
-**Redis Cloud Configuration:**
-- Host: `redis-11283.c238.us-central1-2.gce.cloud.redislabs.com:11283`
-- Database: `database-MKZUKP8Z`
-- Environment variable: `REDIS_URL` in backend/.env
-
-### Original Solution: Adapter Pattern (MongoDB fallback available)
-
-#### New Architecture (`/app/backend/adapters/`)
-Created abstraction layer that can be swapped to Redis later:
+### Architecture (`/app/backend/adapters/`)
 
 1. **`base.py`** - Abstract interfaces:
    - `PresenceAdapter`: Online users, locations, typing indicators
@@ -891,7 +882,7 @@ Created abstraction layer that can be swapped to Redis later:
 2. **`mongodb_adapter.py`** - MongoDB implementations:
    - `MongoPresenceAdapter`: Uses TTL collections for auto-cleanup
    - `MongoLockAdapter`: Atomic `find_one_and_update` for locks
-   - `MongoPubSubAdapter`: Polling mode for non-replica MongoDB
+   - `MongoPubSubAdapter`: Change streams with auto-fallback to polling
 
 3. **`__init__.py`** - Factory pattern:
    - `set_database(db)`: Configure database
@@ -899,25 +890,31 @@ Created abstraction layer that can be swapped to Redis later:
    - `get_lock_adapter()`: Get/create lock singleton
    - `get_pubsub_adapter()`: Get/create pubsub singleton
 
-#### Updated `realtime.py`
-- Now uses `MongoPresenceAdapter` instead of in-memory dict
-- Cross-instance typing/notifications via pub/sub
-- `initialize_realtime(db)` must be called on startup
+### Pub/Sub Implementation
+- **Primary**: MongoDB Change Streams (requires replica set)
+- **Fallback**: Polling mode (500ms interval) for standalone MongoDB
+- **Auto-detection**: Tries change streams first, seamlessly falls back if unavailable
 
-#### Updated `server.py`
+### Updated `realtime.py`
+- Uses `MongoPresenceAdapter` instead of in-memory dict
+- Cross-instance typing/notifications via pub/sub
+- `initialize_realtime(db)` called on startup
+
+### Updated `server.py`
 - Startup initializes Motor (async MongoDB) client
 - Background task uses distributed locking:
   - Only one instance runs `auto_close_resolved_tickets`
   - Lock TTL = 1 hour, auto-released on completion
   - Other instances skip and wait
 
-### New MongoDB Collections (Auto-Created)
+### MongoDB Collections for Distributed Features
 | Collection | Purpose | Indexes |
 |------------|---------|---------|
 | `presence_connections` | Online users | socket_id (unique), user_id, expires_at (TTL) |
 | `presence_locations` | Who's viewing what | (location_key, user_id) unique |
 | `presence_typing` | Typing indicators | location_key, expires_at (5s TTL) |
 | `distributed_locks` | Background task locks | lock_name (unique), expires_at (TTL) |
+| `pubsub_messages` | Cross-instance messaging | channel, created_at (capped collection) |
 | `pubsub_messages` | Cross-instance events | channel, created_at (capped 10MB) |
 
 ### Environment Variables
