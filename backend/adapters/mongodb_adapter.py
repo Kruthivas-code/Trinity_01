@@ -432,14 +432,45 @@ class MongoPubSubAdapter(PubSubAdapter):
             self._poll_task = asyncio.create_task(self._poll_loop())
             logger.info("[PUBSUB] Started MongoDB polling mode")
         else:
-            try:
-                # Try change stream first
-                asyncio.create_task(self._change_stream_loop())
+            # Try change streams, will auto-fallback to polling if not available
+            self._poll_task = asyncio.create_task(self._try_change_stream_or_poll())
+    
+    async def _try_change_stream_or_poll(self):
+        """Try change stream first, fallback to polling if not available"""
+        try:
+            # Test if change streams are available
+            async with self.messages.watch(
+                [{"$match": {"operationType": "insert"}}],
+                full_document="updateLookup"
+            ) as stream:
                 logger.info("[PUBSUB] Started MongoDB change stream mode")
-            except Exception as e:
+                self._change_stream = stream
+                async for change in stream:
+                    if not self._running:
+                        break
+                    
+                    doc = change.get("fullDocument", {})
+                    channel = doc.get("channel")
+                    message = doc.get("message", {})
+                    
+                    if channel in self.subscriptions:
+                        for callback in self.subscriptions[channel]:
+                            try:
+                                if asyncio.iscoroutinefunction(callback):
+                                    await callback(message)
+                                else:
+                                    callback(message)
+                            except Exception as e:
+                                logger.error(f"[PUBSUB] Callback error: {e}")
+        except Exception as e:
+            # Change streams not available, fallback to polling
+            if "replica set" in str(e).lower() or "Location40573" in str(e):
+                logger.info(f"[PUBSUB] Change streams not available (requires replica set), using polling mode")
+            else:
                 logger.warning(f"[PUBSUB] Change stream failed, falling back to polling: {e}")
-                self.use_polling = True
-                self._poll_task = asyncio.create_task(self._poll_loop())
+            
+            self.use_polling = True
+            await self._poll_loop()
     
     async def _change_stream_loop(self):
         """Listen for changes using MongoDB change streams"""
