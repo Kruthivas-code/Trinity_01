@@ -53,12 +53,9 @@ def initialize_realtime(db):
     
     set_database(db)
     _presence_adapter = get_presence_adapter()
+    _pubsub_adapter = get_pubsub_adapter()
     
-    # Check if we should use polling mode for MongoDB (for non-replica setups)
-    use_polling = os.environ.get('MONGODB_PUBSUB_POLLING', 'true').lower() == 'true'
-    _pubsub_adapter = get_pubsub_adapter(use_polling=use_polling)
-    
-    logger.info("[REALTIME] Initialized with distributed adapters")
+    logger.info("[REALTIME] Initialized with MongoDB adapters")
     return _presence_adapter, _pubsub_adapter
 
 
