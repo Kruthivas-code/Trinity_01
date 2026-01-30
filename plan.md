@@ -917,39 +917,13 @@ The application was designed for single-instance deployment. With 2 load-balance
 | `pubsub_messages` | Cross-instance messaging | channel, created_at (capped collection) |
 | `pubsub_messages` | Cross-instance events | channel, created_at (capped 10MB) |
 
-### Environment Variables
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ADAPTER_BACKEND` | mongodb | Backend type ('mongodb' or 'redis') |
-| `MONGODB_PUBSUB_POLLING` | true | Use polling vs change streams |
-| `INSTANCE_ID` | auto-generated | Unique instance identifier |
-
-### How to Switch to Redis Later
-1. Create `adapters/redis_adapter.py` implementing same interfaces ✅ DONE
-2. Set `ADAPTER_BACKEND=redis` ✅ DONE
-3. Set `REDIS_URL=redis://your-redis-server` ✅ DONE
-4. Optionally use `socketio.AsyncRedisManager` for Socket.IO (future enhancement)
-
-### Redis Keys Structure
-| Key Pattern | Purpose |
-|-------------|---------|
-| `presence:connections` | Hash: socket_id → user data |
-| `presence:users` | Hash: user_id → socket_id |
-| `presence:location:{key}` | Set: users at location |
-| `presence:typing:{key}` | Sorted set: user_id → expiry |
-| `lock:{name}` | String: holder_id with TTL |
-| `pubsub:{channel}` | Native Redis pub/sub channels |
-
 ### Files Created
-- `/app/backend/adapters/__init__.py` (updated for Redis support)
-- `/app/backend/adapters/base.py`
-- `/app/backend/adapters/mongodb_adapter.py`
-- `/app/backend/adapters/redis_adapter.py` ← NEW
+- `/app/backend/adapters/__init__.py` - Factory pattern for adapters
+- `/app/backend/adapters/base.py` - Abstract interface definitions
+- `/app/backend/adapters/mongodb_adapter.py` - MongoDB implementations
 
 ### Files Modified
-- `/app/backend/realtime.py` - Complete rewrite for distributed adapters
+- `/app/backend/realtime.py` - Uses distributed adapters instead of in-memory
 - `/app/backend/server.py` - Startup/shutdown with adapters, distributed locking
-- `/app/backend/.env` - Added REDIS_URL and ADAPTER_BACKEND=redis
 
 ---
-
