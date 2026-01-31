@@ -1074,15 +1074,6 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     }
   };
 
-  const handleSave = () => {
-    if (ticket) {
-      onUpdate(ticket.id, {
-        ...formData,
-        custom_fields: customFieldValues
-      });
-    }
-  };
-
   const handleDelete = () => {
     if (ticket) {
       onDelete(ticket.id);
