@@ -420,6 +420,45 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     }
   }, [ticket]);
 
+  // Auto-save when form data changes (debounced)
+  const autoSaveTimeoutRef = useRef(null);
+  const initialLoadRef = useRef(true);
+  
+  useEffect(() => {
+    // Skip auto-save on initial load
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false;
+      return;
+    }
+    
+    // Skip if no ticket
+    if (!ticket) return;
+    
+    // Clear previous timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    
+    // Debounce the save by 500ms
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      onUpdate(ticket.id, {
+        ...formData,
+        custom_fields: customFieldValues
+      });
+    }, 500);
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [formData, customFieldValues]);
+
+  // Reset initial load flag when ticket changes
+  useEffect(() => {
+    initialLoadRef.current = true;
+  }, [ticket?.id]);
+
   // Fetch merge suggestions for auto-merge
   const fetchMergeSuggestions = async (ticketId) => {
     try {
