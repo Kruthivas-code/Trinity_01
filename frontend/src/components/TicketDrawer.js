@@ -983,12 +983,6 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         e.preventDefault();
         handleSubmitInput();
       }
-      
-      // Cmd/Ctrl + S to save (works when typing)
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        handleSaveChanges();
-      }
     };
     
     window.addEventListener('keydown', handleKeyDown);
