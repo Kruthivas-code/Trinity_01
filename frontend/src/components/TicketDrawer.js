@@ -1062,7 +1062,6 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       console.error('Failed to send:', error);
     } finally {
       setSubmitting(false);
-      isSubmittingRef.current = false;
     }
   };
 
