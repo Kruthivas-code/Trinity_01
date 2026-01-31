@@ -2494,46 +2494,33 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
             )}
           </div>
 
-          {/* Footer Actions */}
-          <div className="shrink-0 px-3 py-2.5 border-t border-border/30 bg-background">
-            {!showDeleteConfirm ? (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="h-7 px-2 flex items-center gap-1 text-[11px] text-destructive hover:bg-destructive/10 rounded transition-colors"
-                  data-testid="drawer-delete-button"
-                >
-                  <Trash2 size={12} />
-                  <span>Delete</span>
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="flex-1 h-7 px-2 flex items-center justify-center gap-1 text-[11px] font-medium bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-                  data-testid="drawer-save-button"
-                >
-                  <Save size={12} />
-                  <span>Save</span>
-                </button>
+          {/* Delete Confirmation Modal */}
+          {showDeleteConfirm && (
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+              <div className="bg-card border border-border rounded-lg p-4 shadow-lg max-w-sm mx-4">
+                <h3 className="text-sm font-medium mb-2">Delete Ticket?</h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  This action cannot be undone. The ticket and all its messages will be permanently deleted.
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 h-8 px-3 text-xs border border-border/40 rounded hover:bg-secondary/50 transition-colors"
+                    data-testid="drawer-delete-cancel-button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="flex-1 h-8 px-3 text-xs font-medium bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 transition-colors"
+                    data-testid="drawer-delete-confirm-button"
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 h-7 px-2 text-[11px] border border-border/40 rounded hover:bg-secondary/50 transition-colors"
-                  data-testid="drawer-delete-cancel-button"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="flex-1 h-7 px-2 text-[11px] font-medium bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 transition-colors"
-                  data-testid="drawer-delete-confirm-button"
-                >
-                  Delete
-                </button>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
       
