@@ -978,11 +978,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         }
       }
       
-      // Cmd/Ctrl + Enter to send (works when typing)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-        e.preventDefault();
-        handleSubmitInput();
-      }
+      // Note: Cmd/Ctrl + Enter is handled by RichTextEditor and MentionInput components
+      // Do NOT add a window-level handler here - it would cause double submission
     };
     
     window.addEventListener('keydown', handleKeyDown);
