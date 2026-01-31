@@ -3477,21 +3477,24 @@ async def create_ticket_from_email(
 
 @app.post("/api/gmail/sync")
 async def sync_emails_to_tickets(
-    max_emails: int = 20,
+    max_emails: int = 100,
     query: str = None,
     current_user: dict = Depends(get_current_user)
 ):
-    """Sync emails matching query to tickets"""
+    """Sync emails matching query to tickets. Default syncs ALL inbox emails."""
     token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
     if not token_doc or "access_token" not in token_doc:
-        raise HTTPException(status_code=400, detail="Gmail not connected")
+        raise HTTPException(
+            status_code=503, 
+            detail="Gmail not connected. Please connect Gmail in Settings first."
+        )
     
     try:
         service = get_gmail_service(token_doc)
         
-        # Use provided query or default support query
+        # Use provided query or default (all inbox emails)
         search_query = query if query else GMAIL_SYNC_QUERY
-        logger.info(f"[GMAIL] Syncing with query: {search_query}")
+        logger.info(f"[GMAIL] Syncing with query: {search_query}, max: {max_emails}")
         
         results = service.users().messages().list(
             userId='me',
