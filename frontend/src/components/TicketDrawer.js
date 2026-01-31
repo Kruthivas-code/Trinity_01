@@ -976,13 +976,36 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const handleSubmitInput = async () => {
     // Strip HTML to check if there's actual content
     const plainText = stripHtml(inputText);
-    if (!plainText.trim() || !ticket) return;
+    if (!plainText.trim() || !ticket || submitting) return;
     
     // Stop typing indicator when submitting
     handleTypingChange(false);
     
     setSubmitting(true);
     try {
+      // If this is a reply to an email-sourced ticket, send actual email
+      if (inputMode === 'reply' && ticket.source === 'email' && ticket.customer_email) {
+        // Send email via Gmail
+        const emailResponse = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/reply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            to_email: ticket.customer_email || ticket.email_sender,
+            subject: `Re: ${ticket.title}`,
+            body: plainText.trim()
+          })
+        });
+        
+        if (!emailResponse.ok) {
+          const errorData = await emailResponse.json();
+          console.error('Failed to send email:', errorData);
+          // If email fails, still add as note
+        }
+      }
+      
+      // Add note/reply to conversation
       const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
