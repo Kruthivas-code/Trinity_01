@@ -1003,16 +1003,10 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     }
   };
 
-  // Ref to prevent race conditions in submit
-  const isSubmittingRef = useRef(false);
-
   const handleSubmitInput = async () => {
     // Strip HTML to check if there's actual content
     const plainText = stripHtml(inputText);
-    if (!plainText.trim() || !ticket || submitting || isSubmittingRef.current) return;
-    
-    // Lock immediately using ref (synchronous)
-    isSubmittingRef.current = true;
+    if (!plainText.trim() || !ticket || submitting) return;
     
     // Stop typing indicator when submitting
     handleTypingChange(false);
