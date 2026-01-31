@@ -3626,6 +3626,25 @@ async def reply_to_ticket(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
+    # Prevent duplicate email submissions (same content within 10 seconds)
+    ten_seconds_ago = datetime.now(timezone.utc) - timedelta(seconds=10)
+    existing_duplicate = email_replies_collection.find_one({
+        "ticket_id": ticket_id,
+        "sent_by": current_user["user_id"],
+        "body": reply.body,
+        "created_at": {"$gte": ten_seconds_ago}
+    })
+    if existing_duplicate:
+        # Return the existing reply instead of sending duplicate email
+        logger.info(f"[EMAIL] Prevented duplicate email submission for ticket {ticket_id}")
+        return {
+            "status": "sent",
+            "message": "Email already sent (duplicate prevented)",
+            "reply_id": existing_duplicate.get("reply_id"),
+            "gmail_message_id": existing_duplicate.get("gmail_message_id"),
+            "duplicate_prevented": True
+        }
+    
     # Verify Gmail is connected
     token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
     if not token_doc or "access_token" not in token_doc:
