@@ -299,8 +299,8 @@ GMAIL_CLIENT_ID = os.environ.get("GMAIL_CLIENT_ID", "")
 GMAIL_CLIENT_SECRET = os.environ.get("GMAIL_CLIENT_SECRET", "")
 GMAIL_REDIRECT_URI = os.environ.get("GMAIL_REDIRECT_URI", "")
 GMAIL_WATCH_EMAIL = os.environ.get("GMAIL_WATCH_EMAIL", "")
-# Query filter to sync only support-related emails (customize as needed)
-GMAIL_SYNC_QUERY = os.environ.get("GMAIL_SYNC_QUERY", "from:usepylon.com OR to:support@emergent.sh OR from:support@emergent.sh")
+# Query filter for email sync - default syncs ALL inbox emails
+GMAIL_SYNC_QUERY = os.environ.get("GMAIL_SYNC_QUERY", "in:inbox")
 
 GMAIL_SCOPES = [
     'https://www.googleapis.com/auth/gmail.readonly',
