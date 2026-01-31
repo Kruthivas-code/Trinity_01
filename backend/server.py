@@ -2390,6 +2390,19 @@ async def add_internal_note(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
+    # Prevent duplicate submissions (same content within 5 seconds)
+    five_seconds_ago = datetime.now(timezone.utc) - timedelta(seconds=5)
+    existing_duplicate = messages_collection.find_one({
+        "ticket_id": ticket_id,
+        "author_id": current_user["user_id"],
+        "content": note.content,
+        "created_at": {"$gte": five_seconds_ago}
+    })
+    if existing_duplicate:
+        # Return the existing note instead of creating a duplicate
+        logger.info(f"[NOTES] Prevented duplicate note submission for ticket {ticket_id}")
+        return serialize_doc(existing_duplicate)
+    
     message_id = f"msg_{uuid.uuid4().hex[:12]}"
     mentions = note.mentions or []
     
