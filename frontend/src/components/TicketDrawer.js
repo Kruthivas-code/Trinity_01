@@ -984,7 +984,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     setSubmitting(true);
     try {
       // If this is a reply to an email-sourced ticket, send actual email
-      if (inputMode === 'reply' && ticket.source === 'email' && ticket.customer_email) {
+      const recipientEmail = ticket.customer_email || ticket.email_sender;
+      if (inputMode === 'reply' && ticket.source === 'email' && recipientEmail) {
         // Send email via Gmail
         const emailResponse = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/reply`, {
           method: 'POST',
@@ -992,7 +993,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           credentials: 'include',
           body: JSON.stringify({
             ticket_id: ticket.id,
-            to_email: ticket.customer_email || ticket.email_sender,
+            to_email: recipientEmail,
             subject: `Re: ${ticket.title}`,
             body: plainText.trim()
           })
