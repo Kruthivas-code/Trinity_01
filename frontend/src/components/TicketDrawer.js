@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import { 
-  X, Save, Trash2, Send, ChevronDown, ChevronRight,
+  X, Trash2, Send, ChevronDown, ChevronRight,
   Loader2, Star, MoreHorizontal, Mail, AlertCircle, 
   Sparkles, PenLine, Command, Link2, Settings, Users,
   Clock, ArrowUpCircle, UserCheck, AtSign, Copy, Printer,
