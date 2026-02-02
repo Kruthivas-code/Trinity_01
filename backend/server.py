@@ -4514,9 +4514,6 @@ async def backfill_email_content(
 
 # ==================== Email Reply ====================
 
-# Collection for storing email replies
-email_replies_collection = db.email_replies
-
 class EmailReplyRequest(BaseModel):
     ticket_id: str
     to_email: str
@@ -8349,6 +8346,17 @@ async def get_auto_close_status(current_user: dict = Depends(get_current_user)):
 
 # ==================== Webhooks API ====================
 
+def serialize_webhook(webhook: dict) -> dict:
+    """Serialize webhook document, hiding the secret for security"""
+    result = serialize_doc(webhook)
+    # Don't expose the actual secret - just indicate if one is set
+    if result.get("secret"):
+        result["secret"] = "********"  # Mask the secret
+        result["has_secret"] = True
+    else:
+        result["has_secret"] = False
+    return result
+
 @app.get("/api/webhooks")
 async def list_webhooks(
     cursor: int = 0,
@@ -8360,7 +8368,7 @@ async def list_webhooks(
     total = webhooks_collection.count_documents({})
     
     return {
-        "data": [serialize_doc(w) for w in webhooks],
+        "data": [serialize_webhook(w) for w in webhooks],
         "total": total,
         "cursor": cursor,
         "limit": limit
@@ -8395,7 +8403,7 @@ async def create_webhook(
     
     return {
         "message": "Webhook created successfully",
-        "webhook": serialize_doc(webhook_doc)
+        "webhook": serialize_webhook(webhook_doc)
     }
 
 @app.get("/api/webhooks/events")
@@ -8430,7 +8438,7 @@ async def get_webhook(
     if not webhook:
         raise HTTPException(status_code=404, detail="Webhook not found")
     
-    return serialize_doc(webhook)
+    return serialize_webhook(webhook)
 
 @app.put("/api/webhooks/{webhook_id}")
 async def update_webhook(
@@ -8466,7 +8474,7 @@ async def update_webhook(
     updated_webhook = webhooks_collection.find_one({"webhook_id": webhook_id})
     return {
         "message": "Webhook updated successfully",
-        "webhook": serialize_doc(updated_webhook)
+        "webhook": serialize_webhook(updated_webhook)
     }
 
 @app.delete("/api/webhooks/{webhook_id}")
@@ -8598,6 +8606,8 @@ async def retry_webhook_delivery(
         "success": success,
         "message": "Webhook retry delivered successfully" if success else "Webhook retry failed"
     }
+
+@app.post("/api/admin/trigger-auto-close")
 async def trigger_auto_close(current_user: dict = Depends(get_current_user)):
     """Manually trigger the auto-close process (admin only)"""
     if current_user.get("role") != "admin":
