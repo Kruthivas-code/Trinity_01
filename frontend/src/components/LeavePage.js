@@ -820,7 +820,7 @@ const LeavePage = ({ user }) => {
                     disabled={!!editingLeave}
                   >
                     <option value="">Select or leave blank for yourself</option>
-                    {users.map(u => (
+                    {Array.isArray(users) && users.map(u => (
                       <option key={u.user_id || u.id} value={u.user_id || u.id}>
                         {u.name} ({u.email})
                       </option>
