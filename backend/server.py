@@ -3673,6 +3673,14 @@ async def sync_emails_to_tickets(
         created_tickets = []
         skipped = 0
         
+        # Import email utilities
+        from email_utils import (
+            extract_email_headers, 
+            parse_email_content,
+            extract_email_address as extract_email_addr,
+            format_sender_name
+        )
+        
         for msg in messages:
             # Check if ticket already exists
             existing = tickets_collection.find_one({"email_message_id": msg['id']})
@@ -3686,10 +3694,10 @@ async def sync_emails_to_tickets(
                 format='full'
             ).execute()
             
-            metadata = extract_email_metadata(msg_detail.get('payload', {}).get('headers', []))
-            body = parse_email_body(msg_detail.get('payload', {}))
-            
-            _, sender_email = parseaddr(metadata['from'])
+            # Use improved email parsing
+            payload = msg_detail.get('payload', {})
+            headers = extract_email_headers(payload.get('headers', []))
+            content = parse_email_content(payload)
             
             ticket_id = generate_ticket_id()
             max_order_ticket = tickets_collection.find_one(
