@@ -161,6 +161,64 @@ const EmailViewer = ({
     }
   }, [viewMode, hasHtml, ticket?.email_html, loadImages, isExpanded]);
   
+  // Format plain text with proper quote handling for email threads
+  const formatPlainText = (text) => {
+    if (!text) return 'No content';
+    
+    // Split into lines and process
+    const lines = text.split('\n');
+    const elements = [];
+    let quoteBuffer = [];
+    
+    const flushQuoteBuffer = () => {
+      if (quoteBuffer.length > 0) {
+        elements.push(
+          <blockquote 
+            key={`quote-${elements.length}`} 
+            className="my-2 pl-3 py-1 border-l-2 border-muted-foreground/40 text-muted-foreground/80 text-sm bg-muted/20 rounded-r"
+          >
+            {quoteBuffer.map((line, i) => (
+              <div key={i} className="leading-relaxed">{line.replace(/^>+\s*/, '')}</div>
+            ))}
+          </blockquote>
+        );
+        quoteBuffer = [];
+      }
+    };
+    
+    lines.forEach((line, index) => {
+      const isQuoted = /^>+/.test(line.trimStart());
+      
+      // Check for common reply header patterns
+      const isReplyHeader = /^On .+ wrote:$/i.test(line.trim()) || 
+                            /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}.+wrote:?$/i.test(line.trim()) ||
+                            /^.+<.+@.+>.+wrote:?$/i.test(line.trim()) ||
+                            /^-{3,}\s*Original Message\s*-{3,}$/i.test(line.trim()) ||
+                            /^From:.*$/i.test(line.trim()) && index > 0;
+      
+      if (isQuoted) {
+        quoteBuffer.push(line);
+      } else if (isReplyHeader) {
+        flushQuoteBuffer();
+        elements.push(
+          <div key={`header-${index}`} className="my-3 py-2 text-xs text-muted-foreground/60 border-t border-border/30 italic">
+            {line}
+          </div>
+        );
+      } else {
+        flushQuoteBuffer();
+        if (line.trim()) {
+          elements.push(<div key={index} className="leading-relaxed">{line}</div>);
+        } else if (elements.length > 0) {
+          elements.push(<div key={index} className="h-2" />);
+        }
+      }
+    });
+    
+    flushQuoteBuffer();
+    return elements.length > 0 ? elements : 'No content';
+  };
+  
   // If no email content, show description
   if (!hasHtml && !hasText) {
     return (
