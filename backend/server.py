@@ -307,11 +307,17 @@ async def auto_sync_emails():
                 
                 messages = results.get('messages', [])
                 created_count = 0
+                reply_count = 0
                 
                 for msg in messages:
-                    # Check if ticket already exists for this email
+                    # Check if ticket already exists for this exact email message
                     existing = tickets_collection.find_one({"email_message_id": msg['id']})
                     if existing:
+                        continue
+                    
+                    # Check if this email was already processed as a reply
+                    existing_reply = email_replies_collection.find_one({"gmail_message_id": msg['id']})
+                    if existing_reply:
                         continue
                     
                     # Get full message details
@@ -320,6 +326,8 @@ async def auto_sync_emails():
                         id=msg['id'],
                         format='full'
                     ).execute()
+                    
+                    gmail_thread_id = full_msg.get('threadId')
                     
                     # Use email_utils for proper parsing
                     from email_utils import (
@@ -333,7 +341,67 @@ async def auto_sync_emails():
                     headers = extract_email_headers(payload.get('headers', []))
                     content = parse_email_content(payload)
                     
-                    # Generate ticket ID
+                    # Check if there's an existing ticket with the same Gmail thread ID
+                    # This means this email is a reply in an existing conversation
+                    existing_thread_ticket = tickets_collection.find_one({"email_thread_id": gmail_thread_id})
+                    
+                    if existing_thread_ticket:
+                        # This is a reply to an existing ticket - add as incoming reply
+                        sanitized_html = sanitize_html(content['html'][:100000]) if content['html'] else None
+                        
+                        reply_id = f"reply_{uuid.uuid4().hex[:12]}"
+                        incoming_reply = {
+                            "reply_id": reply_id,
+                            "ticket_id": existing_thread_ticket["ticket_id"],
+                            "direction": "incoming",  # Mark as incoming (from customer)
+                            "from_email": extract_email_addr(headers['from']),
+                            "from_name": format_sender_name(headers['from']),
+                            "to_email": headers['to'],
+                            "subject": headers['subject'] or "Re: " + existing_thread_ticket.get("title", ""),
+                            "body": content['text'][:50000] if content['text'] else "",
+                            "body_html": sanitized_html,
+                            "gmail_message_id": msg['id'],
+                            "gmail_thread_id": gmail_thread_id,
+                            "email_rfc_message_id": headers['message_id'],
+                            "email_in_reply_to": headers['in_reply_to'],
+                            "email_references": headers['references'],
+                            "email_date": headers['date'],
+                            "created_at": datetime.now(timezone.utc),
+                            "status": "received"
+                        }
+                        
+                        email_replies_collection.insert_one(incoming_reply)
+                        
+                        # Update ticket status and timestamps
+                        tickets_collection.update_one(
+                            {"ticket_id": existing_thread_ticket["ticket_id"]},
+                            {
+                                "$set": {
+                                    "status": "todo",  # Move back to todo when customer replies
+                                    "updated_at": datetime.now(timezone.utc),
+                                    "last_customer_reply_at": datetime.now(timezone.utc),
+                                    "last_reply_message_id": headers['message_id']
+                                },
+                                "$push": {
+                                    "email_thread_message_ids": headers['message_id']
+                                }
+                            }
+                        )
+                        
+                        reply_count += 1
+                        logger.info(f"[EMAIL-SYNC] Added incoming reply to ticket {existing_thread_ticket['ticket_id']} from {extract_email_addr(headers['from'])}")
+                        
+                        # Broadcast ticket update via WebSocket
+                        try:
+                            from realtime import broadcast_ticket_updated
+                            updated_ticket = tickets_collection.find_one({"ticket_id": existing_thread_ticket["ticket_id"]})
+                            await broadcast_ticket_updated(updated_ticket, {"user_id": "system", "name": "Email Sync"})
+                        except Exception as e:
+                            logger.debug(f"[EMAIL-SYNC] Could not broadcast ticket update: {e}")
+                        
+                        continue
+                    
+                    # No existing thread - create a new ticket
                     ticket_id = generate_ticket_id()
                     
                     # Sanitize HTML content to prevent XSS
@@ -349,7 +417,7 @@ async def auto_sync_emails():
                         "source": "email",
                         # Gmail internal IDs
                         "email_message_id": msg['id'],
-                        "email_thread_id": full_msg.get('threadId'),
+                        "email_thread_id": gmail_thread_id,
                         # RFC 2822 headers for proper threading
                         "email_rfc_message_id": headers['message_id'],  # The real Message-ID for threading
                         "email_references": headers['references'],
@@ -382,8 +450,8 @@ async def auto_sync_emails():
                     except Exception as e:
                         logger.debug(f"[EMAIL-SYNC] Could not broadcast new ticket: {e}")
                 
-                if created_count > 0:
-                    logger.info(f"[EMAIL-SYNC] Created {created_count} new tickets from emails")
+                if created_count > 0 or reply_count > 0:
+                    logger.info(f"[EMAIL-SYNC] Created {created_count} new tickets, added {reply_count} replies from emails")
                     
             except Exception as e:
                 logger.error(f"[EMAIL-SYNC] Error syncing emails: {e}")
