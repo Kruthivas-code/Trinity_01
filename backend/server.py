@@ -1434,33 +1434,142 @@ async def get_current_user(
     
     return serialize_doc(user_doc)
 
+# ==================== Input Validation Constants ====================
+MAX_TITLE_LENGTH = 500
+MAX_DESCRIPTION_LENGTH = 50000
+MAX_TAGS = 50
+MAX_TAG_LENGTH = 100
+MAX_CUSTOM_FIELD_VALUE_LENGTH = 10000
+VALID_STATUSES = ["todo", "in_progress", "waiting", "review", "resolved", "closed", "queued", "assigned"]
+VALID_PRIORITIES = ["low", "medium", "high", "urgent"]
+VALID_ESCALATION_LEVELS = ["L1", "L2", "L3"]
+VALID_SOURCES = ["manual", "email", "api", "simulator"]
+
+# ==================== HTML Sanitization ====================
+def sanitize_html(html_content: str) -> str:
+    """Sanitize HTML content to prevent XSS attacks"""
+    if not html_content:
+        return html_content
+    
+    # Allow safe tags and attributes for email rendering
+    allowed_tags = [
+        'p', 'br', 'b', 'i', 'u', 'strong', 'em', 'a', 'ul', 'ol', 'li',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'span', 'img',
+        'hr', 'sub', 'sup'
+    ]
+    allowed_attrs = {
+        '*': ['class', 'style'],
+        'a': ['href', 'title', 'target'],
+        'img': ['src', 'alt', 'width', 'height'],
+        'td': ['colspan', 'rowspan'],
+        'th': ['colspan', 'rowspan']
+    }
+    
+    return bleach.clean(
+        html_content,
+        tags=allowed_tags,
+        attributes=allowed_attrs,
+        strip=True
+    )
+
 # Models
 class SessionCreate(BaseModel):
-    session_id: str
+    session_id: str = Field(..., min_length=10, max_length=500)
 
 class TicketCreate(BaseModel):
-    title: str
-    description: Optional[str] = ""
-    status: str = "todo"
-    assignee_id: Optional[str] = None
-    priority: Optional[str] = "medium"
-    tags: Optional[List[str]] = []
-    customer_email: Optional[str] = None
-    source: Optional[str] = "manual"  # manual, email, api, simulator
-    escalation_level: Optional[str] = "L1"  # L1, L2, L3 - default L1
+    title: str = Field(..., min_length=1, max_length=MAX_TITLE_LENGTH)
+    description: Optional[str] = Field(default="", max_length=MAX_DESCRIPTION_LENGTH)
+    status: str = Field(default="todo")
+    assignee_id: Optional[str] = Field(default=None, max_length=100)
+    priority: Optional[str] = Field(default="medium")
+    tags: Optional[List[str]] = Field(default=[])
+    customer_email: Optional[EmailStr] = None
+    source: Optional[str] = Field(default="manual")
+    escalation_level: Optional[str] = Field(default="L1")
+    
+    @validator('status')
+    def validate_status(cls, v):
+        if v not in VALID_STATUSES:
+            raise ValueError(f'Status must be one of: {", ".join(VALID_STATUSES)}')
+        return v
+    
+    @validator('priority')
+    def validate_priority(cls, v):
+        if v and v not in VALID_PRIORITIES:
+            raise ValueError(f'Priority must be one of: {", ".join(VALID_PRIORITIES)}')
+        return v
+    
+    @validator('escalation_level')
+    def validate_escalation(cls, v):
+        if v and v not in VALID_ESCALATION_LEVELS:
+            raise ValueError(f'Escalation level must be one of: {", ".join(VALID_ESCALATION_LEVELS)}')
+        return v
+    
+    @validator('source')
+    def validate_source(cls, v):
+        if v and v not in VALID_SOURCES:
+            raise ValueError(f'Source must be one of: {", ".join(VALID_SOURCES)}')
+        return v
+    
+    @validator('tags')
+    def validate_tags(cls, v):
+        if v:
+            if len(v) > MAX_TAGS:
+                raise ValueError(f'Maximum {MAX_TAGS} tags allowed')
+            for tag in v:
+                if len(tag) > MAX_TAG_LENGTH:
+                    raise ValueError(f'Tag length cannot exceed {MAX_TAG_LENGTH} characters')
+        return v
 
 class TicketUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
+    title: Optional[str] = Field(default=None, max_length=MAX_TITLE_LENGTH)
+    description: Optional[str] = Field(default=None, max_length=MAX_DESCRIPTION_LENGTH)
     status: Optional[str] = None
-    assignee_id: Optional[str] = None
+    assignee_id: Optional[str] = Field(default=None, max_length=100)
     priority: Optional[str] = None
     tags: Optional[List[str]] = None
     custom_fields: Optional[Dict[str, Any]] = None
-    escalation_level: Optional[str] = None  # L1, L2, L3
-    team_id: Optional[str] = None
+    escalation_level: Optional[str] = None
+    team_id: Optional[str] = Field(default=None, max_length=100)
     is_starred: Optional[bool] = None
     snoozed: Optional[bool] = None
+    
+    @validator('status')
+    def validate_status(cls, v):
+        if v and v not in VALID_STATUSES:
+            raise ValueError(f'Status must be one of: {", ".join(VALID_STATUSES)}')
+        return v
+    
+    @validator('priority')
+    def validate_priority(cls, v):
+        if v and v not in VALID_PRIORITIES:
+            raise ValueError(f'Priority must be one of: {", ".join(VALID_PRIORITIES)}')
+        return v
+    
+    @validator('escalation_level')
+    def validate_escalation(cls, v):
+        if v and v not in VALID_ESCALATION_LEVELS:
+            raise ValueError(f'Escalation level must be one of: {", ".join(VALID_ESCALATION_LEVELS)}')
+        return v
+    
+    @validator('tags')
+    def validate_tags(cls, v):
+        if v:
+            if len(v) > MAX_TAGS:
+                raise ValueError(f'Maximum {MAX_TAGS} tags allowed')
+            for tag in v:
+                if len(tag) > MAX_TAG_LENGTH:
+                    raise ValueError(f'Tag length cannot exceed {MAX_TAG_LENGTH} characters')
+        return v
+    
+    @validator('custom_fields')
+    def validate_custom_fields(cls, v):
+        if v:
+            for key, value in v.items():
+                if isinstance(value, str) and len(value) > MAX_CUSTOM_FIELD_VALUE_LENGTH:
+                    raise ValueError(f'Custom field value cannot exceed {MAX_CUSTOM_FIELD_VALUE_LENGTH} characters')
+        return v
 
 class TicketReorder(BaseModel):
     ticket_id: str
