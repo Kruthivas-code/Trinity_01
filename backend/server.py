@@ -288,7 +288,7 @@ async def auto_sync_emails():
             if acquired:
                 try:
                     await lock_adapter.release(lock_name, _instance_id)
-                except:
+                except Exception:
                     pass
         
         # Run every 60 seconds
