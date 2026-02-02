@@ -363,7 +363,7 @@ async def broadcast_ticket_update(ticket_id: str, action: str, ticket_data: dict
 
 
 async def broadcast_ticket_created(ticket_data: dict, created_by: dict):
-    """Broadcast new ticket creation"""
+    """Broadcast new ticket creation to all connected clients"""
     global _pubsub_adapter
     
     event_data = {
@@ -372,11 +372,14 @@ async def broadcast_ticket_created(ticket_data: dict, created_by: dict):
         'timestamp': datetime.now(timezone.utc).isoformat()
     }
     
+    # Emit to all connected clients (no room restriction)
+    await sio.emit('ticket:created', event_data)
+    # Also emit to dashboard room for backward compatibility
     await sio.emit('ticket:created', event_data, room='dashboard')
     
     if _pubsub_adapter:
         await _pubsub_adapter.publish('ticket_updates', {
-            'room': 'dashboard',
+            'room': 'all',  # Broadcast to all instances
             'event': 'ticket:created',
             'data': event_data,
             'source': _get_instance_id()
