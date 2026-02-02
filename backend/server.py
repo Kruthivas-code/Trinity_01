@@ -303,7 +303,7 @@ def extract_email_address(from_header):
 @app.on_event("startup")
 async def startup_event():
     """Start background tasks and initialize distributed adapters on app startup"""
-    global auto_close_task
+    global auto_close_task, email_sync_task
     
     # Initialize distributed adapters with the database
     # Note: We need to use async motor client for the adapters
@@ -323,10 +323,11 @@ async def startup_event():
     # Create MongoDB indexes for query performance (idempotent - safe to call multiple times)
     await create_mongodb_indexes()
     
-    # Start the background task (with distributed locking)
+    # Start the background tasks (with distributed locking)
     auto_close_task = asyncio.create_task(auto_close_resolved_tickets())
+    email_sync_task = asyncio.create_task(auto_sync_emails())
     
-    logger.info(f"[STARTUP] Instance {_instance_id} started with distributed adapters")
+    logger.info(f"[STARTUP] Instance {_instance_id} started with distributed adapters and email sync")
 
 
 async def create_mongodb_indexes():
