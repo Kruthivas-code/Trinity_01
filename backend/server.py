@@ -156,6 +156,150 @@ async def auto_close_resolved_tickets():
         # Run every hour
         await asyncio.sleep(3600)
 
+
+async def auto_sync_emails():
+    """
+    Background task that automatically syncs emails from Gmail every 60 seconds.
+    Uses distributed locking to ensure only one instance runs the sync.
+    """
+    lock_name = "auto_sync_emails"
+    lock_ttl = 120  # 2 minute lock
+    
+    # Wait a bit before starting to let the app fully initialize
+    await asyncio.sleep(10)
+    
+    while True:
+        acquired = False
+        try:
+            lock_adapter = get_lock_adapter()
+            acquired = await lock_adapter.acquire(lock_name, _instance_id, lock_ttl)
+            
+            if not acquired:
+                logger.debug(f"[EMAIL-SYNC] Another instance is syncing, skipping")
+                await asyncio.sleep(60)
+                continue
+            
+            logger.debug(f"[EMAIL-SYNC] Starting auto-sync on {_instance_id}")
+            
+            # Check if Gmail is connected
+            token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+            if not token_doc or "access_token" not in token_doc:
+                logger.debug("[EMAIL-SYNC] Gmail not connected, skipping")
+                await asyncio.sleep(60)
+                continue
+            
+            try:
+                service = get_gmail_service(token_doc)
+                
+                # Fetch recent emails (last 60 seconds worth, max 50)
+                results = service.users().messages().list(
+                    userId='me',
+                    maxResults=50,
+                    q=GMAIL_SYNC_QUERY
+                ).execute()
+                
+                messages = results.get('messages', [])
+                created_count = 0
+                
+                for msg in messages:
+                    # Check if ticket already exists for this email
+                    existing = tickets_collection.find_one({"email_message_id": msg['id']})
+                    if existing:
+                        continue
+                    
+                    # Get full message details
+                    full_msg = service.users().messages().get(
+                        userId='me',
+                        id=msg['id'],
+                        format='full'
+                    ).execute()
+                    
+                    headers = full_msg.get('payload', {}).get('headers', [])
+                    header_dict = {h['name'].lower(): h['value'] for h in headers}
+                    
+                    subject = header_dict.get('subject', 'No Subject')
+                    from_header = header_dict.get('from', '')
+                    date_header = header_dict.get('date', '')
+                    
+                    # Extract email body
+                    body = ""
+                    payload = full_msg.get('payload', {})
+                    if 'body' in payload and payload['body'].get('data'):
+                        body = base64.urlsafe_b64decode(payload['body']['data']).decode('utf-8', errors='ignore')
+                    elif 'parts' in payload:
+                        for part in payload['parts']:
+                            if part.get('mimeType') == 'text/plain' and part.get('body', {}).get('data'):
+                                body = base64.urlsafe_b64decode(part['body']['data']).decode('utf-8', errors='ignore')
+                                break
+                            elif part.get('mimeType') == 'text/html' and part.get('body', {}).get('data'):
+                                body = base64.urlsafe_b64decode(part['body']['data']).decode('utf-8', errors='ignore')
+                    
+                    # Generate ticket ID
+                    ticket_id = generate_ticket_id()
+                    
+                    ticket_doc = {
+                        "ticket_id": ticket_id,
+                        "uuid": str(uuid.uuid4()),
+                        "title": subject[:200] if subject else "Email Ticket",
+                        "description": body[:5000] if body else "",
+                        "status": "todo",
+                        "priority": "medium",
+                        "source": "email",
+                        "email_message_id": msg['id'],
+                        "email_thread_id": full_msg.get('threadId'),
+                        "email_sender": from_header,
+                        "customer_email": extract_email_address(from_header),
+                        "created_at": datetime.now(timezone.utc),
+                        "updated_at": datetime.now(timezone.utc),
+                        "assignee_id": None,
+                        "escalation_level": "L1"
+                    }
+                    
+                    tickets_collection.insert_one(ticket_doc)
+                    created_count += 1
+                    
+                    # Broadcast new ticket via WebSocket
+                    try:
+                        from realtime import broadcast_new_ticket
+                        await broadcast_new_ticket(ticket_doc)
+                    except Exception as e:
+                        logger.debug(f"[EMAIL-SYNC] Could not broadcast new ticket: {e}")
+                
+                if created_count > 0:
+                    logger.info(f"[EMAIL-SYNC] Created {created_count} new tickets from emails")
+                    
+            except Exception as e:
+                logger.error(f"[EMAIL-SYNC] Error syncing emails: {e}")
+                
+        except asyncio.CancelledError:
+            logger.info("[EMAIL-SYNC] Task cancelled")
+            raise
+        except Exception as e:
+            logger.error(f"[EMAIL-SYNC] Error in email sync task: {e}")
+        finally:
+            if acquired:
+                try:
+                    await lock_adapter.release(lock_name, _instance_id)
+                except:
+                    pass
+        
+        # Run every 60 seconds
+        await asyncio.sleep(60)
+
+
+def extract_email_address(from_header):
+    """Extract just the email address from a 'From' header like 'Name <email@example.com>'"""
+    if not from_header:
+        return None
+    import re
+    match = re.search(r'<([^>]+)>', from_header)
+    if match:
+        return match.group(1)
+    # Maybe it's just an email address
+    if '@' in from_header:
+        return from_header.strip()
+    return None
+
 @app.on_event("startup")
 async def startup_event():
     """Start background tasks and initialize distributed adapters on app startup"""
