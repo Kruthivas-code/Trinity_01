@@ -1,43 +1,43 @@
 [
   {
     "content": "P0: Add rate limiting to API endpoints",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "P0: Remove test login endpoint for production",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "P0: Add authorization/role checks to sensitive endpoints",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "P0: Improve API key hashing (bcrypt)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "P1: Add input validation with length limits to Pydantic models",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "P1: Add global exception handler",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "P1: Add HTML sanitization for email content",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "P1: Add structured logging with request IDs",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "P1: Improve health check endpoint",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "P1: Add environment validation at startup",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "P2: Fix N+1 queries in team member lookups",
