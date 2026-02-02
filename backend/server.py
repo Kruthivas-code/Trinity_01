@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Response, Request, Cookie, Header, Security, BackgroundTasks, status
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Response, Request, Cookie, Header, Security, BackgroundTasks
+from starlette.status import HTTP_503_SERVICE_UNAVAILABLE
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import APIKeyHeader
@@ -134,9 +135,6 @@ async def add_request_id(request: Request, call_next):
     """Add unique request ID to each request for tracing"""
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:8])
     request.state.request_id = request_id
-    
-    # Add to logging context
-    logger_adapter = logging.LoggerAdapter(logger, {"request_id": request_id})
     
     response = await call_next(request)
     response.headers["X-Request-ID"] = request_id
