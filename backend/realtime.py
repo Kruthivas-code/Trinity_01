@@ -2,11 +2,10 @@
 Trinity Real-time Collaboration Module
 Production-ready WebSocket implementation with Socket.IO
 
-This module now uses the adapter pattern for distributed presence management.
-Supports MongoDB (default) or Redis backends for multi-instance deployments.
+This module uses the adapter pattern for distributed presence management.
+Uses MongoDB for presence, locking, and pub/sub.
 
 Configuration:
-    ADAPTER_BACKEND: 'mongodb' or 'redis' (default: mongodb)
     MONGODB_PUBSUB_POLLING: 'true' for non-replica MongoDB (default: false)
 """
 
@@ -23,8 +22,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Create Socket.IO server with async mode
-# Note: For Redis pub/sub across instances, configure client_manager:
-# sio = socketio.AsyncServer(async_mode='asgi', client_manager=socketio.AsyncRedisManager('redis://...'))
 sio = socketio.AsyncServer(
     async_mode='asgi',
     cors_allowed_origins='*',
