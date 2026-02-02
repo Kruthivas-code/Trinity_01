@@ -308,9 +308,9 @@ const EmailViewer = ({
           />
         ) : (
           <div className="p-4 bg-secondary/20 rounded-lg">
-            <pre className="whitespace-pre-wrap text-sm text-foreground font-sans leading-relaxed">
-              {ticket?.email_text || ticket?.description || 'No content'}
-            </pre>
+            <div className="text-sm text-foreground">
+              {formatPlainText(ticket?.email_text || ticket?.description)}
+            </div>
           </div>
         )}
       </div>
