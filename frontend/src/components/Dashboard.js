@@ -5,6 +5,7 @@ import KanbanBoard from './KanbanBoard';
 import TicketDrawer from './TicketDrawer';
 import CreateTicketModal from './CreateTicketModal';
 import ImportModal from './ImportModal';
+import { useRealtime } from '../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -17,6 +18,30 @@ const Dashboard = ({ user, token, onLogout }) => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [analytics, setAnalytics] = useState(null);
+  
+  const { onTicketUpdate } = useRealtime();
+
+  // Subscribe to real-time ticket updates
+  useEffect(() => {
+    const unsubscribe = onTicketUpdate((data) => {
+      if (data.ticket) {
+        // New ticket created - add to list
+        setTickets(prev => {
+          const exists = prev.some(t => t.ticket_id === data.ticket.ticket_id);
+          if (!exists) {
+            return [data.ticket, ...prev];
+          }
+          // Update existing ticket
+          return prev.map(t => t.ticket_id === data.ticket.ticket_id ? { ...t, ...data.ticket } : t);
+        });
+      } else if (data.ticket_id && data.deleted) {
+        // Ticket deleted - remove from list
+        setTickets(prev => prev.filter(t => t.ticket_id !== data.ticket_id));
+      }
+    });
+    
+    return unsubscribe;
+  }, [onTicketUpdate]);
 
   const fetchTickets = async () => {
     try {
