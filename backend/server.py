@@ -358,6 +358,9 @@ async def auto_sync_emails():
                     # Generate ticket ID
                     ticket_id = generate_ticket_id()
                     
+                    # Sanitize HTML content to prevent XSS
+                    sanitized_html = sanitize_html(content['html'][:100000]) if content['html'] else None
+                    
                     ticket_doc = {
                         "ticket_id": ticket_id,
                         "uuid": str(uuid.uuid4()),
@@ -380,8 +383,8 @@ async def auto_sync_emails():
                         "email_to": headers['to'],
                         "email_cc": headers['cc'],
                         "email_date": headers['date'],
-                        # Content for rendering
-                        "email_html": content['html'][:100000] if content['html'] else None,  # Cap at 100KB
+                        # Content for rendering (HTML sanitized to prevent XSS)
+                        "email_html": sanitized_html,
                         "email_text": content['text'][:50000] if content['text'] else None,   # Cap at 50KB
                         "email_preview": content['preview'],
                         # Timestamps
