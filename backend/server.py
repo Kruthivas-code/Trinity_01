@@ -261,8 +261,8 @@ async def auto_sync_emails():
                     
                     # Broadcast new ticket via WebSocket
                     try:
-                        from realtime import broadcast_new_ticket
-                        await broadcast_new_ticket(ticket_doc)
+                        from realtime import broadcast_ticket_created
+                        await broadcast_ticket_created(ticket_doc, {"user_id": "system", "name": "Email Sync"})
                     except Exception as e:
                         logger.debug(f"[EMAIL-SYNC] Could not broadcast new ticket: {e}")
                 
