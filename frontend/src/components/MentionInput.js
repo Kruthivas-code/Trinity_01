@@ -41,20 +41,21 @@ const MentionInput = ({
         });
         if (response.ok) {
           const data = await response.json();
-          setUsers(data);
+          setUsers(Array.isArray(data) ? data : []);
         }
       } catch (error) {
         console.error('Failed to fetch users:', error);
+        setUsers([]);
       }
     };
     fetchUsers();
   }, []);
 
-  // Filter users based on current search term
-  const filteredUsers = users.filter(user => 
+  // Filter users based on current search term (with safety check)
+  const filteredUsers = Array.isArray(users) ? users.filter(user => 
     user.name?.toLowerCase().includes(suggestionFilter.toLowerCase()) ||
     user.email?.toLowerCase().includes(suggestionFilter.toLowerCase())
-  ).slice(0, 5);
+  ).slice(0, 5) : [];
 
   // Extract mentions from text
   const extractMentions = useCallback((text) => {
