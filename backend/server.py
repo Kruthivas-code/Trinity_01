@@ -1,11 +1,12 @@
-from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Response, Request, Cookie, Header, Security, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Response, Request, Cookie, Header, Security, BackgroundTasks, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.security import APIKeyHeader
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, timedelta, timezone, time
 from pymongo import MongoClient, ASCENDING, DESCENDING
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 from bson import ObjectId
 import os
 import json
@@ -20,14 +21,34 @@ import hashlib
 import pytz
 import asyncio
 import logging
+import traceback
+import bleach
 from email.utils import parseaddr
 from html import unescape
 from dotenv import load_dotenv
 from functools import wraps
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+import bcrypt
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
+
+# Add filter for request_id
+class RequestIdFilter(logging.Filter):
+    def filter(self, record):
+        if not hasattr(record, 'request_id'):
+            record.request_id = 'no-request-id'
+        return True
+
+logger.addFilter(RequestIdFilter())
 
 # Real-time and Search imports
 from realtime import (
