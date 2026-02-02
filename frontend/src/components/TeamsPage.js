@@ -156,7 +156,7 @@ const TeamsPage = ({ user }) => {
 
   const getAvailableUsers = (team) => {
     const memberIds = team.members || [];
-    return users.filter(u => !memberIds.includes(u.user_id));
+    return Array.isArray(users) ? users.filter(u => !memberIds.includes(u.user_id)) : [];
   };
 
   if (!user) return null;
