@@ -2125,24 +2125,87 @@ async def create_team(
 
 @app.get("/api/teams")
 async def get_teams(current_user: dict = Depends(get_current_user)):
-    """List all teams"""
+    """List all teams - optimized to avoid N+1 queries"""
     teams = list(teams_collection.find({}, {"_id": 0}))
     
-    # Enrich with member count and member details
+    # Batch fetch all users who are members of any team (single query)
+    all_member_ids = set()
+    for team in teams:
+        all_member_ids.update(team.get("members", []))
+    
+    # Single query to get all users
+    all_users = {}
+    if all_member_ids:
+        users_list = list(users_collection.find(
+            {"user_id": {"$in": list(all_member_ids)}},
+            {"_id": 0, "user_id": 1, "name": 1, "email": 1, "role": 1}
+        ))
+        all_users = {u["user_id"]: u for u in users_list}
+    
+    # Batch fetch all shift assignments (single query)
+    all_shifts = {}
+    user_shift_docs = list(user_shifts_collection.find(
+        {"user_id": {"$in": list(all_member_ids)}},
+        {"_id": 0}
+    ))
+    for us in user_shift_docs:
+        if us["user_id"] not in all_shifts:
+            all_shifts[us["user_id"]] = []
+        all_shifts[us["user_id"]].append(us)
+    
+    # Batch fetch all active shifts (single query)
+    shift_ids = set(us.get("shift_id") for us in user_shift_docs)
+    active_shifts = {}
+    if shift_ids:
+        shifts_list = list(shifts_collection.find(
+            {"shift_id": {"$in": list(shift_ids)}, "is_active": True},
+            {"_id": 0}
+        ))
+        active_shifts = {s["shift_id"]: s for s in shifts_list}
+    
+    # Current time for shift calculations
+    now = get_ist_now()
+    current_weekday = now.isoweekday()
+    current_time = now.time()
+    
+    def is_user_on_shift_cached(user_id: str, team_id: str) -> bool:
+        """Check if user is on shift using cached data"""
+        user_shifts_list = all_shifts.get(user_id, [])
+        for us in user_shifts_list:
+            if us.get("team_id") != team_id:
+                continue
+            shift = active_shifts.get(us.get("shift_id"))
+            if not shift:
+                continue
+            if current_weekday not in shift.get("days_of_week", []):
+                continue
+            start = parse_time_str(shift.get("start_time", "00:00"))
+            end = parse_time_str(shift.get("end_time", "23:59"))
+            if start <= end:
+                if start <= current_time <= end:
+                    return True
+            else:
+                if current_time >= start or current_time <= end:
+                    return True
+        return False
+    
+    # Enrich teams with member details
     for team in teams:
         team["member_count"] = len(team.get("members", []))
-        # Get member details with on-shift status
-        if team.get("members"):
-            members = list(users_collection.find(
-                {"user_id": {"$in": team["members"]}},
-                {"_id": 0, "user_id": 1, "name": 1, "email": 1, "role": 1}
-            ))
-            # Add on-shift status to each member
-            for member in members:
-                member["is_on_shift"] = is_user_on_shift(member["user_id"], team.get("team_id"))
-            team["member_details"] = members
-        # Count on-shift members
-        team["on_shift_count"] = len(get_on_shift_members(team.get("team_id")))
+        members = []
+        on_shift_count = 0
+        
+        for member_id in team.get("members", []):
+            user = all_users.get(member_id)
+            if user:
+                member = user.copy()
+                member["is_on_shift"] = is_user_on_shift_cached(member_id, team.get("team_id"))
+                if member["is_on_shift"]:
+                    on_shift_count += 1
+                members.append(member)
+        
+        team["member_details"] = members
+        team["on_shift_count"] = on_shift_count
     
     return [serialize_doc(team) for team in teams]
 
