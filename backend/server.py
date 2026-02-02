@@ -2082,8 +2082,32 @@ async def update_preferences(
     return {"message": "Preferences updated"}
 
 @app.get("/api/users")
-async def get_users(current_user: dict = Depends(get_current_user)):
-    users = list(users_collection.find({}, {"password": 0}))  # Exclude password, but keep _id for now
+async def get_users(
+    skip: int = 0,
+    limit: int = 100,
+    search: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get users with pagination and optional search"""
+    # Cap the limit to prevent excessive data retrieval
+    limit = min(limit, 500)
+    
+    query = {}
+    if search:
+        # Search by name or email
+        query["$or"] = [
+            {"name": {"$regex": search, "$options": "i"}},
+            {"email": {"$regex": search, "$options": "i"}}
+        ]
+    
+    # Get total count for pagination info
+    total = users_collection.count_documents(query)
+    
+    users = list(users_collection.find(
+        query, 
+        {"password": 0}
+    ).skip(skip).limit(limit))
+    
     result = []
     for user in users:
         serialized = serialize_doc(user)
@@ -2094,7 +2118,14 @@ async def get_users(current_user: dict = Depends(get_current_user)):
             elif "_id" in user:
                 serialized["id"] = str(user["_id"])
         result.append(serialized)
-    return result
+    
+    return {
+        "items": result,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "has_more": skip + len(result) < total
+    }
 
 # ==================== Phase 2: Team Management ====================
 
