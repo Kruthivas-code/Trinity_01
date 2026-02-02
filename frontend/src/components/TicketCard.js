@@ -20,10 +20,10 @@ const getEscalationConfig = (level) => {
   }
 };
 
-const TicketCard = ({ ticket, users, onClick, isDragging }) => {
+const TicketCard = ({ ticket, users = [], onClick, isDragging }) => {
   if (!ticket || !ticket.id) return null;
   
-  const assignee = users.find(u => u.id === ticket.assignee_id);
+  const assignee = Array.isArray(users) ? users.find(u => u.id === ticket.assignee_id) : null;
   const priorityConfig = getPriorityConfig(ticket.priority);
   const escalationConfig = getEscalationConfig(ticket.escalation_level);
   const tags = ticket.tags || [];
