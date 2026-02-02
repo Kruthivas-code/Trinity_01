@@ -215,6 +215,7 @@ const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick,
   }, [hasMore, loading]);
 
   const getUserName = (assigneeId) => {
+    if (!Array.isArray(users)) return 'Unassigned';
     const user = users.find(u => u.id === assigneeId);
     return user ? user.name : 'Unassigned';
   };
