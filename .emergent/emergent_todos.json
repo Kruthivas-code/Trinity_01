@@ -1,54 +1,30 @@
 [
   {
-    "content": "P0: Add rate limiting to API endpoints",
+    "content": "Test API error handling - malformed requests, missing fields, invalid data types",
     "status": "completed"
   },
   {
-    "content": "P0: Remove test login endpoint for production",
+    "content": "Test authentication edge cases - invalid tokens, expired tokens, missing auth",
     "status": "completed"
   },
   {
-    "content": "P0: Add authorization/role checks to sensitive endpoints",
+    "content": "Test input validation - XSS attempts, SQL injection, oversized payloads",
     "status": "completed"
   },
   {
-    "content": "P0: Improve API key hashing (bcrypt)",
+    "content": "Test rate limiting - verify limits are enforced",
     "status": "completed"
   },
   {
-    "content": "P1: Add input validation with length limits to Pydantic models",
+    "content": "Test WebSocket stability - connection handling, disconnection, reconnection",
     "status": "completed"
   },
   {
-    "content": "P1: Add global exception handler",
+    "content": "Test concurrent requests - race conditions, data consistency",
     "status": "completed"
   },
   {
-    "content": "P1: Add HTML sanitization for email content",
-    "status": "completed"
-  },
-  {
-    "content": "P1: Add structured logging with request IDs",
-    "status": "completed"
-  },
-  {
-    "content": "P1: Improve health check endpoint",
-    "status": "completed"
-  },
-  {
-    "content": "P1: Add environment validation at startup",
-    "status": "completed"
-  },
-  {
-    "content": "P2: Fix N+1 queries in team member lookups",
-    "status": "completed"
-  },
-  {
-    "content": "P2: Add pagination to list endpoints",
-    "status": "completed"
-  },
-  {
-    "content": "P2: Add WebSocket authentication improvements",
+    "content": "Test database operations - connection handling, query errors",
     "status": "completed"
   }
 ]
