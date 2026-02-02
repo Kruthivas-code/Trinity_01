@@ -422,14 +422,13 @@ async def broadcast_ticket_created(ticket_data: dict, created_by: dict):
         'timestamp': datetime.now(timezone.utc).isoformat()
     }
     
-    # Emit to all connected clients (no room restriction)
+    # Emit ONLY ONCE to all connected clients
+    # This prevents double updates and UI glitching
     await sio.emit('ticket:created', event_data)
-    # Also emit to dashboard room for backward compatibility
-    await sio.emit('ticket:created', event_data, room='dashboard')
     
     if _pubsub_adapter:
         await _pubsub_adapter.publish('ticket_updates', {
-            'room': 'all',  # Broadcast to all instances
+            'room': 'all',
             'event': 'ticket:created',
             'data': event_data,
             'source': _get_instance_id()
