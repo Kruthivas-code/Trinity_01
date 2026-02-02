@@ -1082,7 +1082,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
 
   const getStatusConfig = (status) => STATUSES.find(s => s.value === status) || STATUSES[0];
   const getPriorityConfig = (priority) => PRIORITIES.find(p => p.value === priority) || PRIORITIES[1];
-  const getAssignee = () => formData.assignee_id ? users.find(u => u.id === formData.assignee_id) : null;
+  const getAssignee = () => formData.assignee_id && Array.isArray(users) ? users.find(u => u.id === formData.assignee_id) : null;
 
   if (!isOpen || !ticket) return null;
 
