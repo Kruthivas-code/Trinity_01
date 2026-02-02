@@ -1094,14 +1094,23 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const conversationThread = [
     {
       type: 'original',
-      sender: ticket.customer_name || ticket.created_by_name || 'Customer',
+      sender: ticket.customer_name || ticket.created_by_name || ticket.email_sender_name || 'Customer',
       senderEmail: ticket.customer_email || null,
       subject: ticket.title,
-      content: ticket.description || '',
+      // For email tickets, use email_text as fallback content; EmailViewer handles HTML
+      content: ticket.email_text || ticket.description || '',
       timestamp: ticket.created_at,
       isAgentMessage: false, // Customer's original message
       original_ticket_id: null, // Original ticket message, not merged
-      merge_color_index: null
+      merge_color_index: null,
+      // Pass full email data for EmailViewer component
+      emailData: ticket.source === 'email' ? {
+        email_html: ticket.email_html,
+        email_text: ticket.email_text,
+        email_sender: ticket.email_sender,
+        email_to: ticket.email_to,
+        email_date: ticket.email_date
+      } : null
     },
     ...notes.map(note => ({
       type: note.type || 'internal_note',
@@ -1113,7 +1122,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       isAgentMessage: note.type !== 'customer_reply',
       original_ticket_id: note.original_ticket_id || null,
       merge_color_index: note.merge_color_index,
-      merged_ticket_title: note.merged_ticket_title
+      merged_ticket_title: note.merged_ticket_title,
+      emailData: null // Notes don't have email data
     }))
   ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
