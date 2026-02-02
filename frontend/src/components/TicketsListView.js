@@ -67,6 +67,44 @@ const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick,
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const observerTarget = useRef(null);
+  
+  const { onTicketUpdate } = useRealtime();
+
+  // Subscribe to real-time ticket updates
+  useEffect(() => {
+    const unsubscribe = onTicketUpdate((data) => {
+      if (data.ticket) {
+        const ticket = data.ticket;
+        // Check if ticket matches our filter
+        const matchesFilter = !filterStatuses || filterStatuses.includes(ticket.status);
+        
+        setTickets(prev => {
+          const existingIndex = prev.findIndex(t => t.ticket_id === ticket.ticket_id);
+          
+          if (existingIndex >= 0) {
+            // Update existing ticket
+            if (matchesFilter) {
+              const updated = [...prev];
+              updated[existingIndex] = { ...updated[existingIndex], ...ticket };
+              return updated;
+            } else {
+              // Remove if no longer matches filter
+              return prev.filter(t => t.ticket_id !== ticket.ticket_id);
+            }
+          } else if (matchesFilter) {
+            // New ticket that matches filter - add to top
+            return [ticket, ...prev];
+          }
+          return prev;
+        });
+      } else if (data.ticket_id && data.deleted) {
+        // Ticket deleted - remove from list
+        setTickets(prev => prev.filter(t => t.ticket_id !== data.ticket_id));
+      }
+    });
+    
+    return unsubscribe;
+  }, [onTicketUpdate, filterStatuses]);
 
   const fetchUsers = async () => {
     try {
