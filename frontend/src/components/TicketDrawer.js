@@ -248,9 +248,13 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
           <p className="text-xs text-muted-foreground mb-2 pl-8">Re: {subject}</p>
         )}
         
-        {/* Message Body */}
+        {/* Message Body - Use EmailViewer for email content with HTML */}
         <div className="text-sm text-foreground/90 leading-relaxed pl-8">
-          {renderContent(content)}
+          {emailData && (emailData.email_html || emailData.email_text) ? (
+            <EmailViewer ticket={emailData} className="mt-2" />
+          ) : (
+            renderContent(content)
+          )}
         </div>
       </div>
     </div>
