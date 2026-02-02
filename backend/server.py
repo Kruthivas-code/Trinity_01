@@ -3708,8 +3708,9 @@ async def sync_emails_to_tickets(
             
             ticket_doc = {
                 "ticket_id": ticket_id,
-                "title": metadata['subject'] or "No Subject",
-                "description": body,
+                "uuid": str(uuid.uuid4()),
+                "title": (headers['subject'] or "No Subject")[:200],
+                "description": content['text'][:5000] if content['text'] else "",
                 "status": "todo",
                 "priority": "medium",
                 "order": next_order,
@@ -3718,11 +3719,25 @@ async def sync_emails_to_tickets(
                 "created_at": datetime.now(timezone.utc),
                 "updated_at": datetime.now(timezone.utc),
                 "source": "email",
+                # Gmail internal IDs
                 "email_message_id": msg['id'],
                 "email_thread_id": msg_detail.get('threadId'),
-                "email_from": metadata['from'],
-                "email_sender": sender_email,
-                "email_date": metadata['date']
+                # RFC 2822 headers for proper threading
+                "email_rfc_message_id": headers['message_id'],
+                "email_references": headers['references'],
+                "email_in_reply_to": headers['in_reply_to'],
+                # Sender info
+                "email_sender": headers['from'],
+                "email_sender_name": format_sender_name(headers['from']),
+                "customer_email": extract_email_addr(headers['from']),
+                "email_to": headers['to'],
+                "email_cc": headers['cc'],
+                "email_date": headers['date'],
+                # Content for rendering
+                "email_html": content['html'][:100000] if content['html'] else None,
+                "email_text": content['text'][:50000] if content['text'] else None,
+                "email_preview": content['preview'],
+                "escalation_level": "L1"
             }
             
             tickets_collection.insert_one(ticket_doc)
