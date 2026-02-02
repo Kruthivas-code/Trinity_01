@@ -1,11 +1,7 @@
 """
 Base adapter interfaces for distributed services.
-These abstractions allow swapping between MongoDB and Redis backends.
-
-To switch to Redis later:
-1. Create RedisPresenceAdapter, RedisLockAdapter, RedisPubSubAdapter
-2. Change the imports in __init__.py
-3. Set ADAPTER_BACKEND=redis in environment
+These abstractions define the interface for presence, locking, and pub/sub.
+Currently implemented with MongoDB backend.
 """
 
 from abc import ABC, abstractmethod
