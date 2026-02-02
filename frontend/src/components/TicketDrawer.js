@@ -385,8 +385,15 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     u.user_id !== currentUser?.user_id && u.user_id !== currentUser?.id
   );
 
+  // Use ticket ID as the primary dependency to avoid re-fetching on every ticket object update
+  const ticketId = ticket?.ticket_id || ticket?.id;
+  const prevTicketIdRef = useRef(null);
+  
   useEffect(() => {
-    if (ticket) {
+    // Only run initial fetch when ticket ID actually changes (not just object reference)
+    if (ticket && ticketId && ticketId !== prevTicketIdRef.current) {
+      prevTicketIdRef.current = ticketId;
+      
       setFormData({
         title: ticket.title || '',
         description: ticket.description || '',
@@ -413,17 +420,17 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       // Reset active tab to conversation when switching tickets
       setActiveTab('conversation');
       setActivityFeed([]);
-      fetchNotes(ticket.id);
-      fetchRelatedTickets(ticket.id);
+      fetchNotes(ticketId);
+      fetchRelatedTickets(ticketId);
       fetchCustomFields();
-      fetchAssignmentOptions(ticket.id);
+      fetchAssignmentOptions(ticketId);
       fetchAvailableTags();
-      fetchCsatData(ticket.id);
-      fetchLinkedFeatureRequests(ticket.id);
-      fetchMergeSuggestions(ticket.id);
-      fetchActivityFeed(ticket.id);
+      fetchCsatData(ticketId);
+      fetchLinkedFeatureRequests(ticketId);
+      fetchMergeSuggestions(ticketId);
+      fetchActivityFeed(ticketId);
     }
-  }, [ticket]);
+  }, [ticketId]);
 
   // Auto-save when form data changes (debounced)
   const autoSaveTimeoutRef = useRef(null);
