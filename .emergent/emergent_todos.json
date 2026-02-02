@@ -25,7 +25,7 @@
   },
   {
     "content": "P1: Add HTML sanitization for email content",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "P1: Add structured logging with request IDs",
@@ -41,14 +41,14 @@
   },
   {
     "content": "P2: Fix N+1 queries in team member lookups",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "P2: Add pagination to list endpoints",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "P2: Add WebSocket authentication improvements",
-    "status": "pending"
+    "status": "completed"
   }
 ]
