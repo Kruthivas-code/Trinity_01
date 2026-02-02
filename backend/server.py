@@ -1715,8 +1715,10 @@ async def health():
         health_status["checks"]["database"] = {
             "status": "unhealthy",
             "type": "mongodb",
-            "error": "Connection failed" if IS_PRODUCTION else str(e)
+            "error": "Connection failed"
         }
+        # Log full error for debugging
+        logger.error(f"Health check database error: {e}")
     
     # Check if required collections exist
     try:
@@ -1730,8 +1732,10 @@ async def health():
     except Exception as e:
         health_status["checks"]["collections"] = {
             "status": "error",
-            "error": str(e) if not IS_PRODUCTION else "Check failed"
+            "error": "Check failed"
         }
+        # Log full error for debugging
+        logger.error(f"Health check collections error: {e}")
     
     # Return appropriate status code
     if health_status["status"] == "unhealthy":
