@@ -3776,6 +3776,94 @@ async def update_email_settings(
     # For now, just return success as the email is set via env var
     return {"message": "Email settings updated"}
 
+@app.post("/api/gmail/backfill-email-content")
+async def backfill_email_content(
+    current_user: dict = Depends(get_current_user),
+    limit: int = 50
+):
+    """
+    Backfill email_html, email_text, and email_preview for existing email tickets.
+    This fetches the full email content from Gmail API and updates tickets.
+    """
+    token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
+    if not token_doc or "access_token" not in token_doc:
+        raise HTTPException(status_code=400, detail="Gmail not connected")
+    
+    try:
+        service = get_gmail_service(token_doc)
+        
+        # Find email tickets without email_html populated
+        tickets_to_update = list(tickets_collection.find({
+            "source": "email",
+            "email_message_id": {"$exists": True, "$ne": None},
+            "$or": [
+                {"email_html": {"$exists": False}},
+                {"email_html": None}
+            ]
+        }).limit(limit))
+        
+        if not tickets_to_update:
+            return {"message": "No tickets need backfilling", "updated": 0}
+        
+        from email_utils import extract_email_headers, parse_email_content, format_sender_name
+        from email_utils import extract_email_address as extract_email_addr
+        
+        updated_count = 0
+        errors = []
+        
+        for ticket in tickets_to_update:
+            gmail_msg_id = ticket.get("email_message_id")
+            if not gmail_msg_id:
+                continue
+                
+            try:
+                # Fetch full message from Gmail
+                full_msg = service.users().messages().get(
+                    userId='me',
+                    id=gmail_msg_id,
+                    format='full'
+                ).execute()
+                
+                payload = full_msg.get('payload', {})
+                headers = extract_email_headers(payload.get('headers', []))
+                content = parse_email_content(payload)
+                
+                # Update the ticket with new content fields
+                update_data = {
+                    "email_rfc_message_id": headers['message_id'] or ticket.get('email_rfc_message_id'),
+                    "email_references": headers['references'] or ticket.get('email_references'),
+                    "email_in_reply_to": headers['in_reply_to'] or ticket.get('email_in_reply_to'),
+                    "email_sender_name": format_sender_name(headers['from']) if headers['from'] else ticket.get('email_sender_name'),
+                    "email_html": content['html'][:100000] if content['html'] else None,
+                    "email_text": content['text'][:50000] if content['text'] else None,
+                    "email_preview": content['preview'] or ticket.get('email_preview'),
+                    "updated_at": datetime.now(timezone.utc)
+                }
+                
+                # Remove None values to avoid overwriting existing data
+                update_data = {k: v for k, v in update_data.items() if v is not None}
+                
+                tickets_collection.update_one(
+                    {"ticket_id": ticket["ticket_id"]},
+                    {"$set": update_data}
+                )
+                updated_count += 1
+                
+            except Exception as e:
+                errors.append({"ticket_id": ticket.get("ticket_id"), "error": str(e)})
+                logger.warning(f"[BACKFILL] Error updating ticket {ticket.get('ticket_id')}: {e}")
+        
+        return {
+            "message": f"Backfilled {updated_count} tickets",
+            "updated": updated_count,
+            "total_found": len(tickets_to_update),
+            "errors": errors[:10] if errors else []  # Limit error output
+        }
+        
+    except Exception as e:
+        logger.error(f"[BACKFILL] Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Backfill failed: {str(e)}")
+
 # ==================== Email Reply ====================
 
 # Collection for storing email replies
