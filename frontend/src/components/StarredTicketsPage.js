@@ -151,6 +151,7 @@ const StarredTicketsPage = ({ user, onTicketClick, refreshKey }) => {
   }, [hasMore, loading]);
 
   const getUserName = (assigneeId) => {
+    if (!Array.isArray(users)) return 'Unassigned';
     const foundUser = users.find(u => u.id === assigneeId || u.user_id === assigneeId);
     return foundUser ? foundUser.name : 'Unassigned';
   };
