@@ -2269,9 +2269,9 @@ async def remove_team_member(
 async def update_user_role(
     user_id: str,
     role_data: UserRoleUpdate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)  # Require admin role
 ):
-    """Update user role and team assignment"""
+    """Update user role and team assignment - requires admin role"""
     update_data = {
         "role": role_data.role,
         "updated_at": datetime.now(timezone.utc)
@@ -2396,9 +2396,9 @@ async def get_team_shifts(
 async def update_shift(
     shift_id: str,
     shift_data: ShiftUpdate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_lead_or_admin)  # Require lead or admin
 ):
-    """Update a shift"""
+    """Update a shift - requires lead or admin role"""
     update_data = {"updated_at": datetime.now(timezone.utc)}
     
     if shift_data.name is not None:
@@ -2426,9 +2426,9 @@ async def update_shift(
 @app.delete("/api/shifts/{shift_id}")
 async def delete_shift(
     shift_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_lead_or_admin)  # Require lead or admin
 ):
-    """Delete a shift"""
+    """Delete a shift - requires lead or admin role"""
     result = shifts_collection.delete_one({"shift_id": shift_id})
     
     if result.deleted_count == 0:
