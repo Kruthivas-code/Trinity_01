@@ -12,6 +12,7 @@ import {
 import RichTextEditor from './RichTextEditor';
 import MentionInput, { renderTextWithMentions } from './MentionInput';
 import ActivityTimeline from './ActivityTimeline';
+import EmailViewer from './EmailViewer';
 import { useRealtime } from '../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
