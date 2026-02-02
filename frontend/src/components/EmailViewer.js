@@ -237,66 +237,6 @@ const EmailViewer = ({
         </div>
       </div>
       
-  // Format plain text with proper quote handling
-  const formatPlainText = (text) => {
-    if (!text) return null;
-    
-    // Split into lines and process
-    const lines = text.split('\n');
-    const result = [];
-    let inQuoteBlock = false;
-    let quoteLines = [];
-    
-    const flushQuoteBlock = () => {
-      if (quoteLines.length > 0) {
-        result.push(
-          <blockquote key={`quote-${result.length}`} className="my-2 pl-3 border-l-2 border-muted-foreground/30 text-muted-foreground text-sm italic">
-            {quoteLines.map((line, i) => (
-              <div key={i}>{line.replace(/^>\s*/, '')}</div>
-            ))}
-          </blockquote>
-        );
-        quoteLines = [];
-      }
-      inQuoteBlock = false;
-    };
-    
-    lines.forEach((line, index) => {
-      const isQuoted = line.trimStart().startsWith('>');
-      
-      // Check for "On ... wrote:" pattern (email reply header)
-      const isReplyHeader = /^On .+ wrote:$/i.test(line.trim()) || 
-                            /^\d{1,2}\/\d{1,2}\/\d{2,4}.+wrote:$/i.test(line.trim()) ||
-                            /^.+@.+\.(com|org|net|sh).+wrote:$/i.test(line.trim());
-      
-      if (isQuoted) {
-        if (!inQuoteBlock) {
-          inQuoteBlock = true;
-        }
-        quoteLines.push(line);
-      } else if (isReplyHeader) {
-        flushQuoteBlock();
-        result.push(
-          <div key={`header-${index}`} className="my-2 text-xs text-muted-foreground/70 border-t border-border/20 pt-2">
-            {line}
-          </div>
-        );
-      } else {
-        flushQuoteBlock();
-        if (line.trim()) {
-          result.push(<div key={index}>{line}</div>);
-        } else {
-          result.push(<div key={index} className="h-4" />); // Empty line spacer
-        }
-      }
-    });
-    
-    // Flush any remaining quote block
-    flushQuoteBlock();
-    
-    return result;
-  };
-  
       {/* Content */}
       <div className={`rounded-lg overflow-hidden ${isExpanded ? '' : 'max-h-[500px] overflow-y-auto'}`}>
         {viewMode === 'html' && hasHtml ? (
@@ -310,9 +250,9 @@ const EmailViewer = ({
           />
         ) : (
           <div className="p-4 bg-secondary/20 rounded-lg">
-            <div className="text-sm text-foreground leading-relaxed">
-              {formatPlainText(ticket?.email_text || ticket?.description)}
-            </div>
+            <pre className="whitespace-pre-wrap text-sm text-foreground font-sans leading-relaxed">
+              {ticket?.email_text || ticket?.description || 'No content'}
+            </pre>
           </div>
         )}
       </div>
