@@ -215,25 +215,17 @@ async def auto_sync_emails():
                         format='full'
                     ).execute()
                     
-                    headers = full_msg.get('payload', {}).get('headers', [])
-                    header_dict = {h['name'].lower(): h['value'] for h in headers}
+                    # Use email_utils for proper parsing
+                    from email_utils import (
+                        extract_email_headers, 
+                        parse_email_content,
+                        extract_email_address as extract_email_addr,
+                        format_sender_name
+                    )
                     
-                    subject = header_dict.get('subject', 'No Subject')
-                    from_header = header_dict.get('from', '')
-                    date_header = header_dict.get('date', '')
-                    
-                    # Extract email body
-                    body = ""
                     payload = full_msg.get('payload', {})
-                    if 'body' in payload and payload['body'].get('data'):
-                        body = base64.urlsafe_b64decode(payload['body']['data']).decode('utf-8', errors='ignore')
-                    elif 'parts' in payload:
-                        for part in payload['parts']:
-                            if part.get('mimeType') == 'text/plain' and part.get('body', {}).get('data'):
-                                body = base64.urlsafe_b64decode(part['body']['data']).decode('utf-8', errors='ignore')
-                                break
-                            elif part.get('mimeType') == 'text/html' and part.get('body', {}).get('data'):
-                                body = base64.urlsafe_b64decode(part['body']['data']).decode('utf-8', errors='ignore')
+                    headers = extract_email_headers(payload.get('headers', []))
+                    content = parse_email_content(payload)
                     
                     # Generate ticket ID
                     ticket_id = generate_ticket_id()
@@ -241,15 +233,30 @@ async def auto_sync_emails():
                     ticket_doc = {
                         "ticket_id": ticket_id,
                         "uuid": str(uuid.uuid4()),
-                        "title": subject[:200] if subject else "Email Ticket",
-                        "description": body[:5000] if body else "",
+                        "title": (headers['subject'] or "No Subject")[:200],
+                        "description": content['text'][:5000] if content['text'] else "",
                         "status": "todo",
                         "priority": "medium",
                         "source": "email",
+                        # Gmail internal IDs
                         "email_message_id": msg['id'],
                         "email_thread_id": full_msg.get('threadId'),
-                        "email_sender": from_header,
-                        "customer_email": extract_email_address(from_header),
+                        # RFC 2822 headers for proper threading
+                        "email_rfc_message_id": headers['message_id'],  # The real Message-ID for threading
+                        "email_references": headers['references'],
+                        "email_in_reply_to": headers['in_reply_to'],
+                        # Sender info
+                        "email_sender": headers['from'],
+                        "email_sender_name": format_sender_name(headers['from']),
+                        "customer_email": extract_email_addr(headers['from']),
+                        "email_to": headers['to'],
+                        "email_cc": headers['cc'],
+                        "email_date": headers['date'],
+                        # Content for rendering
+                        "email_html": content['html'][:100000] if content['html'] else None,  # Cap at 100KB
+                        "email_text": content['text'][:50000] if content['text'] else None,   # Cap at 50KB
+                        "email_preview": content['preview'],
+                        # Timestamps
                         "created_at": datetime.now(timezone.utc),
                         "updated_at": datetime.now(timezone.utc),
                         "assignee_id": None,
