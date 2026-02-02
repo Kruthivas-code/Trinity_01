@@ -1570,6 +1570,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   isMergeDivider={msg.type === 'merge_divider'}
                   mergedTicketTitle={msg.merged_ticket_title}
                   currentTicketId={ticket?.ticket_id}
+                  emailData={msg.emailData}
                 />
               ))
             )}
