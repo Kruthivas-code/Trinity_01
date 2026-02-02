@@ -1806,84 +1806,80 @@ async def logout(response: Response, session_token: Optional[str] = Cookie(None)
     return {"message": "Logged out successfully"}
 
 # ==================== Test Authentication (Development Only) ====================
+# SECURITY: Test login is completely removed in production builds
+# This endpoint should NEVER exist in production
 
-# Test login is disabled by default in production
-# Set ENABLE_TEST_LOGIN=true in environment to enable (for automated testing only)
-TEST_LOGIN_ENABLED = os.environ.get("ENABLE_TEST_LOGIN", "false").lower() == "true"
-
-@app.post("/api/auth/test-login")
-async def test_login(response: Response):
-    """
-    Create a test session for automated testing.
-    SECURITY: This endpoint is DISABLED by default.
-    To enable: Set ENABLE_TEST_LOGIN=true in environment variables.
-    WARNING: Never enable in production environments!
-    """
-    if not TEST_LOGIN_ENABLED:
-        raise HTTPException(
-            status_code=403, 
-            detail="Test login is disabled. Set ENABLE_TEST_LOGIN=true to enable (development only)."
+if not IS_PRODUCTION:
+    @app.post("/api/auth/test-login")
+    @limiter.limit("5/minute")  # Strict rate limit even in dev
+    async def test_login(request: Request, response: Response):
+        """
+        Create a test session for automated testing.
+        SECURITY: This endpoint only exists in non-production environments.
+        """
+        # Double-check we're not in production
+        if IS_PRODUCTION:
+            raise HTTPException(status_code=404, detail="Not found")
+        
+        # Create or get test user
+        test_user_id = "test_user_automation"
+        test_email = "test@tickflow.local"
+        test_name = "Test User"
+        
+        # Upsert test user
+        users_collection.update_one(
+            {"user_id": test_user_id},
+            {"$set": {
+                "user_id": test_user_id,
+                "email": test_email,
+                "name": test_name,
+                "picture": None,
+                "role": "admin",
+                "created_at": datetime.now(timezone.utc),
+                "last_login": datetime.now(timezone.utc)
+            }},
+            upsert=True
         )
-    
-    # Create or get test user
-    test_user_id = "test_user_automation"
-    test_email = "test@tickflow.local"
-    test_name = "Test User"
-    
-    # Upsert test user
-    users_collection.update_one(
-        {"user_id": test_user_id},
-        {"$set": {
-            "user_id": test_user_id,
-            "email": test_email,
-            "name": test_name,
-            "picture": None,
-            "role": "admin",
-            "created_at": datetime.now(timezone.utc),
-            "last_login": datetime.now(timezone.utc)
-        }},
-        upsert=True
-    )
-    
-    # Create session token
-    session_token = f"test_session_{uuid.uuid4().hex}"
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
-    
-    # Store session
-    sessions_collection.update_one(
-        {"session_token": session_token},
-        {"$set": {
-            "session_token": session_token,
-            "user_id": test_user_id,
-            "created_at": datetime.now(timezone.utc),
-            "expires_at": expires_at
-        }},
-        upsert=True
-    )
-    
-    # Set cookie
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        secure=False,  # Allow non-HTTPS for testing
-        samesite="lax",
-        max_age=86400,
-        path="/"
-    )
-    
-    logger.warning("[SECURITY] Test login used - this should NOT happen in production!")
-    
-    return {
-        "message": "Test session created",
-        "user": {
-            "user_id": test_user_id,
-            "email": test_email,
-            "name": test_name,
-            "role": "admin"
-        },
-        "session_token": session_token
-    }
+        
+        # Create session token
+        session_token = f"test_session_{uuid.uuid4().hex}"
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+        
+        # Store session
+        sessions_collection.update_one(
+            {"session_token": session_token},
+            {"$set": {
+                "session_token": session_token,
+                "user_id": test_user_id,
+                "created_at": datetime.now(timezone.utc),
+                "expires_at": expires_at
+            }},
+            upsert=True
+        )
+        
+        # Set cookie
+        response.set_cookie(
+            key="session_token",
+            value=session_token,
+            httponly=True,
+            secure=False,  # Allow non-HTTPS for testing
+            samesite="lax",
+            max_age=86400,
+            path="/"
+        )
+        
+        logger.warning("[SECURITY] Test login used in development environment")
+        
+        return {
+            "message": "Test session created",
+            "user": {
+                "user_id": test_user_id,
+                "email": test_email,
+                "name": test_name,
+                "role": "admin"
+            },
+            "session_token": session_token
+        }
 
 # ==================== Shift-Start Assignment Trigger ====================
 
