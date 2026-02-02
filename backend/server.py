@@ -1671,10 +1671,92 @@ class RoutingRuleUpdate(BaseModel):
     priority: Optional[int] = None
     is_active: Optional[bool] = None
 
+# ==================== Role-Based Authorization ====================
+VALID_ROLES = ["agent", "lead", "admin"]
+
+def require_role(allowed_roles: List[str]):
+    """
+    Dependency that checks if the current user has one of the allowed roles.
+    Usage: current_user: dict = Depends(require_role(["admin", "lead"]))
+    """
+    async def role_checker(current_user: dict = Depends(get_current_user)):
+        user_role = current_user.get("role", "agent")
+        if user_role not in allowed_roles:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Insufficient permissions. Required role: {', '.join(allowed_roles)}"
+            )
+        return current_user
+    return role_checker
+
+def require_admin(current_user: dict = Depends(get_current_user)):
+    """Dependency that requires admin role"""
+    if current_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Admin privileges required"
+        )
+    return current_user
+
+def require_lead_or_admin(current_user: dict = Depends(get_current_user)):
+    """Dependency that requires lead or admin role"""
+    if current_user.get("role") not in ["admin", "lead"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Lead or admin privileges required"
+        )
+    return current_user
+
 # Routes
 @app.get("/api/health")
 async def health():
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat(), "version": "1.0.0"}
+    """
+    Comprehensive health check endpoint.
+    Checks database connectivity and returns system status.
+    """
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "version": "2.0.0",
+        "checks": {}
+    }
+    
+    # Check MongoDB connectivity
+    try:
+        # Ping the database
+        client.admin.command('ping')
+        health_status["checks"]["database"] = {
+            "status": "healthy",
+            "type": "mongodb"
+        }
+    except (ConnectionFailure, ServerSelectionTimeoutError) as e:
+        health_status["status"] = "unhealthy"
+        health_status["checks"]["database"] = {
+            "status": "unhealthy",
+            "type": "mongodb",
+            "error": "Connection failed" if IS_PRODUCTION else str(e)
+        }
+    
+    # Check if required collections exist
+    try:
+        collections = db.list_collection_names()
+        required_collections = ["users", "tickets", "user_sessions"]
+        missing = [c for c in required_collections if c not in collections]
+        health_status["checks"]["collections"] = {
+            "status": "healthy" if not missing else "warning",
+            "missing": missing if missing else None
+        }
+    except Exception as e:
+        health_status["checks"]["collections"] = {
+            "status": "error",
+            "error": str(e) if not IS_PRODUCTION else "Check failed"
+        }
+    
+    # Return appropriate status code
+    if health_status["status"] == "unhealthy":
+        return JSONResponse(status_code=503, content=health_status)
+    
+    return health_status
 
 # Emergent Auth endpoints
 @app.post("/api/auth/session")
