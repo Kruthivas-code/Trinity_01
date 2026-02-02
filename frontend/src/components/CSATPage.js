@@ -53,8 +53,11 @@ const CSATPage = () => {
   const [rating, setRating] = useState(initialRating);
   const [responseId, setResponseId] = useState(null);
   const [ticketId, setTicketId] = useState(null);
+  const [ticketTitle, setTicketTitle] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [feedback, setFeedback] = useState('');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [statusChecked, setStatusChecked] = useState(false);
   
   const ratingLabels = {
     1: 'Terrible',
@@ -64,23 +67,55 @@ const CSATPage = () => {
     5: 'Excellent'
   };
   
-  // Submit rating on page load if rating param is present
+  // Check token status on page load (GET is safe for prefetch)
   useEffect(() => {
-    if (token && initialRating >= 1 && initialRating <= 5) {
-      submitRating(initialRating);
+    const checkStatus = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/csat/check/${token}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.detail || 'Invalid survey link');
+        }
+        
+        setTicketId(data.ticket_id);
+        setTicketTitle(data.ticket_title);
+        setCustomerName(data.customer_name);
+        
+        if (data.status === 'already_submitted') {
+          setAlreadySubmitted(true);
+          setRating(data.rating);
+        } else {
+          // Token is valid and not yet submitted - set initial rating from URL
+          setRating(initialRating);
+        }
+        setStatusChecked(true);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (token) {
+      checkStatus();
     } else {
+      setError('No survey token provided');
       setLoading(false);
     }
   }, [token, initialRating]);
   
   const submitRating = async (ratingValue) => {
-    setLoading(true);
+    setSubmitting(true);
     setError(null);
     
     try {
-      const response = await fetch(
-        `${BACKEND_URL}/api/csat/rate?token=${token}&rating=${ratingValue}`
-      );
+      // Use POST to prevent email client prefetch attacks
+      const response = await fetch(`${BACKEND_URL}/api/csat/rate/${token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: ratingValue })
+      });
       
       const data = await response.json();
       
@@ -101,7 +136,7 @@ const CSATPage = () => {
     } catch (err) {
       setError(err.message);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
   
@@ -128,7 +163,12 @@ const CSATPage = () => {
   
   const handleRateClick = (ratingValue) => {
     setRating(ratingValue);
-    submitRating(ratingValue);
+  };
+  
+  const handleConfirmRating = () => {
+    if (rating >= 1 && rating <= 5) {
+      submitRating(rating);
+    }
   };
   
   // Loading state
@@ -137,7 +177,7 @@ const CSATPage = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-white/70">Submitting your rating...</p>
+          <p className="text-white/70">Loading survey...</p>
         </div>
       </div>
     );
@@ -283,28 +323,55 @@ const CSATPage = () => {
           <TridentIcon className="w-12 h-12 text-primary" />
         </div>
         <h1 className="text-2xl font-bold text-white mb-3">Rate Your Experience</h1>
+        {ticketTitle && (
+          <p className="text-white/50 text-sm mb-2">
+            Ticket: {ticketTitle}
+          </p>
+        )}
         <p className="text-white/70 mb-8">
-          How satisfied were you with our support?
+          {customerName ? `Hi ${customerName}, h` : 'H'}ow satisfied were you with our support?
         </p>
         
         <div className="flex justify-center mb-6">
           <StarRating 
             rating={rating} 
             onRate={handleRateClick} 
-            interactive={true} 
+            interactive={!submitting} 
             size="xl" 
           />
         </div>
         
         {rating > 0 && (
-          <p className="text-white/70 text-lg mb-4">
-            {ratingLabels[rating]}
-          </p>
+          <>
+            <p className="text-white/70 text-lg mb-6">
+              {ratingLabels[rating]}
+            </p>
+            <button
+              onClick={handleConfirmRating}
+              disabled={submitting}
+              className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              data-testid="csat-confirm-rating"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 size={18} />
+                  Confirm {rating}-Star Rating
+                </>
+              )}
+            </button>
+          </>
         )}
         
-        <p className="text-white/40 text-sm">
-          Click a star to submit your rating
-        </p>
+        {rating === 0 && (
+          <p className="text-white/40 text-sm">
+            Select a star rating above
+          </p>
+        )}
       </div>
     </div>
   );

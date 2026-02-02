@@ -615,6 +615,27 @@ B2C_EMAIL_DOMAINS = {
 csat_responses_collection = db.csat_responses  # CSAT ratings and feedback
 csat_tokens_collection = db.csat_tokens  # Secure tokens for email rating links
 
+# Webhooks - Outbound event notifications
+webhooks_collection = db.webhooks  # Webhook subscriptions
+webhook_logs_collection = db.webhook_logs  # Delivery logs
+
+# Webhook event types
+WEBHOOK_EVENT_TYPES = [
+    "ticket.created",
+    "ticket.updated", 
+    "ticket.assigned",
+    "ticket.status_changed",
+    "ticket.resolved",
+    "ticket.closed",
+    "ticket.deleted",
+    "ticket.reply_added",
+    "ticket.note_added",
+    "customer.created",
+    "customer.updated",
+    "sla.breach",
+    "sla.warning",
+]
+
 # System timezone - IST
 SYSTEM_TIMEZONE = "Asia/Kolkata"
 
@@ -1687,6 +1708,175 @@ def require_lead_or_admin(current_user: dict = Depends(get_current_user)):
             detail="Lead or admin privileges required"
         )
     return current_user
+
+# ==================== Webhook Models ====================
+
+class WebhookCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    url: str = Field(..., min_length=10, max_length=500)
+    events: List[str] = Field(..., min_items=1)
+    secret: Optional[str] = Field(default=None, max_length=100)
+    headers: Optional[Dict[str, str]] = Field(default={})
+    is_active: bool = True
+    
+    @validator('url')
+    def validate_url(cls, v):
+        if not v.startswith(('http://', 'https://')):
+            raise ValueError('URL must start with http:// or https://')
+        return v
+    
+    @validator('events')
+    def validate_events(cls, v):
+        for event in v:
+            if event not in WEBHOOK_EVENT_TYPES:
+                raise ValueError(f'Invalid event type: {event}. Valid types: {", ".join(WEBHOOK_EVENT_TYPES)}')
+        return v
+
+class WebhookUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=100)
+    url: Optional[str] = Field(default=None, max_length=500)
+    events: Optional[List[str]] = None
+    secret: Optional[str] = Field(default=None, max_length=100)
+    headers: Optional[Dict[str, str]] = None
+    is_active: Optional[bool] = None
+    
+    @validator('url')
+    def validate_url(cls, v):
+        if v and not v.startswith(('http://', 'https://')):
+            raise ValueError('URL must start with http:// or https://')
+        return v
+    
+    @validator('events')
+    def validate_events(cls, v):
+        if v:
+            for event in v:
+                if event not in WEBHOOK_EVENT_TYPES:
+                    raise ValueError(f'Invalid event type: {event}')
+        return v
+
+# ==================== Webhook Delivery System ====================
+
+async def deliver_webhook(webhook: dict, event_type: str, payload: dict):
+    """Deliver a webhook with retry logic and logging"""
+    import hmac
+    import hashlib
+    
+    webhook_id = webhook.get("webhook_id")
+    url = webhook.get("url")
+    secret = webhook.get("secret")
+    custom_headers = webhook.get("headers", {})
+    
+    # Prepare payload
+    delivery_payload = {
+        "event": event_type,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "webhook_id": webhook_id,
+        "data": payload
+    }
+    payload_json = json.dumps(delivery_payload, default=str)
+    
+    # Create signature if secret is set
+    signature = None
+    if secret:
+        signature = hmac.new(
+            secret.encode('utf-8'),
+            payload_json.encode('utf-8'),
+            hashlib.sha256
+        ).hexdigest()
+    
+    # Prepare headers
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": "Trinity-Webhooks/1.0",
+        "X-Webhook-Event": event_type,
+        "X-Webhook-Delivery": f"del_{uuid.uuid4().hex[:12]}",
+    }
+    if signature:
+        headers["X-Webhook-Signature"] = f"sha256={signature}"
+    headers.update(custom_headers)
+    
+    # Create log entry
+    log_entry = {
+        "log_id": f"whl_{uuid.uuid4().hex[:12]}",
+        "webhook_id": webhook_id,
+        "event": event_type,
+        "url": url,
+        "request_headers": headers,
+        "request_body": delivery_payload,
+        "created_at": datetime.now(timezone.utc),
+        "attempts": []
+    }
+    
+    # Attempt delivery with retries
+    max_retries = 3
+    retry_delays = [0, 5, 30]  # seconds
+    
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for attempt in range(max_retries):
+            if attempt > 0:
+                await asyncio.sleep(retry_delays[attempt])
+            
+            attempt_record = {
+                "attempt": attempt + 1,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+            try:
+                response = await client.post(url, content=payload_json, headers=headers)
+                attempt_record["status_code"] = response.status_code
+                attempt_record["response_body"] = response.text[:1000] if response.text else None
+                
+                if response.status_code >= 200 and response.status_code < 300:
+                    attempt_record["success"] = True
+                    log_entry["attempts"].append(attempt_record)
+                    log_entry["status"] = "delivered"
+                    log_entry["completed_at"] = datetime.now(timezone.utc)
+                    webhook_logs_collection.insert_one(log_entry)
+                    
+                    # Update webhook stats
+                    webhooks_collection.update_one(
+                        {"webhook_id": webhook_id},
+                        {
+                            "$set": {"last_triggered_at": datetime.now(timezone.utc)},
+                            "$inc": {"delivery_count": 1, "success_count": 1}
+                        }
+                    )
+                    return True
+                else:
+                    attempt_record["success"] = False
+                    attempt_record["error"] = f"HTTP {response.status_code}"
+                    
+            except Exception as e:
+                attempt_record["success"] = False
+                attempt_record["error"] = str(e)
+            
+            log_entry["attempts"].append(attempt_record)
+    
+    # All retries failed
+    log_entry["status"] = "failed"
+    log_entry["completed_at"] = datetime.now(timezone.utc)
+    webhook_logs_collection.insert_one(log_entry)
+    
+    # Update webhook stats
+    webhooks_collection.update_one(
+        {"webhook_id": webhook_id},
+        {
+            "$set": {"last_triggered_at": datetime.now(timezone.utc)},
+            "$inc": {"delivery_count": 1, "failure_count": 1}
+        }
+    )
+    return False
+
+async def trigger_webhooks(event_type: str, payload: dict):
+    """Trigger all webhooks subscribed to an event type"""
+    webhooks = list(webhooks_collection.find({
+        "is_active": True,
+        "events": event_type
+    }))
+    
+    for webhook in webhooks:
+        # Fire and forget - don't block on webhook delivery
+        asyncio.create_task(deliver_webhook(webhook, event_type, payload))
 
 # Routes
 @app.get("/api/health")
@@ -2935,6 +3125,14 @@ async def add_internal_note(
             {"$set": update_fields}
         )
     
+    # Trigger webhook for note added
+    asyncio.create_task(trigger_webhooks("ticket.note_added", {
+        "ticket_id": ticket_id,
+        "ticket_title": ticket.get("title", ""),
+        "note": serialize_doc(note_doc),
+        "added_by": current_user.get("name", current_user["user_id"])
+    }))
+    
     return serialize_doc(note_doc)
 
 @app.get("/api/tickets/{ticket_id}/notes")
@@ -3282,6 +3480,9 @@ async def create_ticket(
         {"user_id": current_user["user_id"], "name": current_user.get("name", "Unknown")}
     ))
     
+    # Trigger webhooks for ticket.created
+    asyncio.create_task(trigger_webhooks("ticket.created", result))
+    
     return result
 
 @app.get("/api/tickets/{ticket_id}")
@@ -3429,6 +3630,29 @@ async def update_ticket(
         {"user_id": current_user["user_id"], "name": current_user.get("name", "Unknown")}
     ))
     
+    # Trigger webhooks based on what changed
+    asyncio.create_task(trigger_webhooks("ticket.updated", serialized))
+    
+    if changes:
+        for field, (old_val, new_val) in changes.items():
+            if field == "status":
+                asyncio.create_task(trigger_webhooks("ticket.status_changed", {
+                    **serialized,
+                    "previous_status": old_val,
+                    "new_status": new_val
+                }))
+                # Check for resolved/closed specifically
+                if new_val == "resolved":
+                    asyncio.create_task(trigger_webhooks("ticket.resolved", serialized))
+                elif new_val == "closed":
+                    asyncio.create_task(trigger_webhooks("ticket.closed", serialized))
+            elif field == "assignee_id":
+                asyncio.create_task(trigger_webhooks("ticket.assigned", {
+                    **serialized,
+                    "previous_assignee_id": old_val,
+                    "new_assignee_id": new_val
+                }))
+    
     return serialized
 
 @app.delete("/api/tickets/{ticket_id}")
@@ -3461,6 +3685,9 @@ async def delete_ticket(
         ticket_id,
         {"user_id": current_user["user_id"], "name": current_user.get("name", "Unknown")}
     ))
+    
+    # Trigger webhook for ticket.deleted
+    asyncio.create_task(trigger_webhooks("ticket.deleted", serialize_doc(ticket)))
     
     return {"message": "Ticket deleted successfully"}
 
@@ -4344,6 +4571,16 @@ async def reply_to_ticket(
         )
         
         logger.info(f"[EMAIL] Reply sent for ticket {ticket_id} to {reply.to_email}, Gmail ID: {send_result.get('id')}, Message-ID: {our_message_id}")
+        
+        # Trigger webhook for reply added
+        asyncio.create_task(trigger_webhooks("ticket.reply_added", {
+            "ticket_id": ticket_id,
+            "ticket_title": ticket.get("title", ""),
+            "reply_id": reply_id,
+            "to_email": reply.to_email,
+            "subject": reply.subject,
+            "sent_by": current_user.get("name", current_user["user_id"])
+        }))
         
         return {
             "status": "sent",
@@ -5745,7 +5982,12 @@ async def create_customer(
     customers_collection.insert_one(new_customer)
     logger.info(f"Created customer {new_customer['customer_id']} by {current_user['user_id']}")
     
-    return serialize_doc(new_customer)
+    result = serialize_doc(new_customer)
+    
+    # Trigger webhook for customer.created
+    asyncio.create_task(trigger_webhooks("customer.created", result))
+    
+    return result
 
 @app.put("/api/customers/{customer_id}")
 async def update_customer(
@@ -5774,7 +6016,12 @@ async def update_customer(
     )
     
     updated = customers_collection.find_one({"customer_id": customer_id}, {"_id": 0})
-    return serialize_doc(updated)
+    result = serialize_doc(updated)
+    
+    # Trigger webhook for customer.updated
+    asyncio.create_task(trigger_webhooks("customer.updated", result))
+    
+    return result
 
 @app.post("/api/customers/{customer_id}/link-email")
 async def link_email_to_customer(
@@ -6266,12 +6513,54 @@ This survey expires in 7 days.
         )
 
 
-@app.get("/api/csat/rate")
+@app.get("/api/csat/check/{token}")
+async def check_csat_status(token: str):
+    """Check CSAT token status (no auth required) - safe for GET/prefetch"""
+    # Find token
+    token_doc = csat_tokens_collection.find_one({"token": token})
+    if not token_doc:
+        raise HTTPException(status_code=404, detail="Invalid or expired survey link")
+    
+    # Check expiration
+    expires_at = token_doc.get("expires_at")
+    if expires_at:
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > expires_at:
+            raise HTTPException(status_code=400, detail="This survey link has expired")
+    
+    # Check if already responded
+    existing_response = csat_responses_collection.find_one({"token": token})
+    if existing_response:
+        return {
+            "status": "already_submitted",
+            "rating": existing_response.get("rating"),
+            "ticket_id": token_doc.get("ticket_id"),
+            "customer_name": token_doc.get("customer_name"),
+            "ticket_title": token_doc.get("ticket_title")
+        }
+    
+    return {
+        "status": "pending",
+        "ticket_id": token_doc.get("ticket_id"),
+        "customer_name": token_doc.get("customer_name"),
+        "ticket_title": token_doc.get("ticket_title")
+    }
+
+
+class CSATRatingRequest(BaseModel):
+    rating: int = Field(..., ge=1, le=5)
+
+
+@app.post("/api/csat/rate/{token}")
 async def submit_csat_rating(
     token: str,
-    rating: int
+    request: CSATRatingRequest
 ):
-    """Handle CSAT rating from email link (no auth required)"""
+    """Handle CSAT rating submission (POST to prevent email prefetch attacks)"""
+    rating = request.rating
     if rating < 1 or rating > 5:
         raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
     
@@ -7962,7 +8251,6 @@ async def get_auto_close_status(current_user: dict = Depends(get_current_user)):
     }, {"ticket_id": 1, "title": 1, "closed_at": 1, "_id": 0}).sort("closed_at", -1).limit(10))
     
     return {
-        "auto_close_hours": AUTO_CLOSE_HOURS,
         "pending_auto_close": len(pending_close),
         "pending_tickets": [serialize_doc(t) for t in pending_close],
         "recently_resolved_count": len(recently_resolved),
@@ -7970,7 +8258,257 @@ async def get_auto_close_status(current_user: dict = Depends(get_current_user)):
     }
 
 
-@app.post("/api/admin/trigger-auto-close")
+# ==================== Webhooks API ====================
+
+@app.get("/api/webhooks")
+async def list_webhooks(
+    cursor: int = 0,
+    limit: int = 20,
+    current_user: dict = Depends(require_admin)
+):
+    """List all webhook subscriptions (admin only)"""
+    webhooks = list(webhooks_collection.find().skip(cursor).limit(limit))
+    total = webhooks_collection.count_documents({})
+    
+    return {
+        "data": [serialize_doc(w) for w in webhooks],
+        "total": total,
+        "cursor": cursor,
+        "limit": limit
+    }
+
+@app.post("/api/webhooks")
+async def create_webhook(
+    webhook: WebhookCreate,
+    current_user: dict = Depends(require_admin)
+):
+    """Create a new webhook subscription (admin only)"""
+    webhook_id = f"wh_{uuid.uuid4().hex[:12]}"
+    
+    webhook_doc = {
+        "webhook_id": webhook_id,
+        "name": webhook.name,
+        "url": webhook.url,
+        "events": webhook.events,
+        "secret": webhook.secret,
+        "headers": webhook.headers or {},
+        "is_active": webhook.is_active,
+        "created_by": current_user.get("email"),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+        "delivery_count": 0,
+        "success_count": 0,
+        "failure_count": 0,
+        "last_triggered_at": None
+    }
+    
+    webhooks_collection.insert_one(webhook_doc)
+    
+    return {
+        "message": "Webhook created successfully",
+        "webhook": serialize_doc(webhook_doc)
+    }
+
+@app.get("/api/webhooks/events")
+async def list_webhook_events(current_user: dict = Depends(get_current_user)):
+    """List all available webhook event types"""
+    return {
+        "events": WEBHOOK_EVENT_TYPES,
+        "descriptions": {
+            "ticket.created": "Triggered when a new ticket is created",
+            "ticket.updated": "Triggered when ticket fields are updated",
+            "ticket.assigned": "Triggered when a ticket is assigned to a user or team",
+            "ticket.status_changed": "Triggered when ticket status changes",
+            "ticket.resolved": "Triggered when a ticket is resolved",
+            "ticket.closed": "Triggered when a ticket is closed",
+            "ticket.deleted": "Triggered when a ticket is deleted",
+            "ticket.reply_added": "Triggered when a reply is added to a ticket",
+            "ticket.note_added": "Triggered when an internal note is added",
+            "customer.created": "Triggered when a new customer is created",
+            "customer.updated": "Triggered when customer information is updated",
+            "sla.breach": "Triggered when an SLA is breached",
+            "sla.warning": "Triggered when an SLA breach is imminent"
+        }
+    }
+
+@app.get("/api/webhooks/{webhook_id}")
+async def get_webhook(
+    webhook_id: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Get a specific webhook subscription (admin only)"""
+    webhook = webhooks_collection.find_one({"webhook_id": webhook_id})
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    
+    return serialize_doc(webhook)
+
+@app.put("/api/webhooks/{webhook_id}")
+async def update_webhook(
+    webhook_id: str,
+    webhook_update: WebhookUpdate,
+    current_user: dict = Depends(require_admin)
+):
+    """Update a webhook subscription (admin only)"""
+    webhook = webhooks_collection.find_one({"webhook_id": webhook_id})
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    
+    update_data = {"updated_at": datetime.now(timezone.utc)}
+    
+    if webhook_update.name is not None:
+        update_data["name"] = webhook_update.name
+    if webhook_update.url is not None:
+        update_data["url"] = webhook_update.url
+    if webhook_update.events is not None:
+        update_data["events"] = webhook_update.events
+    if webhook_update.secret is not None:
+        update_data["secret"] = webhook_update.secret
+    if webhook_update.headers is not None:
+        update_data["headers"] = webhook_update.headers
+    if webhook_update.is_active is not None:
+        update_data["is_active"] = webhook_update.is_active
+    
+    webhooks_collection.update_one(
+        {"webhook_id": webhook_id},
+        {"$set": update_data}
+    )
+    
+    updated_webhook = webhooks_collection.find_one({"webhook_id": webhook_id})
+    return {
+        "message": "Webhook updated successfully",
+        "webhook": serialize_doc(updated_webhook)
+    }
+
+@app.delete("/api/webhooks/{webhook_id}")
+async def delete_webhook(
+    webhook_id: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Delete a webhook subscription (admin only)"""
+    result = webhooks_collection.delete_one({"webhook_id": webhook_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    
+    # Also delete associated logs
+    webhook_logs_collection.delete_many({"webhook_id": webhook_id})
+    
+    return {"message": "Webhook deleted successfully"}
+
+@app.get("/api/webhooks/{webhook_id}/logs")
+async def get_webhook_logs(
+    webhook_id: str,
+    cursor: int = 0,
+    limit: int = 20,
+    status: Optional[str] = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Get delivery logs for a webhook (admin only)"""
+    webhook = webhooks_collection.find_one({"webhook_id": webhook_id})
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    
+    query = {"webhook_id": webhook_id}
+    if status:
+        query["status"] = status
+    
+    logs = list(webhook_logs_collection.find(query).sort("created_at", -1).skip(cursor).limit(limit))
+    total = webhook_logs_collection.count_documents(query)
+    
+    return {
+        "data": [serialize_doc(log) for log in logs],
+        "total": total,
+        "cursor": cursor,
+        "limit": limit
+    }
+
+@app.get("/api/webhooks/logs")
+async def get_all_webhook_logs(
+    cursor: int = 0,
+    limit: int = 50,
+    status: Optional[str] = None,
+    event: Optional[str] = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Get all webhook delivery logs (admin only)"""
+    query = {}
+    if status:
+        query["status"] = status
+    if event:
+        query["event"] = event
+    
+    logs = list(webhook_logs_collection.find(query).sort("created_at", -1).skip(cursor).limit(limit))
+    total = webhook_logs_collection.count_documents(query)
+    
+    return {
+        "data": [serialize_doc(log) for log in logs],
+        "total": total,
+        "cursor": cursor,
+        "limit": limit
+    }
+
+@app.post("/api/webhooks/{webhook_id}/test")
+async def test_webhook(
+    webhook_id: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Send a test event to a webhook (admin only)"""
+    webhook = webhooks_collection.find_one({"webhook_id": webhook_id})
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    
+    test_payload = {
+        "ticket_id": "TKT-TEST",
+        "title": "Test Webhook Event",
+        "description": "This is a test webhook delivery from Trinity",
+        "status": "todo",
+        "priority": "medium",
+        "test": True
+    }
+    
+    # Deliver synchronously for test so we can return the result
+    success = await deliver_webhook(webhook, "test.webhook", test_payload)
+    
+    # Get the latest log
+    latest_log = webhook_logs_collection.find_one(
+        {"webhook_id": webhook_id},
+        sort=[("created_at", -1)]
+    )
+    
+    return {
+        "success": success,
+        "message": "Test webhook delivered successfully" if success else "Test webhook delivery failed",
+        "log": serialize_doc(latest_log) if latest_log else None
+    }
+
+@app.post("/api/webhooks/{webhook_id}/retry/{log_id}")
+async def retry_webhook_delivery(
+    webhook_id: str,
+    log_id: str,
+    current_user: dict = Depends(require_admin)
+):
+    """Retry a failed webhook delivery (admin only)"""
+    webhook = webhooks_collection.find_one({"webhook_id": webhook_id})
+    if not webhook:
+        raise HTTPException(status_code=404, detail="Webhook not found")
+    
+    log = webhook_logs_collection.find_one({"log_id": log_id, "webhook_id": webhook_id})
+    if not log:
+        raise HTTPException(status_code=404, detail="Log entry not found")
+    
+    if log.get("status") == "delivered":
+        raise HTTPException(status_code=400, detail="Cannot retry a successful delivery")
+    
+    # Re-deliver using the original payload
+    original_payload = log.get("request_body", {}).get("data", {})
+    event_type = log.get("event", "unknown")
+    
+    success = await deliver_webhook(webhook, event_type, original_payload)
+    
+    return {
+        "success": success,
+        "message": "Webhook retry delivered successfully" if success else "Webhook retry failed"
+    }
 async def trigger_auto_close(current_user: dict = Depends(get_current_user)):
     """Manually trigger the auto-close process (admin only)"""
     if current_user.get("role") != "admin":
