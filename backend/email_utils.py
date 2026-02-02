@@ -133,9 +133,9 @@ def generate_preview(text: str, max_length: int = 150) -> str:
     return truncated.rstrip('.,;:!?') + '...'
 
 
-def parse_email_content(payload: dict) -> Dict[str, str]:
+def parse_email_content(payload: dict) -> Dict[str, Any]:
     """
-    Parse email payload and extract all content types.
+    Parse email payload and extract all content types, including inline images.
     
     Args:
         payload: Gmail API message payload
@@ -145,32 +145,61 @@ def parse_email_content(payload: dict) -> Dict[str, str]:
         - html: Raw HTML content (if available)
         - text: Plain text content
         - preview: Short preview for list views
+        - inline_images: Dict mapping Content-ID to base64 data URLs
     """
     html_body = ""
     text_body = ""
+    inline_images = {}  # Maps Content-ID to data URL
     
     def extract_parts(payload_part):
-        nonlocal html_body, text_body
+        nonlocal html_body, text_body, inline_images
         
         mime_type = payload_part.get('mimeType', '')
         body_data = payload_part.get('body', {}).get('data', '')
+        headers = payload_part.get('headers', [])
+        
+        # Extract Content-ID for inline images
+        content_id = None
+        content_disposition = None
+        for header in headers:
+            name = header.get('name', '').lower()
+            value = header.get('value', '')
+            if name == 'content-id':
+                # Content-ID format: <image001.png@01D...> - strip angle brackets
+                content_id = value.strip('<>').strip()
+            elif name == 'content-disposition':
+                content_disposition = value.lower()
         
         if body_data:
             try:
-                decoded = base64.urlsafe_b64decode(body_data).decode('utf-8', errors='ignore')
+                # Check if this is an inline image
+                is_inline_image = (
+                    mime_type.startswith('image/') and 
+                    (content_id or (content_disposition and 'inline' in content_disposition))
+                )
                 
-                if mime_type == 'text/plain' and not text_body:
+                if is_inline_image and content_id:
+                    # Store as data URL for embedding in HTML
+                    inline_images[content_id] = f"data:{mime_type};base64,{body_data}"
+                    logger.debug(f"Extracted inline image: {content_id}")
+                elif mime_type == 'text/plain' and not text_body:
+                    decoded = base64.urlsafe_b64decode(body_data).decode('utf-8', errors='ignore')
                     text_body = decoded
                 elif mime_type == 'text/html' and not html_body:
+                    decoded = base64.urlsafe_b64decode(body_data).decode('utf-8', errors='ignore')
                     html_body = decoded
             except Exception as e:
-                logger.warning(f"Failed to decode email part: {e}")
+                logger.warning(f"Failed to decode email part ({mime_type}): {e}")
         
         # Recurse into nested parts
         for part in payload_part.get('parts', []):
             extract_parts(part)
     
     extract_parts(payload)
+    
+    # Replace CID references in HTML with data URLs
+    if html_body and inline_images:
+        html_body = replace_cid_with_data_urls(html_body, inline_images)
     
     # If no plain text, convert HTML to text
     if not text_body and html_body:
@@ -182,8 +211,54 @@ def parse_email_content(payload: dict) -> Dict[str, str]:
     return {
         'html': html_body,
         'text': text_body,
-        'preview': preview
+        'preview': preview,
+        'inline_images': inline_images
     }
+
+
+def replace_cid_with_data_urls(html: str, inline_images: Dict[str, str]) -> str:
+    """
+    Replace CID (Content-ID) references in HTML with base64 data URLs.
+    
+    CID references look like:
+    - src="cid:image001.png@01D..."
+    - src="cid:ii_abc123"
+    
+    Args:
+        html: HTML content with CID references
+        inline_images: Dict mapping Content-ID to data URLs
+        
+    Returns:
+        HTML with CID references replaced by data URLs
+    """
+    if not html or not inline_images:
+        return html
+    
+    def replace_cid(match):
+        cid = match.group(1)
+        # Try exact match first
+        if cid in inline_images:
+            return f'src="{inline_images[cid]}"'
+        # Try without common prefixes/suffixes
+        for content_id, data_url in inline_images.items():
+            if cid in content_id or content_id in cid:
+                return f'src="{data_url}"'
+        # Keep original if no match found
+        logger.debug(f"CID not found in inline images: {cid}")
+        return match.group(0)
+    
+    # Match src="cid:..." patterns (case insensitive)
+    pattern = r'src=["\']cid:([^"\']+)["\']'
+    result = re.sub(pattern, replace_cid, html, flags=re.IGNORECASE)
+    
+    # Count replacements for logging
+    original_cids = re.findall(pattern, html, flags=re.IGNORECASE)
+    remaining_cids = re.findall(pattern, result, flags=re.IGNORECASE)
+    if original_cids:
+        replaced = len(original_cids) - len(remaining_cids)
+        logger.info(f"Replaced {replaced}/{len(original_cids)} CID references with data URLs")
+    
+    return result
 
 
 def extract_email_headers(headers: list) -> Dict[str, str]:
