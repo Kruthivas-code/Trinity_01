@@ -66,20 +66,114 @@ from adapters import set_database, get_lock_adapter
 # Load environment variables from .env file
 load_dotenv()
 
+# ==================== Environment Validation ====================
+def validate_environment():
+    """Validate required environment variables at startup"""
+    required_vars = ["MONGO_URL"]
+    recommended_vars = ["ALLOWED_ORIGINS", "GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET"]
+    
+    missing_required = []
+    missing_recommended = []
+    
+    for var in required_vars:
+        if not os.environ.get(var):
+            missing_required.append(var)
+    
+    for var in recommended_vars:
+        if not os.environ.get(var):
+            missing_recommended.append(var)
+    
+    if missing_required:
+        raise RuntimeError(f"Missing required environment variables: {', '.join(missing_required)}")
+    
+    if missing_recommended:
+        logger.warning(f"Missing recommended environment variables: {', '.join(missing_recommended)}")
+
+# Validate environment on module load
+validate_environment()
+
+# ==================== Rate Limiting Setup ====================
+# Use Redis for rate limiting in production, in-memory for development
+RATE_LIMIT_STORAGE = os.environ.get("RATE_LIMIT_STORAGE", "memory://")
+
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["1000/hour", "100/minute"],
+    storage_uri=RATE_LIMIT_STORAGE,
+    strategy="fixed-window"
+)
+
 # Gmail API imports
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
+# ==================== Production Configuration ====================
+IS_PRODUCTION = os.environ.get("ENVIRONMENT", "development").lower() == "production"
+
 app = FastAPI(
     title="Trinity API",
     description="Enterprise ticket management platform with real-time collaboration",
-    version="2.0.0"
+    version="2.0.0",
+    docs_url=None if IS_PRODUCTION else "/docs",  # Disable docs in production
+    redoc_url=None if IS_PRODUCTION else "/redoc"
 )
+
+# Add rate limiting to app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Mount Socket.IO for WebSocket support
 # Socket.IO will handle /socket.io/ routes
 app.mount("/socket.io", socket_app)
+
+# ==================== Request ID Middleware ====================
+@app.middleware("http")
+async def add_request_id(request: Request, call_next):
+    """Add unique request ID to each request for tracing"""
+    request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:8])
+    request.state.request_id = request_id
+    
+    # Add to logging context
+    logger_adapter = logging.LoggerAdapter(logger, {"request_id": request_id})
+    
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
+
+# ==================== Global Exception Handler ====================
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler to prevent information leakage"""
+    request_id = getattr(request.state, 'request_id', 'unknown')
+    
+    # Log the full error with traceback
+    logger.error(
+        f"Unhandled exception: {str(exc)}", 
+        extra={"request_id": request_id},
+        exc_info=True
+    )
+    
+    # Return safe error response
+    if IS_PRODUCTION:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": "An internal error occurred",
+                "request_id": request_id
+            }
+        )
+    else:
+        # Include more details in development
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": str(exc),
+                "type": type(exc).__name__,
+                "request_id": request_id
+            }
+        )
 
 # CORS - Allow specific origins for security
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "").split(",")
@@ -91,12 +185,25 @@ if not ALLOWED_ORIGINS or ALLOWED_ORIGINS == [""]:
         "http://127.0.0.1:3000"
     ]
 
+# Filter out empty strings
+ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS if o.strip()]
+
+# Allowed methods and headers (more restrictive than *)
+ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+ALLOWED_HEADERS = [
+    "Authorization", 
+    "Content-Type", 
+    "X-Request-ID", 
+    "X-API-Key",
+    "X-Session-ID"
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=ALLOWED_METHODS,
+    allow_headers=ALLOWED_HEADERS,
 )
 
 # Background tasks
