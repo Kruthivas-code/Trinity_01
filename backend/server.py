@@ -1394,8 +1394,11 @@ async def get_current_user(
     
     # Find session in database
     print(f"[AUTH-DEBUG] Looking for session token: {token}")
+    # Debug: list all sessions to see what's in the collection
+    all_sessions = list(sessions_collection.find({}, {"session_token": 1, "_id": 0}))
+    print(f"[AUTH-DEBUG] All sessions in {sessions_collection.name}: {[s.get('session_token', 'N/A')[:20] for s in all_sessions]}")
     session_doc = sessions_collection.find_one({"session_token": token}, {"_id": 0})
-    print(f"[AUTH-DEBUG] Session found: {session_doc is not None}, collection: {sessions_collection.name}")
+    print(f"[AUTH-DEBUG] Session found: {session_doc is not None}")
     if not session_doc:
         raise HTTPException(status_code=401, detail="Invalid session")
     
