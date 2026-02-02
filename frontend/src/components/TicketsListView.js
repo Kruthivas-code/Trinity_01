@@ -5,6 +5,24 @@ import { useRealtime } from '../contexts/RealtimeContext';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const ITEMS_PER_PAGE = 50;
 
+// Get the best preview text for a ticket
+const getPreviewText = (ticket) => {
+  // For email tickets, prefer the pre-generated preview
+  if (ticket.source === 'email' && ticket.email_preview) {
+    return ticket.email_preview;
+  }
+  // For email tickets without preview, use email_text
+  if (ticket.source === 'email' && ticket.email_text) {
+    const text = ticket.email_text.slice(0, 200);
+    return text.length < ticket.email_text.length ? text + '...' : text;
+  }
+  // Fall back to description
+  if (ticket.description) {
+    return stripHtml(ticket.description);
+  }
+  return '';
+};
+
 // Strip HTML tags and CSS for display
 const stripHtml = (html) => {
   if (!html) return '';
