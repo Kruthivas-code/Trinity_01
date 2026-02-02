@@ -127,18 +127,48 @@ def _get_instance_id() -> str:
     return os.environ.get('INSTANCE_ID', os.environ.get('HOSTNAME', 'default'))
 
 
+# ==================== WebSocket Security Configuration ====================
+# Authentication timeout in seconds - disconnect if not authenticated within this time
+WS_AUTH_TIMEOUT = 30
+# Maximum message size in bytes
+WS_MAX_MESSAGE_SIZE = 65536  # 64KB
+# Track unauthenticated connections for timeout enforcement
+_unauthenticated_sids: Dict[str, datetime] = {}
+
 # Socket.IO Event Handlers
 @sio.event
 async def connect(sid, environ, auth):
-    """Handle new connection"""
+    """Handle new connection - require authentication within timeout"""
     logger.info(f"Client connecting: {sid}")
-    await sio.emit('connected', {'sid': sid}, to=sid)
+    
+    # Track when this connection was established for auth timeout
+    _unauthenticated_sids[sid] = datetime.now(timezone.utc)
+    
+    await sio.emit('connected', {'sid': sid, 'auth_timeout': WS_AUTH_TIMEOUT}, to=sid)
+    
+    # Schedule authentication timeout check
+    asyncio.create_task(_check_auth_timeout(sid))
+
+
+async def _check_auth_timeout(sid: str):
+    """Disconnect client if not authenticated within timeout"""
+    await asyncio.sleep(WS_AUTH_TIMEOUT)
+    
+    # Check if still in unauthenticated list
+    if sid in _unauthenticated_sids:
+        logger.warning(f"WebSocket auth timeout for {sid} - disconnecting")
+        del _unauthenticated_sids[sid]
+        await sio.emit('auth_error', {'message': 'Authentication timeout'}, to=sid)
+        await sio.disconnect(sid)
 
 
 @sio.event
 async def disconnect(sid):
     """Handle disconnection"""
     global _presence_adapter
+    
+    # Clean up from unauthenticated list if present
+    _unauthenticated_sids.pop(sid, None)
     
     user_id = _socket_to_user.pop(sid, None)
     if user_id:
@@ -157,19 +187,46 @@ async def disconnect(sid):
 
 @sio.event
 async def authenticate(sid, data):
-    """Authenticate user and register presence"""
+    """
+    Authenticate user and register presence.
+    
+    Security improvements:
+    - Validates user_id format
+    - Limits data sizes
+    - Tracks authentication state
+    """
     global _presence_adapter
     
-    user_id = data.get('user_id')
-    user_info = {
-        'name': data.get('name', 'Unknown'),
-        'email': data.get('email', ''),
-        'picture': data.get('picture', '')
-    }
+    # Validate data size to prevent memory attacks
+    if len(str(data)) > WS_MAX_MESSAGE_SIZE:
+        await sio.emit('auth_error', {'message': 'Data too large'}, to=sid)
+        return
     
-    if not user_id:
+    user_id = data.get('user_id')
+    
+    # Validate user_id format
+    if not user_id or not isinstance(user_id, str):
         await sio.emit('auth_error', {'message': 'user_id required'}, to=sid)
         return
+    
+    if len(user_id) > 100:
+        await sio.emit('auth_error', {'message': 'Invalid user_id'}, to=sid)
+        return
+    
+    # Validate user_id format (basic sanitization)
+    if not user_id.replace('_', '').replace('-', '').isalnum():
+        await sio.emit('auth_error', {'message': 'Invalid user_id format'}, to=sid)
+        return
+    
+    # Sanitize user info
+    user_info = {
+        'name': str(data.get('name', 'Unknown'))[:100],
+        'email': str(data.get('email', ''))[:255],
+        'picture': str(data.get('picture', ''))[:500]
+    }
+    
+    # Remove from unauthenticated list (authentication successful)
+    _unauthenticated_sids.pop(sid, None)
     
     # Local mapping
     _socket_to_user[sid] = user_id
@@ -181,6 +238,8 @@ async def authenticate(sid, data):
     
     # Get online count
     online_count = await _presence_adapter.get_user_count() if _presence_adapter else 1
+    
+    logger.info(f"WebSocket authenticated: {user_id} ({sid})")
     
     # Send confirmation
     await sio.emit('authenticated', {
