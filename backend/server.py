@@ -137,32 +137,21 @@ async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler to prevent information leakage"""
     request_id = getattr(request.state, 'request_id', 'unknown')
     
-    # Log the full error with traceback
+    # Log the full error with traceback (visible in server logs)
     logger.error(
         f"Unhandled exception: {str(exc)}", 
         extra={"request_id": request_id},
         exc_info=True
     )
     
-    # Return safe error response
-    if IS_PRODUCTION:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "detail": "An internal error occurred",
-                "request_id": request_id
-            }
-        )
-    else:
-        # Include more details in development
-        return JSONResponse(
-            status_code=500,
-            content={
-                "detail": str(exc),
-                "type": type(exc).__name__,
-                "request_id": request_id
-            }
-        )
+    # Always return safe error response - never expose internal details
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "An internal error occurred",
+            "request_id": request_id
+        }
+    )
 
 # CORS - Allow specific origins for security
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "").split(",")
@@ -1879,82 +1868,6 @@ async def logout(response: Response, session_token: Optional[str] = Cookie(None)
     
     response.delete_cookie(key="session_token", path="/")
     return {"message": "Logged out successfully"}
-
-# ==================== Test Authentication (Development Only) ====================
-# SECURITY: Test login is completely removed in production builds
-# This endpoint should NEVER exist in production
-
-if not IS_PRODUCTION:
-    @app.post("/api/auth/test-login")
-    @limiter.limit("5/minute")  # Strict rate limit even in dev
-    async def test_login(request: Request, response: Response):
-        """
-        Create a test session for automated testing.
-        SECURITY: This endpoint only exists in non-production environments.
-        """
-        # Double-check we're not in production
-        if IS_PRODUCTION:
-            raise HTTPException(status_code=404, detail="Not found")
-        
-        # Create or get test user
-        test_user_id = "test_user_automation"
-        test_email = "test@tickflow.local"
-        test_name = "Test User"
-        
-        # Upsert test user
-        users_collection.update_one(
-            {"user_id": test_user_id},
-            {"$set": {
-                "user_id": test_user_id,
-                "email": test_email,
-                "name": test_name,
-                "picture": None,
-                "role": "admin",
-                "created_at": datetime.now(timezone.utc),
-                "last_login": datetime.now(timezone.utc)
-            }},
-            upsert=True
-        )
-        
-        # Create session token
-        session_token = f"test_session_{uuid.uuid4().hex}"
-        expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
-        
-        # Store session
-        sessions_collection.update_one(
-            {"session_token": session_token},
-            {"$set": {
-                "session_token": session_token,
-                "user_id": test_user_id,
-                "created_at": datetime.now(timezone.utc),
-                "expires_at": expires_at
-            }},
-            upsert=True
-        )
-        
-        # Set cookie
-        response.set_cookie(
-            key="session_token",
-            value=session_token,
-            httponly=True,
-            secure=False,  # Allow non-HTTPS for testing
-            samesite="lax",
-            max_age=86400,
-            path="/"
-        )
-        
-        logger.warning("[SECURITY] Test login used in development environment")
-        
-        return {
-            "message": "Test session created",
-            "user": {
-                "user_id": test_user_id,
-                "email": test_email,
-                "name": test_name,
-                "role": "admin"
-            },
-            "session_token": session_token
-        }
 
 # ==================== Shift-Start Assignment Trigger ====================
 
