@@ -3823,47 +3823,91 @@ async def reply_to_ticket(
     try:
         service = get_gmail_service(token_doc)
         
-        # Build the email
+        # Import email utilities for proper threading
+        from email_utils import build_threading_headers, generate_message_id
         from email.mime.text import MIMEText
-        message = MIMEText(reply.body)
-        message['to'] = reply.to_email
-        message['subject'] = reply.subject
+        from email.mime.multipart import MIMEMultipart
         
-        # If replying to a thread, add references
-        if ticket.get('email_thread_id'):
-            message['In-Reply-To'] = ticket.get('email_message_id', '')
-            message['References'] = ticket.get('email_message_id', '')
+        # Build proper email with threading headers
+        message = MIMEMultipart('alternative')
+        message['To'] = reply.to_email
+        message['Subject'] = reply.subject
+        
+        # Generate a proper Message-ID for this outgoing email
+        our_message_id = generate_message_id("tickflow.app")
+        message['Message-ID'] = our_message_id
+        
+        # Build threading headers using RFC 2822 Message-ID (not Gmail's internal ID)
+        original_message_id = ticket.get('email_rfc_message_id') or ticket.get('email_message_id', '')
+        original_references = ticket.get('email_references', '')
+        
+        if original_message_id:
+            threading_headers = build_threading_headers(
+                original_message_id=original_message_id,
+                original_references=original_references
+            )
+            
+            if threading_headers.get('In-Reply-To'):
+                message['In-Reply-To'] = threading_headers['In-Reply-To']
+            if threading_headers.get('References'):
+                message['References'] = threading_headers['References']
+        
+        # Attach plain text body
+        text_part = MIMEText(reply.body, 'plain', 'utf-8')
+        message.attach(text_part)
+        
+        # Also attach HTML version for better formatting
+        html_body = f"""
+        <html>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; line-height: 1.5; color: #333;">
+        {reply.body.replace(chr(10), '<br>')}
+        </body>
+        </html>
+        """
+        html_part = MIMEText(html_body, 'html', 'utf-8')
+        message.attach(html_part)
         
         raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
         
+        # Send with Gmail threadId for Gmail's internal threading
+        send_body = {'raw': raw_message}
+        if ticket.get('email_thread_id'):
+            send_body['threadId'] = ticket.get('email_thread_id')
+        
         send_result = service.users().messages().send(
             userId='me',
-            body={'raw': raw_message, 'threadId': ticket.get('email_thread_id')}
+            body=send_body
         ).execute()
         
         reply_doc["status"] = "sent"
         reply_doc["gmail_message_id"] = send_result.get('id')
+        reply_doc["our_message_id"] = our_message_id  # Store our Message-ID for future threading
         email_replies_collection.insert_one(reply_doc)
         
-        # Update ticket status
+        # Update ticket with our reply's Message-ID for future thread chain
         tickets_collection.update_one(
             {"ticket_id": ticket_id},
             {
                 "$set": {
                     "status": "waiting",
                     "updated_at": datetime.now(timezone.utc),
-                    "last_reply_at": datetime.now(timezone.utc)
+                    "last_reply_at": datetime.now(timezone.utc),
+                    "last_reply_message_id": our_message_id
+                },
+                "$push": {
+                    "email_thread_message_ids": our_message_id
                 }
             }
         )
         
-        logger.info(f"[EMAIL] Reply sent for ticket {ticket_id} to {reply.to_email}, Gmail ID: {send_result.get('id')}")
+        logger.info(f"[EMAIL] Reply sent for ticket {ticket_id} to {reply.to_email}, Gmail ID: {send_result.get('id')}, Message-ID: {our_message_id}")
         
         return {
             "status": "sent",
             "message": "Email sent successfully",
             "reply_id": reply_id,
-            "gmail_message_id": send_result.get('id')
+            "gmail_message_id": send_result.get('id'),
+            "message_id": our_message_id
         }
         
     except HTTPException:
