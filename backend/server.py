@@ -176,7 +176,7 @@ async def auto_sync_emails():
             acquired = await lock_adapter.acquire(lock_name, _instance_id, lock_ttl)
             
             if not acquired:
-                logger.debug(f"[EMAIL-SYNC] Another instance is syncing, skipping")
+                logger.debug("[EMAIL-SYNC] Another instance is syncing, skipping")
                 await asyncio.sleep(60)
                 continue
             
