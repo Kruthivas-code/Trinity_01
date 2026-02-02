@@ -278,10 +278,10 @@ const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick,
                         </span>
                       </div>
 
-                      {/* Description */}
-                      {ticket.description && (
+                      {/* Description/Preview */}
+                      {(ticket.description || ticket.email_preview || ticket.email_text) && (
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                          {stripHtml(ticket.description)}
+                          {getPreviewText(ticket)}
                         </p>
                       )}
 
