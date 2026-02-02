@@ -1,7 +1,7 @@
 [
   {
     "content": "P0: Add rate limiting to API endpoints",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "P0: Remove test login endpoint for production",
