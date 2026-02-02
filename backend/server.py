@@ -105,15 +105,10 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 
-# ==================== Production Configuration ====================
-IS_PRODUCTION = os.environ.get("ENVIRONMENT", "development").lower() == "production"
-
 app = FastAPI(
     title="Trinity API",
     description="Enterprise ticket management platform with real-time collaboration",
-    version="2.0.0",
-    docs_url=None if IS_PRODUCTION else "/docs",  # Disable docs in production
-    redoc_url=None if IS_PRODUCTION else "/redoc"
+    version="2.0.0"
 )
 
 # Add rate limiting to app
