@@ -5,6 +5,7 @@ import KanbanBoard from './KanbanBoard';
 import TicketDrawer from './TicketDrawer';
 import CreateTicketModal from './CreateTicketModal';
 import ImportModal from './ImportModal';
+import { useRealtime } from '../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -25,6 +26,8 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   
+  const { onTicketUpdate } = useRealtime();
+  
   // Enhanced filters
   const [filters, setFilters] = useState({
     priority: 'all',
@@ -36,6 +39,32 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   
   // Available tags from tickets
   const [availableTags, setAvailableTags] = useState([]);
+
+  // Subscribe to real-time ticket updates
+  useEffect(() => {
+    const unsubscribe = onTicketUpdate((data) => {
+      if (data.ticket) {
+        const ticket = data.ticket;
+        setTickets(prev => {
+          const existingIndex = prev.findIndex(t => t.ticket_id === ticket.ticket_id);
+          if (existingIndex >= 0) {
+            // Update existing ticket
+            const updated = [...prev];
+            updated[existingIndex] = { ...updated[existingIndex], ...ticket };
+            return updated;
+          } else {
+            // New ticket - add to list
+            return [ticket, ...prev];
+          }
+        });
+      } else if (data.ticket_id && data.deleted) {
+        // Ticket deleted - remove from list
+        setTickets(prev => prev.filter(t => t.ticket_id !== data.ticket_id));
+      }
+    });
+    
+    return unsubscribe;
+  }, [onTicketUpdate]);
 
   const fetchTickets = useCallback(async () => {
     try {
