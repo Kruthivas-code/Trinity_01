@@ -330,7 +330,7 @@ async def heartbeat(sid):
 
 # Broadcast functions for use from FastAPI endpoints
 async def broadcast_ticket_update(ticket_id: str, action: str, ticket_data: dict, updated_by: dict):
-    """Broadcast ticket update to all users viewing the ticket"""
+    """Broadcast ticket update to all users viewing the ticket and any ticket list"""
     global _pubsub_adapter
     
     room = f"ticket:{ticket_id}"
@@ -342,9 +342,12 @@ async def broadcast_ticket_update(ticket_id: str, action: str, ticket_data: dict
         'timestamp': datetime.now(timezone.utc).isoformat()
     }
     
-    # Broadcast locally
+    # Broadcast to specific ticket room
     await sio.emit('ticket:update', event_data, room=room)
+    # Broadcast to dashboard room
     await sio.emit('ticket:update', event_data, room='dashboard')
+    # Broadcast to ALL connected clients for list views (All Tickets, etc.)
+    await sio.emit('ticket:update', event_data)
     
     # Broadcast to other instances
     if _pubsub_adapter:
@@ -355,7 +358,7 @@ async def broadcast_ticket_update(ticket_id: str, action: str, ticket_data: dict
             'source': _get_instance_id()
         })
         await _pubsub_adapter.publish('ticket_updates', {
-            'room': 'dashboard',
+            'room': 'all',  # Broadcast to all instances
             'event': 'ticket:update',
             'data': event_data,
             'source': _get_instance_id()
