@@ -1,26 +1,54 @@
 [
   {
-    "content": "Phase 3A: Create navigation dropdown with ticket view submenus",
-    "status": "completed"
+    "content": "P0: Add rate limiting to API endpoints",
+    "status": "pending"
   },
   {
-    "content": "Phase 3A: Create Open Tickets view",
-    "status": "completed"
+    "content": "P0: Remove test login endpoint for production",
+    "status": "pending"
   },
   {
-    "content": "Phase 3A: Create Waiting on Customer view",
-    "status": "completed"
+    "content": "P0: Add authorization/role checks to sensitive endpoints",
+    "status": "pending"
   },
   {
-    "content": "Phase 3A: Create Closed Tickets view",
-    "status": "completed"
+    "content": "P0: Improve API key hashing (bcrypt)",
+    "status": "pending"
   },
   {
-    "content": "Phase 3A: Update routing for all ticket views",
-    "status": "completed"
+    "content": "P1: Add input validation with length limits to Pydantic models",
+    "status": "pending"
   },
   {
-    "content": "Phase 3A: Test navigation and ticket views",
+    "content": "P1: Add global exception handler",
+    "status": "pending"
+  },
+  {
+    "content": "P1: Add HTML sanitization for email content",
+    "status": "pending"
+  },
+  {
+    "content": "P1: Add structured logging with request IDs",
+    "status": "pending"
+  },
+  {
+    "content": "P1: Improve health check endpoint",
+    "status": "pending"
+  },
+  {
+    "content": "P1: Add environment validation at startup",
+    "status": "pending"
+  },
+  {
+    "content": "P2: Fix N+1 queries in team member lookups",
+    "status": "pending"
+  },
+  {
+    "content": "P2: Add pagination to list endpoints",
+    "status": "pending"
+  },
+  {
+    "content": "P2: Add WebSocket authentication improvements",
     "status": "pending"
   }
 ]
