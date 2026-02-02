@@ -94,13 +94,9 @@ def validate_environment():
 validate_environment()
 
 # ==================== Rate Limiting Setup ====================
-# Use Redis for rate limiting in production, in-memory for development
-RATE_LIMIT_STORAGE = os.environ.get("RATE_LIMIT_STORAGE", "memory://")
-
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["1000/hour", "100/minute"],
-    storage_uri=RATE_LIMIT_STORAGE,
     strategy="fixed-window"
 )
 
