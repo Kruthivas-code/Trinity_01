@@ -6,6 +6,7 @@ This module provides:
 - Email threading (Message-ID, In-Reply-To, References)
 - Preview generation
 - Safe HTML rendering preparation
+- Inline/CID image extraction and embedding
 """
 
 import re
@@ -15,7 +16,7 @@ from html import unescape
 from html.parser import HTMLParser
 from email.utils import parseaddr, formataddr, make_msgid
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, List
 import logging
 
 logger = logging.getLogger(__name__)
