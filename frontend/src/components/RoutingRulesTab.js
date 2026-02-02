@@ -238,7 +238,7 @@ const RoutingRulesTab = ({ teams, users }) => {
             className="flex-1 h-9 px-3 rounded-lg bg-background border border-border text-sm"
           >
             <option value="">Select user...</option>
-            {users.map(user => (
+            {Array.isArray(users) && users.map(user => (
               <option key={user.user_id} value={user.user_id}>
                 {user.name}
               </option>
