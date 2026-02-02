@@ -372,6 +372,24 @@ async def auto_sync_emails():
                         
                         email_replies_collection.insert_one(incoming_reply)
                         
+                        # Also add to messages_collection for conversation thread display
+                        customer_name = format_sender_name(headers['from'])
+                        message_doc = {
+                            "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+                            "ticket_id": existing_thread_ticket["ticket_id"],
+                            "type": "customer_reply",  # Customer reply type for conversation thread
+                            "content": content['text'][:50000] if content['text'] else "",
+                            "content_html": sanitized_html,
+                            "author_id": None,  # No user ID for customer
+                            "author_name": customer_name,
+                            "author_email": extract_email_addr(headers['from']),
+                            "email_reply_id": reply_id,  # Link to email_replies_collection
+                            "gmail_message_id": msg['id'],
+                            "email_date": headers['date'],
+                            "created_at": datetime.now(timezone.utc)
+                        }
+                        messages_collection.insert_one(message_doc)
+                        
                         # Update ticket status and timestamps
                         tickets_collection.update_one(
                             {"ticket_id": existing_thread_ticket["ticket_id"]},
@@ -682,6 +700,9 @@ B2C_EMAIL_DOMAINS = {
 # Phase 13: CSAT (Customer Satisfaction)
 csat_responses_collection = db.csat_responses  # CSAT ratings and feedback
 csat_tokens_collection = db.csat_tokens  # Secure tokens for email rating links
+
+# Email replies - for both outgoing and incoming email replies
+email_replies_collection = db.email_replies
 
 # Webhooks - Outbound event notifications
 webhooks_collection = db.webhooks  # Webhook subscriptions
