@@ -1393,7 +1393,9 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     # Find session in database
+    logger.info(f"[AUTH-DEBUG] Looking for session token: {token[:30]}...")
     session_doc = sessions_collection.find_one({"session_token": token}, {"_id": 0})
+    logger.info(f"[AUTH-DEBUG] Session found: {session_doc is not None}")
     if not session_doc:
         raise HTTPException(status_code=401, detail="Invalid session")
     
