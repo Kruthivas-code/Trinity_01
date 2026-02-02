@@ -1760,7 +1760,8 @@ async def health():
 
 # Emergent Auth endpoints
 @app.post("/api/auth/session")
-async def create_session(session_data: SessionCreate, response: Response):
+@limiter.limit("10/minute")  # Rate limit authentication attempts
+async def create_session(request: Request, session_data: SessionCreate, response: Response):
     """Exchange session_id for session_token"""
     try:
         logger.info(f"[AUTH] Received session_id: {session_data.session_id[:20]}...")
@@ -1988,7 +1989,9 @@ async def trigger_shift_assignment(current_user: dict = Depends(get_current_user
 # ==================== API Key Management ====================
 
 @app.post("/api/auth/api-keys")
+@limiter.limit("10/hour")  # Rate limit API key creation
 async def create_api_key(
+    request: Request,
     key_data: APIKeyCreate,
     current_user: dict = Depends(get_current_user)
 ):
@@ -2183,9 +2186,9 @@ async def update_team(
 @app.delete("/api/teams/{team_id}")
 async def delete_team(
     team_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_lead_or_admin)  # Require lead or admin
 ):
-    """Delete a team"""
+    """Delete a team - requires lead or admin role"""
     # Remove team_id from all users first
     users_collection.update_many(
         {"team_id": team_id},
@@ -2196,6 +2199,7 @@ async def delete_team(
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Team not found")
     
+    logger.info(f"Team {team_id} deleted by user {current_user.get('user_id')}")
     return {"message": "Team deleted"}
 
 @app.post("/api/teams/{team_id}/members")
@@ -2309,9 +2313,9 @@ async def update_user_role(
 @app.post("/api/shifts")
 async def create_shift(
     shift_data: ShiftCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_lead_or_admin)  # Require lead or admin
 ):
-    """Create a new shift for a team"""
+    """Create a new shift for a team - requires lead or admin role"""
     # Verify team exists
     team = teams_collection.find_one({"team_id": shift_data.team_id})
     if not team:
