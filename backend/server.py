@@ -8517,9 +8517,9 @@ async def export_full_data(
     routing_rules = list(routing_rules_collection.find({}, {"_id": 0}))
     export_data["routing_rules"] = [serialize_for_export(r) for r in routing_rules]
     
-    # Templates
-    templates = list(templates_collection.find({}, {"_id": 0}))
-    export_data["templates"] = [serialize_for_export(t) for t in templates]
+    # Canned Responses
+    canned_responses = list(canned_responses_collection.find({}, {"_id": 0}))
+    export_data["canned_responses"] = [serialize_for_export(cr) for cr in canned_responses]
     
     # Custom Fields
     custom_fields = list(custom_fields_collection.find({}, {"_id": 0}))
