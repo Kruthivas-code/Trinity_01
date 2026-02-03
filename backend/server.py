@@ -1591,7 +1591,33 @@ def evaluate_condition(ticket: dict, condition: dict) -> bool:
     
     return False
 
-def apply_routing_actions(ticket_id: str, actions: list) -> dict:
+def least_tickets_assign(team_id: str) -> Optional[str]:
+    """Get agent with least open tickets for assignment"""
+    team = teams_collection.find_one({"team_id": team_id})
+    if not team:
+        return None
+    
+    available = get_available_agents(team_id)
+    if not available:
+        return None
+    
+    # Find agent with fewest open tickets
+    best_agent = None
+    min_tickets = float('inf')
+    
+    for agent in available:
+        agent_id = agent["user_id"]
+        ticket_count = tickets_collection.count_documents({
+            "assignee_id": agent_id,
+            "status": {"$nin": ["resolved", "closed"]}
+        })
+        if ticket_count < min_tickets:
+            min_tickets = ticket_count
+            best_agent = agent_id
+    
+    return best_agent
+
+def apply_routing_actions(ticket_id: str, actions: list, assignment_method: str = "round_robin") -> dict:
     """Apply routing rule actions to a ticket"""
     updates = {}
     results = []
@@ -1603,6 +1629,22 @@ def apply_routing_actions(ticket_id: str, actions: list) -> dict:
         if action_type == "assign_team":
             updates["team_id"] = action_value
             results.append(f"Assigned to team {action_value}")
+            
+            # Auto-assign to agent based on assignment method
+            if assignment_method == "least_tickets":
+                assignee = least_tickets_assign(action_value)
+                method_label = "least tickets"
+            else:  # round_robin
+                assignee = round_robin_assign(action_value)
+                method_label = "round robin"
+            
+            if assignee:
+                updates["assignee_id"] = assignee
+                updates["assigned_at"] = datetime.now(timezone.utc)
+                agent = users_collection.find_one({"user_id": assignee}, {"name": 1})
+                agent_name = agent.get("name", assignee) if agent else assignee
+                results.append(f"Auto-assigned to {agent_name} ({method_label})")
+                
         elif action_type == "assign_user":
             updates["assignee_id"] = action_value
             updates["assigned_at"] = datetime.now(timezone.utc)
