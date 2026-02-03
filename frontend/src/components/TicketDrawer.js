@@ -1877,6 +1877,36 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 disabled={submitting}
               />
             )}
+            
+            {/* Attached Images Preview */}
+            {attachedImages.length > 0 && (
+              <div className="flex flex-wrap gap-2 px-3 py-2 bg-secondary/20 rounded-lg border border-border/30">
+                {attachedImages.map((img) => (
+                  <div 
+                    key={img.id} 
+                    className="relative group"
+                    data-testid={`attached-image-${img.id}`}
+                  >
+                    <img 
+                      src={img.url} 
+                      alt={img.name}
+                      className="h-16 w-auto rounded-md object-cover border border-border/40"
+                    />
+                    <button
+                      onClick={() => removeAttachedImage(img.id)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      title="Remove image"
+                      data-testid={`remove-image-${img.id}`}
+                    >
+                      <X size={12} />
+                    </button>
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] px-1 py-0.5 rounded-b-md truncate">
+                      {img.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
