@@ -663,6 +663,11 @@ async def create_mongodb_indexes():
         routing_rules_collection.create_index([("is_active", ASCENDING), ("priority", DESCENDING)], background=True)
         logger.info("[INDEXES] Created routing_rules collection indexes")
         
+        # SLA escalation rules indexes
+        sla_escalation_rules_collection.create_index("rule_id", unique=True, background=True)
+        sla_escalation_rules_collection.create_index([("is_active", ASCENDING), ("priority", DESCENDING)], background=True)
+        logger.info("[INDEXES] Created sla_escalation_rules collection indexes")
+        
         # Shifts indexes
         shifts_collection.create_index("shift_id", unique=True, background=True)
         shifts_collection.create_index([("team_id", ASCENDING)], background=True)
@@ -1774,6 +1779,179 @@ def run_routing_rules(ticket: dict) -> dict:
     
     return {"matched": False, "rule_id": None, "rule_name": None, "updates": {}, "results": []}
 
+# ==================== SLA Escalation Engine ====================
+
+def check_sla_escalations() -> dict:
+    """Check all open tickets against SLA escalation rules and apply actions"""
+    results = {"checked": 0, "escalated": 0, "details": []}
+    
+    # Get all active SLA escalation rules
+    rules = list(sla_escalation_rules_collection.find(
+        {"is_active": True},
+        {"_id": 0}
+    ).sort("priority", -1))
+    
+    if not rules:
+        return results
+    
+    # Get SLA settings
+    sla_settings = admin_settings_collection.find_one({"type": "sla_settings"}) or {}
+    default_first_response = sla_settings.get("default_first_response_hours", 4) * 60  # Convert to minutes
+    default_resolution = sla_settings.get("default_resolution_hours", 24) * 60  # Convert to minutes
+    
+    # Get priority-specific SLAs
+    priority_slas = sla_settings.get("priority_slas", {})
+    
+    # Get open tickets that haven't been escalated in the last 30 minutes (prevent spam)
+    thirty_mins_ago = datetime.now(timezone.utc) - timedelta(minutes=30)
+    open_tickets = list(tickets_collection.find({
+        "status": {"$nin": ["resolved", "closed"]},
+        "$or": [
+            {"last_sla_check": {"$exists": False}},
+            {"last_sla_check": {"$lt": thirty_mins_ago}}
+        ]
+    }, {"_id": 0}))
+    
+    results["checked"] = len(open_tickets)
+    
+    for ticket in open_tickets:
+        ticket_id = ticket.get("ticket_id")
+        priority = ticket.get("priority", "medium")
+        escalation_level = ticket.get("escalation_level", "L1")
+        created_at = ticket.get("created_at")
+        first_response_at = ticket.get("first_response_at")
+        
+        if not created_at:
+            continue
+        
+        # Make created_at timezone aware if it isn't
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        
+        now = datetime.now(timezone.utc)
+        
+        # Get SLA times for this priority
+        priority_sla = priority_slas.get(priority, {})
+        first_response_sla = priority_sla.get("first_response_minutes", default_first_response)
+        resolution_sla = priority_sla.get("resolution_minutes", default_resolution)
+        
+        # Calculate SLA metrics
+        minutes_since_created = (now - created_at).total_seconds() / 60
+        first_response_pct = (minutes_since_created / first_response_sla * 100) if first_response_sla > 0 else 0
+        resolution_pct = (minutes_since_created / resolution_sla * 100) if resolution_sla > 0 else 0
+        
+        # Calculate idle time (time since last update)
+        updated_at = ticket.get("updated_at", created_at)
+        if updated_at.tzinfo is None:
+            updated_at = updated_at.replace(tzinfo=timezone.utc)
+        idle_minutes = (now - updated_at).total_seconds() / 60
+        
+        # Check each rule
+        for rule in rules:
+            # Check filters
+            priority_filter = rule.get("priority_filter")
+            if priority_filter and priority not in priority_filter:
+                continue
+            
+            escalation_filter = rule.get("escalation_level_filter")
+            if escalation_filter and escalation_level not in escalation_filter:
+                continue
+            
+            trigger_type = rule.get("trigger_type")
+            threshold = rule.get("trigger_threshold", 80)
+            triggered = False
+            
+            # Check trigger conditions
+            if trigger_type == "first_response_warning" and not first_response_at:
+                triggered = first_response_pct >= threshold and first_response_pct < 100
+            elif trigger_type == "first_response_breach" and not first_response_at:
+                triggered = first_response_pct >= 100
+            elif trigger_type == "resolution_warning":
+                triggered = resolution_pct >= threshold and resolution_pct < 100
+            elif trigger_type == "resolution_breach":
+                triggered = resolution_pct >= 100
+            elif trigger_type == "idle_ticket":
+                triggered = idle_minutes >= threshold
+            
+            if triggered:
+                # Apply actions
+                actions = rule.get("actions", [])
+                action_results = apply_sla_escalation_actions(ticket_id, actions)
+                
+                results["escalated"] += 1
+                results["details"].append({
+                    "ticket_id": ticket_id,
+                    "rule_name": rule.get("name"),
+                    "trigger_type": trigger_type,
+                    "actions_applied": action_results
+                })
+                
+                # Mark ticket as checked
+                tickets_collection.update_one(
+                    {"ticket_id": ticket_id},
+                    {"$set": {"last_sla_check": now, "last_sla_rule": rule.get("rule_id")}}
+                )
+                
+                # Only apply first matching rule per ticket
+                break
+    
+    return results
+
+def apply_sla_escalation_actions(ticket_id: str, actions: list) -> list:
+    """Apply SLA escalation actions to a ticket"""
+    updates = {}
+    results = []
+    
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    if not ticket:
+        return results
+    
+    for action in actions:
+        action_type = action.get("type", "")
+        action_value = action.get("value")
+        
+        if action_type == "set_priority":
+            updates["priority"] = action_value
+            results.append(f"Set priority to {action_value}")
+        elif action_type == "escalate_level":
+            updates["escalation_level"] = action_value
+            results.append(f"Escalated to {action_value}")
+        elif action_type == "reassign_team":
+            updates["team_id"] = action_value
+            # Auto-assign using least tickets method
+            assignee = least_tickets_assign(action_value)
+            if assignee:
+                updates["assignee_id"] = assignee
+                results.append(f"Reassigned to team {action_value}")
+        elif action_type == "add_tag":
+            existing_tags = ticket.get("tags", [])
+            if action_value not in existing_tags:
+                updates["tags"] = existing_tags + [action_value]
+                results.append(f"Added tag {action_value}")
+        elif action_type == "notify_user":
+            # Create a notification/internal note
+            note_id = f"msg_{uuid.uuid4().hex[:12]}"
+            messages_collection.insert_one({
+                "message_id": note_id,
+                "ticket_id": ticket_id,
+                "type": "system",
+                "content": f"SLA Alert: {action.get('message', 'Ticket requires attention')}",
+                "author_id": "system",
+                "created_at": datetime.now(timezone.utc),
+                "mentions": [action_value] if action_value else []
+            })
+            results.append(f"Notified user {action_value}")
+    
+    if updates:
+        updates["updated_at"] = datetime.now(timezone.utc)
+        updates["sla_escalated_at"] = datetime.now(timezone.utc)
+        tickets_collection.update_one(
+            {"ticket_id": ticket_id},
+            {"$set": updates}
+        )
+    
+    return results
+
 async def get_api_key_user(api_key: str = Security(API_KEY_HEADER)) -> Optional[dict]:
     """Authenticate via API key - returns None if no key provided"""
     if not api_key:
@@ -2076,6 +2254,29 @@ class RoutingRuleUpdate(BaseModel):
     priority: Optional[int] = None
     is_active: Optional[bool] = None
     assignment_method: Optional[str] = None
+
+# ==================== SLA Escalation Rules Models ====================
+class SLAEscalationRuleCreate(BaseModel):
+    name: str
+    description: Optional[str] = ""
+    trigger_type: str  # first_response_warning, first_response_breach, resolution_warning, resolution_breach, idle_ticket
+    trigger_threshold: int  # percentage (80 = 80% of SLA elapsed) or minutes for idle
+    priority_filter: Optional[List[str]] = None  # Apply only to these priorities, None = all
+    escalation_level_filter: Optional[List[str]] = None  # Apply only to these levels, None = all
+    actions: List[Dict[str, Any]]  # Actions to take: set_priority, escalate_level, reassign_team, notify_user, add_tag
+    priority: int = 0  # Higher priority rules run first
+    is_active: bool = True
+
+class SLAEscalationRuleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    trigger_type: Optional[str] = None
+    trigger_threshold: Optional[int] = None
+    priority_filter: Optional[List[str]] = None
+    escalation_level_filter: Optional[List[str]] = None
+    actions: Optional[List[Dict[str, Any]]] = None
+    priority: Optional[int] = None
+    is_active: Optional[bool] = None
 
 # ==================== Role-Based Authorization ====================
 VALID_ROLES = ["agent", "lead", "admin"]
@@ -5626,6 +5827,99 @@ async def route_ticket(
         "ticket": serialize_doc(updated_ticket),
         "routing_result": result
     }
+
+# ==================== SLA Escalation Rules Endpoints ====================
+
+@app.get("/api/admin/sla-escalation-rules")
+async def get_sla_escalation_rules(current_user: dict = Depends(get_current_user)):
+    """Get all SLA escalation rules"""
+    rules = list(sla_escalation_rules_collection.find({}, {"_id": 0}).sort("priority", -1))
+    return [serialize_doc(r) for r in rules]
+
+@app.post("/api/admin/sla-escalation-rules")
+async def create_sla_escalation_rule(
+    rule_data: SLAEscalationRuleCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new SLA escalation rule"""
+    rule_id = f"sla_rule_{uuid.uuid4().hex[:12]}"
+    
+    rule_doc = {
+        "rule_id": rule_id,
+        "name": rule_data.name,
+        "description": rule_data.description,
+        "trigger_type": rule_data.trigger_type,
+        "trigger_threshold": rule_data.trigger_threshold,
+        "priority_filter": rule_data.priority_filter,
+        "escalation_level_filter": rule_data.escalation_level_filter,
+        "actions": rule_data.actions,
+        "priority": rule_data.priority,
+        "is_active": rule_data.is_active,
+        "created_by": current_user["user_id"],
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    
+    sla_escalation_rules_collection.insert_one(rule_doc)
+    return serialize_doc(rule_doc)
+
+@app.put("/api/admin/sla-escalation-rules/{rule_id}")
+async def update_sla_escalation_rule(
+    rule_id: str,
+    rule_data: SLAEscalationRuleUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update an SLA escalation rule"""
+    update_data = {"updated_at": datetime.now(timezone.utc)}
+    
+    if rule_data.name is not None:
+        update_data["name"] = rule_data.name
+    if rule_data.description is not None:
+        update_data["description"] = rule_data.description
+    if rule_data.trigger_type is not None:
+        update_data["trigger_type"] = rule_data.trigger_type
+    if rule_data.trigger_threshold is not None:
+        update_data["trigger_threshold"] = rule_data.trigger_threshold
+    if rule_data.priority_filter is not None:
+        update_data["priority_filter"] = rule_data.priority_filter
+    if rule_data.escalation_level_filter is not None:
+        update_data["escalation_level_filter"] = rule_data.escalation_level_filter
+    if rule_data.actions is not None:
+        update_data["actions"] = rule_data.actions
+    if rule_data.priority is not None:
+        update_data["priority"] = rule_data.priority
+    if rule_data.is_active is not None:
+        update_data["is_active"] = rule_data.is_active
+    
+    result = sla_escalation_rules_collection.update_one(
+        {"rule_id": rule_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    
+    rule = sla_escalation_rules_collection.find_one({"rule_id": rule_id}, {"_id": 0})
+    return serialize_doc(rule)
+
+@app.delete("/api/admin/sla-escalation-rules/{rule_id}")
+async def delete_sla_escalation_rule(
+    rule_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete an SLA escalation rule"""
+    result = sla_escalation_rules_collection.delete_one({"rule_id": rule_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    
+    return {"message": "Rule deleted successfully"}
+
+@app.post("/api/admin/sla-escalation-rules/check")
+async def run_sla_check(current_user: dict = Depends(get_current_user)):
+    """Manually trigger SLA escalation check on all open tickets"""
+    results = check_sla_escalations()
+    return results
 
 # ==================== Conversation History Endpoints ====================
 

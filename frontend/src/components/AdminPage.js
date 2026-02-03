@@ -3,9 +3,10 @@ import {
   Settings, Plus, Trash2, Save, X, ChevronDown, ChevronRight,
   Type, Hash, Calendar, ToggleLeft, List, Building, User, Ticket,
   Loader2, GripVertical, Clock, Users, UserPlus, Zap, Download,
-  FileJson, FileSpreadsheet, Database, Filter, CheckCircle2
+  FileJson, FileSpreadsheet, Database, Filter, CheckCircle2, AlertTriangle
 } from 'lucide-react';
 import RoutingRulesTab from './RoutingRulesTab';
+import SLAEscalationTab from './SLAEscalationTab';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -729,6 +730,17 @@ const AdminPage = ({ user }) => {
                 Routing Rules
               </button>
               <button
+                onClick={() => setActiveTab('sla-escalation')}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  activeTab === 'sla-escalation'
+                    ? 'bg-primary/20 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+              >
+                <AlertTriangle size={16} />
+                SLA Escalation
+              </button>
+              <button
                 onClick={() => setActiveTab('shifts')}
                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                   activeTab === 'shifts'
@@ -884,6 +896,11 @@ const AdminPage = ({ user }) => {
             {/* Routing Rules Tab */}
             {activeTab === 'routing' && (
               <RoutingRulesTab teams={teams} users={allUsers} />
+            )}
+
+            {/* SLA Escalation Tab */}
+            {activeTab === 'sla-escalation' && (
+              <SLAEscalationTab teams={teams} users={allUsers} />
             )}
 
             {/* Shifts Tab */}
