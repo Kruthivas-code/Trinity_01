@@ -1,22 +1,22 @@
 [
   {
     "content": "Remove title/description from condition fields (frontend + backend)",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Add OR condition logic with condition groups",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Add workload balancing (least_tickets) alongside round-robin",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Add customer LTV as condition field with numeric operators",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Create SLA escalation rules system",
-    "status": "pending"
+    "status": "in_progress"
   }
 ]
