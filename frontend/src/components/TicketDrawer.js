@@ -7,7 +7,8 @@ import {
   Clock, ArrowUpCircle, UserCheck, AtSign, Copy, Printer,
   BellOff, Merge, ExternalLink, Split, Link, FileText, 
   Tag, Bookmark, Download, UserPlus, Scissors, MessageSquareHeart,
-  GitMerge, Filter, Unlink, MessageCircle, Activity, MessageSquare
+  GitMerge, Filter, Unlink, MessageCircle, Activity, MessageSquare,
+  ImagePlus, Paperclip
 } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import MentionInput, { renderTextWithMentions } from './MentionInput';
@@ -15,6 +16,7 @@ import ActivityTimeline from './ActivityTimeline';
 import EmailViewer from './EmailViewer';
 import CannedResponsePicker from './CannedResponsePicker';
 import { useRealtime } from '../contexts/RealtimeContext';
+import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
