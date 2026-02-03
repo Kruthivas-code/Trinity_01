@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   MessageSquare, Search, Globe, User, X, Eye, Command, Slash,
   ChevronRight, Keyboard, ArrowUp, ArrowDown, CornerDownLeft
