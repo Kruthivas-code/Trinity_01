@@ -200,7 +200,7 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg mx-4 glass rounded-xl border border-border/60 shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-xl mx-4 glass rounded-xl border border-border/60 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-border/60 bg-secondary/20">
           <div className="flex items-center gap-2">
