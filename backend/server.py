@@ -1804,6 +1804,15 @@ def check_sla_escalations() -> dict:
     # Get priority-specific SLAs
     priority_slas = sla_settings.get("priority_slas", {})
     
+    # Get business hours settings
+    business_hours_only = sla_settings.get("business_hours_only", False)
+    business_hours = sla_settings.get("business_hours", {
+        "start": "09:00",
+        "end": "18:00",
+        "days": [1, 2, 3, 4, 5]
+    })
+    holidays = sla_settings.get("holidays", [])
+    
     # Get open tickets that haven't been escalated in the last 30 minutes (prevent spam)
     thirty_mins_ago = datetime.now(timezone.utc) - timedelta(minutes=30)
     open_tickets = list(tickets_collection.find({
@@ -1837,8 +1846,15 @@ def check_sla_escalations() -> dict:
         first_response_sla = priority_sla.get("first_response_minutes", default_first_response)
         resolution_sla = priority_sla.get("resolution_minutes", default_resolution)
         
-        # Calculate SLA metrics
-        minutes_since_created = (now - created_at).total_seconds() / 60
+        # Calculate SLA metrics - use business hours calculation if enabled
+        if business_hours_only:
+            minutes_since_created = calculate_business_minutes(
+                created_at, now, business_hours, holidays
+            )
+        else:
+            # 24x7 mode - simple calculation
+            minutes_since_created = (now - created_at).total_seconds() / 60
+        
         first_response_pct = (minutes_since_created / first_response_sla * 100) if first_response_sla > 0 else 0
         resolution_pct = (minutes_since_created / resolution_sla * 100) if resolution_sla > 0 else 0
         
