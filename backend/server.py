@@ -5906,6 +5906,92 @@ async def route_ticket(
         "routing_result": result
     }
 
+# ==================== SLA Policies Endpoints ====================
+
+class SLAPolicyPriority(BaseModel):
+    first_response_minutes: int = Field(ge=1, description="First response time in minutes")
+    resolution_minutes: int = Field(ge=1, description="Resolution time in minutes")
+
+class SLAPoliciesUpdate(BaseModel):
+    default_first_response_hours: Optional[int] = Field(None, ge=1, le=168, description="Default first response hours (1-168)")
+    default_resolution_hours: Optional[int] = Field(None, ge=1, le=720, description="Default resolution hours (1-720)")
+    priority_slas: Optional[Dict[str, SLAPolicyPriority]] = None
+    business_hours_only: Optional[bool] = None
+    business_hours: Optional[Dict[str, Any]] = None
+    holidays: Optional[List[str]] = None
+
+@app.get("/api/admin/sla-policies")
+async def get_sla_policies(current_user: dict = Depends(get_current_user)):
+    """Get SLA policy settings"""
+    settings = admin_settings_collection.find_one({"type": "sla_settings"}) or {}
+    
+    # Return default structure if not set
+    return {
+        "default_first_response_hours": settings.get("default_first_response_hours", 4),
+        "default_resolution_hours": settings.get("default_resolution_hours", 24),
+        "priority_slas": settings.get("priority_slas", {
+            "low": {"first_response_minutes": 480, "resolution_minutes": 2880},      # 8h / 48h
+            "medium": {"first_response_minutes": 240, "resolution_minutes": 1440},   # 4h / 24h
+            "high": {"first_response_minutes": 60, "resolution_minutes": 480},       # 1h / 8h
+            "urgent": {"first_response_minutes": 15, "resolution_minutes": 120}      # 15m / 2h
+        }),
+        "business_hours_only": settings.get("business_hours_only", False),
+        "business_hours": settings.get("business_hours", {
+            "start": "09:00",
+            "end": "18:00",
+            "days": [1, 2, 3, 4, 5]  # Mon-Fri
+        }),
+        "holidays": settings.get("holidays", [])
+    }
+
+@app.put("/api/admin/sla-policies")
+async def update_sla_policies(
+    data: SLAPoliciesUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update SLA policy settings"""
+    # Get existing settings
+    existing = admin_settings_collection.find_one({"type": "sla_settings"}) or {"type": "sla_settings"}
+    
+    # Update only provided fields
+    update_data = {"updated_at": datetime.now(timezone.utc)}
+    
+    if data.default_first_response_hours is not None:
+        update_data["default_first_response_hours"] = data.default_first_response_hours
+    
+    if data.default_resolution_hours is not None:
+        update_data["default_resolution_hours"] = data.default_resolution_hours
+    
+    if data.priority_slas is not None:
+        # Convert Pydantic models to dicts
+        update_data["priority_slas"] = {
+            k: v.dict() if hasattr(v, 'dict') else v 
+            for k, v in data.priority_slas.items()
+        }
+    
+    if data.business_hours_only is not None:
+        update_data["business_hours_only"] = data.business_hours_only
+    
+    if data.business_hours is not None:
+        update_data["business_hours"] = data.business_hours
+    
+    if data.holidays is not None:
+        update_data["holidays"] = data.holidays
+    
+    # Upsert the settings
+    admin_settings_collection.update_one(
+        {"type": "sla_settings"},
+        {"$set": update_data},
+        upsert=True
+    )
+    
+    # Return updated settings
+    updated = admin_settings_collection.find_one({"type": "sla_settings"}, {"_id": 0})
+    return {
+        "message": "SLA policies updated successfully",
+        "settings": updated
+    }
+
 # ==================== SLA Escalation Rules Endpoints ====================
 
 @app.get("/api/admin/sla-escalation-rules")
