@@ -905,9 +905,21 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                        activeElement?.tagName === 'TEXTAREA' ||
                        activeElement?.tagName === 'SELECT';
       
+      // Cmd/Ctrl + / - Open canned responses picker (works even when typing)
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+        e.preventDefault();
+        setShowCannedPicker(true);
+        return;
+      }
+      
       // Escape - close drawer/modals (works even when typing)
       if (e.key === 'Escape') {
         e.preventDefault();
+        // Close canned picker first
+        if (showCannedPicker) {
+          setShowCannedPicker(false);
+          return;
+        }
         // Close modals first if any are open
         if (showMergeModal) {
           setShowMergeModal(false);
@@ -1000,7 +1012,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, showMergeModal, showLinkModal, showSplitModal, showFeatureRequestModal, showMoreMenu, showAssignDropdown, showTagDropdown, onClose, inputText]);
+  }, [isOpen, showCannedPicker, showMergeModal, showLinkModal, showSplitModal, showFeatureRequestModal, showMoreMenu, showAssignDropdown, showTagDropdown, onClose, inputText]);
 
   const fetchNotes = async (ticketId) => {
     setLoadingNotes(true);
