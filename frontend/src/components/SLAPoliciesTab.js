@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Clock, Save, Loader2, AlertCircle, CheckCircle2, 
   Timer, Zap, AlertTriangle, Flame, Calendar,
-  Sun, RefreshCw, Info
+  Sun, RefreshCw, Info, Settings
 } from 'lucide-react';
 import { toast } from 'sonner';
 
