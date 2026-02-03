@@ -39,10 +39,15 @@ const RichTextEditor = ({
     }
   }, [value]);
 
-  // Sync external value changes (e.g., clearing after submit)
+  // Sync external value changes (e.g., clearing after submit or inserting canned responses)
   useEffect(() => {
-    if (editorRef.current && value === '' && !isInitialMount.current) {
-      editorRef.current.innerHTML = '';
+    if (editorRef.current && !isInitialMount.current) {
+      // Only update if the value is different (to avoid cursor jumping)
+      const currentContent = editorRef.current.innerHTML;
+      const currentClean = currentContent === '<br>' ? '' : currentContent;
+      if (value !== currentClean) {
+        editorRef.current.innerHTML = value || '';
+      }
     }
   }, [value]);
 
