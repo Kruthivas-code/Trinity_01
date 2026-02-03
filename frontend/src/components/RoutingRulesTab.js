@@ -521,54 +521,115 @@ const RoutingRulesTab = ({ teams, users }) => {
                   />
                 </div>
 
-                {/* Conditions */}
+                {/* Condition Groups (OR between groups, AND within group) */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-medium">Conditions (all must match)</label>
+                    <div>
+                      <label className="text-sm font-medium">Conditions</label>
+                      <p className="text-xs text-muted-foreground">AND within groups, OR between groups</p>
+                    </div>
                     <button
-                      onClick={addCondition}
+                      onClick={addConditionGroup}
                       className="text-xs text-primary hover:underline flex items-center gap-1"
                     >
-                      <Plus size={12} /> Add condition
+                      <Plus size={12} /> Add OR group
                     </button>
                   </div>
-                  <div className="space-y-2">
-                    {formData.conditions.map((condition, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <select
-                          value={condition.field}
-                          onChange={(e) => updateCondition(idx, 'field', e.target.value)}
-                          className="h-9 px-3 rounded-lg bg-background border border-border text-sm"
-                        >
-                          {CONDITION_FIELDS.map(f => (
-                            <option key={f.value} value={f.value}>{f.label}</option>
-                          ))}
-                        </select>
-                        <select
-                          value={condition.operator}
-                          onChange={(e) => updateCondition(idx, 'operator', e.target.value)}
-                          className="h-9 px-3 rounded-lg bg-background border border-border text-sm"
-                        >
-                          {CONDITION_OPERATORS.map(o => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                          ))}
-                        </select>
-                        <input
-                          type="text"
-                          value={condition.value}
-                          onChange={(e) => updateCondition(idx, 'value', e.target.value)}
-                          className="flex-1 h-9 px-3 rounded-lg bg-background border border-border text-sm"
-                          placeholder="Value..."
-                        />
-                        {formData.conditions.length > 1 && (
-                          <button
-                            onClick={() => removeCondition(idx)}
-                            className="p-2 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
-                          >
-                            <X size={14} />
-                          </button>
+                  <div className="space-y-4">
+                    {formData.condition_groups.map((group, groupIdx) => (
+                      <div key={groupIdx} className="relative">
+                        {groupIdx > 0 && (
+                          <div className="flex items-center justify-center -mt-2 mb-2">
+                            <span className="px-3 py-1 text-xs font-medium bg-amber-500/20 text-amber-400 rounded-full">
+                              OR
+                            </span>
+                          </div>
                         )}
+                        <div className="p-3 rounded-lg border border-border/50 bg-secondary/20 space-y-2">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-muted-foreground font-medium">
+                              Group {groupIdx + 1} {group.length > 1 && '(all must match)'}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => addConditionToGroup(groupIdx)}
+                                className="text-xs text-primary hover:underline flex items-center gap-1"
+                              >
+                                <Plus size={10} /> AND
+                              </button>
+                              {formData.condition_groups.length > 1 && (
+                                <button
+                                  onClick={() => removeConditionGroup(groupIdx)}
+                                  className="text-xs text-destructive hover:underline"
+                                >
+                                  Remove group
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {group.map((condition, condIdx) => (
+                            <div key={condIdx} className="flex items-center gap-2">
+                              {condIdx > 0 && (
+                                <span className="text-xs text-muted-foreground w-8">AND</span>
+                              )}
+                              <select
+                                value={condition.field}
+                                onChange={(e) => updateConditionInGroup(groupIdx, condIdx, 'field', e.target.value)}
+                                className="h-9 px-3 rounded-lg bg-background border border-border text-sm"
+                              >
+                                {CONDITION_FIELDS.map(f => (
+                                  <option key={f.value} value={f.value}>{f.label}</option>
+                                ))}
+                              </select>
+                              <select
+                                value={condition.operator}
+                                onChange={(e) => updateConditionInGroup(groupIdx, condIdx, 'operator', e.target.value)}
+                                className="h-9 px-3 rounded-lg bg-background border border-border text-sm"
+                              >
+                                {CONDITION_OPERATORS.map(o => (
+                                  <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                              </select>
+                              <input
+                                type={CONDITION_FIELDS.find(f => f.value === condition.field)?.type === 'number' ? 'number' : 'text'}
+                                value={condition.value}
+                                onChange={(e) => updateConditionInGroup(groupIdx, condIdx, 'value', e.target.value)}
+                                className="flex-1 h-9 px-3 rounded-lg bg-background border border-border text-sm"
+                                placeholder="Value..."
+                              />
+                              {group.length > 1 && (
+                                <button
+                                  onClick={() => removeConditionFromGroup(groupIdx, condIdx)}
+                                  className="p-2 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                                >
+                                  <X size={14} />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Assignment Method */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Assignment Method</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {ASSIGNMENT_METHODS.map(method => (
+                      <button
+                        key={method.value}
+                        onClick={() => setFormData({ ...formData, assignment_method: method.value })}
+                        className={`p-3 rounded-lg border text-left transition-colors ${
+                          formData.assignment_method === method.value
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="font-medium text-sm">{method.label}</div>
+                        <div className="text-xs text-muted-foreground">{method.description}</div>
+                      </button>
                     ))}
                   </div>
                 </div>
