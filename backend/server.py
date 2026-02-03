@@ -5527,14 +5527,19 @@ async def update_routing_rule(
         update_data["name"] = rule_data.name
     if rule_data.description is not None:
         update_data["description"] = rule_data.description
-    if rule_data.conditions is not None:
-        update_data["conditions"] = rule_data.conditions
+    if rule_data.condition_groups is not None:
+        update_data["condition_groups"] = rule_data.condition_groups
+    elif rule_data.conditions is not None:
+        # Legacy support: convert to condition_groups
+        update_data["condition_groups"] = [rule_data.conditions]
     if rule_data.actions is not None:
         update_data["actions"] = rule_data.actions
     if rule_data.priority is not None:
         update_data["priority"] = rule_data.priority
     if rule_data.is_active is not None:
         update_data["is_active"] = rule_data.is_active
+    if rule_data.assignment_method is not None:
+        update_data["assignment_method"] = rule_data.assignment_method
     
     result = routing_rules_collection.update_one(
         {"rule_id": rule_id},
