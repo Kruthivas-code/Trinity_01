@@ -12,10 +12,9 @@ const CONDITION_FIELDS = [
   { value: 'tags', label: 'Tags', type: 'text' },
   { value: 'customer_email', label: 'Customer Email', type: 'text' },
   { value: 'domain', label: 'Email Domain', type: 'text' },
-  { value: 'title', label: 'Title', type: 'text' },
-  { value: 'description', label: 'Description', type: 'text' },
   { value: 'source', label: 'Source', type: 'select', options: ['manual', 'email', 'api'] },
-  { value: 'status', label: 'Status', type: 'select', options: ['todo', 'in_progress', 'waiting', 'review', 'resolved'] }
+  { value: 'status', label: 'Status', type: 'select', options: ['todo', 'in_progress', 'waiting', 'review', 'resolved'] },
+  { value: 'customer_ltv', label: 'Customer Lifetime Value', type: 'number' }
 ];
 
 const CONDITION_OPERATORS = [
@@ -28,7 +27,16 @@ const CONDITION_OPERATORS = [
   { value: 'tag_includes', label: 'has tag' },
   { value: 'tag_excludes', label: 'does not have tag' },
   { value: 'exists', label: 'exists' },
-  { value: 'not_exists', label: 'does not exist' }
+  { value: 'not_exists', label: 'does not exist' },
+  { value: 'greater_than', label: 'greater than' },
+  { value: 'less_than', label: 'less than' },
+  { value: 'greater_or_equal', label: 'greater or equal' },
+  { value: 'less_or_equal', label: 'less or equal' }
+];
+
+const ASSIGNMENT_METHODS = [
+  { value: 'round_robin', label: 'Round Robin', description: 'Assign in rotation order' },
+  { value: 'least_tickets', label: 'Least Tickets', description: 'Assign to agent with fewest open tickets' }
 ];
 
 const ACTION_TYPES = [
@@ -53,8 +61,9 @@ const RoutingRulesTab = ({ teams, users }) => {
     description: '',
     priority: 0,
     is_active: true,
-    conditions: [{ field: 'priority', operator: 'equals', value: '' }],
-    actions: [{ type: 'assign_team', value: '' }]
+    condition_groups: [[{ field: 'priority', operator: 'equals', value: '' }]], // Array of groups (OR between groups, AND within group)
+    actions: [{ type: 'assign_team', value: '' }],
+    assignment_method: 'round_robin' // round_robin or least_tickets
   });
 
   useEffect(() => {
@@ -146,43 +155,76 @@ const RoutingRulesTab = ({ teams, users }) => {
       description: '',
       priority: 0,
       is_active: true,
-      conditions: [{ field: 'priority', operator: 'equals', value: '' }],
-      actions: [{ type: 'assign_team', value: '' }]
+      condition_groups: [[{ field: 'priority', operator: 'equals', value: '' }]],
+      actions: [{ type: 'assign_team', value: '' }],
+      assignment_method: 'round_robin'
     });
   };
 
   const openEditModal = (rule) => {
     setEditingRule(rule);
+    // Handle both old format (conditions) and new format (condition_groups)
+    let conditionGroups = rule.condition_groups;
+    if (!conditionGroups && rule.conditions) {
+      // Migrate old format: single group with all conditions
+      conditionGroups = [rule.conditions];
+    }
+    if (!conditionGroups || conditionGroups.length === 0) {
+      conditionGroups = [[{ field: 'priority', operator: 'equals', value: '' }]];
+    }
+    
     setFormData({
       name: rule.name,
       description: rule.description || '',
       priority: rule.priority || 0,
       is_active: rule.is_active,
-      conditions: rule.conditions || [{ field: 'priority', operator: 'equals', value: '' }],
-      actions: rule.actions || [{ type: 'assign_team', value: '' }]
+      condition_groups: conditionGroups,
+      actions: rule.actions || [{ type: 'assign_team', value: '' }],
+      assignment_method: rule.assignment_method || 'round_robin'
     });
     setShowCreateModal(true);
   };
 
-  const addCondition = () => {
+  // Condition group management (OR between groups, AND within group)
+  const addConditionGroup = () => {
     setFormData(prev => ({
       ...prev,
-      conditions: [...prev.conditions, { field: 'priority', operator: 'equals', value: '' }]
+      condition_groups: [...prev.condition_groups, [{ field: 'priority', operator: 'equals', value: '' }]]
     }));
   };
 
-  const removeCondition = (index) => {
+  const removeConditionGroup = (groupIndex) => {
     setFormData(prev => ({
       ...prev,
-      conditions: prev.conditions.filter((_, i) => i !== index)
+      condition_groups: prev.condition_groups.filter((_, i) => i !== groupIndex)
     }));
   };
 
-  const updateCondition = (index, field, value) => {
+  const addConditionToGroup = (groupIndex) => {
     setFormData(prev => ({
       ...prev,
-      conditions: prev.conditions.map((c, i) => 
-        i === index ? { ...c, [field]: value } : c
+      condition_groups: prev.condition_groups.map((group, i) => 
+        i === groupIndex ? [...group, { field: 'priority', operator: 'equals', value: '' }] : group
+      )
+    }));
+  };
+
+  const removeConditionFromGroup = (groupIndex, conditionIndex) => {
+    setFormData(prev => ({
+      ...prev,
+      condition_groups: prev.condition_groups.map((group, i) => 
+        i === groupIndex ? group.filter((_, ci) => ci !== conditionIndex) : group
+      ).filter(group => group.length > 0) // Remove empty groups
+    }));
+  };
+
+  const updateConditionInGroup = (groupIndex, conditionIndex, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      condition_groups: prev.condition_groups.map((group, gi) => 
+        gi === groupIndex 
+          ? group.map((c, ci) => ci === conditionIndex ? { ...c, [field]: value } : c)
+          : group
       )
     }));
   };

@@ -1,30 +1,22 @@
 [
   {
-    "content": "Test API error handling - malformed requests, missing fields, invalid data types",
-    "status": "completed"
+    "content": "Remove title/description from condition fields (frontend + backend)",
+    "status": "in_progress"
   },
   {
-    "content": "Test authentication edge cases - invalid tokens, expired tokens, missing auth",
-    "status": "completed"
+    "content": "Add OR condition logic with condition groups",
+    "status": "pending"
   },
   {
-    "content": "Test input validation - XSS attempts, SQL injection, oversized payloads",
-    "status": "completed"
+    "content": "Add workload balancing (least_tickets) alongside round-robin",
+    "status": "pending"
   },
   {
-    "content": "Test rate limiting - verify limits are enforced",
-    "status": "completed"
+    "content": "Add customer LTV as condition field with numeric operators",
+    "status": "pending"
   },
   {
-    "content": "Test WebSocket stability - connection handling, disconnection, reconnection",
-    "status": "completed"
-  },
-  {
-    "content": "Test concurrent requests - race conditions, data consistency",
-    "status": "completed"
-  },
-  {
-    "content": "Test database operations - connection handling, query errors",
-    "status": "completed"
+    "content": "Create SLA escalation rules system",
+    "status": "pending"
   }
 ]
