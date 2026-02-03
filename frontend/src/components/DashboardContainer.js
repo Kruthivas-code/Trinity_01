@@ -13,7 +13,6 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [tickets, setTickets] = useState([]);
-  const [mentionedTickets, setMentionedTickets] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -22,7 +21,6 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [analytics, setAnalytics] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
-  const [viewMode, setViewMode] = useState('assigned'); // 'assigned' | 'mentioned' | 'all'
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
   
