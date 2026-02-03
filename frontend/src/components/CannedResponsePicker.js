@@ -652,5 +652,5 @@ export const useCannedResponseAutocomplete = (ticket, user) => {
   };
 };
 
-export { replacePlaceholders };
+export { replacePlaceholders, textToHtml };
 export default CannedResponsePicker;

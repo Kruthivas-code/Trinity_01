@@ -419,7 +419,7 @@ const RoutingRulesTab = ({ teams, users }) => {
                             <React.Fragment key={ci}>
                               {ci > 0 && <span className="text-muted-foreground">+</span>}
                               <span className="px-2 py-1 rounded bg-secondary/50 text-foreground/80">
-                                {c.field} {c.operator} "{c.value}"
+                                {c.field} {c.operator} &quot;{c.value}&quot;
                               </span>
                             </React.Fragment>
                           ))}
