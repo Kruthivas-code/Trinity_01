@@ -284,6 +284,11 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
+  // Image attachments
+  const [attachedImages, setAttachedImages] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef(null);
+  
   // Canned responses picker
   const [showCannedPicker, setShowCannedPicker] = useState(false);
   
