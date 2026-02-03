@@ -1681,8 +1681,16 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               
               <div className="flex-1" />
               
-              <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
-                <Command size={10} />⌘+Enter to send
+              <span className="text-[10px] text-muted-foreground/50 flex items-center gap-2">
+                <span className="flex items-center gap-0.5">
+                  <Command size={9} />/
+                </span>
+                <span className="opacity-60">canned</span>
+                <span className="opacity-40">|</span>
+                <span className="flex items-center gap-0.5">
+                  <Command size={9} />↵
+                </span>
+                <span className="opacity-60">send</span>
               </span>
               
               <button
