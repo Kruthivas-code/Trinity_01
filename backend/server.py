@@ -766,6 +766,9 @@ csat_tokens_collection = db.csat_tokens  # Secure tokens for email rating links
 # Email replies - for both outgoing and incoming email replies
 email_replies_collection = db.email_replies
 
+# Canned responses - pre-written message templates
+canned_responses_collection = db.canned_responses
+
 # Webhooks - Outbound event notifications
 webhooks_collection = db.webhooks  # Webhook subscriptions
 webhook_logs_collection = db.webhook_logs  # Delivery logs
