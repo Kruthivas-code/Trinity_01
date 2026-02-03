@@ -407,7 +407,7 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
             </div>
 
             {/* Footer with keyboard hints */}
-            <div className="p-2 border-t border-border/60 bg-secondary/10">
+            <div className="p-2 border-t border-border/60 bg-secondary/10 shrink-0">
               <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <kbd className="px-1 py-0.5 bg-secondary rounded text-[9px]"><ArrowUp size={9} /></kbd>
@@ -429,6 +429,9 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
       </div>
     </div>
   );
+
+  // Use portal to render at document body level
+  return createPortal(modalContent, document.body);
 };
 
 /**
