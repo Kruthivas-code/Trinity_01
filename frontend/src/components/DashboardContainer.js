@@ -247,16 +247,6 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
         return ticket;
       });
     });
-    
-    // Also update mentioned tickets if needed
-    setMentionedTickets(prevTickets => {
-      return prevTickets.map(ticket => {
-        if (ticket.id === ticketId) {
-          return { ...ticket, status: newStatus, order: newOrder };
-        }
-        return ticket;
-      });
-    });
 
     try {
       const response = await fetch(`${BACKEND_URL}/api/tickets/reorder`, {
