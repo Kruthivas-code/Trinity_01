@@ -2048,29 +2048,33 @@ class TicketEscalate(BaseModel):
 
 # Phase 5: Routing Rule Models
 class RoutingRuleCondition(BaseModel):
-    field: str  # priority, tags, customer_email, escalation_level, title, description
-    operator: str  # equals, contains, starts_with, ends_with, in, not_in, greater_than, less_than
+    field: str  # priority, tags, customer_email, escalation_level, domain, source, status, customer_ltv
+    operator: str  # equals, contains, starts_with, ends_with, in, not_in, greater_than, less_than, etc.
     value: Any  # The value to compare against
 
 class RoutingRuleAction(BaseModel):
-    type: str  # assign_team, assign_user, set_priority, set_escalation, add_tag
-    value: str  # team_id, user_id, priority value, escalation level, or tag name
+    type: str  # assign_team, assign_user, set_priority, set_escalation, add_tag, set_status
+    value: str  # team_id, user_id, priority value, escalation level, tag name, or status
 
 class RoutingRuleCreate(BaseModel):
     name: str
     description: Optional[str] = ""
-    conditions: List[Dict[str, Any]]  # List of conditions (all must match - AND logic)
+    condition_groups: Optional[List[List[Dict[str, Any]]]] = None  # OR between groups, AND within groups
+    conditions: Optional[List[Dict[str, Any]]] = None  # Legacy: single group (AND logic)
     actions: List[Dict[str, Any]]  # List of actions to perform
     priority: int = 0  # Higher priority rules run first
     is_active: bool = True
+    assignment_method: str = "round_robin"  # round_robin or least_tickets
 
 class RoutingRuleUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    conditions: Optional[List[Dict[str, Any]]] = None
+    condition_groups: Optional[List[List[Dict[str, Any]]]] = None
+    conditions: Optional[List[Dict[str, Any]]] = None  # Legacy support
     actions: Optional[List[Dict[str, Any]]] = None
     priority: Optional[int] = None
     is_active: Optional[bool] = None
+    assignment_method: Optional[str] = None
 
 # ==================== Role-Based Authorization ====================
 VALID_ROLES = ["agent", "lead", "admin"]
