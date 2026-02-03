@@ -45,6 +45,7 @@ const Sidebar = ({ user }) => {
   const mainItems = [
     { id: 'customers', label: 'Customers', icon: UserCircle, path: '/customers' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
+    { id: 'canned-responses', label: 'Canned Responses', icon: MessageSquare, path: '/canned-responses' },
     { id: 'teams', label: 'Teams', icon: Users, path: '/teams' },
     { id: 'leaves', label: 'Leaves', icon: CalendarDays, path: '/leaves' },
     { id: 'feature-requests', label: 'Features', icon: Bookmark, path: '/feature-requests' },
