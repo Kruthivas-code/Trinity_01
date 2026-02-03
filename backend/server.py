@@ -5491,14 +5491,21 @@ async def create_routing_rule(
     """Create a new routing rule"""
     rule_id = f"rule_{uuid.uuid4().hex[:12]}"
     
+    # Handle both new format (condition_groups) and legacy format (conditions)
+    condition_groups = rule_data.condition_groups
+    if not condition_groups and rule_data.conditions:
+        # Convert legacy format to new format
+        condition_groups = [rule_data.conditions]
+    
     rule_doc = {
         "rule_id": rule_id,
         "name": rule_data.name,
         "description": rule_data.description,
-        "conditions": rule_data.conditions,
+        "condition_groups": condition_groups or [[{"field": "priority", "operator": "equals", "value": ""}]],
         "actions": rule_data.actions,
         "priority": rule_data.priority,
         "is_active": rule_data.is_active,
+        "assignment_method": rule_data.assignment_method,
         "created_by": current_user["user_id"],
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc)
