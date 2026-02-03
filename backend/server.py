@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Response, Request, Cookie, Header, Security, BackgroundTasks
 from starlette.status import HTTP_503_SERVICE_UNAVAILABLE
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List, Dict, Any, Tuple
@@ -24,6 +25,7 @@ import asyncio
 import logging
 import traceback
 import bleach
+import shutil
 from email.utils import parseaddr
 from html import unescape
 from dotenv import load_dotenv
