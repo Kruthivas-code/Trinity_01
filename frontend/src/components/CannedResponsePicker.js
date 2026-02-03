@@ -220,33 +220,35 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
 
         {selectedResponse ? (
           // Preview Mode
-          <div className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              {selectedResponse.scope === 'global' ? (
-                <Globe size={14} className="text-primary" />
-              ) : (
-                <User size={14} className="text-amber-500" />
-              )}
-              <span className="font-medium text-sm">{selectedResponse.title}</span>
-              <span className="text-xs font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
-                /{selectedResponse.shortcode}
-              </span>
-            </div>
-            
-            <div className="mb-4">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-                <Eye size={12} />
-                Preview (placeholders resolved)
+          <div className="flex flex-col">
+            <div className="p-4 flex-1">
+              <div className="flex items-center gap-2 mb-3">
+                {selectedResponse.scope === 'global' ? (
+                  <Globe size={14} className="text-primary" />
+                ) : (
+                  <User size={14} className="text-amber-500" />
+                )}
+                <span className="font-medium text-sm">{selectedResponse.title}</span>
+                <span className="text-xs font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
+                  /{selectedResponse.shortcode}
+                </span>
               </div>
-              <div 
-                className="p-3 bg-secondary/50 rounded-lg text-sm whitespace-pre-wrap max-h-60 overflow-y-auto border border-border/30"
-                data-testid="canned-preview-content"
-              >
-                {previewContent}
+              
+              <div>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+                  <Eye size={12} />
+                  Preview (placeholders resolved)
+                </div>
+                <div 
+                  className="p-3 bg-secondary/50 rounded-lg text-sm whitespace-pre-wrap max-h-48 overflow-y-auto border border-border/30"
+                  data-testid="canned-preview-content"
+                >
+                  {previewContent}
+                </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between p-4 border-t border-border/60 bg-secondary/10">
               <button
                 onClick={() => setSelectedResponse(null)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-secondary transition-colors"
@@ -257,7 +259,7 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
               </button>
               <button
                 onClick={handleInsert}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-lg shadow-primary/20"
                 data-testid="canned-insert-btn"
               >
                 Insert into Reply
