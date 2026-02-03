@@ -191,9 +191,9 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
     ? replacePlaceholders(selectedResponse.content, ticket, user)
     : '';
 
-  return (
+  const modalContent = (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center" 
+      className="fixed inset-0 z-[9999] flex items-center justify-center" 
       onKeyDown={handleKeyDown}
       data-testid="canned-response-picker-modal"
     >
@@ -201,7 +201,7 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-xl mx-4 glass rounded-xl border border-border/60 shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-xl mx-4 glass rounded-xl border border-border/60 shadow-2xl overflow-hidden max-h-[80vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-border/60 bg-secondary/20">
           <div className="flex items-center gap-2">
