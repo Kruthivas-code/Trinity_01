@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  MessageSquare, Search, Globe, User, X, Eye
+  MessageSquare, Search, Globe, User, X, Eye, Command, Slash,
+  ChevronRight, Keyboard, ArrowUp, ArrowDown, CornerDownLeft
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
@@ -18,12 +19,34 @@ const replacePlaceholders = (content, ticket, user) => {
   result = result.replace(/\{\{customer_email\}\}/g, ticket?.customer_email || ticket?.email_sender || '');
   result = result.replace(/\{\{ticket_id\}\}/g, ticket?.ticket_id || ticket?.id || '');
   result = result.replace(/\{\{ticket_title\}\}/g, ticket?.title || '');
+  result = result.replace(/\{\{ticket_subject\}\}/g, ticket?.title || '');
   
   // Agent placeholders
   result = result.replace(/\{\{agent_name\}\}/g, user?.name || 'Agent');
   result = result.replace(/\{\{agent_email\}\}/g, user?.email || '');
   
   return result;
+};
+
+/**
+ * Highlight matching text in search results
+ */
+const HighlightMatch = ({ text, search }) => {
+  if (!search || !text) return <span>{text}</span>;
+  
+  const parts = text.split(new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+  
+  return (
+    <span>
+      {parts.map((part, i) => 
+        part.toLowerCase() === search.toLowerCase() ? (
+          <mark key={i} className="bg-primary/30 text-primary rounded px-0.5">{part}</mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </span>
+  );
 };
 
 /**
@@ -41,16 +64,19 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedResponse, setSelectedResponse] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const searchInputRef = useRef(null);
+  const listRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
       fetchResponses();
       // Focus search input when opened
-      setTimeout(() => searchInputRef.current?.focus(), 100);
+      setTimeout(() => searchInputRef.current?.focus(), 50);
     } else {
       setSearch('');
       setSelectedResponse(null);
+      setActiveIndex(0);
     }
   }, [isOpen]);
 
@@ -72,6 +98,7 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
   };
 
   const getFilteredResponses = useCallback(() => {
+    // Personal first, then global
     const all = [...(responses.personal || []), ...(responses.global || [])];
     
     if (!search) return all;
@@ -83,6 +110,67 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
       r.content.toLowerCase().includes(searchLower)
     );
   }, [responses, search]);
+
+  const filteredResponses = getFilteredResponses();
+
+  // Keyboard navigation
+  const handleKeyDown = (e) => {
+    if (selectedResponse) {
+      // In preview mode
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setSelectedResponse(null);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        handleInsert();
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setActiveIndex(prev => Math.min(prev + 1, filteredResponses.length - 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setActiveIndex(prev => Math.max(prev - 1, 0));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (filteredResponses[activeIndex]) {
+          setSelectedResponse(filteredResponses[activeIndex]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        onClose();
+        break;
+      case 'Tab':
+        e.preventDefault();
+        if (filteredResponses[activeIndex]) {
+          setSelectedResponse(filteredResponses[activeIndex]);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Scroll active item into view
+  useEffect(() => {
+    if (listRef.current && filteredResponses.length > 0) {
+      const activeElement = listRef.current.querySelector(`[data-index="${activeIndex}"]`);
+      if (activeElement) {
+        activeElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [activeIndex, filteredResponses.length]);
+
+  // Reset active index when search changes
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [search]);
 
   const handleSelectResponse = (response) => {
     setSelectedResponse(response);
@@ -96,41 +184,35 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape') {
-      if (selectedResponse) {
-        setSelectedResponse(null);
-      } else {
-        onClose();
-      }
-    }
-  };
-
   if (!isOpen) return null;
 
-  const filteredResponses = getFilteredResponses();
   const previewContent = selectedResponse 
     ? replacePlaceholders(selectedResponse.content, ticket, user)
     : '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" onKeyDown={handleKeyDown}>
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center" 
+      onKeyDown={handleKeyDown}
+      data-testid="canned-response-picker-modal"
+    >
       <div 
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-lg mx-4 glass rounded-xl border border-border/60 shadow-2xl">
+      <div className="relative w-full max-w-lg mx-4 glass rounded-xl border border-border/60 shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b border-border/60">
+        <div className="flex items-center justify-between p-3 border-b border-border/60 bg-secondary/20">
           <div className="flex items-center gap-2">
             <MessageSquare size={18} className="text-primary" />
-            <h3 className="font-medium">
-              {selectedResponse ? 'Preview Response' : 'Canned Responses'}
+            <h3 className="font-medium text-sm">
+              {selectedResponse ? 'Preview & Insert' : 'Select Canned Response'}
             </h3>
           </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg hover:bg-secondary transition-colors"
+            data-testid="canned-picker-close"
           >
             <X size={16} />
           </button>
@@ -145,8 +227,8 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
               ) : (
                 <User size={14} className="text-amber-500" />
               )}
-              <span className="font-medium">{selectedResponse.title}</span>
-              <span className="text-xs font-mono text-muted-foreground">
+              <span className="font-medium text-sm">{selectedResponse.title}</span>
+              <span className="text-xs font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
                 /{selectedResponse.shortcode}
               </span>
             </div>
@@ -154,26 +236,32 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
             <div className="mb-4">
               <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
                 <Eye size={12} />
-                Preview (with placeholders filled)
+                Preview (placeholders resolved)
               </div>
-              <div className="p-3 bg-secondary/50 rounded-lg text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
+              <div 
+                className="p-3 bg-secondary/50 rounded-lg text-sm whitespace-pre-wrap max-h-60 overflow-y-auto border border-border/30"
+                data-testid="canned-preview-content"
+              >
                 {previewContent}
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2">
+            <div className="flex items-center justify-between">
               <button
                 onClick={() => setSelectedResponse(null)}
-                className="px-3 py-1.5 text-sm rounded-lg hover:bg-secondary transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-secondary transition-colors"
+                data-testid="canned-back-btn"
               >
+                <ChevronRight size={14} className="rotate-180" />
                 Back
               </button>
               <button
                 onClick={handleInsert}
-                className="px-4 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                data-testid="insert-canned-response-btn"
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+                data-testid="canned-insert-btn"
               >
                 Insert into Reply
+                <CornerDownLeft size={14} />
               </button>
             </div>
           </div>
@@ -187,97 +275,211 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Search responses or type shortcode..."
+                  placeholder="Search by title, shortcode, or content..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                  data-testid="search-canned-picker"
+                  className="w-full h-9 pl-9 pr-3 rounded-lg bg-secondary/50 border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
+                  data-testid="canned-picker-search"
                 />
               </div>
+              {search && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  {filteredResponses.length} result{filteredResponses.length !== 1 ? 's' : ''} found
+                </p>
+              )}
             </div>
 
             {/* Response List */}
-            <div className="max-h-80 overflow-y-auto">
+            <div ref={listRef} className="max-h-80 overflow-y-auto">
               {loading ? (
-                <div className="p-4 text-center text-muted-foreground text-sm">
-                  Loading...
+                <div className="p-6 text-center">
+                  <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    Loading responses...
+                  </div>
                 </div>
               ) : filteredResponses.length === 0 ? (
-                <div className="p-6 text-center">
-                  <MessageSquare size={24} className="mx-auto text-muted-foreground/40 mb-2" />
-                  <p className="text-sm text-muted-foreground">No responses found</p>
+                <div className="p-8 text-center">
+                  <MessageSquare size={32} className="mx-auto text-muted-foreground/30 mb-3" />
+                  <p className="text-sm text-muted-foreground">
+                    {search ? 'No responses match your search' : 'No canned responses yet'}
+                  </p>
+                  {!search && (
+                    <p className="text-xs text-muted-foreground/60 mt-1">
+                      Go to Canned Responses page to create some
+                    </p>
+                  )}
                 </div>
               ) : (
-                <div className="p-2 space-y-1">
-                  {/* Personal responses first */}
+                <div className="p-2 space-y-0.5">
+                  {/* Group by scope */}
                   {responses.personal?.length > 0 && filteredResponses.some(r => r.scope === 'personal') && (
                     <>
-                      <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center gap-1">
-                        <User size={12} />
-                        Personal
+                      <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <User size={11} />
+                        My Responses
                       </div>
                       {filteredResponses
                         .filter(r => r.scope === 'personal')
-                        .map(response => (
-                          <button
-                            key={response.response_id}
-                            onClick={() => handleSelectResponse(response)}
-                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-secondary/70 transition-colors group"
-                            data-testid={`picker-response-${response.response_id}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm truncate">{response.title}</span>
-                              <span className="text-xs font-mono text-muted-foreground group-hover:text-primary">
-                                /{response.shortcode}
-                              </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground truncate mt-0.5">
-                              {response.content.substring(0, 80)}...
-                            </p>
-                          </button>
-                        ))}
+                        .map((response, idx) => {
+                          const globalIdx = filteredResponses.indexOf(response);
+                          return (
+                            <button
+                              key={response.response_id}
+                              data-index={globalIdx}
+                              onClick={() => handleSelectResponse(response)}
+                              className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors group ${
+                                activeIndex === globalIdx 
+                                  ? 'bg-primary/15 ring-1 ring-primary/30' 
+                                  : 'hover:bg-secondary/70'
+                              }`}
+                              data-testid={`picker-response-${response.response_id}`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium text-sm truncate">
+                                  <HighlightMatch text={response.title} search={search} />
+                                </span>
+                                <span className={`text-xs font-mono px-1.5 py-0.5 rounded transition-colors ${
+                                  activeIndex === globalIdx
+                                    ? 'bg-primary/20 text-primary'
+                                    : 'bg-secondary text-muted-foreground group-hover:text-primary'
+                                }`}>
+                                  /{response.shortcode}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate mt-1 leading-relaxed">
+                                {response.content.substring(0, 100)}{response.content.length > 100 ? '...' : ''}
+                              </p>
+                            </button>
+                          );
+                        })}
                     </>
                   )}
                   
                   {/* Global responses */}
                   {responses.global?.length > 0 && filteredResponses.some(r => r.scope === 'global') && (
                     <>
-                      <div className="px-2 py-1 text-xs font-medium text-muted-foreground flex items-center gap-1 mt-2">
-                        <Globe size={12} />
-                        Global
+                      <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mt-2">
+                        <Globe size={11} />
+                        Global Responses
                       </div>
                       {filteredResponses
                         .filter(r => r.scope === 'global')
-                        .map(response => (
-                          <button
-                            key={response.response_id}
-                            onClick={() => handleSelectResponse(response)}
-                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-secondary/70 transition-colors group"
-                            data-testid={`picker-response-${response.response_id}`}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium text-sm truncate">{response.title}</span>
-                              <span className="text-xs font-mono text-muted-foreground group-hover:text-primary">
-                                /{response.shortcode}
-                              </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground truncate mt-0.5">
-                              {response.content.substring(0, 80)}...
-                            </p>
-                          </button>
-                        ))}
+                        .map((response, idx) => {
+                          const globalIdx = filteredResponses.indexOf(response);
+                          return (
+                            <button
+                              key={response.response_id}
+                              data-index={globalIdx}
+                              onClick={() => handleSelectResponse(response)}
+                              className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors group ${
+                                activeIndex === globalIdx 
+                                  ? 'bg-primary/15 ring-1 ring-primary/30' 
+                                  : 'hover:bg-secondary/70'
+                              }`}
+                              data-testid={`picker-response-${response.response_id}`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium text-sm truncate">
+                                  <HighlightMatch text={response.title} search={search} />
+                                </span>
+                                <span className={`text-xs font-mono px-1.5 py-0.5 rounded transition-colors ${
+                                  activeIndex === globalIdx
+                                    ? 'bg-primary/20 text-primary'
+                                    : 'bg-secondary text-muted-foreground group-hover:text-primary'
+                                }`}>
+                                  /{response.shortcode}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate mt-1 leading-relaxed">
+                                {response.content.substring(0, 100)}{response.content.length > 100 ? '...' : ''}
+                              </p>
+                            </button>
+                          );
+                        })}
                     </>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Footer hint */}
-            <div className="p-2 border-t border-border/60 text-xs text-muted-foreground text-center">
-              Press <kbd className="px-1.5 py-0.5 bg-secondary rounded">Esc</kbd> to close
+            {/* Footer with keyboard hints */}
+            <div className="p-2 border-t border-border/60 bg-secondary/10">
+              <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1 py-0.5 bg-secondary rounded text-[9px]"><ArrowUp size={9} /></kbd>
+                  <kbd className="px-1 py-0.5 bg-secondary rounded text-[9px]"><ArrowDown size={9} /></kbd>
+                  Navigate
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[9px]">Enter</kbd>
+                  Select
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[9px]">Esc</kbd>
+                  Close
+                </span>
+              </div>
             </div>
           </>
         )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * ShortcodeAutocomplete - Dropdown for /shortcode autocomplete
+ * Renders inline near the cursor position
+ */
+export const ShortcodeAutocomplete = ({ 
+  suggestions, 
+  activeIndex, 
+  onSelect, 
+  position,
+  ticket,
+  user 
+}) => {
+  if (!suggestions || suggestions.length === 0) return null;
+
+  return (
+    <div 
+      className="absolute z-50 glass rounded-lg border border-border/60 shadow-xl py-1 min-w-[280px] max-w-[400px] max-h-[200px] overflow-y-auto"
+      style={{ 
+        left: position?.left || 0, 
+        bottom: position?.bottom || '100%',
+        transform: 'translateY(-4px)'
+      }}
+      data-testid="shortcode-autocomplete"
+    >
+      {suggestions.map((response, idx) => (
+        <button
+          key={response.response_id}
+          onClick={() => onSelect(idx)}
+          className={`w-full text-left px-3 py-2 transition-colors ${
+            idx === activeIndex 
+              ? 'bg-primary/15' 
+              : 'hover:bg-secondary/70'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {response.scope === 'personal' ? (
+              <User size={11} className="text-amber-500 shrink-0" />
+            ) : (
+              <Globe size={11} className="text-primary shrink-0" />
+            )}
+            <span className="font-medium text-sm truncate">{response.title}</span>
+            <span className="text-xs font-mono text-muted-foreground bg-secondary px-1 py-0.5 rounded ml-auto shrink-0">
+              /{response.shortcode}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground truncate mt-0.5 pl-4">
+            {response.content.substring(0, 60)}...
+          </p>
+        </button>
+      ))}
+      <div className="px-3 py-1.5 border-t border-border/40 text-[10px] text-muted-foreground text-center">
+        <kbd className="px-1 py-0.5 bg-secondary rounded">Tab</kbd> or <kbd className="px-1 py-0.5 bg-secondary rounded">Enter</kbd> to insert
       </div>
     </div>
   );
