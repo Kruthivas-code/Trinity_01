@@ -2704,6 +2704,15 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           }}
         />
       )}
+      
+      {/* Canned Response Picker Modal */}
+      <CannedResponsePicker
+        isOpen={showCannedPicker}
+        onClose={() => setShowCannedPicker(false)}
+        onSelect={handleCannedResponseSelect}
+        ticket={ticket}
+        user={currentUser}
+      />
     </>
   );
 };
