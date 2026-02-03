@@ -411,10 +411,20 @@ const RoutingRulesTab = ({ teams, users }) => {
                   {/* Conditions */}
                   <div className="flex flex-wrap items-center gap-2 text-xs mb-2">
                     <span className="text-muted-foreground">When:</span>
-                    {rule.conditions?.map((c, i) => (
-                      <span key={i} className="px-2 py-1 rounded bg-secondary/50 text-foreground/80">
-                        {c.field} {c.operator} "{c.value}"
-                      </span>
+                    {(rule.condition_groups || (rule.conditions ? [rule.conditions] : [])).map((group, gi) => (
+                      <React.Fragment key={gi}>
+                        {gi > 0 && <span className="text-amber-400 font-medium">OR</span>}
+                        <span className="flex items-center gap-1">
+                          {group.map((c, ci) => (
+                            <React.Fragment key={ci}>
+                              {ci > 0 && <span className="text-muted-foreground">+</span>}
+                              <span className="px-2 py-1 rounded bg-secondary/50 text-foreground/80">
+                                {c.field} {c.operator} "{c.value}"
+                              </span>
+                            </React.Fragment>
+                          ))}
+                        </span>
+                      </React.Fragment>
                     ))}
                   </div>
                   
