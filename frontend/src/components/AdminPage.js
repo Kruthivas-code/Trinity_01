@@ -912,6 +912,11 @@ const AdminPage = ({ user }) => {
               <RoutingRulesTab teams={teams} users={allUsers} />
             )}
 
+            {/* SLA Policies Tab */}
+            {activeTab === 'sla-policies' && (
+              <SLAPoliciesTab />
+            )}
+
             {/* SLA Escalation Tab */}
             {activeTab === 'sla-escalation' && (
               <SLAEscalationTab teams={teams} users={allUsers} />
