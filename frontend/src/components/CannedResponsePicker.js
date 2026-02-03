@@ -194,7 +194,9 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
   const handleInsert = () => {
     if (selectedResponse) {
       const filledContent = replacePlaceholders(selectedResponse.content, ticket, user);
-      onSelect(filledContent);
+      // Convert newlines to HTML for the RichTextEditor
+      const htmlContent = textToHtml(filledContent);
+      onSelect(htmlContent);
       onClose();
     }
   };
