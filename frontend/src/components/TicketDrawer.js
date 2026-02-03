@@ -1779,7 +1779,40 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 <ChevronDown size={11} className="opacity-60" />
               </button>
               
+              {/* Image Attachment Button */}
+              <button
+                onClick={() => imageInputRef.current?.click()}
+                disabled={uploadingImage}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors disabled:opacity-50"
+                title="Attach image"
+                data-testid="attach-image-btn"
+              >
+                {uploadingImage ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <ImagePlus size={13} />
+                )}
+                <span>Image</span>
+              </button>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+                className="hidden"
+                data-testid="image-input"
+              />
+              
               <div className="flex-1" />
+              
+              {/* Show attachment count if any */}
+              {attachedImages.length > 0 && (
+                <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">
+                  <Paperclip size={11} />
+                  {attachedImages.length}
+                </span>
+              )}
               
               <span className="text-[10px] text-muted-foreground/50 flex items-center gap-2">
                 <span className="flex items-center gap-0.5">
@@ -1795,7 +1828,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               
               <button
                 onClick={handleSubmitInput}
-                disabled={submitting || !stripHtml(inputText).trim()}
+                disabled={submitting || (!stripHtml(inputText).trim() && attachedImages.length === 0)}
                 className={`h-7 px-3 flex items-center gap-1.5 rounded text-xs font-medium transition-colors ${
                   inputMode === 'note'
                     ? 'bg-amber-400/20 text-amber-400 hover:bg-amber-400/30'
