@@ -3,10 +3,12 @@ import {
   Settings, Plus, Trash2, Save, X, ChevronDown, ChevronRight,
   Type, Hash, Calendar, ToggleLeft, List, Building, User, Ticket,
   Loader2, GripVertical, Clock, Users, UserPlus, Zap, Download,
-  FileJson, FileSpreadsheet, Database, Filter, CheckCircle2, AlertTriangle
+  FileJson, FileSpreadsheet, Database, Filter, CheckCircle2, AlertTriangle,
+  Timer
 } from 'lucide-react';
 import RoutingRulesTab from './RoutingRulesTab';
 import SLAEscalationTab from './SLAEscalationTab';
+import SLAPoliciesTab from './SLAPoliciesTab';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
