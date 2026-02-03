@@ -158,7 +158,7 @@ ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "").split(",")
 # Default to preview URL if not set
 if not ALLOWED_ORIGINS or ALLOWED_ORIGINS == [""]:
     ALLOWED_ORIGINS = [
-        "https://emailpro-20.preview.emergentagent.com",
+        "https://reply-toolkit.preview.emergentagent.com",
         "http://localhost:3000",
         "http://127.0.0.1:3000"
     ]
@@ -4325,7 +4325,7 @@ async def gmail_connect(current_user: dict = Depends(get_current_user)):
 @app.get("/api/auth/gmail/callback")
 async def gmail_callback(code: str = None, state: str = None, error: str = None):
     """Handle Gmail OAuth callback"""
-    frontend_url = "https://emailpro-20.preview.emergentagent.com"
+    frontend_url = "https://reply-toolkit.preview.emergentagent.com"
     
     if error:
         return RedirectResponse(url=f"{frontend_url}/settings?gmail_error={error}")
@@ -6868,7 +6868,7 @@ async def send_csat_survey(
     csat_tokens_collection.insert_one(token_doc)
     
     # Generate email content (MOCKED - not actually sent)
-    base_url = "https://emailpro-20.preview.emergentagent.com"
+    base_url = "https://reply-toolkit.preview.emergentagent.com"
     
     email_content = {
         "to": customer_email,
