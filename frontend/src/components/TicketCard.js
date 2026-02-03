@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, User } from 'lucide-react';
+import { Tag, User, AtSign } from 'lucide-react';
 
 const getPriorityConfig = (priority) => {
   switch (priority) {
@@ -20,7 +20,7 @@ const getEscalationConfig = (level) => {
   }
 };
 
-const TicketCard = ({ ticket, users = [], onClick, isDragging }) => {
+const TicketCard = ({ ticket, users = [], isMentioned = false, onClick, isDragging }) => {
   if (!ticket || !ticket.id) return null;
   
   const assignee = Array.isArray(users) ? users.find(u => u.id === ticket.assignee_id) : null;
@@ -31,11 +31,21 @@ const TicketCard = ({ ticket, users = [], onClick, isDragging }) => {
   return (
     <div
       onClick={isDragging ? undefined : onClick}
-      className={`w-full text-left glass rounded-lg p-3 border cursor-grab active:cursor-grabbing ${
+      className={`w-full text-left glass rounded-lg p-3 border cursor-grab active:cursor-grabbing relative ${
         isDragging ? 'shadow-xl border-primary/50' : 'hover:border-white/20'
-      }`}
+      } ${isMentioned ? 'border-l-2 border-l-amber-500 bg-amber-500/5' : ''}`}
       data-testid="ticket-card"
     >
+      {/* Mention Indicator Badge */}
+      {isMentioned && (
+        <div 
+          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center shadow-lg"
+          title="You were mentioned in this ticket"
+        >
+          <AtSign size={10} className="text-white" />
+        </div>
+      )}
+      
       <div className="flex items-center justify-between gap-2 mb-2">
         <span className="text-[10px] text-muted-foreground/70 font-mono">
           {ticket.ticket_id || `#${ticket.id?.slice(-6)}`}
