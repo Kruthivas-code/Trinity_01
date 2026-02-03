@@ -1093,6 +1093,17 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     }
   };
 
+  // Handle canned response selection - insert into input
+  const handleCannedResponseSelect = (content) => {
+    if (inputText.trim()) {
+      // Append to existing content with a newline
+      setInputText(prev => prev + '\n\n' + content);
+    } else {
+      setInputText(content);
+    }
+    setShowCannedPicker(false);
+  };
+
   const handleDelete = () => {
     if (ticket) {
       onDelete(ticket.id);
