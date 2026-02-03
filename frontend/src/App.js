@@ -179,6 +179,20 @@ function AppRouter() {
         }
       />
       <Route
+        path="/canned-responses"
+        element={
+          <ProtectedRoute>
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <PageLayout user={user}>
+                  <CannedResponsesPage user={user} />
+                </PageLayout>
+              </AppWithRealtime>
+            )}
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin"
         element={
           <ProtectedRoute>
