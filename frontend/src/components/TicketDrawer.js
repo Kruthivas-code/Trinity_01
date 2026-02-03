@@ -1041,17 +1041,30 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const handleSubmitInput = async () => {
     // Strip HTML to check if there's actual content
     const plainText = stripHtml(inputText);
-    if (!plainText.trim() || !ticket || submitting) return;
+    // Allow submit if there's text OR images attached
+    const hasContent = plainText.trim() || attachedImages.length > 0;
+    if (!hasContent || !ticket || submitting) return;
     
     // Stop typing indicator when submitting
     handleTypingChange(false);
     
     setSubmitting(true);
     try {
+      // Build content with images
+      let finalContent = inputText.trim();
+      
+      // Append image HTML if there are attached images
+      if (attachedImages.length > 0) {
+        const imageHtml = attachedImages.map(img => 
+          `<div class="attached-image" style="margin: 8px 0;"><img src="${img.url}" alt="${img.name}" style="max-width: 100%; max-height: 400px; border-radius: 8px;" /></div>`
+        ).join('');
+        finalContent = finalContent ? `${finalContent}<br><br>${imageHtml}` : imageHtml;
+      }
+      
       // If this is a reply to an email-sourced ticket, send actual email
       const recipientEmail = ticket.customer_email || ticket.email_sender;
       if (inputMode === 'reply' && ticket.source === 'email' && recipientEmail) {
-        // Send email via Gmail
+        // Send email via Gmail (with plain text, images as attachments)
         const emailResponse = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/reply`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1060,7 +1073,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
             ticket_id: ticket.id,
             to_email: recipientEmail,
             subject: `Re: ${ticket.title}`,
-            body: plainText.trim()
+            body: plainText.trim(),
+            images: attachedImages.map(img => img.url)
           })
         });
         
@@ -1077,14 +1091,16 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ 
-          content: inputText.trim(), 
+          content: finalContent, 
           type: inputMode === 'reply' ? 'reply' : 'internal_note',
-          mentions: inputMentions
+          mentions: inputMentions,
+          images: attachedImages.map(img => ({ url: img.url, name: img.name }))
         })
       });
       if (response.ok) {
         setInputText('');
         setInputMentions([]);
+        setAttachedImages([]); // Clear attached images
         fetchNotes(ticket.id);
         // Scroll to bottom after adding
         setTimeout(() => {
