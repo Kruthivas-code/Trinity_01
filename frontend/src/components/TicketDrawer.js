@@ -284,6 +284,9 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
+  // Canned responses picker
+  const [showCannedPicker, setShowCannedPicker] = useState(false);
+  
   // Related tickets (from same customer)
   const [relatedTickets, setRelatedTickets] = useState([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
