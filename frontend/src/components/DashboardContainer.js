@@ -77,16 +77,14 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       data.forEach(t => (t.tags || []).forEach(tag => tags.add(tag)));
       setAvailableTags(Array.from(tags).sort());
       
-      // Filter to show only tickets assigned to current user
-      const myTickets = data.filter(t => t.assignee_id === user?.user_id || t.assignee_id === user?.id);
-      setTickets(myTickets);
-      
-      // Also get mentioned tickets
-      const mentioned = data.filter(t => 
-        t.mentioned_users?.includes(user?.user_id) || 
-        t.mentioned_users?.includes(user?.id)
+      // Filter to show tickets assigned to current user OR where user is mentioned
+      // This combines both views into one unified kanban
+      const userId = user?.user_id || user?.id;
+      const myTickets = data.filter(t => 
+        t.assignee_id === userId || 
+        (Array.isArray(t.mentioned_users) && t.mentioned_users.includes(userId))
       );
-      setMentionedTickets(mentioned);
+      setTickets(myTickets);
     } catch (error) {
       console.error('Failed to fetch tickets:', error);
     }
