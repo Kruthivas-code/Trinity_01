@@ -661,6 +661,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
         <KanbanBoard
           tickets={displayTickets}
           users={users}
+          currentUserId={user?.user_id || user?.id}
           onTicketClick={handleTicketClick}
           onDragEnd={handleDragEnd}
           onCreateTicket={() => setIsCreateModalOpen(true)}
