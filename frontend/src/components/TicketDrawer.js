@@ -1104,11 +1104,77 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const handleCannedResponseSelect = (content) => {
     if (inputText.trim()) {
       // Append to existing content with a newline
-      setInputText(prev => prev + '\n\n' + content);
+      setInputText(prev => prev + '<br><br>' + content);
     } else {
       setInputText(content);
     }
     setShowCannedPicker(false);
+  };
+
+  // Image upload handlers
+  const handleImageUpload = async (event) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingImage(true);
+    
+    try {
+      const newImages = [];
+      
+      for (const file of files) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          toast.error(`${file.name} is not an image file`);
+          continue;
+        }
+        
+        // Validate file size (10MB max)
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error(`${file.name} is too large (max 10MB)`);
+          continue;
+        }
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch(`${BACKEND_URL}/api/upload/image`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          newImages.push({
+            id: data.filename,
+            url: `${BACKEND_URL}${data.url}`,
+            name: file.name,
+            size: data.size
+          });
+        } else {
+          const error = await response.json();
+          toast.error(error.detail || 'Failed to upload image');
+        }
+      }
+      
+      if (newImages.length > 0) {
+        setAttachedImages(prev => [...prev, ...newImages]);
+        toast.success(`${newImages.length} image${newImages.length > 1 ? 's' : ''} attached`);
+      }
+    } catch (error) {
+      console.error('Image upload failed:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+      // Reset file input
+      if (imageInputRef.current) {
+        imageInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removeAttachedImage = (imageId) => {
+    setAttachedImages(prev => prev.filter(img => img.id !== imageId));
   };
 
   const handleDelete = () => {
