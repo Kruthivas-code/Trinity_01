@@ -24,7 +24,7 @@ const COLUMNS = [
   { id: 'resolved', title: 'Resolved' }
 ];
 
-const KanbanBoard = ({ tickets, users, onTicketClick, onDragEnd, onCreateTicket }) => {
+const KanbanBoard = ({ tickets, users, currentUserId, onTicketClick, onDragEnd, onCreateTicket }) => {
   const [activeId, setActiveId] = useState(null);
   const [activeTicket, setActiveTicket] = useState(null);
   const lastOverId = useRef(null);
@@ -37,6 +37,15 @@ const KanbanBoard = ({ tickets, users, onTicketClick, onDragEnd, onCreateTicket 
       },
     })
   );
+
+  // Check if ticket has a mention for current user (but not assigned to them)
+  const isMentionedTicket = useCallback((ticket) => {
+    if (!currentUserId) return false;
+    const isMentioned = Array.isArray(ticket.mentioned_users) && 
+                        ticket.mentioned_users.includes(currentUserId);
+    const isAssigned = ticket.assignee_id === currentUserId;
+    return isMentioned && !isAssigned;
+  }, [currentUserId]);
 
   // Group tickets by status
   const ticketsByStatus = useMemo(() => {
