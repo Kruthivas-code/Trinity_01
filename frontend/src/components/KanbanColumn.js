@@ -4,7 +4,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import SortableTicketCard from './SortableTicketCard';
 import { Plus, Inbox } from 'lucide-react';
 
-const KanbanColumn = ({ column, tickets, users, onTicketClick, onCreateTicket, staggerIndex, activeId }) => {
+const KanbanColumn = ({ column, tickets, users, onTicketClick, onCreateTicket, staggerIndex, activeId, isMentionedTicket }) => {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
   const ticketIds = tickets.map(t => t.id);
 
@@ -48,6 +48,7 @@ const KanbanColumn = ({ column, tickets, users, onTicketClick, onCreateTicket, s
                 key={ticket.id}
                 ticket={ticket}
                 users={users}
+                isMentioned={isMentionedTicket ? isMentionedTicket(ticket) : false}
                 onClick={() => onTicketClick(ticket)}
                 isActive={activeId === ticket.id}
               />
