@@ -145,6 +145,7 @@ const KanbanBoard = ({ tickets, users, currentUserId, onTicketClick, onDragEnd, 
               column={column}
               tickets={ticketsByStatus[column.id] || []}
               users={users}
+              isMentionedTicket={isMentionedTicket}
               onTicketClick={onTicketClick}
               onCreateTicket={onCreateTicket}
               staggerIndex={index + 1}
