@@ -1524,6 +1524,19 @@ def evaluate_condition(ticket: dict, condition: dict) -> bool:
         # Extract domain from customer email
         email = ticket.get("customer_email", "")
         ticket_value = email.split("@")[-1] if "@" in email else ""
+    elif field == "customer_ltv":
+        # Look up customer lifetime value from customer record
+        customer_email = ticket.get("customer_email", "")
+        if customer_email:
+            customer = customers_collection.find_one({
+                "$or": [
+                    {"primary_email": customer_email.lower()},
+                    {"linked_emails": customer_email.lower()}
+                ]
+            })
+            ticket_value = customer.get("lifetime_value", 0) if customer else 0
+        else:
+            ticket_value = 0
     
     # Evaluate based on operator
     try:
@@ -1563,6 +1576,15 @@ def evaluate_condition(ticket: dict, condition: dict) -> bool:
         elif operator == "tag_excludes":
             tags = ticket.get("tags", [])
             return str(value).lower() not in [str(t).lower() for t in tags]
+        # Numeric operators
+        elif operator == "greater_than":
+            return float(ticket_value or 0) > float(value or 0)
+        elif operator == "less_than":
+            return float(ticket_value or 0) < float(value or 0)
+        elif operator == "greater_or_equal":
+            return float(ticket_value or 0) >= float(value or 0)
+        elif operator == "less_or_equal":
+            return float(ticket_value or 0) <= float(value or 0)
     except Exception as e:
         logger.error(f"[ROUTING] Error evaluating condition: {e}")
         return False
@@ -1675,19 +1697,31 @@ def run_routing_rules(ticket: dict) -> dict:
     ).sort("priority", -1))
     
     for rule in rules:
-        conditions = rule.get("conditions", [])
+        # Support both old format (conditions) and new format (condition_groups)
+        condition_groups = rule.get("condition_groups")
+        if not condition_groups:
+            # Migrate old format: single group with all conditions
+            old_conditions = rule.get("conditions", [])
+            condition_groups = [old_conditions] if old_conditions else []
         
-        # All conditions must match (AND logic)
-        all_match = True
-        for condition in conditions:
-            if not evaluate_condition(ticket, condition):
-                all_match = False
+        # OR logic between groups: at least one group must fully match
+        any_group_matches = False
+        for group in condition_groups:
+            # AND logic within group: all conditions must match
+            group_matches = True
+            for condition in group:
+                if not evaluate_condition(ticket, condition):
+                    group_matches = False
+                    break
+            if group_matches:
+                any_group_matches = True
                 break
         
-        if all_match:
-            # Apply actions
+        if any_group_matches:
+            # Apply actions with assignment method
             actions = rule.get("actions", [])
-            result = apply_routing_actions(ticket.get("ticket_id"), actions)
+            assignment_method = rule.get("assignment_method", "round_robin")
+            result = apply_routing_actions(ticket.get("ticket_id"), actions, assignment_method)
             return {
                 "matched": True,
                 "rule_id": rule.get("rule_id"),
