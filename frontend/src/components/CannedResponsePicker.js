@@ -30,6 +30,20 @@ const replacePlaceholders = (content, ticket, user) => {
 };
 
 /**
+ * Converts plain text with newlines to HTML with <br> tags for contenteditable
+ */
+const textToHtml = (text) => {
+  if (!text) return text;
+  // Escape HTML entities first
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  // Convert newlines to <br> tags
+  return escaped.replace(/\n/g, '<br>');
+};
+
+/**
  * Highlight matching text in search results
  */
 const HighlightMatch = ({ text, search }) => {
