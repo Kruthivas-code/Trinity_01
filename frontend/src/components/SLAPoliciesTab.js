@@ -536,34 +536,6 @@ const SLAPoliciesTab = () => {
         </div>
       )}
 
-      {/* Holidays */}                </div>
-              </div>
-              
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-2">
-                  Working Days
-                </label>
-                <div className="flex gap-2">
-                  {DAYS_OF_WEEK.map((day) => (
-                    <button
-                      key={day.value}
-                      onClick={() => toggleBusinessDay(day.value)}
-                      className={`w-10 h-10 rounded-lg text-xs font-medium transition-colors ${
-                        (policies.business_hours?.days || []).includes(day.value)
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
-                      }`}
-                    >
-                      {day.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Holidays */}
       {policies.business_hours_only && (
         <div className="space-y-4">
