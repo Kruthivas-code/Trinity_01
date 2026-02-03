@@ -386,69 +386,157 @@ const SLAPoliciesTab = () => {
         </div>
       </div>
 
-      {/* Business Hours */}
+      {/* SLA Mode Selection */}
       <div className="space-y-4">
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-          <Sun size={14} />
-          Business Hours
+          <Clock size={14} />
+          SLA Calculation Mode
         </h3>
         
-        <div className="p-4 rounded-xl bg-secondary/20 border border-border/30">
-          <label className="flex items-center gap-3 cursor-pointer mb-4">
-            <input
-              type="checkbox"
-              checked={policies.business_hours_only}
-              onChange={(e) => {
-                setPolicies(prev => ({ ...prev, business_hours_only: e.target.checked }));
-                setHasChanges(true);
-              }}
-              className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-            />
-            <div>
-              <span className="text-sm font-medium">Calculate SLA only during business hours</span>
-              <p className="text-xs text-muted-foreground">
-                Pause SLA timer outside working hours and on holidays
-              </p>
+        <div className="grid grid-cols-2 gap-4">
+          {/* 24x7 Mode */}
+          <button
+            onClick={() => {
+              setPolicies(prev => ({ ...prev, business_hours_only: false }));
+              setHasChanges(true);
+            }}
+            className={`p-4 rounded-xl border-2 text-left transition-all ${
+              !policies.business_hours_only
+                ? 'border-primary bg-primary/10'
+                : 'border-border hover:border-primary/50'
+            }`}
+            data-testid="mode-24x7"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                !policies.business_hours_only ? 'bg-primary/20' : 'bg-secondary'
+              }`}>
+                <Zap size={20} className={!policies.business_hours_only ? 'text-primary' : 'text-muted-foreground'} />
+              </div>
+              <div>
+                <h4 className={`font-medium ${!policies.business_hours_only ? 'text-primary' : ''}`}>
+                  24x7 Support
+                </h4>
+                <p className="text-xs text-muted-foreground">Always counting</p>
+              </div>
+              {!policies.business_hours_only && (
+                <CheckCircle2 size={18} className="text-primary ml-auto" />
+              )}
             </div>
-          </label>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              SLA timer runs continuously, including nights, weekends, and holidays. 
+              Ideal for round-the-clock support operations.
+            </p>
+          </button>
           
-          {policies.business_hours_only && (
-            <div className="space-y-4 pt-4 border-t border-border/30">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    Start Time
-                  </label>
-                  <input
-                    type="time"
-                    value={policies.business_hours?.start || '09:00'}
-                    onChange={(e) => {
-                      setPolicies(prev => ({
-                        ...prev,
-                        business_hours: { ...prev.business_hours, start: e.target.value }
-                      }));
-                      setHasChanges(true);
-                    }}
-                    className="w-full h-10 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    End Time
-                  </label>
-                  <input
-                    type="time"
-                    value={policies.business_hours?.end || '18:00'}
-                    onChange={(e) => {
-                      setPolicies(prev => ({
-                        ...prev,
-                        business_hours: { ...prev.business_hours, end: e.target.value }
-                      }));
-                      setHasChanges(true);
-                    }}
-                    className="w-full h-10 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
-                  />
-                </div>
+          {/* Business Hours Mode */}
+          <button
+            onClick={() => {
+              setPolicies(prev => ({ ...prev, business_hours_only: true }));
+              setHasChanges(true);
+            }}
+            className={`p-4 rounded-xl border-2 text-left transition-all ${
+              policies.business_hours_only
+                ? 'border-primary bg-primary/10'
+                : 'border-border hover:border-primary/50'
+            }`}
+            data-testid="mode-business-hours"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                policies.business_hours_only ? 'bg-primary/20' : 'bg-secondary'
+              }`}>
+                <Sun size={20} className={policies.business_hours_only ? 'text-primary' : 'text-muted-foreground'} />
+              </div>
+              <div>
+                <h4 className={`font-medium ${policies.business_hours_only ? 'text-primary' : ''}`}>
+                  Business Hours Only
+                </h4>
+                <p className="text-xs text-muted-foreground">Pauses after hours</p>
+              </div>
+              {policies.business_hours_only && (
+                <CheckCircle2 size={18} className="text-primary ml-auto" />
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              SLA timer pauses outside working hours, weekends, and holidays. 
+              Configure your schedule below when enabled.
+            </p>
+          </button>
+        </div>
+      </div>
+
+      {/* Business Hours Configuration (only shown when business hours mode is enabled) */}
+      {policies.business_hours_only && (
+        <div className="space-y-4">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Settings size={14} />
+            Business Hours Configuration
+          </h3>
+          
+          <div className="p-4 rounded-xl bg-secondary/20 border border-border/30 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  Start Time
+                </label>
+                <input
+                  type="time"
+                  value={policies.business_hours?.start || '09:00'}
+                  onChange={(e) => {
+                    setPolicies(prev => ({
+                      ...prev,
+                      business_hours: { ...prev.business_hours, start: e.target.value }
+                    }));
+                    setHasChanges(true);
+                  }}
+                  className="w-full h-10 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  End Time
+                </label>
+                <input
+                  type="time"
+                  value={policies.business_hours?.end || '18:00'}
+                  onChange={(e) => {
+                    setPolicies(prev => ({
+                      ...prev,
+                      business_hours: { ...prev.business_hours, end: e.target.value }
+                    }));
+                    setHasChanges(true);
+                  }}
+                  className="w-full h-10 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-2">
+                Working Days
+              </label>
+              <div className="flex gap-2">
+                {DAYS_OF_WEEK.map((day) => (
+                  <button
+                    key={day.value}
+                    onClick={() => toggleBusinessDay(day.value)}
+                    className={`w-10 h-10 rounded-lg text-xs font-medium transition-colors ${
+                      (policies.business_hours?.days || []).includes(day.value)
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                    }`}
+                  >
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Holidays */}                </div>
               </div>
               
               <div>
