@@ -20,6 +20,7 @@ import CustomersPage from './components/CustomersPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import CSATPage from './components/CSATPage';
 import StarredTicketsPage from './components/StarredTicketsPage';
+import CannedResponsesPage from './components/CannedResponsesPage';
 import { Toaster, toast } from './components/ui/sonner';
 
 function AppRouter() {
