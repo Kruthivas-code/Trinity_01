@@ -732,6 +732,18 @@ const AdminPage = ({ user }) => {
                 Routing Rules
               </button>
               <button
+                onClick={() => setActiveTab('sla-policies')}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  activeTab === 'sla-policies'
+                    ? 'bg-primary/20 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+                data-testid="tab-sla-policies"
+              >
+                <Timer size={16} />
+                SLA Policies
+              </button>
+              <button
                 onClick={() => setActiveTab('sla-escalation')}
                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                   activeTab === 'sla-escalation'
