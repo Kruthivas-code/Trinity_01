@@ -1741,6 +1741,13 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   setInputText(text);
                   // Trigger typing indicator
                   handleTypingChange(stripHtml(text).trim().length > 0);
+                  
+                  // Check for shortcode trigger (/ at start of line or after space)
+                  const plainText = stripHtml(text);
+                  const lastSlashMatch = plainText.match(/(?:^|\s)\/([\w-]*)$/);
+                  if (lastSlashMatch) {
+                    setShowCannedPicker(true);
+                  }
                 }}
                 placeholder="Type your reply..."
                 mode={inputMode}
