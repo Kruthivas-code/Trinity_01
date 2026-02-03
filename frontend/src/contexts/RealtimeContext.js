@@ -213,12 +213,20 @@ export const RealtimeProvider = ({ children, user }) => {
     };
   }, [socket]);
 
-  // Subscribe to notifications
+  // Subscribe to notifications (general)
   const onNotification = useCallback((callback) => {
     if (!socket) return () => {};
     
     socket.on('notification:new', callback);
     return () => socket.off('notification:new', callback);
+  }, [socket]);
+
+  // Subscribe to mention notifications specifically
+  const onMentionNotification = useCallback((callback) => {
+    if (!socket) return () => {};
+    
+    socket.on('notification:mention', callback);
+    return () => socket.off('notification:mention', callback);
   }, [socket]);
 
   const value = {
@@ -233,6 +241,7 @@ export const RealtimeProvider = ({ children, user }) => {
     onTicketUpdate,
     onLeaveUpdate,
     onNotification,
+    onMentionNotification,
   };
 
   return (

@@ -345,6 +345,52 @@ async def auto_sync_emails():
                     # This means this email is a reply in an existing conversation
                     existing_thread_ticket = tickets_collection.find_one({"email_thread_id": gmail_thread_id})
                     
+                    # Fallback 1: If no match by threadId, check In-Reply-To header
+                    # This catches cases where Gmail's threading fails
+                    if not existing_thread_ticket and headers.get('in_reply_to'):
+                        in_reply_to = headers['in_reply_to'].strip()
+                        # Check if In-Reply-To matches original ticket's Message-ID
+                        existing_thread_ticket = tickets_collection.find_one({
+                            "$or": [
+                                {"email_rfc_message_id": in_reply_to},
+                                {"last_reply_message_id": in_reply_to},
+                                {"email_thread_message_ids": in_reply_to}
+                            ]
+                        })
+                        if existing_thread_ticket:
+                            logger.info(f"[EMAIL-SYNC] Found ticket via In-Reply-To header: {in_reply_to}")
+                    
+                    # Fallback 2: Check References header for any matching message ID
+                    if not existing_thread_ticket and headers.get('references'):
+                        references = headers['references'].split()
+                        for ref in references:
+                            ref = ref.strip()
+                            if not ref:
+                                continue
+                            existing_thread_ticket = tickets_collection.find_one({
+                                "$or": [
+                                    {"email_rfc_message_id": ref},
+                                    {"last_reply_message_id": ref},
+                                    {"email_thread_message_ids": ref}
+                                ]
+                            })
+                            if existing_thread_ticket:
+                                logger.info(f"[EMAIL-SYNC] Found ticket via References header: {ref}")
+                                break
+                    
+                    # Fallback 3: Check email_replies_collection for matching In-Reply-To
+                    if not existing_thread_ticket and headers.get('in_reply_to'):
+                        in_reply_to = headers['in_reply_to'].strip()
+                        # Check if replying to one of our sent messages
+                        sent_reply = email_replies_collection.find_one({
+                            "our_message_id": in_reply_to,
+                            "direction": "outgoing"
+                        })
+                        if sent_reply:
+                            existing_thread_ticket = tickets_collection.find_one({"ticket_id": sent_reply["ticket_id"]})
+                            if existing_thread_ticket:
+                                logger.info(f"[EMAIL-SYNC] Found ticket via sent reply lookup: {sent_reply['ticket_id']}")
+                    
                     if existing_thread_ticket:
                         # This is a reply to an existing ticket - add as incoming reply
                         sanitized_html = sanitize_html(content['html'][:100000]) if content['html'] else None
@@ -595,6 +641,16 @@ async def create_mongodb_indexes():
         csat_tokens_collection.create_index("token", unique=True, background=True)
         csat_tokens_collection.create_index([("expires_at", ASCENDING)], expireAfterSeconds=0, background=True)
         logger.info("[INDEXES] Created CSAT collection indexes")
+        
+        # Email threading indexes - for fallback thread matching
+        tickets_collection.create_index([("email_thread_id", ASCENDING)], background=True)
+        tickets_collection.create_index([("email_rfc_message_id", ASCENDING)], sparse=True, background=True)
+        tickets_collection.create_index([("last_reply_message_id", ASCENDING)], sparse=True, background=True)
+        tickets_collection.create_index([("email_thread_message_ids", ASCENDING)], sparse=True, background=True)
+        email_replies_collection.create_index([("ticket_id", ASCENDING)], background=True)
+        email_replies_collection.create_index([("gmail_message_id", ASCENDING)], sparse=True, background=True)
+        email_replies_collection.create_index([("our_message_id", ASCENDING)], sparse=True, background=True)
+        logger.info("[INDEXES] Created email threading indexes")
         
         # Routing rules indexes
         routing_rules_collection.create_index("rule_id", unique=True, background=True)
@@ -943,6 +999,175 @@ def serialize_doc(doc):
         
         return serialized
     return doc
+
+# ==================== Email Thread Detection Utilities ====================
+
+def find_existing_ticket_for_email(gmail_message_id: str, gmail_thread_id: str, headers: dict) -> Optional[dict]:
+    """
+    Find an existing ticket that this email belongs to.
+    Uses multiple strategies:
+    1. Check if exact email already exists as a ticket
+    2. Check if exact email already exists as a reply
+    3. Match by Gmail threadId
+    4. Fallback: Match by In-Reply-To header
+    5. Fallback: Match by References header
+    6. Fallback: Match by our sent reply's Message-ID
+    
+    Returns: existing ticket dict or None
+    """
+    # Check 1: Already exists as a ticket
+    existing_ticket = tickets_collection.find_one({"email_message_id": gmail_message_id})
+    if existing_ticket:
+        return {"type": "duplicate_ticket", "ticket": existing_ticket}
+    
+    # Check 2: Already processed as a reply
+    existing_reply = email_replies_collection.find_one({"gmail_message_id": gmail_message_id})
+    if existing_reply:
+        return {"type": "duplicate_reply", "ticket": tickets_collection.find_one({"ticket_id": existing_reply["ticket_id"]})}
+    
+    # Check 3: Match by Gmail threadId
+    if gmail_thread_id:
+        existing_thread_ticket = tickets_collection.find_one({"email_thread_id": gmail_thread_id})
+        if existing_thread_ticket:
+            return {"type": "thread_match", "ticket": existing_thread_ticket, "match_method": "gmail_thread_id"}
+    
+    # Check 4: Fallback - In-Reply-To header
+    in_reply_to = headers.get('in_reply_to', '').strip() if headers else ''
+    if in_reply_to:
+        existing_thread_ticket = tickets_collection.find_one({
+            "$or": [
+                {"email_rfc_message_id": in_reply_to},
+                {"last_reply_message_id": in_reply_to},
+                {"email_thread_message_ids": in_reply_to}
+            ]
+        })
+        if existing_thread_ticket:
+            logger.info(f"[EMAIL-THREAD] Found ticket via In-Reply-To: {in_reply_to}")
+            return {"type": "thread_match", "ticket": existing_thread_ticket, "match_method": "in_reply_to"}
+    
+    # Check 5: Fallback - References header
+    references = headers.get('references', '') if headers else ''
+    if references:
+        for ref in references.split():
+            ref = ref.strip()
+            if not ref:
+                continue
+            existing_thread_ticket = tickets_collection.find_one({
+                "$or": [
+                    {"email_rfc_message_id": ref},
+                    {"last_reply_message_id": ref},
+                    {"email_thread_message_ids": ref}
+                ]
+            })
+            if existing_thread_ticket:
+                logger.info(f"[EMAIL-THREAD] Found ticket via References: {ref}")
+                return {"type": "thread_match", "ticket": existing_thread_ticket, "match_method": "references"}
+    
+    # Check 6: Fallback - Our sent reply lookup
+    if in_reply_to:
+        sent_reply = email_replies_collection.find_one({
+            "our_message_id": in_reply_to,
+            "direction": "outgoing"
+        })
+        if sent_reply:
+            existing_thread_ticket = tickets_collection.find_one({"ticket_id": sent_reply["ticket_id"]})
+            if existing_thread_ticket:
+                logger.info(f"[EMAIL-THREAD] Found ticket via sent reply: {sent_reply['ticket_id']}")
+                return {"type": "thread_match", "ticket": existing_thread_ticket, "match_method": "sent_reply"}
+    
+    # No match found - this is a new conversation
+    return None
+
+
+def add_email_as_reply_to_ticket(
+    ticket: dict,
+    gmail_message_id: str,
+    gmail_thread_id: str,
+    headers: dict,
+    content: dict,
+    source: str = "email_sync"
+) -> dict:
+    """
+    Add an incoming email as a reply to an existing ticket.
+    
+    Args:
+        ticket: The existing ticket document
+        gmail_message_id: Gmail's internal message ID
+        gmail_thread_id: Gmail's thread ID
+        headers: Parsed email headers (from, to, subject, message_id, etc.)
+        content: Parsed email content (text, html, preview)
+        source: Source identifier for logging
+    
+    Returns:
+        The created reply document
+    """
+    from email_utils import extract_email_address as extract_email_addr, format_sender_name
+    
+    sanitized_html = sanitize_html(content['html'][:100000]) if content.get('html') else None
+    
+    reply_id = f"reply_{uuid.uuid4().hex[:12]}"
+    incoming_reply = {
+        "reply_id": reply_id,
+        "ticket_id": ticket["ticket_id"],
+        "direction": "incoming",
+        "from_email": extract_email_addr(headers.get('from', '')),
+        "from_name": format_sender_name(headers.get('from', '')),
+        "to_email": headers.get('to', ''),
+        "subject": headers.get('subject') or f"Re: {ticket.get('title', '')}",
+        "body": content.get('text', '')[:50000] if content.get('text') else "",
+        "body_html": sanitized_html,
+        "gmail_message_id": gmail_message_id,
+        "gmail_thread_id": gmail_thread_id,
+        "email_rfc_message_id": headers.get('message_id', ''),
+        "email_in_reply_to": headers.get('in_reply_to', ''),
+        "email_references": headers.get('references', ''),
+        "email_date": headers.get('date', ''),
+        "created_at": datetime.now(timezone.utc),
+        "status": "received"
+    }
+    
+    email_replies_collection.insert_one(incoming_reply)
+    
+    # Also add to messages_collection for conversation thread display
+    customer_name = format_sender_name(headers.get('from', ''))
+    message_doc = {
+        "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+        "ticket_id": ticket["ticket_id"],
+        "type": "customer_reply",
+        "content": content.get('text', '')[:50000] if content.get('text') else "",
+        "content_html": sanitized_html,
+        "author_id": None,
+        "author_name": customer_name,
+        "author_email": extract_email_addr(headers.get('from', '')),
+        "email_reply_id": reply_id,
+        "gmail_message_id": gmail_message_id,
+        "email_date": headers.get('date', ''),
+        "created_at": datetime.now(timezone.utc)
+    }
+    messages_collection.insert_one(message_doc)
+    
+    # Update ticket status and timestamps
+    update_fields = {
+        "status": "todo",  # Move back to todo when customer replies
+        "updated_at": datetime.now(timezone.utc),
+        "last_customer_reply_at": datetime.now(timezone.utc)
+    }
+    if headers.get('message_id'):
+        update_fields["last_reply_message_id"] = headers['message_id']
+    
+    update_ops = {"$set": update_fields}
+    if headers.get('message_id'):
+        update_ops["$push"] = {"email_thread_message_ids": headers['message_id']}
+    
+    tickets_collection.update_one(
+        {"ticket_id": ticket["ticket_id"]},
+        update_ops
+    )
+    
+    logger.info(f"[{source.upper()}] Added reply to ticket {ticket['ticket_id']} from {extract_email_addr(headers.get('from', ''))}")
+    
+    return incoming_reply
+
 
 # ==================== Shift & Timezone Utilities ====================
 
@@ -4329,24 +4554,44 @@ async def sync_emails_to_tickets(
             format_sender_name
         )
         
+        added_replies = 0
+        
         for msg in messages:
-            # Check if ticket already exists
-            existing = tickets_collection.find_one({"email_message_id": msg['id']})
-            if existing:
-                skipped += 1
-                continue
-            
             msg_detail = service.users().messages().get(
                 userId='me',
                 id=msg['id'],
                 format='full'
             ).execute()
             
+            gmail_thread_id = msg_detail.get('threadId')
+            
             # Use improved email parsing
             payload = msg_detail.get('payload', {})
             headers = extract_email_headers(payload.get('headers', []))
             content = parse_email_content(payload)
             
+            # Use shared helper for thread detection and deduplication
+            existing = find_existing_ticket_for_email(msg['id'], gmail_thread_id, headers)
+            
+            if existing:
+                if existing["type"] in ["duplicate_ticket", "duplicate_reply"]:
+                    # Already processed
+                    skipped += 1
+                    continue
+                elif existing["type"] == "thread_match":
+                    # This is a reply to an existing thread - add as reply
+                    add_email_as_reply_to_ticket(
+                        ticket=existing["ticket"],
+                        gmail_message_id=msg['id'],
+                        gmail_thread_id=gmail_thread_id,
+                        headers=headers,
+                        content=content,
+                        source="gmail_sync"
+                    )
+                    added_replies += 1
+                    continue
+            
+            # No existing thread - create new ticket
             ticket_id = generate_ticket_id()
             max_order_ticket = tickets_collection.find_one(
                 {"status": "todo"},
@@ -4369,7 +4614,7 @@ async def sync_emails_to_tickets(
                 "source": "email",
                 # Gmail internal IDs
                 "email_message_id": msg['id'],
-                "email_thread_id": msg_detail.get('threadId'),
+                "email_thread_id": gmail_thread_id,
                 # RFC 2822 headers for proper threading
                 "email_rfc_message_id": headers['message_id'],
                 "email_references": headers['references'],
@@ -4393,6 +4638,7 @@ async def sync_emails_to_tickets(
         
         return {
             "created": len(created_tickets),
+            "added_replies": added_replies,
             "skipped": skipped,
             "tickets": created_tickets
         }
@@ -4567,6 +4813,7 @@ async def reply_to_ticket(
     reply_doc = {
         "reply_id": reply_id,
         "ticket_id": ticket_id,
+        "direction": "outgoing",  # Mark as outgoing (from agent to customer)
         "to_email": reply.to_email,
         "subject": reply.subject,
         "body": reply.body,
@@ -4826,12 +5073,15 @@ async def process_gmail_notification(history_id: str, email_address: str):
             
             logger.info(f"[GMAIL WEBHOOK] Found {len(messages_added)} new messages")
             
-            # Create tickets for new messages
+            # Process new messages with proper thread detection
+            from email_utils import (
+                extract_email_headers,
+                parse_email_content,
+                extract_email_address as extract_email_addr,
+                format_sender_name
+            )
+            
             for msg_id in messages_added:
-                existing = tickets_collection.find_one({"email_message_id": msg_id})
-                if existing:
-                    continue
-                
                 msg_detail = service.users().messages().get(
                     userId='me',
                     id=msg_id,
@@ -4842,9 +5092,35 @@ async def process_gmail_notification(history_id: str, email_address: str):
                 if 'INBOX' not in msg_detail.get('labelIds', []):
                     continue
                 
-                metadata = extract_email_metadata(msg_detail.get('payload', {}).get('headers', []))
-                body = parse_email_body(msg_detail.get('payload', {}))
-                _, sender_email = parseaddr(metadata['from'])
+                gmail_thread_id = msg_detail.get('threadId')
+                
+                # Use improved email parsing
+                payload = msg_detail.get('payload', {})
+                headers = extract_email_headers(payload.get('headers', []))
+                content = parse_email_content(payload)
+                
+                # Use shared helper for thread detection and deduplication
+                existing = find_existing_ticket_for_email(msg_id, gmail_thread_id, headers)
+                
+                if existing:
+                    if existing["type"] in ["duplicate_ticket", "duplicate_reply"]:
+                        # Already processed
+                        continue
+                    elif existing["type"] == "thread_match":
+                        # This is a reply to an existing thread - add as reply
+                        add_email_as_reply_to_ticket(
+                            ticket=existing["ticket"],
+                            gmail_message_id=msg_id,
+                            gmail_thread_id=gmail_thread_id,
+                            headers=headers,
+                            content=content,
+                            source="gmail_webhook"
+                        )
+                        logger.info(f"[GMAIL WEBHOOK] Added reply to ticket {existing['ticket']['ticket_id']} from {extract_email_addr(headers.get('from', ''))}")
+                        continue
+                
+                # No existing thread - create new ticket
+                _, sender_email = parseaddr(headers.get('from', ''))
                 
                 ticket_id = generate_ticket_id()
                 max_order_ticket = tickets_collection.find_one(
@@ -4855,8 +5131,9 @@ async def process_gmail_notification(history_id: str, email_address: str):
                 
                 ticket_doc = {
                     "ticket_id": ticket_id,
-                    "title": metadata['subject'] or "No Subject",
-                    "description": body,
+                    "uuid": str(uuid.uuid4()),
+                    "title": (headers.get('subject') or "No Subject")[:200],
+                    "description": content.get('text', '')[:5000] if content.get('text') else "",
                     "status": "todo",
                     "priority": "medium",
                     "order": next_order,
@@ -4866,10 +5143,19 @@ async def process_gmail_notification(history_id: str, email_address: str):
                     "updated_at": datetime.now(timezone.utc),
                     "source": "email",
                     "email_message_id": msg_id,
-                    "email_thread_id": msg_detail.get('threadId'),
-                    "email_from": metadata['from'],
+                    "email_thread_id": gmail_thread_id,
+                    "email_rfc_message_id": headers.get('message_id', ''),
+                    "email_references": headers.get('references', ''),
+                    "email_in_reply_to": headers.get('in_reply_to', ''),
+                    "email_from": headers.get('from', ''),
                     "email_sender": sender_email,
-                    "email_date": metadata['date']
+                    "email_sender_name": format_sender_name(headers.get('from', '')),
+                    "customer_email": extract_email_addr(headers.get('from', '')),
+                    "email_to": headers.get('to', ''),
+                    "email_date": headers.get('date', ''),
+                    "email_html": content.get('html', '')[:100000] if content.get('html') else None,
+                    "email_text": content.get('text', '')[:50000] if content.get('text') else None,
+                    "escalation_level": "L1"
                 }
                 
                 tickets_collection.insert_one(ticket_doc)

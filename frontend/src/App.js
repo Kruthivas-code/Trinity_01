@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { RealtimeProvider } from './contexts/RealtimeContext';
+import { RealtimeProvider, useRealtime } from './contexts/RealtimeContext';
 import LoginPage from './components/LoginPage';
 import AuthCallback from './components/AuthCallback';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -20,7 +20,7 @@ import CustomersPage from './components/CustomersPage';
 import AnalyticsPage from './components/AnalyticsPage';
 import CSATPage from './components/CSATPage';
 import StarredTicketsPage from './components/StarredTicketsPage';
-import { Toaster } from './components/ui/sonner';
+import { Toaster, toast } from './components/ui/sonner';
 
 function AppRouter() {
   const location = useLocation();
@@ -257,6 +257,37 @@ export const CommandPaletteContext = React.createContext({
   openKeyboardHelp: () => {},
 });
 
+// Component to handle mention notifications
+function MentionNotificationHandler() {
+  const { onMentionNotification } = useRealtime();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!onMentionNotification) return;
+
+    const unsubscribe = onMentionNotification((data) => {
+      // Show toast notification for mentions
+      toast.info(`${data.mentioned_by} mentioned you`, {
+        description: data.ticket_title ? `In ticket: ${data.ticket_title}` : data.note_preview,
+        action: {
+          label: 'View',
+          onClick: () => {
+            // Navigate to the ticket
+            if (data.ticket_id) {
+              navigate(`/dashboard?ticket=${data.ticket_id}`);
+            }
+          },
+        },
+        duration: 8000,
+      });
+    });
+
+    return unsubscribe;
+  }, [onMentionNotification, navigate]);
+
+  return null;
+}
+
 // Wrapper component that provides realtime context to authenticated routes
 function AppWithRealtime({ user, children }) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -317,6 +348,7 @@ function AppWithRealtime({ user, children }) {
 
   return (
     <RealtimeProvider user={user}>
+      <MentionNotificationHandler />
       <CommandPaletteContext.Provider value={{ openCommandPalette, openKeyboardHelp }}>
         {children}
       </CommandPaletteContext.Provider>

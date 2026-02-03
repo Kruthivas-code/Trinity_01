@@ -41,7 +41,9 @@ const MentionInput = ({
         });
         if (response.ok) {
           const data = await response.json();
-          setUsers(Array.isArray(data) ? data : []);
+          // Handle both array format and paginated { items: [...] } format
+          const userList = Array.isArray(data) ? data : (data.items || []);
+          setUsers(userList);
         }
       } catch (error) {
         console.error('Failed to fetch users:', error);
