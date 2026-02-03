@@ -157,7 +157,13 @@ const KanbanBoard = ({ tickets, users, currentUserId, onTicketClick, onDragEnd, 
       <DragOverlay dropAnimation={null}>
         {activeTicket && (
           <div style={{ transform: 'rotate(3deg)', opacity: 0.9 }}>
-            <TicketCard ticket={activeTicket} users={users} onClick={() => {}} isDragging />
+            <TicketCard 
+              ticket={activeTicket} 
+              users={users} 
+              isMentioned={isMentionedTicket(activeTicket)}
+              onClick={() => {}} 
+              isDragging 
+            />
           </div>
         )}
       </DragOverlay>
