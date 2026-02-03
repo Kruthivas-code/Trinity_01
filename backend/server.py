@@ -1783,6 +1783,72 @@ def run_routing_rules(ticket: dict) -> dict:
 
 # ==================== SLA Escalation Engine ====================
 
+def calculate_business_minutes(start_time: datetime, end_time: datetime, 
+                               business_hours: dict, holidays: list) -> float:
+    """
+    Calculate the number of business minutes between two times.
+    Only counts time during business hours on working days, excluding holidays.
+    
+    Args:
+        start_time: Start datetime (timezone aware)
+        end_time: End datetime (timezone aware)
+        business_hours: Dict with 'start', 'end', 'days' keys
+        holidays: List of holiday dates in 'YYYY-MM-DD' format
+    
+    Returns:
+        Number of minutes within business hours
+    """
+    if start_time >= end_time:
+        return 0
+    
+    # Parse business hours
+    try:
+        bh_start = datetime.strptime(business_hours.get("start", "09:00"), "%H:%M").time()
+        bh_end = datetime.strptime(business_hours.get("end", "18:00"), "%H:%M").time()
+    except:
+        bh_start = time(9, 0)
+        bh_end = time(18, 0)
+    
+    working_days = business_hours.get("days", [1, 2, 3, 4, 5])  # Mon-Fri default
+    holiday_set = set(holidays)
+    
+    total_minutes = 0
+    current = start_time
+    
+    # Iterate day by day
+    while current.date() <= end_time.date():
+        current_date = current.date()
+        date_str = current_date.strftime("%Y-%m-%d")
+        
+        # Check if it's a working day and not a holiday
+        # Python's weekday(): Monday=0, Sunday=6
+        # Our format: Monday=1, Sunday=7
+        day_of_week = current.isoweekday()
+        
+        if day_of_week in working_days and date_str not in holiday_set:
+            # Calculate business hours for this day
+            day_start = datetime.combine(current_date, bh_start).replace(tzinfo=timezone.utc)
+            day_end = datetime.combine(current_date, bh_end).replace(tzinfo=timezone.utc)
+            
+            # Adjust for actual start/end times
+            period_start = max(current, day_start)
+            
+            if current.date() == end_time.date():
+                period_end = min(end_time, day_end)
+            else:
+                period_end = day_end
+            
+            # Only count if period is valid
+            if period_start < period_end:
+                minutes = (period_end - period_start).total_seconds() / 60
+                total_minutes += minutes
+        
+        # Move to next day at business hours start
+        next_day = current_date + timedelta(days=1)
+        current = datetime.combine(next_day, bh_start).replace(tzinfo=timezone.utc)
+    
+    return total_minutes
+
 def check_sla_escalations() -> dict:
     """Check all open tickets against SLA escalation rules and apply actions"""
     results = {"checked": 0, "escalated": 0, "details": []}
