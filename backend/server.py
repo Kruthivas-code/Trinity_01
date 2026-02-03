@@ -4502,6 +4502,82 @@ async def import_tickets(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Import failed: {str(e)}")
 
+# ==================== File Upload ====================
+
+# Configure upload directory
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# Allowed image types
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+@app.post("/api/upload/image")
+async def upload_image(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload an image file for use in replies"""
+    # Validate file type
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid file type. Allowed types: {', '.join(ALLOWED_IMAGE_TYPES)}"
+        )
+    
+    # Read file content
+    content = await file.read()
+    
+    # Validate file size
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 10MB")
+    
+    # Generate unique filename
+    file_ext = os.path.splitext(file.filename)[1].lower() or ".jpg"
+    if file_ext not in [".jpg", ".jpeg", ".png", ".gif", ".webp"]:
+        file_ext = ".jpg"
+    
+    unique_filename = f"{uuid.uuid4().hex}{file_ext}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+    
+    # Save file
+    with open(file_path, "wb") as f:
+        f.write(content)
+    
+    # Generate URL
+    image_url = f"/api/uploads/{unique_filename}"
+    
+    return {
+        "success": True,
+        "filename": unique_filename,
+        "url": image_url,
+        "size": len(content),
+        "content_type": file.content_type
+    }
+
+@app.get("/api/uploads/{filename}")
+async def get_uploaded_file(filename: str):
+    """Serve uploaded files"""
+    # Sanitize filename to prevent directory traversal
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(UPLOAD_DIR, safe_filename)
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Determine content type
+    ext = os.path.splitext(safe_filename)[1].lower()
+    content_types = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp"
+    }
+    content_type = content_types.get(ext, "application/octet-stream")
+    
+    return FileResponse(file_path, media_type=content_type)
+
 # ==================== Gmail Integration ====================
 
 def get_gmail_flow():
