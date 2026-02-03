@@ -2,7 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import TicketCard from './TicketCard';
 
-const SortableTicketCard = ({ ticket, users, onClick, isActive }) => {
+const SortableTicketCard = ({ ticket, users, isMentioned, onClick, isActive }) => {
   const {
     attributes,
     listeners,
@@ -28,7 +28,7 @@ const SortableTicketCard = ({ ticket, users, onClick, isActive }) => {
       {...listeners}
       className="touch-none"
     >
-      <TicketCard ticket={ticket} users={users} onClick={onClick} isDragging={isDragging} />
+      <TicketCard ticket={ticket} users={users} isMentioned={isMentioned} onClick={onClick} isDragging={isDragging} />
     </div>
   );
 };
