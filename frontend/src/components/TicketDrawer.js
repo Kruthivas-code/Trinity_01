@@ -1665,6 +1665,20 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 <span className="text-[10px] opacity-60 ml-0.5">N</span>
               </button>
               
+              <div className="w-px h-5 bg-border/40 mx-1" />
+              
+              {/* Canned Responses Button */}
+              <button
+                onClick={() => setShowCannedPicker(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                title="Insert canned response (⌘/)"
+                data-testid="canned-responses-btn"
+              >
+                <MessageSquare size={13} />
+                <span>Canned</span>
+                <ChevronDown size={11} className="opacity-60" />
+              </button>
+              
               <div className="flex-1" />
               
               <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1">
