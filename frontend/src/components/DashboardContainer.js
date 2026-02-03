@@ -341,11 +341,9 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
     }
   };
 
-  // Get tickets to display based on viewMode and all filters
+  // Get tickets to display based on all filters
   const getFilteredTickets = () => {
-    let baseTickets = viewMode === 'mentioned' ? mentionedTickets : 
-                      viewMode === 'all' ? [...tickets, ...mentionedTickets.filter(t => !tickets.find(mt => mt.id === t.id))] :
-                      tickets;
+    let baseTickets = tickets;
     
     // Apply priority filter
     if (filters.priority !== 'all') {
@@ -378,6 +376,14 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   };
   
   const displayTickets = getFilteredTickets();
+  
+  // Count mentioned tickets for display
+  const userId = user?.user_id || user?.id;
+  const mentionedCount = tickets.filter(t => 
+    Array.isArray(t.mentioned_users) && 
+    t.mentioned_users.includes(userId) &&
+    t.assignee_id !== userId  // Only count mentions on tickets NOT assigned to user
+  ).length;
   
   // Count active filters
   const activeFilterCount = [
