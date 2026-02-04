@@ -1654,67 +1654,6 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
             {/* Conversation Tab Content */}
             {activeTab === 'conversation' && (
               <>
-            {/* Recent Conversations from Same Customer */}
-            {(relatedTickets.length > 0 || loadingRelated) && (
-              <div className="mb-4">
-                <button
-                  onClick={() => setRelatedExpanded(!relatedExpanded)}
-                  className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/20 border border-border/30 hover:bg-secondary/30 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <Mail size={14} className="text-primary" />
-                    <span className="text-xs font-medium">Recent Conversations</span>
-                    {relatedTickets.length > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary">
-                        {relatedTickets.length}
-                      </span>
-                    )}
-                  </div>
-                  {relatedExpanded ? (
-                    <ChevronDown size={14} className="text-muted-foreground" />
-                  ) : (
-                    <ChevronRight size={14} className="text-muted-foreground" />
-                  )}
-                </button>
-                
-                {relatedExpanded && (
-                  <div className="mt-2 space-y-1.5">
-                    {loadingRelated ? (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 size={16} className="animate-spin text-muted-foreground" />
-                      </div>
-                    ) : (
-                      relatedTickets.map(related => (
-                        <div
-                          key={related.id || related.ticket_id}
-                          className="flex items-center justify-between p-2.5 rounded-lg bg-secondary/10 border border-border/20 hover:bg-secondary/20 cursor-pointer transition-colors"
-                          onClick={() => {
-                            // Could navigate to the ticket or load it in the drawer
-                            window.open(`/all-tickets?ticket=${related.ticket_id || related.id}`, '_blank');
-                          }}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium truncate">{related.title}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {stripHtml(related.description)?.slice(0, 60)}...
-                            </p>
-                          </div>
-                          <div className="text-right shrink-0 ml-2">
-                            <p className="text-[10px] font-mono text-muted-foreground">
-                              {related.ticket_id || `#${related.id?.slice(-6)}`}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {new Date(related.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-            
             {/* Auto-merge Suggestions Banner */}
             {mergeSuggestions.length > 0 && mergeSuggestions.filter(s => !dismissedMergeSuggestions.includes(s.ticket_id)).length > 0 && (
               <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
