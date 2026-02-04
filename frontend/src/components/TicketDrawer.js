@@ -269,6 +269,42 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const realtimeContext = useRealtime();
   const { joinLocation, leaveLocation, sendTyping, typingUsers, isConnected } = realtimeContext || {};
   
+  // Animation state for closing
+  const [isClosing, setIsClosing] = useState(false);
+  const closeTimeoutRef = useRef(null);
+  
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+  
+  // Reset closing state when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      setIsClosing(false);
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+    }
+  }, [isOpen]);
+  
+  // Handle close with animation
+  const handleCloseWithAnimation = useCallback(() => {
+    if (isClosing) return; // Prevent double-click
+    setIsClosing(true);
+    // Wait for animation to complete before actually closing
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsClosing(false);
+      closeTimeoutRef.current = null;
+      onClose();
+    }, 200); // Match the transition duration
+  }, [onClose, isClosing]);
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -956,8 +992,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           setShowTagDropdown(false);
           return;
         }
-        // Close the drawer
-        onClose();
+        // Close the drawer with animation
+        handleCloseWithAnimation();
         return;
       }
       
@@ -1019,7 +1055,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, showCannedPicker, showMergeModal, showLinkModal, showSplitModal, showFeatureRequestModal, showMoreMenu, showAssignDropdown, showTagDropdown, onClose, inputText]);
+  }, [isOpen, showCannedPicker, showMergeModal, showLinkModal, showSplitModal, showFeatureRequestModal, showMoreMenu, showAssignDropdown, showTagDropdown, handleCloseWithAnimation, inputText]);
 
   const fetchNotes = async (ticketId) => {
     setLoadingNotes(true);
@@ -1207,7 +1243,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const getPriorityConfig = (priority) => PRIORITIES.find(p => p.value === priority) || PRIORITIES[1];
   const getAssignee = () => formData.assignee_id && Array.isArray(users) ? users.find(u => u.id === formData.assignee_id) : null;
 
-  if (!isOpen || !ticket) return null;
+  if ((!isOpen && !isClosing) || !ticket) return null;
 
   const statusConfig = getStatusConfig(formData.status);
   const priorityConfig = getPriorityConfig(formData.priority);
@@ -1252,16 +1288,20 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop with fade animation */}
       <div
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
-        onClick={onClose}
+        className={`fixed inset-0 bg-black/70 backdrop-blur-sm z-50 transition-opacity duration-200 ${
+          isClosing ? 'opacity-0' : 'opacity-100 animate-in fade-in duration-200'
+        }`}
+        onClick={handleCloseWithAnimation}
         data-testid="drawer-backdrop"
       />
 
-      {/* Two-Panel Drawer */}
+      {/* Two-Panel Drawer with slide animation */}
       <div
-        className="fixed right-0 top-0 bottom-0 w-full max-w-5xl z-[60] flex shadow-2xl"
+        className={`fixed right-0 top-0 bottom-0 w-full max-w-5xl z-[60] flex shadow-2xl transition-transform duration-200 ease-out ${
+          isClosing ? 'translate-x-full' : 'translate-x-0 animate-in slide-in-from-right duration-300'
+        }`}
         data-testid="ticket-drawer"
       >
         {/* Left Panel - Conversation */}
@@ -1437,7 +1477,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 )}
               </div>
               <button
-                onClick={onClose}
+                onClick={handleCloseWithAnimation}
                 className="h-7 w-7 flex items-center justify-center rounded hover:bg-secondary/50 transition-colors ml-1"
                 data-testid="drawer-close-button"
                 title="Close"
@@ -2757,7 +2797,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 if (onUpdate) {
                   await onUpdate(ticket.id, { _merged: true, _mergedInto: targetTicketId }, true);
                 }
-                onClose();
+                handleCloseWithAnimation();
               }
             } catch (error) {
               console.error('Merge failed:', error);

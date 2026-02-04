@@ -3,6 +3,7 @@ import {
   Plus, Trash2, X, Loader2, Play, Clock, AlertTriangle, 
   Bell, ArrowUpCircle, Tag, Users
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -25,7 +26,7 @@ const ACTION_TYPES = [
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 const ESCALATION_LEVELS = ['L1', 'L2', 'L3'];
 
-const SLAEscalationTab = ({ teams, users }) => {
+const SLAEscalationTab = ({ teams = [], users = [] }) => {
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -59,9 +60,12 @@ const SLAEscalationTab = ({ teams, users }) => {
       if (response.ok) {
         const data = await response.json();
         setRules(data);
+      } else {
+        toast.error('Failed to load SLA rules');
       }
     } catch (error) {
       console.error('Failed to fetch SLA rules:', error);
+      toast.error('Failed to load SLA rules');
     } finally {
       setLoading(false);
     }
@@ -88,9 +92,14 @@ const SLAEscalationTab = ({ teams, users }) => {
         setShowCreateModal(false);
         setEditingRule(null);
         resetForm();
+        toast.success(editingRule ? 'Rule updated successfully' : 'Rule created successfully');
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast.error(errorData.detail || 'Failed to save rule');
       }
     } catch (error) {
       console.error('Failed to save rule:', error);
+      toast.error('Failed to save rule');
     } finally {
       setSaving(false);
     }
@@ -107,9 +116,13 @@ const SLAEscalationTab = ({ teams, users }) => {
       
       if (response.ok) {
         await fetchRules();
+        toast.success('Rule deleted successfully');
+      } else {
+        toast.error('Failed to delete rule');
       }
     } catch (error) {
       console.error('Failed to delete rule:', error);
+      toast.error('Failed to delete rule');
     }
   };
 
@@ -124,9 +137,13 @@ const SLAEscalationTab = ({ teams, users }) => {
       
       if (response.ok) {
         await fetchRules();
+        toast.success(rule.is_active ? 'Rule disabled' : 'Rule enabled');
+      } else {
+        toast.error('Failed to update rule status');
       }
     } catch (error) {
       console.error('Failed to toggle rule:', error);
+      toast.error('Failed to update rule status');
     }
   };
 
@@ -142,9 +159,13 @@ const SLAEscalationTab = ({ teams, users }) => {
       if (response.ok) {
         const data = await response.json();
         setCheckResults(data);
+        toast.success(`SLA check complete: ${data.escalated} tickets escalated`);
+      } else {
+        toast.error('Failed to run SLA check');
       }
     } catch (error) {
       console.error('Failed to run SLA check:', error);
+      toast.error('Failed to run SLA check');
     } finally {
       setRunningCheck(false);
     }
@@ -242,7 +263,7 @@ const SLAEscalationTab = ({ teams, users }) => {
             className="flex-1 h-9 px-3 rounded-lg bg-background border border-border text-sm"
           >
             <option value="">Select team...</option>
-            {teams.map(team => (
+            {Array.isArray(teams) && teams.map(team => (
               <option key={team.team_id} value={team.team_id}>
                 {team.name}
               </option>

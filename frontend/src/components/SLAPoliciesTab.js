@@ -82,23 +82,30 @@ const parseDuration = (value, unit) => {
 };
 
 // Duration input component
-const DurationInput = ({ value, onChange, label, min = 1 }) => {
-  const [inputValue, setInputValue] = useState('');
-  const [unit, setUnit] = useState('hours');
+// Helper to compute display unit and value from minutes
+const getDisplayUnit = (minutes) => {
+  if (minutes >= 1440 && minutes % 1440 === 0) {
+    return { displayValue: String(minutes / 1440), displayUnit: 'days' };
+  } else if (minutes >= 60) {
+    return { displayValue: String(Math.floor(minutes / 60)), displayUnit: 'hours' };
+  }
+  return { displayValue: String(minutes), displayUnit: 'minutes' };
+};
 
-  useEffect(() => {
-    // Convert minutes to best unit for display
-    if (value >= 1440 && value % 1440 === 0) {
-      setInputValue(String(value / 1440));
-      setUnit('days');
-    } else if (value >= 60) {
-      setInputValue(String(Math.floor(value / 60)));
-      setUnit('hours');
-    } else {
-      setInputValue(String(value));
-      setUnit('minutes');
-    }
-  }, [value]);
+const DurationInput = ({ value, onChange, min = 1 }) => {
+  // Compute initial values directly from props
+  const initial = getDisplayUnit(value);
+  const [inputValue, setInputValue] = useState(initial.displayValue);
+  const [unit, setUnit] = useState(initial.displayUnit);
+  const [prevValue, setPrevValue] = useState(value);
+
+  // Sync with external value changes (controlled component pattern)
+  if (value !== prevValue) {
+    const updated = getDisplayUnit(value);
+    setInputValue(updated.displayValue);
+    setUnit(updated.displayUnit);
+    setPrevValue(value);
+  }
 
   const handleChange = (newValue, newUnit) => {
     const minutes = parseDuration(newValue, newUnit);
@@ -155,7 +162,8 @@ const SLAPoliciesTab = () => {
       end: '18:00',
       days: [1, 2, 3, 4, 5]
     },
-    holidays: []
+    holidays: [],
+    escalation_debounce_minutes: 10
   });
 
   const [newHoliday, setNewHoliday] = useState('');
@@ -320,7 +328,7 @@ const SLAPoliciesTab = () => {
             <p className="text-muted-foreground mt-1">
               <strong>First Response Time:</strong> Maximum time before first agent reply. 
               <strong className="ml-2">Resolution Time:</strong> Maximum time to resolve and close the ticket.
-              SLA breaches trigger escalation rules you define in the "SLA Escalation" tab.
+              SLA breaches trigger escalation rules you define in the &quot;SLA Escalation&quot; tab.
             </p>
           </div>
         </div>
@@ -591,6 +599,38 @@ const SLAPoliciesTab = () => {
           </div>
         </div>
       )}
+
+      {/* Escalation Settings */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+          <AlertTriangle size={14} />
+          Escalation Settings
+        </h3>
+        
+        <div className="p-4 rounded-xl bg-secondary/20 border border-border/30">
+          <div className="max-w-md">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Escalation Debounce (minutes)
+            </label>
+            <input
+              type="number"
+              value={policies.escalation_debounce_minutes || 10}
+              onChange={(e) => {
+                const value = Math.max(1, Math.min(1440, parseInt(e.target.value) || 10));
+                setPolicies(prev => ({ ...prev, escalation_debounce_minutes: value }));
+                setHasChanges(true);
+              }}
+              min={1}
+              max={1440}
+              className="w-32 h-10 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Minimum time before the same escalation rule can trigger again on the same ticket.
+              This prevents notification spam. Default: 10 minutes.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* SLA Summary Table */}
       <div className="space-y-4">

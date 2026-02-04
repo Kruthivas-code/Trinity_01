@@ -96,10 +96,13 @@ def validate_environment():
 validate_environment()
 
 # ==================== Rate Limiting Setup ====================
+# Note: Rate limiter will be reconfigured with MongoDB storage after db connection
+# This initial limiter uses in-memory storage as a fallback
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["1000/hour", "100/minute"],
-    strategy="fixed-window"
+    strategy="fixed-window",
+    storage_uri="memory://"  # Will be replaced with MongoDB after connection
 )
 
 # Gmail API imports
@@ -160,7 +163,7 @@ ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "").split(",")
 # Default to preview URL if not set
 if not ALLOWED_ORIGINS or ALLOWED_ORIGINS == [""]:
     ALLOWED_ORIGINS = [
-        "https://reply-toolkit.preview.emergentagent.com",
+        "https://ticket-buddy-14.preview.emergentagent.com",
         "http://localhost:3000",
         "http://127.0.0.1:3000"
     ]
@@ -706,6 +709,18 @@ tickets_collection = db.tickets
 sessions_collection = db.user_sessions
 api_keys_collection = db.api_keys
 counters_collection = db.counters
+# Initialize MongoDB-based rate limiting for multi-server support
+# The limits library uses the rate_limit_counters and rate_limit_windows collections
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["1000/hour", "100/minute"],
+    strategy="fixed-window",
+    storage_uri=MONGO_URL,  # MONGO_URL already contains mongodb:// prefix
+    storage_options={"database_name": "tickflow"}  # Use same database as app
+)
+# Update the app's limiter reference to use MongoDB storage
+app.state.limiter = limiter
+logger.info("[STARTUP] Rate limiting initialized with MongoDB backend for multi-server support")
 
 # Emergent Auth Configuration
 EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
@@ -1788,6 +1803,7 @@ def calculate_business_minutes(start_time: datetime, end_time: datetime,
     """
     Calculate the number of business minutes between two times.
     Only counts time during business hours on working days, excluding holidays.
+    Supports overnight shifts (e.g., 22:00 - 06:00).
     
     Args:
         start_time: Start datetime (timezone aware)
@@ -1805,47 +1821,88 @@ def calculate_business_minutes(start_time: datetime, end_time: datetime,
     try:
         bh_start = datetime.strptime(business_hours.get("start", "09:00"), "%H:%M").time()
         bh_end = datetime.strptime(business_hours.get("end", "18:00"), "%H:%M").time()
-    except:
+    except (ValueError, AttributeError):
         bh_start = time(9, 0)
         bh_end = time(18, 0)
     
     working_days = business_hours.get("days", [1, 2, 3, 4, 5])  # Mon-Fri default
     holiday_set = set(holidays)
     
+    # Check if this is an overnight shift (end time is before start time)
+    is_overnight = bh_end < bh_start
+    
     total_minutes = 0
     current = start_time
     
-    # Iterate day by day
-    while current.date() <= end_time.date():
+    # Iterate day by day (with buffer for overnight shifts)
+    max_date = end_time.date() + timedelta(days=1) if is_overnight else end_time.date()
+    
+    while current.date() <= max_date:
         current_date = current.date()
         date_str = current_date.strftime("%Y-%m-%d")
-        
-        # Check if it's a working day and not a holiday
-        # Python's weekday(): Monday=0, Sunday=6
-        # Our format: Monday=1, Sunday=7
         day_of_week = current.isoweekday()
         
-        if day_of_week in working_days and date_str not in holiday_set:
-            # Calculate business hours for this day
-            day_start = datetime.combine(current_date, bh_start).replace(tzinfo=timezone.utc)
-            day_end = datetime.combine(current_date, bh_end).replace(tzinfo=timezone.utc)
+        if is_overnight:
+            # Overnight shift: e.g., 22:00 - 06:00
+            # The shift that STARTS on this day ends the next morning
+            next_date = current_date + timedelta(days=1)
             
-            # Adjust for actual start/end times
-            period_start = max(current, day_start)
+            # Check if this day is a working day (for the evening portion)
+            if day_of_week in working_days and date_str not in holiday_set:
+                # Evening portion: from bh_start to midnight
+                evening_start = datetime.combine(current_date, bh_start).replace(tzinfo=timezone.utc)
+                evening_end = datetime.combine(next_date, time(0, 0)).replace(tzinfo=timezone.utc)
+                
+                # Adjust for actual start/end times
+                period_start = max(current, evening_start)
+                period_end = min(end_time, evening_end)
+                
+                if period_start < period_end:
+                    minutes = (period_end - period_start).total_seconds() / 60
+                    total_minutes += minutes
             
-            if current.date() == end_time.date():
+            # Check if next day is a working day (for the morning portion of the shift that started yesterday)
+            # The morning portion belongs to the shift that STARTED yesterday
+            prev_date = current_date - timedelta(days=1)
+            prev_day_of_week = prev_date.isoweekday()
+            prev_date_str = prev_date.strftime("%Y-%m-%d")
+            
+            if prev_day_of_week in working_days and prev_date_str not in holiday_set:
+                # Morning portion: from midnight to bh_end (continuation of yesterday's shift)
+                morning_start = datetime.combine(current_date, time(0, 0)).replace(tzinfo=timezone.utc)
+                morning_end = datetime.combine(current_date, bh_end).replace(tzinfo=timezone.utc)
+                
+                # Adjust for actual start/end times
+                period_start = max(current, morning_start)
+                period_end = min(end_time, morning_end)
+                
+                if period_start < period_end:
+                    minutes = (period_end - period_start).total_seconds() / 60
+                    total_minutes += minutes
+        else:
+            # Normal daytime shift
+            if day_of_week in working_days and date_str not in holiday_set:
+                day_start = datetime.combine(current_date, bh_start).replace(tzinfo=timezone.utc)
+                day_end = datetime.combine(current_date, bh_end).replace(tzinfo=timezone.utc)
+                
+                # Adjust for actual start/end times
+                period_start = max(current, day_start)
                 period_end = min(end_time, day_end)
-            else:
-                period_end = day_end
-            
-            # Only count if period is valid
-            if period_start < period_end:
-                minutes = (period_end - period_start).total_seconds() / 60
-                total_minutes += minutes
+                
+                if period_start < period_end:
+                    minutes = (period_end - period_start).total_seconds() / 60
+                    total_minutes += minutes
         
-        # Move to next day at business hours start
+        # Move to next day at midnight for overnight, or at bh_start for normal
         next_day = current_date + timedelta(days=1)
-        current = datetime.combine(next_day, bh_start).replace(tzinfo=timezone.utc)
+        if is_overnight:
+            current = datetime.combine(next_day, time(0, 0)).replace(tzinfo=timezone.utc)
+        else:
+            current = datetime.combine(next_day, bh_start).replace(tzinfo=timezone.utc)
+        
+        # Safety check to prevent infinite loops
+        if current > end_time + timedelta(days=2):
+            break
     
     return total_minutes
 
@@ -1879,14 +1936,13 @@ def check_sla_escalations() -> dict:
     })
     holidays = sla_settings.get("holidays", [])
     
-    # Get open tickets that haven't been escalated in the last 30 minutes (prevent spam)
-    thirty_mins_ago = datetime.now(timezone.utc) - timedelta(minutes=30)
+    # Configurable debounce interval (default 10 minutes, can be overridden in settings)
+    debounce_minutes = sla_settings.get("escalation_debounce_minutes", 10)
+    debounce_ago = datetime.now(timezone.utc) - timedelta(minutes=debounce_minutes)
+    
+    # Get open tickets - we'll check debounce per-rule rather than globally
     open_tickets = list(tickets_collection.find({
-        "status": {"$nin": ["resolved", "closed"]},
-        "$or": [
-            {"last_sla_check": {"$exists": False}},
-            {"last_sla_check": {"$lt": thirty_mins_ago}}
-        ]
+        "status": {"$nin": ["resolved", "closed"]}
     }, {"_id": 0}))
     
     results["checked"] = len(open_tickets)
@@ -1930,8 +1986,23 @@ def check_sla_escalations() -> dict:
             updated_at = updated_at.replace(tzinfo=timezone.utc)
         idle_minutes = (now - updated_at).total_seconds() / 60
         
+        # Get history of applied rules for this ticket
+        applied_rules = ticket.get("sla_rules_applied", {})  # {rule_id: last_applied_time}
+        
         # Check each rule
         for rule in rules:
+            rule_id = rule.get("rule_id")
+            
+            # Check per-rule debounce - skip if this exact rule was applied recently
+            last_applied = applied_rules.get(rule_id)
+            if last_applied:
+                if isinstance(last_applied, str):
+                    last_applied = datetime.fromisoformat(last_applied.replace('Z', '+00:00'))
+                if last_applied.tzinfo is None:
+                    last_applied = last_applied.replace(tzinfo=timezone.utc)
+                if last_applied > debounce_ago:
+                    continue  # Skip - this rule was applied too recently
+            
             # Check filters
             priority_filter = rule.get("priority_filter")
             if priority_filter and priority not in priority_filter:
@@ -1960,7 +2031,7 @@ def check_sla_escalations() -> dict:
             if triggered:
                 # Apply actions
                 actions = rule.get("actions", [])
-                action_results = apply_sla_escalation_actions(ticket_id, actions)
+                action_results = apply_sla_escalation_actions(ticket_id, actions, ticket)
                 
                 results["escalated"] += 1
                 results["details"].append({
@@ -1970,10 +2041,15 @@ def check_sla_escalations() -> dict:
                     "actions_applied": action_results
                 })
                 
-                # Mark ticket as checked
+                # Mark this rule as applied with timestamp (allows other rules to still trigger)
+                applied_rules[rule_id] = now.isoformat()
                 tickets_collection.update_one(
                     {"ticket_id": ticket_id},
-                    {"$set": {"last_sla_check": now, "last_sla_rule": rule.get("rule_id")}}
+                    {"$set": {
+                        "last_sla_check": now, 
+                        "last_sla_rule": rule_id,
+                        "sla_rules_applied": applied_rules
+                    }}
                 )
                 
                 # Only apply first matching rule per ticket
@@ -1981,12 +2057,14 @@ def check_sla_escalations() -> dict:
     
     return results
 
-def apply_sla_escalation_actions(ticket_id: str, actions: list) -> list:
+def apply_sla_escalation_actions(ticket_id: str, actions: list, ticket: dict = None) -> list:
     """Apply SLA escalation actions to a ticket"""
     updates = {}
     results = []
     
-    ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    # Use provided ticket or fetch it
+    if ticket is None:
+        ticket = tickets_collection.find_one({"ticket_id": ticket_id})
     if not ticket:
         return results
     
@@ -2006,24 +2084,52 @@ def apply_sla_escalation_actions(ticket_id: str, actions: list) -> list:
             assignee = least_tickets_assign(action_value)
             if assignee:
                 updates["assignee_id"] = assignee
-                results.append(f"Reassigned to team {action_value}")
+                results.append(f"Reassigned to team {action_value} (agent: {assignee})")
+            else:
+                # Still reassign to team even if no agent available
+                results.append(f"Reassigned to team {action_value} (no agent available for auto-assignment)")
         elif action_type == "add_tag":
             existing_tags = ticket.get("tags", [])
             if action_value not in existing_tags:
                 updates["tags"] = existing_tags + [action_value]
                 results.append(f"Added tag {action_value}")
         elif action_type == "notify_user":
-            # Create a notification/internal note
+            # Create a system message in the ticket thread
             note_id = f"msg_{uuid.uuid4().hex[:12]}"
+            alert_message = action.get('message', 'Ticket requires attention due to SLA risk')
             messages_collection.insert_one({
                 "message_id": note_id,
                 "ticket_id": ticket_id,
                 "type": "system",
-                "content": f"SLA Alert: {action.get('message', 'Ticket requires attention')}",
+                "content": f"SLA Alert: {alert_message}",
                 "author_id": "system",
                 "created_at": datetime.now(timezone.utc),
                 "mentions": [action_value] if action_value else []
             })
+            
+            # Also create an actual notification in the notifications collection
+            if action_value:
+                notification_doc = {
+                    "notification_id": f"notif_{uuid.uuid4().hex[:12]}",
+                    "type": "sla_alert",
+                    "user_id": action_value,
+                    "ticket_id": ticket_id,
+                    "ticket_title": ticket.get("title", "Unknown"),
+                    "message": f"SLA Alert for ticket '{ticket.get('title', 'Unknown')}': {alert_message}",
+                    "priority": ticket.get("priority", "medium"),
+                    "read": False,
+                    "created_at": datetime.now(timezone.utc)
+                }
+                db.notifications.insert_one(notification_doc)
+                
+                # Broadcast real-time notification if function is available
+                try:
+                    from realtime import broadcast_notification
+                    import asyncio
+                    asyncio.create_task(broadcast_notification(action_value, notification_doc))
+                except (ImportError, RuntimeError):
+                    pass  # Real-time broadcast not available, notification saved to DB
+            
             results.append(f"Notified user {action_value}")
     
     if updates:
@@ -2343,12 +2449,12 @@ class RoutingRuleUpdate(BaseModel):
 class SLAEscalationRuleCreate(BaseModel):
     name: str
     description: Optional[str] = ""
-    trigger_type: str  # first_response_warning, first_response_breach, resolution_warning, resolution_breach, idle_ticket
-    trigger_threshold: int  # percentage (80 = 80% of SLA elapsed) or minutes for idle
+    trigger_type: str = Field(..., pattern="^(first_response_warning|first_response_breach|resolution_warning|resolution_breach|idle_ticket)$")
+    trigger_threshold: int = Field(ge=1, le=10000, description="Percentage (1-100) of SLA elapsed or minutes for idle")  
     priority_filter: Optional[List[str]] = None  # Apply only to these priorities, None = all
     escalation_level_filter: Optional[List[str]] = None  # Apply only to these levels, None = all
-    actions: List[Dict[str, Any]]  # Actions to take: set_priority, escalate_level, reassign_team, notify_user, add_tag
-    priority: int = 0  # Higher priority rules run first
+    actions: List[Dict[str, Any]] = Field(min_length=1, description="Actions to take: set_priority, escalate_level, reassign_team, notify_user, add_tag")
+    priority: int = Field(default=0, ge=0, le=1000, description="Higher priority rules run first")
     is_active: bool = True
 
 class SLAEscalationRuleUpdate(BaseModel):
@@ -4767,7 +4873,7 @@ async def gmail_connect(current_user: dict = Depends(get_current_user)):
 @app.get("/api/auth/gmail/callback")
 async def gmail_callback(code: str = None, state: str = None, error: str = None):
     """Handle Gmail OAuth callback"""
-    frontend_url = "https://reply-toolkit.preview.emergentagent.com"
+    frontend_url = "https://ticket-buddy-14.preview.emergentagent.com"
     
     if error:
         return RedirectResponse(url=f"{frontend_url}/settings?gmail_error={error}")
@@ -6001,6 +6107,7 @@ class SLAPoliciesUpdate(BaseModel):
     business_hours_only: Optional[bool] = None
     business_hours: Optional[Dict[str, Any]] = None
     holidays: Optional[List[str]] = None
+    escalation_debounce_minutes: Optional[int] = Field(None, ge=1, le=1440, description="Minutes before same rule can trigger again (1-1440)")
 
 @app.get("/api/admin/sla-policies")
 async def get_sla_policies(current_user: dict = Depends(get_current_user)):
@@ -6023,7 +6130,8 @@ async def get_sla_policies(current_user: dict = Depends(get_current_user)):
             "end": "18:00",
             "days": [1, 2, 3, 4, 5]  # Mon-Fri
         }),
-        "holidays": settings.get("holidays", [])
+        "holidays": settings.get("holidays", []),
+        "escalation_debounce_minutes": settings.get("escalation_debounce_minutes", 10)  # Default 10 min
     }
 
 @app.put("/api/admin/sla-policies")
@@ -6032,9 +6140,6 @@ async def update_sla_policies(
     current_user: dict = Depends(get_current_user)
 ):
     """Update SLA policy settings"""
-    # Get existing settings
-    existing = admin_settings_collection.find_one({"type": "sla_settings"}) or {"type": "sla_settings"}
-    
     # Update only provided fields
     update_data = {"updated_at": datetime.now(timezone.utc)}
     
@@ -6059,6 +6164,9 @@ async def update_sla_policies(
     
     if data.holidays is not None:
         update_data["holidays"] = data.holidays
+    
+    if data.escalation_debounce_minutes is not None:
+        update_data["escalation_debounce_minutes"] = data.escalation_debounce_minutes
     
     # Upsert the settings
     admin_settings_collection.update_one(
@@ -6240,7 +6348,7 @@ class SLAPolicy(BaseModel):
     is_active: bool = True
 
 @app.get("/api/sla-policies")
-async def get_sla_policies(current_user: dict = Depends(get_current_user)):
+async def list_sla_policies(current_user: dict = Depends(get_current_user)):
     """Get all SLA policies"""
     policies = list(sla_policies_collection.find({}, {"_id": 0}))
     return policies
@@ -7501,7 +7609,7 @@ async def send_csat_survey(
     csat_tokens_collection.insert_one(token_doc)
     
     # Generate email content (MOCKED - not actually sent)
-    base_url = "https://reply-toolkit.preview.emergentagent.com"
+    base_url = "https://ticket-buddy-14.preview.emergentagent.com"
     
     email_content = {
         "to": customer_email,
