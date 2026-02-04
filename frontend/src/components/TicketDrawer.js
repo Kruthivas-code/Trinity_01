@@ -1677,7 +1677,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   <ActivityTimeline activities={activityFeed} loading={loadingActivity} />
                 </div>
               </div>
-            )}}
+            )}
             
             {/* Conversation Tab Content */}
             {activeTab === 'conversation' && (
