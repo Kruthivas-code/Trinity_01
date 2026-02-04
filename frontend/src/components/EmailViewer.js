@@ -1,184 +1,117 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Mail, Eye, EyeOff, ExternalLink, Maximize2, Minimize2 } from 'lucide-react';
-import DOMPurify from 'dompurify';
+import React, { useMemo } from 'react';
+import { Image, ExternalLink } from 'lucide-react';
 
 /**
- * EmailViewer - Production-grade email content viewer
+ * EmailViewer - Clean, minimal email content viewer
  * 
  * Features:
- * - Safe HTML rendering with DOMPurify
- * - Toggle between HTML and plain text view
- * - Image loading control
- * - Responsive iframe for complex email layouts
- * - External link handling
+ * - Always plain text display (no HTML/CSS leakage)
+ * - Extracts images from HTML and shows as attachments
+ * - Clean quote handling for email threads
  */
 const EmailViewer = ({ 
   ticket, 
   className = '' 
 }) => {
-  const [viewMode, setViewMode] = useState('html'); // 'html' | 'text'
-  const [loadImages, setLoadImages] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const iframeRef = useRef(null);
   
-  const hasHtml = !!ticket?.email_html;
-  const hasText = !!ticket?.email_text;
-  
-  // Configure DOMPurify for email content
-  const sanitizeHtml = (html) => {
-    if (!html) return '';
+  // Extract image URLs from HTML content
+  const extractedImages = useMemo(() => {
+    if (!ticket?.email_html) return [];
     
-    // Configure DOMPurify
-    const config = {
-      ALLOWED_TAGS: [
-        'p', 'br', 'b', 'i', 'u', 'strong', 'em', 'a', 'img', 
-        'div', 'span', 'table', 'tr', 'td', 'th', 'tbody', 'thead',
-        'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'blockquote', 'pre', 'code', 'hr', 'center', 'font',
-        'style', 'head', 'body', 'html'
-      ],
-      ALLOWED_ATTR: [
-        'href', 'src', 'alt', 'title', 'class', 'id', 'style',
-        'width', 'height', 'align', 'valign', 'bgcolor', 'color',
-        'border', 'cellpadding', 'cellspacing', 'target', 'rel',
-        'colspan', 'rowspan', 'face', 'size'
-      ],
-      ALLOW_DATA_ATTR: false,
-      ADD_ATTR: ['target'],
-      FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
-      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
-    };
+    const images = [];
+    const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+    let match;
     
-    let sanitized = DOMPurify.sanitize(html, config);
-    
-    // Add target="_blank" to all links for safety
-    sanitized = sanitized.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ');
-    
-    // If images should not load, replace src with data-src
-    if (!loadImages) {
-      sanitized = sanitized.replace(/(<img[^>]*)\ssrc=/gi, '$1 data-blocked-src=');
+    while ((match = imgRegex.exec(ticket.email_html)) !== null) {
+      const src = match[1];
+      // Filter out tracking pixels and tiny images
+      if (src && 
+          !src.includes('tracking') && 
+          !src.includes('pixel') &&
+          !src.includes('spacer') &&
+          !src.includes('1x1') &&
+          !src.startsWith('data:image/gif') // Often tracking
+      ) {
+        // Try to get alt text
+        const altMatch = match[0].match(/alt=["']([^"']+)["']/i);
+        images.push({
+          src,
+          alt: altMatch ? altMatch[1] : 'Image'
+        });
+      }
     }
     
-    return sanitized;
-  };
+    // Deduplicate by src
+    return images.filter((img, index, self) => 
+      index === self.findIndex(i => i.src === img.src)
+    ).slice(0, 10); // Limit to 10 images
+  }, [ticket?.email_html]);
   
-  // Wrap HTML content with email-friendly styles
-  const getStyledHtml = () => {
-    const sanitized = sanitizeHtml(ticket?.email_html);
-    
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style>
-          * {
-            box-sizing: border-box;
-          }
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            font-size: 14px;
-            line-height: 1.5;
-            color: #333;
-            margin: 0;
-            padding: 16px;
-            background: transparent;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-          }
-          img {
-            max-width: 100%;
-            height: auto;
-          }
-          a {
-            color: #2563eb;
-            text-decoration: none;
-          }
-          a:hover {
-            text-decoration: underline;
-          }
-          table {
-            max-width: 100%;
-            border-collapse: collapse;
-          }
-          blockquote {
-            margin: 10px 0;
-            padding: 10px 20px;
-            border-left: 3px solid #ddd;
-            color: #666;
-            background: #f9f9f9;
-          }
-          pre, code {
-            background: #f4f4f4;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: monospace;
-            font-size: 13px;
-          }
-          pre {
-            padding: 12px;
-            overflow-x: auto;
-          }
-          /* Hide tracking pixels */
-          img[width="1"], img[height="1"] {
-            display: none !important;
-          }
-        </style>
-      </head>
-      <body>
-        ${sanitized}
-      </body>
-      </html>
-    `;
-  };
-  
-  // Adjust iframe height to content
-  useEffect(() => {
-    if (iframeRef.current && viewMode === 'html' && hasHtml) {
-      const iframe = iframeRef.current;
-      
-      const adjustHeight = () => {
-        try {
-          const doc = iframe.contentDocument || iframe.contentWindow?.document;
-          if (doc && doc.body) {
-            const height = Math.max(
-              doc.body.scrollHeight,
-              doc.documentElement.scrollHeight,
-              200 // minimum height
-            );
-            iframe.style.height = Math.min(height, isExpanded ? 2000 : 500) + 'px';
-          }
-        } catch (e) {
-          // Cross-origin issues - use default height
-          iframe.style.height = isExpanded ? '800px' : '400px';
-        }
-      };
-      
-      iframe.onload = adjustHeight;
-      // Also adjust after images load
-      setTimeout(adjustHeight, 500);
+  // Convert HTML to clean plain text
+  const getCleanText = useMemo(() => {
+    // Prefer email_text if available
+    if (ticket?.email_text) {
+      return ticket.email_text;
     }
-  }, [viewMode, hasHtml, ticket?.email_html, loadImages, isExpanded]);
+    
+    // Convert HTML to text
+    if (ticket?.email_html) {
+      let text = ticket.email_html;
+      
+      // Remove style tags and their content
+      text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      
+      // Remove script tags
+      text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+      
+      // Remove head section
+      text = text.replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '');
+      
+      // Convert common block elements to newlines
+      text = text.replace(/<\/?(p|div|br|tr|li|h[1-6])[^>]*>/gi, '\n');
+      
+      // Remove all remaining HTML tags
+      text = text.replace(/<[^>]+>/g, '');
+      
+      // Decode HTML entities
+      text = text.replace(/&nbsp;/gi, ' ');
+      text = text.replace(/&amp;/gi, '&');
+      text = text.replace(/&lt;/gi, '<');
+      text = text.replace(/&gt;/gi, '>');
+      text = text.replace(/&quot;/gi, '"');
+      text = text.replace(/&#39;/gi, "'");
+      text = text.replace(/&[#\w]+;/gi, ''); // Remove other entities
+      
+      // Clean up whitespace
+      text = text.replace(/[ \t]+/g, ' '); // Multiple spaces to single
+      text = text.replace(/\n[ \t]+/g, '\n'); // Remove leading spaces on lines
+      text = text.replace(/[ \t]+\n/g, '\n'); // Remove trailing spaces on lines
+      text = text.replace(/\n{3,}/g, '\n\n'); // Max 2 newlines
+      
+      return text.trim();
+    }
+    
+    return ticket?.description || '';
+  }, [ticket?.email_html, ticket?.email_text, ticket?.description]);
   
-  // Format plain text with proper quote handling for email threads
+  // Format plain text with proper quote handling
   const formatPlainText = (text) => {
-    if (!text) return 'No content';
+    if (!text) return <span className="text-muted-foreground">No content</span>;
     
-    // Split into lines and process
     const lines = text.split('\n');
     const elements = [];
     let quoteBuffer = [];
+    let lastWasEmpty = false;
     
     const flushQuoteBuffer = () => {
       if (quoteBuffer.length > 0) {
         elements.push(
           <blockquote 
             key={`quote-${elements.length}`} 
-            className="my-2 pl-3 py-1 border-l-2 border-muted-foreground/40 text-muted-foreground/80 text-sm bg-muted/20 rounded-r"
+            className="my-2 pl-3 py-1 border-l-2 border-muted-foreground/30 text-muted-foreground/70 text-[13px]"
           >
             {quoteBuffer.map((line, i) => (
-              <div key={i} className="leading-relaxed">{line.replace(/^>+\s*/, '')}</div>
+              <div key={i}>{line.replace(/^>+\s*/, '')}</div>
             ))}
           </blockquote>
         );
@@ -187,153 +120,82 @@ const EmailViewer = ({
     };
     
     lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
       const isQuoted = /^>+/.test(line.trimStart());
       
-      // Check for common reply header patterns
-      const isReplyHeader = /^On .+ wrote:$/i.test(line.trim()) || 
-                            /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}.+wrote:?$/i.test(line.trim()) ||
-                            /^.+<.+@.+>.+wrote:?$/i.test(line.trim()) ||
-                            /^-{3,}\s*Original Message\s*-{3,}$/i.test(line.trim()) ||
-                            /^From:.*$/i.test(line.trim()) && index > 0;
+      // Check for reply header patterns
+      const isReplyHeader = /^On .+ wrote:$/i.test(trimmedLine) || 
+                            /^-{3,}\s*(Original Message|Forwarded message)\s*-{3,}$/i.test(trimmedLine) ||
+                            /^From:.*@.*$/i.test(trimmedLine) && index > 5;
       
       if (isQuoted) {
         quoteBuffer.push(line);
       } else if (isReplyHeader) {
         flushQuoteBuffer();
         elements.push(
-          <div key={`header-${index}`} className="my-3 py-2 text-xs text-muted-foreground/60 border-t border-border/30 italic">
-            {line}
+          <div key={`header-${index}`} className="my-3 pt-2 text-xs text-muted-foreground/50 border-t border-border/20">
+            {trimmedLine}
           </div>
         );
+      } else if (!trimmedLine) {
+        flushQuoteBuffer();
+        if (!lastWasEmpty && elements.length > 0) {
+          elements.push(<div key={`space-${index}`} className="h-2" />);
+          lastWasEmpty = true;
+        }
       } else {
         flushQuoteBuffer();
-        if (line.trim()) {
-          elements.push(<div key={index} className="leading-relaxed">{line}</div>);
-        } else if (elements.length > 0) {
-          elements.push(<div key={index} className="h-2" />);
-        }
+        elements.push(<div key={index}>{trimmedLine}</div>);
+        lastWasEmpty = false;
       }
     });
     
     flushQuoteBuffer();
-    return elements.length > 0 ? elements : 'No content';
+    return elements.length > 0 ? elements : <span className="text-muted-foreground">No content</span>;
   };
-  
-  // If no email content, show description
-  if (!hasHtml && !hasText) {
-    return (
-      <div className={`text-sm text-muted-foreground ${className}`}>
-        {ticket?.description || 'No content available'}
-      </div>
-    );
-  }
   
   return (
     <div className={`email-viewer ${className}`}>
-      {/* Controls */}
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/30">
-        <div className="flex items-center gap-2">
-          {/* View Mode Toggle */}
-          {hasHtml && hasText && (
-            <div className="flex items-center bg-secondary/50 rounded-lg p-0.5">
-              <button
-                onClick={() => setViewMode('html')}
-                className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                  viewMode === 'html' 
-                    ? 'bg-background text-foreground shadow-sm' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Rich
-              </button>
-              <button
-                onClick={() => setViewMode('text')}
-                className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
-                  viewMode === 'text' 
-                    ? 'bg-background text-foreground shadow-sm' 
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                Plain
-              </button>
-            </div>
-          )}
-          
-          {/* Source indicator */}
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Mail size={12} />
-            <span>Email</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-1">
-          {/* Image Loading Toggle */}
-          {hasHtml && viewMode === 'html' && (
-            <button
-              onClick={() => setLoadImages(!loadImages)}
-              className={`p-1.5 rounded-md transition-colors ${
-                loadImages 
-                  ? 'text-foreground bg-secondary/50' 
-                  : 'text-muted-foreground hover:bg-secondary/30'
-              }`}
-              title={loadImages ? 'Hide images' : 'Show images'}
-            >
-              {loadImages ? <Eye size={14} /> : <EyeOff size={14} />}
-            </button>
-          )}
-          
-          {/* Expand Toggle */}
-          {hasHtml && viewMode === 'html' && (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="p-1.5 rounded-md text-muted-foreground hover:bg-secondary/30 transition-colors"
-              title={isExpanded ? 'Collapse' : 'Expand'}
-            >
-              {isExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-            </button>
-          )}
-        </div>
+      {/* Plain text content */}
+      <div className="text-sm text-foreground leading-relaxed">
+        {formatPlainText(getCleanText)}
       </div>
       
-      {/* Content */}
-      <div className={`rounded-lg overflow-hidden ${isExpanded ? '' : 'max-h-[500px] overflow-y-auto'}`}>
-        {viewMode === 'html' && hasHtml ? (
-          <iframe
-            ref={iframeRef}
-            srcDoc={getStyledHtml()}
-            className="w-full border-0 bg-white rounded-lg"
-            style={{ minHeight: '200px', height: '400px' }}
-            sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-            title="Email content"
-          />
-        ) : (
-          <div className="p-4 bg-secondary/20 rounded-lg">
-            <div className="text-sm text-foreground">
-              {formatPlainText(ticket?.email_text || ticket?.description)}
-            </div>
+      {/* Extracted images as attachments */}
+      {extractedImages.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-border/30">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+            <Image size={12} />
+            <span>Attachments ({extractedImages.length})</span>
           </div>
-        )}
-      </div>
-      
-      {/* Email metadata */}
-      {ticket?.email_sender && (
-        <div className="mt-3 pt-2 border-t border-border/30 text-xs text-muted-foreground space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-medium w-12">From:</span>
-            <span className="truncate">{ticket.email_sender}</span>
+          <div className="flex flex-wrap gap-2">
+            {extractedImages.map((img, index) => (
+              <a
+                key={index}
+                href={img.src}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative w-16 h-16 rounded-md overflow-hidden bg-secondary/50 border border-border/30 hover:border-primary/50 transition-colors"
+                title={img.alt}
+              >
+                <img 
+                  src={img.src} 
+                  alt={img.alt}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'flex';
+                  }}
+                />
+                <div className="hidden absolute inset-0 items-center justify-center bg-secondary/80 text-muted-foreground">
+                  <Image size={16} />
+                </div>
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <ExternalLink size={14} className="text-white drop-shadow" />
+                </div>
+              </a>
+            ))}
           </div>
-          {ticket.email_to && (
-            <div className="flex items-center gap-2">
-              <span className="font-medium w-12">To:</span>
-              <span className="truncate">{ticket.email_to}</span>
-            </div>
-          )}
-          {ticket.email_date && (
-            <div className="flex items-center gap-2">
-              <span className="font-medium w-12">Date:</span>
-              <span>{ticket.email_date}</span>
-            </div>
-          )}
         </div>
       )}
     </div>
