@@ -246,10 +246,7 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
           </span>
         </div>
         
-        {/* Subject line for first message */}
-        {subject && isFirst && (
-          <p className="text-xs text-muted-foreground mb-2 pl-8">Re: {subject}</p>
-        )}
+        {/* Removed: Subject line was redundant */}
         
         {/* Message Body - Use EmailViewer for email content with HTML */}
         <div className="text-sm text-foreground/90 leading-relaxed pl-8">
