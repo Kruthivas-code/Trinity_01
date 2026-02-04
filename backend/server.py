@@ -6314,22 +6314,37 @@ async def get_related_tickets(
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     
-    # Get customer email
+    # Get customer email - normalize it
     customer_email = ticket.get("customer_email") or ticket.get("email_sender")
     if not customer_email:
         return []
     
-    # Find other tickets from same customer
+    # Extract just the email address from formats like "Name <email@domain.com>"
+    customer_email_clean = customer_email.strip()
+    if '<' in customer_email_clean and '>' in customer_email_clean:
+        # Extract email from angle brackets
+        match = re.search(r'<([^>]+)>', customer_email_clean)
+        if match:
+            customer_email_clean = match.group(1)
+    
+    customer_email_lower = customer_email_clean.lower()
+    
+    # Find other tickets from same customer using case-insensitive matching
+    # Match both the original format and the cleaned email
     related = list(tickets_collection.find({
         "$and": [
             {"$or": [
-                {"customer_email": {"$regex": f"^{re.escape(customer_email)}$", "$options": "i"}},
-                {"email_sender": {"$regex": f"^{re.escape(customer_email)}$", "$options": "i"}}
+                {"customer_email": customer_email},
+                {"customer_email": customer_email_clean},
+                {"customer_email": {"$regex": f"^{re.escape(customer_email_clean)}$", "$options": "i"}},
+                {"email_sender": customer_email},
+                {"email_sender": customer_email_clean},
+                {"email_sender": {"$regex": f"^{re.escape(customer_email_clean)}$", "$options": "i"}},
+                {"email_sender": {"$regex": f"<{re.escape(customer_email_clean)}>", "$options": "i"}}
             ]},
-            {"id": {"$ne": ticket.get("id")}},
             {"ticket_id": {"$ne": ticket.get("ticket_id")}}
         ]
-    }).sort("created_at", DESCENDING).limit(20))
+    }).sort("updated_at", DESCENDING).limit(20))
     
     return [serialize_doc(t) for t in related]
 
