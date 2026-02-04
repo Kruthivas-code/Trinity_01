@@ -1297,37 +1297,36 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         data-testid="drawer-backdrop"
       />
 
-      {/* Three-Panel Drawer with slide animation */}
+      {/* Three-Panel Drawer with slide animation - fixed to right side */}
       <div
-        className={`fixed right-0 top-0 bottom-0 w-full max-w-[1400px] z-[60] flex shadow-2xl transition-transform duration-200 ease-out ${
+        className={`fixed right-0 top-0 bottom-0 z-[60] flex shadow-2xl transition-transform duration-200 ease-out ${
           isClosing ? 'translate-x-full' : 'translate-x-0 animate-in slide-in-from-right duration-300'
         }`}
+        style={{ width: 'calc(100vw - 220px)', maxWidth: '1200px' }}
         data-testid="ticket-drawer"
       >
         {/* Left Panel - Customer Ticket History */}
-        <div className="w-[280px] bg-background border-l border-r border-border/40 flex flex-col shrink-0" data-testid="customer-history-panel">
+        <div className="w-[240px] bg-background border-l border-border/40 flex flex-col shrink-0" data-testid="customer-history-panel">
           {/* Customer History Header */}
-          <div className="h-12 px-3 flex items-center justify-between border-b border-border/30 shrink-0 bg-secondary/20">
+          <div className="h-12 px-3 flex items-center justify-between border-b border-border/30 shrink-0">
             <div className="flex items-center gap-2">
               <Users size={14} className="text-primary" />
               <span className="text-xs font-medium">Customer Tickets</span>
             </div>
-            {relatedTickets.length > 0 && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
-                {relatedTickets.length + 1}
-              </span>
-            )}
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+              {relatedTickets.length + 1}
+            </span>
           </div>
           
           {/* Customer Info */}
           {(ticket.customer_email || ticket.email_sender || ticket.customer_name) && (
-            <div className="px-3 py-2.5 border-b border-border/30 bg-secondary/10">
+            <div className="px-3 py-2 border-b border-border/30">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/40 to-accent/40 flex items-center justify-center text-xs font-medium shrink-0">
+                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary shrink-0">
                   {(ticket.customer_name || ticket.email_sender_name || ticket.customer_email || 'C').charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">
+                  <p className="text-xs font-medium truncate">
                     {ticket.customer_name || ticket.email_sender_name || 'Customer'}
                   </p>
                   <p className="text-[10px] text-muted-foreground truncate">
@@ -1342,37 +1341,34 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           <div className="flex-1 overflow-y-auto">
             {loadingRelated ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 size={18} className="animate-spin text-muted-foreground" />
+                <Loader2 size={16} className="animate-spin text-muted-foreground" />
               </div>
             ) : (
               <div className="p-2 space-y-1">
                 {/* Current Ticket - highlighted */}
                 <div
-                  className="p-2.5 rounded-lg bg-primary/10 border border-primary/30 cursor-default"
+                  className="p-2 rounded-md bg-primary/10 border border-primary/20 cursor-default"
                   data-testid="current-ticket-item"
                 >
                   <div className="flex items-center gap-1.5 mb-1">
                     <span className="text-[10px] font-mono text-primary font-medium">
                       {ticket.ticket_id || `#${ticket.id?.slice(-8)}`}
                     </span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${getStatusConfig(ticket.status).color} text-white`}>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${getStatusConfig(ticket.status).color} text-white`}>
                       {getStatusConfig(ticket.status).label}
                     </span>
                   </div>
-                  <p className="text-xs font-medium text-foreground line-clamp-2 mb-1">
+                  <p className="text-[11px] font-medium text-foreground line-clamp-2 mb-1">
                     {ticket.title}
                   </p>
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                     <span>
                       {new Date(ticket.updated_at || ticket.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
-                    <span className="truncate max-w-[100px]">
+                    <span className="truncate max-w-[80px]">
                       {assignee?.name || 'Unassigned'}
                     </span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground/70 mt-1 line-clamp-2">
-                    {stripHtml(ticket.description || ticket.email_text)?.slice(0, 80)}...
-                  </p>
                 </div>
                 
                 {/* Other tickets from same customer */}
@@ -1383,9 +1379,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   return (
                     <div
                       key={related.id || related.ticket_id}
-                      className="p-2.5 rounded-lg bg-secondary/20 border border-border/30 hover:bg-secondary/40 hover:border-border/50 cursor-pointer transition-colors"
+                      className="p-2 rounded-md bg-secondary/30 border border-transparent hover:bg-secondary/50 hover:border-border/30 cursor-pointer transition-colors"
                       onClick={() => {
-                        // Navigate to the ticket
                         window.location.href = `/all-tickets?ticket=${related.ticket_id || related.id}`;
                       }}
                       data-testid={`related-ticket-${related.ticket_id || related.id}`}
@@ -1394,33 +1389,29 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                         <span className="text-[10px] font-mono text-muted-foreground">
                           {related.ticket_id || `#${related.id?.slice(-8)}`}
                         </span>
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${relatedStatus.color} text-white`}>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${relatedStatus.color} text-white`}>
                           {relatedStatus.label}
                         </span>
                       </div>
-                      <p className="text-xs font-medium text-foreground/90 line-clamp-2 mb-1">
+                      <p className="text-[11px] font-medium text-foreground/80 line-clamp-2 mb-1">
                         {related.title}
                       </p>
                       <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                         <span>
                           {new Date(related.updated_at || related.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
-                        <span className="truncate max-w-[100px]">
+                        <span className="truncate max-w-[80px]">
                           {relatedAssignee?.name || 'Unassigned'}
                         </span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground/70 mt-1 line-clamp-2">
-                        {stripHtml(related.description || related.email_text)?.slice(0, 80)}...
-                      </p>
                     </div>
                   );
                 })}
                 
                 {/* Empty state when no other tickets */}
                 {relatedTickets.length === 0 && (
-                  <div className="text-center py-4 text-muted-foreground/60">
-                    <Mail size={20} className="mx-auto mb-2 opacity-50" />
-                    <p className="text-[11px]">No other tickets from this customer</p>
+                  <div className="text-center py-6 text-muted-foreground/50">
+                    <p className="text-[11px]">No other tickets</p>
                   </div>
                 )}
               </div>
@@ -1429,7 +1420,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         </div>
         
         {/* Middle Panel - Conversation */}
-        <div className="flex-1 bg-card border-r border-border/40 flex flex-col min-w-0">
+        <div className="flex-1 bg-card border-l border-r border-border/40 flex flex-col min-w-0">
           {/* Header */}
           <div className="h-12 px-4 flex items-center justify-between border-b border-border/30 shrink-0 bg-background/50">
             <div className="flex items-center gap-2 min-w-0">
