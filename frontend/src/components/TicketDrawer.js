@@ -1620,24 +1620,64 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
               }`}
-              data-testid="tab-activity"
+              data-testid="tab-metadata"
             >
               <Activity size={14} />
-              Activity
-              {activityFeed.length > 0 && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
-                  {activityFeed.length}
-                </span>
-              )}
+              Metadata
             </button>
           </div>
 
           {/* Conversation Thread - Scrollable */}
           <div ref={conversationRef} className="flex-1 overflow-y-auto p-4 space-y-3">
-            {/* Activity Tab Content */}
+            {/* Metadata Tab Content */}
             {activeTab === 'activity' && (
-              <ActivityTimeline activities={activityFeed} loading={loadingActivity} />
-            )}
+              <div className="space-y-4">
+                {/* Email Metadata */}
+                {ticket.source === 'email' && (ticket.email_sender || ticket.email_to) && (
+                  <div className="p-3 rounded-lg bg-secondary/20 border border-border/30">
+                    <h4 className="text-xs font-medium text-muted-foreground mb-2">Email Details</h4>
+                    <div className="space-y-1.5 text-sm">
+                      {ticket.email_sender && (
+                        <div className="flex">
+                          <span className="w-14 text-muted-foreground shrink-0">From:</span>
+                          <span className="text-foreground truncate">{ticket.email_sender}</span>
+                        </div>
+                      )}
+                      {ticket.email_to && (
+                        <div className="flex">
+                          <span className="w-14 text-muted-foreground shrink-0">To:</span>
+                          <span className="text-foreground truncate">{ticket.email_to}</span>
+                        </div>
+                      )}
+                      {ticket.email_cc && (
+                        <div className="flex">
+                          <span className="w-14 text-muted-foreground shrink-0">CC:</span>
+                          <span className="text-foreground truncate">{ticket.email_cc}</span>
+                        </div>
+                      )}
+                      {ticket.email_date && (
+                        <div className="flex">
+                          <span className="w-14 text-muted-foreground shrink-0">Date:</span>
+                          <span className="text-foreground">{ticket.email_date}</span>
+                        </div>
+                      )}
+                      {ticket.email_message_id && (
+                        <div className="flex">
+                          <span className="w-14 text-muted-foreground shrink-0">ID:</span>
+                          <span className="text-foreground/60 text-xs font-mono truncate">{ticket.email_message_id}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Activity Timeline */}
+                <div>
+                  <h4 className="text-xs font-medium text-muted-foreground mb-2">Activity Log</h4>
+                  <ActivityTimeline activities={activityFeed} loading={loadingActivity} />
+                </div>
+              </div>
+            )}}
             
             {/* Conversation Tab Content */}
             {activeTab === 'conversation' && (
