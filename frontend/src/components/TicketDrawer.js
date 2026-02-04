@@ -1378,7 +1378,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 {/* Other tickets from same customer */}
                 {relatedTickets.map(related => {
                   const relatedStatus = STATUSES.find(s => s.value === related.status) || STATUSES[0];
-                  const relatedAssignee = users?.find(u => (u.id || u.user_id) === related.assignee_id);
+                  const relatedAssignee = Array.isArray(users) ? users.find(u => (u.id || u.user_id) === related.assignee_id) : null;
                   
                   return (
                     <div
