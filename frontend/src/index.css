@@ -76,68 +76,63 @@
 
   /* ═══════════════════════════════════════════════════════════════
      TRINITY DESIGN SYSTEM - Light Theme
-     Clean, airy with teal accent
+     Crisp white & black for maximum readability
   ═══════════════════════════════════════════════════════════════ */
   .light {
-    /* Core palette - Clean white/gray */
-    --background: 0 0% 100%;
-    --foreground: 220 25% 12%;
+    /* Core palette - Pure white background, near-black text */
+    --background: 0 0% 99%;
+    --foreground: 0 0% 9%;
     
-    /* Card system */
+    /* Card system - Clean white */
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 12%;
+    --card-foreground: 0 0% 9%;
     
     /* Popover/Dropdown */
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 12%;
+    --popover-foreground: 0 0% 9%;
     
-    /* Primary - Deeper teal for contrast on light */
-    --primary: 187 75% 40%;
+    /* Primary - Dark charcoal-black for strong visibility */
+    --primary: 220 15% 20%;
     --primary-foreground: 0 0% 100%;
     
-    /* Secondary */
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 25% 12%;
+    /* Secondary - Very light neutral gray */
+    --secondary: 220 10% 95%;
+    --secondary-foreground: 0 0% 9%;
     
-    /* Muted */
-    --muted: 220 14% 95%;
-    --muted-foreground: 220 10% 45%;
+    /* Muted - Soft gray tones */
+    --muted: 220 10% 94%;
+    --muted-foreground: 0 0% 40%;
     
-    /* Accent */
-    --accent: 187 60% 45%;
+    /* Accent - Subtle dark slate for highlights */
+    --accent: 220 12% 28%;
     --accent-foreground: 0 0% 100%;
     
-    /* Destructive - Subtle coral */
-    --destructive: 12 65% 50%;
+    /* Destructive - Muted warm red, not harsh */
+    --destructive: 0 60% 48%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Borders */
-    --border: 220 13% 90%;
-    --input: 220 13% 90%;
-    --ring: 187 75% 40%;
+    /* Borders - Visible but not heavy */
+    --border: 220 10% 88%;
+    --input: 220 10% 88%;
+    --ring: 220 15% 20%;
     
     /* ═══════════════════════════════════════════════════════════
-       GLASS MORPHISM TOKENS - Light Mode
+       CLEAN SURFACE TOKENS - Light Mode
     ═══════════════════════════════════════════════════════════ */
-    --glass-bg: linear-gradient(135deg, 
-                  rgba(255, 255, 255, 0.85) 0%, 
-                  rgba(255, 255, 255, 0.9) 100%);
-    --glass-elevated-bg: linear-gradient(135deg, 
-                          rgba(255, 255, 255, 0.95) 0%, 
-                          rgba(255, 255, 255, 0.98) 100%);
-    --glass-border: hsla(220, 20%, 80%, 0.5);
-    --glass-ring: hsla(187, 75%, 40%, 0.3);
-    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 
-                    0 2px 8px rgba(0, 0, 0, 0.04),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    --glass-bg: rgba(255, 255, 255, 0.98);
+    --glass-elevated-bg: rgba(255, 255, 255, 1);
+    --glass-border: hsla(220, 10%, 80%, 0.6);
+    --glass-ring: hsla(220, 15%, 20%, 0.2);
+    --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 
+                    0 1px 2px rgba(0, 0, 0, 0.04);
     
-    /* Light mode gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(187, 75%, 40%) 0%, hsl(187, 60%, 45%) 100%);
-    --gradient-card: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsla(187, 75%, 40%, 0.05) 0%, transparent 100%);
+    /* Light mode gradients - Flat and clean */
+    --gradient-primary: linear-gradient(135deg, hsl(220, 15%, 20%) 0%, hsl(220, 12%, 28%) 100%);
+    --gradient-card: rgba(255, 255, 255, 1);
+    --gradient-subtle: linear-gradient(180deg, hsla(220, 10%, 50%, 0.03) 0%, transparent 100%);
     
-    /* Trident brand */
-    --trident: 187 75% 40%;
+    /* Trident brand - Dark for contrast */
+    --trident: 220 15% 20%;
   }
 
   * {
