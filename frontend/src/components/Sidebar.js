@@ -191,15 +191,15 @@ const Sidebar = ({ user }) => {
   };
 
   const renderDesktopNav = () => (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {/* Main Navigation - No scroll */}
       <nav className="px-2 py-3 space-y-0.5">
         {/* Dashboard */}
         <button
           onClick={() => handleNavigate('/dashboard')}
           className={`
-            w-full flex items-center gap-2.5 h-9 rounded-md text-[13px]
-            transition-interactive focus-ring
+            w-full flex items-center gap-2 h-8 rounded-md text-[13px] overflow-hidden
+            transition-colors
             ${isActive('/dashboard')
               ? 'bg-primary/12 text-primary font-medium' 
               : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'
@@ -209,7 +209,7 @@ const Sidebar = ({ user }) => {
           data-testid="nav-dashboard"
           title={!isExpanded ? 'Dashboard' : undefined}
         >
-          <LayoutDashboard size={16} className={isActive('/dashboard') ? 'text-primary' : ''} />
+          <LayoutDashboard size={15} className={isActive('/dashboard') ? 'text-primary' : ''} />
           {isExpanded && <span>Dashboard</span>}
         </button>
 
@@ -219,14 +219,14 @@ const Sidebar = ({ user }) => {
             <button
               onClick={() => setIsTicketsExpanded(!isTicketsExpanded)}
               className={`
-                w-full flex items-center justify-between px-2.5 h-9 rounded-md text-[13px]
-                transition-interactive focus-ring
+                w-full flex items-center justify-between px-2.5 h-8 rounded-md text-[13px] overflow-hidden
+                transition-colors
                 ${isTicketViewActive ? 'text-primary font-medium' : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'}
               `}
               data-testid="nav-tickets-toggle"
             >
-              <div className="flex items-center gap-2.5">
-                <List size={16} className={isTicketViewActive ? 'text-primary' : ''} />
+              <div className="flex items-center gap-2">
+                <List size={15} className={isTicketViewActive ? 'text-primary' : ''} />
                 <span>Tickets</span>
               </div>
               <ChevronDown size={14} className={`transition-transform duration-200 ${isTicketsExpanded ? 'rotate-180' : ''}`} />
@@ -243,8 +243,8 @@ const Sidebar = ({ user }) => {
             <button
               onClick={() => setIsCollapsedMenuOpen(!isCollapsedMenuOpen)}
               className={`
-                w-full flex items-center justify-center px-2 h-9 rounded-md
-                transition-interactive focus-ring
+                w-full flex items-center justify-center px-2 h-8 rounded-md overflow-hidden
+                transition-colors
                 ${isTicketViewActive || isCollapsedMenuOpen 
                   ? 'bg-primary/12 text-primary' 
                   : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'
