@@ -1320,7 +1320,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   <p className="text-sm font-medium truncate">
                     {ticket.customer_name || ticket.email_sender_name || 'Customer'}
                   </p>
-                  <p className="text-[10px] text-muted-foreground truncate">
+                  <p className="text-[11px] text-muted-foreground truncate">
                     {ticket.customer_email || ticket.email_sender || 'No email'}
                   </p>
                 </div>
