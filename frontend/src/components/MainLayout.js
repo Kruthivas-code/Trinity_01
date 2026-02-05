@@ -256,11 +256,9 @@ const MainLayout = ({ user, view }) => {
 
   return (
     <div className="min-h-screen flex bg-background overflow-hidden">
-      <div className="gradient-overlay" />
-      
       <Sidebar user={user} />
       
-      <div className="flex-1 flex flex-col relative z-10 min-w-0">
+      <div className="flex-1 flex flex-col relative min-w-0">
         <GlobalHeader 
           user={user} 
           onCreateTicket={() => setIsCreateModalOpen(true)}
