@@ -16,6 +16,7 @@ const AllTicketsPage = ({ user, onTicketClick, refreshKey }) => {
 
   return (
     <TicketsListView
+      key={`tickets-${levelFilter || 'all'}`}
       title={title}
       subtitle={subtitle}
       filterStatuses={['todo', 'in_progress', 'waiting', 'review']}
