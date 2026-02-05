@@ -275,7 +275,7 @@ const GlobalHeader = ({ user, onCreateTicket, onOpenCommandPalette }) => {
       <div className="flex items-center gap-2 min-w-[200px] justify-end">
         <button
           onClick={onCreateTicket}
-          className="flex items-center gap-2 h-8 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-2 h-9 px-4 rounded-lg bg-foreground text-background text-[14px] font-medium hover:bg-foreground/90 transition-colors duration-150 active:scale-[0.98]"
           data-testid="header-create-ticket"
         >
           <Plus size={16} />
