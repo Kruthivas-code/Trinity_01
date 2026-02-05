@@ -58,13 +58,13 @@ const getPriorityColor = (priority) => {
 
 const getStatusBadge = (status) => {
   const badges = {
-    todo: { label: 'To Do', class: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-    in_progress: { label: 'In Progress', class: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
-    waiting: { label: 'Waiting', class: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
-    review: { label: 'Review', class: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
-    resolved: { label: 'Resolved', class: 'bg-green-500/20 text-green-400 border-green-500/30' },
+    todo: { label: 'To Do', class: 'bg-slate-100 text-slate-700 border-slate-200' },
+    in_progress: { label: 'In Progress', class: 'bg-blue-50 text-blue-700 border-blue-200' },
+    waiting: { label: 'Waiting', class: 'bg-amber-50 text-amber-700 border-amber-200' },
+    review: { label: 'Review', class: 'bg-violet-50 text-violet-700 border-violet-200' },
+    resolved: { label: 'Resolved', class: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   };
-  return badges[status] || { label: status, class: 'bg-gray-500/20 text-gray-400 border-gray-500/30' };
+  return badges[status] || { label: status, class: 'bg-gray-100 text-gray-600 border-gray-200' };
 };
 
 const formatTimeAgo = (dateString) => {
