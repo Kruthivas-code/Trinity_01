@@ -1338,21 +1338,21 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               <div className="p-2 space-y-1">
                 {/* Current Ticket - highlighted */}
                 <div
-                  className="p-2 rounded-md bg-primary/10 border border-primary/20 cursor-default"
+                  className="p-2.5 rounded-lg bg-foreground/5 border border-foreground/10 cursor-default"
                   data-testid="current-ticket-item"
                 >
                   <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-[10px] font-mono text-primary font-medium">
+                    <span className="text-[11px] font-mono text-foreground font-medium">
                       {ticket.ticket_id || `#${ticket.id?.slice(-8)}`}
                     </span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${getStatusConfig(ticket.status).color} text-white`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${getStatusConfig(ticket.status).color} text-white`}>
                       {getStatusConfig(ticket.status).label}
                     </span>
                   </div>
-                  <p className="text-[11px] font-medium text-foreground line-clamp-2 mb-1">
+                  <p className="text-[13px] font-medium text-foreground line-clamp-2 mb-1">
                     {ticket.title}
                   </p>
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                  <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>
                       {new Date(ticket.updated_at || ticket.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </span>
@@ -1370,24 +1370,24 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   return (
                     <div
                       key={related.id || related.ticket_id}
-                      className="p-2 rounded-md bg-secondary/30 border border-transparent hover:bg-secondary/50 hover:border-border/30 cursor-pointer transition-colors"
+                      className="p-2.5 rounded-lg bg-secondary/30 border border-transparent hover:bg-secondary/50 hover:border-border cursor-pointer transition-colors duration-150"
                       onClick={() => {
                         window.location.href = `/all-tickets?ticket=${related.ticket_id || related.id}`;
                       }}
                       data-testid={`related-ticket-${related.ticket_id || related.id}`}
                     >
                       <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[10px] font-mono text-muted-foreground">
+                        <span className="text-[11px] font-mono text-muted-foreground">
                           {related.ticket_id || `#${related.id?.slice(-8)}`}
                         </span>
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${relatedStatus.color} text-white`}>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${relatedStatus.color} text-white`}>
                           {relatedStatus.label}
                         </span>
                       </div>
-                      <p className="text-[11px] font-medium text-foreground/80 line-clamp-2 mb-1">
+                      <p className="text-[13px] font-medium text-foreground/80 line-clamp-2 mb-1">
                         {related.title}
                       </p>
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                         <span>
                           {new Date(related.updated_at || related.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </span>
@@ -1402,7 +1402,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 {/* Empty state when no other tickets */}
                 {relatedTickets.length === 0 && (
                   <div className="text-center py-6 text-muted-foreground/50">
-                    <p className="text-[11px]">No other tickets</p>
+                    <p className="text-[12px]">No other tickets</p>
                   </div>
                 )}
               </div>
