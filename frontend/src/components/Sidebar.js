@@ -430,6 +430,7 @@ const Sidebar = ({ user }) => {
           transition-transform duration-200 ease-out flex flex-col
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
+        data-testid="sidebar-mobile"
       >
         <div className="h-14 flex items-center px-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2.5">
