@@ -1317,7 +1317,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   {(ticket.customer_name || ticket.email_sender_name || ticket.customer_email || 'C').charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium truncate">
+                  <p className="text-sm font-medium truncate">
                     {ticket.customer_name || ticket.email_sender_name || 'Customer'}
                   </p>
                   <p className="text-[10px] text-muted-foreground truncate">
