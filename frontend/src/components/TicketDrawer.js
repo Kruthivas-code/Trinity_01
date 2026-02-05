@@ -225,25 +225,25 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
             <span className="font-mono">{originalTicketId}</span>
           </div>
         )}
-        {/* Message Header - Ultra Compact: avatar + sender + timestamp inline */}
-        <div className={`flex items-center gap-1.5 mb-1 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
-          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium shrink-0 ${styles.avatar}`}>
+        {/* Message Header - Compact: avatar + sender + timestamp inline */}
+        <div className={`flex items-center gap-2 mb-1.5 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-medium shrink-0 ${styles.avatar}`}>
             {sender?.charAt(0).toUpperCase() || 'U'}
           </div>
-          <span className="font-medium text-xs">{sender || 'Unknown'}</span>
+          <span className="font-medium text-sm">{sender || 'Unknown'}</span>
           {isNote && (
-            <span className="text-[9px] px-1 py-0.5 rounded bg-amber-400/20 text-amber-400">Note</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">Note</span>
           )}
           {isReply && (
-            <span className="text-[9px] px-1 py-0.5 rounded bg-primary/20 text-primary">Reply</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Reply</span>
           )}
-          <span className="text-[9px] text-muted-foreground/70 ml-auto shrink-0">
+          <span className="text-[11px] text-muted-foreground ml-auto shrink-0 tabular-nums">
             {formatDate(timestamp)}
           </span>
         </div>
         
         {/* Message Body */}
-        <div className="text-[13px] text-foreground/90 leading-snug pl-6">
+        <div className="text-[14px] text-foreground leading-relaxed pl-8">
           {emailData && (emailData.email_html || emailData.email_text) ? (
             <EmailViewer ticket={emailData} />
           ) : (
