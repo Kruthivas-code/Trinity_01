@@ -5,15 +5,15 @@
   },
   {
     "content": "Change default theme to 'light' in ThemeContext.js",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Clean up gradient overlays and glassmorphism for light mode in App.css",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Update LoginPage styling for clean white background",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Take screenshots to verify all pages look correct",
