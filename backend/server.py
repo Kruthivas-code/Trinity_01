@@ -4206,6 +4206,7 @@ async def get_tickets(
     mentioned_user_id: Optional[str] = None,
     is_starred: Optional[bool] = None,
     include_merged: Optional[bool] = False,
+    escalation_level: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     query = {}
@@ -4220,6 +4221,8 @@ async def get_tickets(
         query["mentioned_users"] = mentioned_user_id
     if is_starred is not None:
         query["is_starred"] = is_starred
+    if escalation_level:
+        query["escalation_level"] = escalation_level
     
     tickets = list(tickets_collection.find(query).sort("order", ASCENDING))
     return [serialize_doc(ticket) for ticket in tickets]
