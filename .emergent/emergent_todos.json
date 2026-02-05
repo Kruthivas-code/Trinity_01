@@ -1,34 +1,34 @@
 [
   {
     "content": "Phase 1: Update global typography & spacing tokens in index.css for larger, readable text",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Phase 1: Redesign Sidebar with L1/L2/L3 folder structure + counts",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 1: Update GlobalHeader for larger fonts and cleaner look",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 1: Update TicketsListView with Intercom-style rows and larger text",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 1: Update TicketDrawer conversation area font sizes",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 1: Update Dashboard/Kanban card typography",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 2: Screenshot verification and fix visual issues",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Phase 2: Test with testing agent",
-    "status": "pending"
+    "status": "in_progress"
   }
 ]
