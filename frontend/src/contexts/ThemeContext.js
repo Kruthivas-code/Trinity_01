@@ -5,7 +5,7 @@ const ThemeContext = createContext();
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     // Initialize theme from localStorage during state initialization
-    return localStorage.getItem('theme') || 'dark';
+    return localStorage.getItem('theme') || 'light';
   });
 
   const applyTheme = useCallback((newTheme) => {
