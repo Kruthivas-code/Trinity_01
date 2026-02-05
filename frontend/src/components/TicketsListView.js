@@ -78,7 +78,7 @@ const formatTimeAgo = (dateString) => {
   });
 };
 
-const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick, refreshKey }) => {
+const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, user, onTicketClick, refreshKey }) => {
   const [tickets, setTickets] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
