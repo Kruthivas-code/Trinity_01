@@ -3,18 +3,18 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, 
   User, ChevronDown, Menu, X, LogOut, Users, Shield, CalendarDays,
-  GripVertical, Bookmark, BarChart3, UserCircle, Star, MessageSquare
+  Bookmark, BarChart3, UserCircle, Star, MessageSquare,
+  Inbox, AlertTriangle, Zap, ChevronRight
 } from 'lucide-react';
 
 import { TridentIcon } from './TridentIcon';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-// Sidebar width constraints
-const MIN_WIDTH = 56;  // Collapsed width
-const MAX_WIDTH = 280; // Maximum expanded width
-const DEFAULT_WIDTH = 220; // Default expanded width
-const COLLAPSE_THRESHOLD = 100; // Below this, snap to collapsed
+const MIN_WIDTH = 56;
+const MAX_WIDTH = 280;
+const DEFAULT_WIDTH = 260;
+const COLLAPSE_THRESHOLD = 100;
 
 const Sidebar = ({ user }) => {
   const navigate = useNavigate();
@@ -26,20 +26,58 @@ const Sidebar = ({ user }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isTicketsExpanded, setIsTicketsExpanded] = useState(true);
-  const [isCollapsedMenuOpen, setIsCollapsedMenuOpen] = useState(false);
-  const collapsedMenuRef = useRef(null);
+  const [isEscalationExpanded, setIsEscalationExpanded] = useState(true);
+  const [escalationCounts, setEscalationCounts] = useState({ L1: { total: 0 }, L2: { total: 0 }, L3: { total: 0 } });
   const sidebarRef = useRef(null);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
 
   const isExpanded = sidebarWidth > COLLAPSE_THRESHOLD;
 
+  // Fetch escalation counts
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/tickets/escalation-counts`, {
+          credentials: 'include'
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setEscalationCounts(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch escalation counts:', error);
+      }
+    };
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const ticketViews = [
-    { id: 'all-tickets', label: 'All Tickets', icon: List, path: '/all-tickets' },
+    { id: 'all-tickets', label: 'All Tickets', icon: Inbox, path: '/all-tickets' },
     { id: 'starred-tickets', label: 'Starred', icon: Star, path: '/starred-tickets' },
     { id: 'open-tickets', label: 'Open', icon: UserCheck, path: '/open-tickets' },
     { id: 'waiting-tickets', label: 'Waiting', icon: Clock, path: '/waiting-tickets' },
     { id: 'closed-tickets', label: 'Closed', icon: CheckCircle, path: '/closed-tickets' },
+  ];
+
+  const escalationFolders = [
+    { 
+      id: 'l1', level: 'L1', label: 'L1 - Basic', icon: Inbox,
+      dotColor: 'bg-emerald-500', chipBg: 'bg-emerald-50', chipText: 'text-emerald-800', chipBorder: 'border-emerald-200',
+      path: '/all-tickets?level=L1'
+    },
+    { 
+      id: 'l2', level: 'L2', label: 'L2 - Intermediate', icon: AlertTriangle,
+      dotColor: 'bg-amber-500', chipBg: 'bg-amber-50', chipText: 'text-amber-900', chipBorder: 'border-amber-200',
+      path: '/all-tickets?level=L2'
+    },
+    { 
+      id: 'l3', level: 'L3', label: 'L3 - Advanced', icon: Zap,
+      dotColor: 'bg-rose-500', chipBg: 'bg-rose-50', chipText: 'text-rose-800', chipBorder: 'border-rose-200',
+      path: '/all-tickets?level=L3'
+    },
   ];
 
   const mainItems = [
@@ -54,12 +92,10 @@ const Sidebar = ({ user }) => {
     { id: 'admin', label: 'Admin', icon: Shield, path: '/admin' },
   ];
 
-  // Save width to localStorage
   useEffect(() => {
     localStorage.setItem('sidebarWidth', sidebarWidth.toString());
   }, [sidebarWidth]);
 
-  // Handle drag start
   const handleDragStart = useCallback((e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -69,33 +105,25 @@ const Sidebar = ({ user }) => {
     document.body.style.userSelect = 'none';
   }, [sidebarWidth]);
 
-  // Handle drag move
   const handleDragMove = useCallback((e) => {
     if (!isDragging) return;
-    
     const clientX = e.clientX || e.touches?.[0]?.clientX || 0;
     const delta = clientX - dragStartX.current;
     let newWidth = dragStartWidth.current + delta;
-    
-    // Snap to collapsed if below threshold
     if (newWidth < COLLAPSE_THRESHOLD) {
       newWidth = MIN_WIDTH;
     } else {
-      // Clamp between threshold and max
       newWidth = Math.min(Math.max(newWidth, COLLAPSE_THRESHOLD), MAX_WIDTH);
     }
-    
     setSidebarWidth(newWidth);
   }, [isDragging]);
 
-  // Handle drag end
   const handleDragEnd = useCallback(() => {
     setIsDragging(false);
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
   }, []);
 
-  // Add/remove event listeners for dragging
   useEffect(() => {
     if (isDragging) {
       window.addEventListener('mousemove', handleDragMove);
@@ -103,7 +131,6 @@ const Sidebar = ({ user }) => {
       window.addEventListener('touchmove', handleDragMove);
       window.addEventListener('touchend', handleDragEnd);
     }
-    
     return () => {
       window.removeEventListener('mousemove', handleDragMove);
       window.removeEventListener('mouseup', handleDragEnd);
@@ -112,32 +139,19 @@ const Sidebar = ({ user }) => {
     };
   }, [isDragging, handleDragMove, handleDragEnd]);
 
-  // Close collapsed menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (collapsedMenuRef.current && !collapsedMenuRef.current.contains(event.target)) {
-        setIsCollapsedMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Close collapsed menu when sidebar expands
-  useEffect(() => {
-    if (isExpanded && isCollapsedMenuOpen) {
-      const timer = setTimeout(() => setIsCollapsedMenuOpen(false), 0);
-      return () => clearTimeout(timer);
+  const isActive = (path) => {
+    if (path.includes('?level=')) {
+      const level = path.split('level=')[1];
+      return location.pathname === '/all-tickets' && location.search.includes(`level=${level}`);
     }
-  }, [isExpanded, isCollapsedMenuOpen]);
-
-  const isActive = (path) => location.pathname === path;
+    return location.pathname === path;
+  };
+  
   const isTicketViewActive = ticketViews.some(view => isActive(view.path));
 
   const handleNavigate = (path) => {
     navigate(path);
     setIsMobileOpen(false);
-    setIsCollapsedMenuOpen(false);
   };
 
   const handleLogout = async () => {
@@ -154,7 +168,6 @@ const Sidebar = ({ user }) => {
     }
   };
 
-  // Double-click to toggle between collapsed and default
   const handleDoubleClick = () => {
     if (sidebarWidth <= MIN_WIDTH) {
       setSidebarWidth(DEFAULT_WIDTH);
@@ -163,7 +176,6 @@ const Sidebar = ({ user }) => {
     }
   };
 
-  // Helper to render nav item inline
   const renderNavItem = (item, nested = false) => {
     const Icon = item.icon;
     const active = isActive(item.path);
@@ -173,63 +185,62 @@ const Sidebar = ({ user }) => {
         key={item.id}
         onClick={() => handleNavigate(item.path)}
         className={`
-          w-full flex items-center gap-2 h-8 rounded-md text-[13px] overflow-hidden
-          transition-colors
+          w-full flex items-center gap-2.5 rounded-lg text-[14px] overflow-hidden
+          transition-colors duration-150
           ${active 
-            ? 'bg-primary/12 text-primary font-medium' 
-            : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'
+            ? 'bg-foreground/8 text-foreground font-medium' 
+            : 'text-foreground/60 hover:text-foreground hover:bg-foreground/4'
           }
-          ${!isExpanded && !nested ? 'justify-center px-2' : nested ? 'px-2 ml-5' : 'px-2.5'}
+          ${!isExpanded && !nested ? 'justify-center px-2 h-9' : nested ? 'px-3 ml-4 h-9' : 'px-3 h-9'}
         `}
         data-testid={`nav-${item.id}`}
         title={!isExpanded ? item.label : undefined}
       >
-        <Icon size={15} className={`shrink-0 ${active ? 'text-primary' : ''}`} />
+        <Icon size={16} className={`shrink-0 ${active ? 'text-foreground' : ''}`} />
         {(isExpanded || nested) && <span className="truncate">{item.label}</span>}
       </button>
     );
   };
 
   const renderDesktopNav = () => (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-      {/* Main Navigation - No scroll */}
+    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden">
       <nav className="px-2 py-3 space-y-0.5">
         {/* Dashboard */}
         <button
           onClick={() => handleNavigate('/dashboard')}
           className={`
-            w-full flex items-center gap-2 h-8 rounded-md text-[13px] overflow-hidden
-            transition-colors
+            w-full flex items-center gap-2.5 rounded-lg text-[14px] overflow-hidden
+            transition-colors duration-150
             ${isActive('/dashboard')
-              ? 'bg-primary/12 text-primary font-medium' 
-              : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'
+              ? 'bg-foreground/8 text-foreground font-medium' 
+              : 'text-foreground/60 hover:text-foreground hover:bg-foreground/4'
             }
-            ${!isExpanded ? 'justify-center px-2' : 'px-2.5'}
+            ${!isExpanded ? 'justify-center px-2 h-9' : 'px-3 h-9'}
           `}
           data-testid="nav-dashboard"
           title={!isExpanded ? 'Dashboard' : undefined}
         >
-          <LayoutDashboard size={15} className={isActive('/dashboard') ? 'text-primary' : ''} />
+          <LayoutDashboard size={16} className={isActive('/dashboard') ? 'text-foreground' : ''} />
           {isExpanded && <span>Dashboard</span>}
         </button>
 
         {/* Tickets Section */}
-        {isExpanded ? (
+        {isExpanded && (
           <div>
             <button
               onClick={() => setIsTicketsExpanded(!isTicketsExpanded)}
               className={`
-                w-full flex items-center justify-between px-2.5 h-8 rounded-md text-[13px] overflow-hidden
-                transition-colors
-                ${isTicketViewActive ? 'text-primary font-medium' : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'}
+                w-full flex items-center justify-between px-3 h-9 rounded-lg text-[14px] overflow-hidden
+                transition-colors duration-150
+                ${isTicketViewActive ? 'text-foreground font-medium' : 'text-foreground/60 hover:text-foreground hover:bg-foreground/4'}
               `}
               data-testid="nav-tickets-toggle"
             >
-              <div className="flex items-center gap-2">
-                <List size={15} className={isTicketViewActive ? 'text-primary' : ''} />
+              <div className="flex items-center gap-2.5">
+                <List size={16} />
                 <span>Tickets</span>
               </div>
-              <ChevronDown size={14} className={`transition-transform duration-200 ${isTicketsExpanded ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} className={`transition-transform duration-200 ${isTicketsExpanded ? '' : '-rotate-90'}`} />
             </button>
             
             {isTicketsExpanded && (
@@ -238,95 +249,98 @@ const Sidebar = ({ user }) => {
               </div>
             )}
           </div>
-        ) : (
-          <div className="relative" ref={collapsedMenuRef}>
+        )}
+
+        {/* Divider */}
+        <div className="!my-3 h-px bg-border/60" />
+
+        {/* L1 / L2 / L3 Escalation Folders */}
+        {isExpanded && (
+          <div>
             <button
-              onClick={() => setIsCollapsedMenuOpen(!isCollapsedMenuOpen)}
-              className={`
-                w-full flex items-center justify-center px-2 h-8 rounded-md overflow-hidden
-                transition-colors
-                ${isTicketViewActive || isCollapsedMenuOpen 
-                  ? 'bg-primary/12 text-primary' 
-                  : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'
-                }
-              `}
-              title="Tickets"
-              data-testid="collapsed-tickets-toggle"
+              onClick={() => setIsEscalationExpanded(!isEscalationExpanded)}
+              className="w-full flex items-center justify-between px-3 h-9 rounded-lg text-[14px] text-foreground/60 hover:text-foreground hover:bg-foreground/4 transition-colors duration-150"
+              data-testid="nav-escalation-toggle"
             >
-              <List size={16} />
+              <div className="flex items-center gap-2.5">
+                <Zap size={16} />
+                <span className="font-medium text-foreground/80">Escalation</span>
+              </div>
+              <ChevronDown size={14} className={`transition-transform duration-200 ${isEscalationExpanded ? '' : '-rotate-90'}`} />
             </button>
-            
-            {isCollapsedMenuOpen && (
-              <div className="absolute left-full top-0 ml-2 z-50">
-                <div className="card-premium rounded-lg p-1.5 min-w-[180px] shadow-xl">
-                  <div className="px-2.5 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Tickets
-                  </div>
-                  {ticketViews.map(view => {
-                    const Icon = view.icon;
-                    const active = isActive(view.path);
-                    return (
-                      <button
-                        key={view.id}
-                        onClick={() => handleNavigate(view.path)}
-                        className={`
-                          w-full flex items-center gap-2.5 px-2.5 h-9 rounded-md text-[13px]
-                          transition-interactive focus-ring
-                          ${active 
-                            ? 'bg-primary/12 text-primary font-medium' 
-                            : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'
-                          }
-                        `}
-                      >
-                        <Icon size={16} className={active ? 'text-primary' : ''} />
-                        <span>{view.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+
+            {isEscalationExpanded && (
+              <div className="mt-1 space-y-0.5">
+                {escalationFolders.map(folder => {
+                  const Icon = folder.icon;
+                  const active = isActive(folder.path);
+                  const count = escalationCounts[folder.level]?.total || 0;
+                  
+                  return (
+                    <button
+                      key={folder.id}
+                      onClick={() => handleNavigate(folder.path)}
+                      className={`
+                        w-full flex items-center gap-2.5 px-3 ml-4 h-10 rounded-lg text-[14px] overflow-hidden
+                        transition-colors duration-150
+                        ${active 
+                          ? 'bg-foreground/8 text-foreground font-medium' 
+                          : 'text-foreground/60 hover:text-foreground hover:bg-foreground/4'
+                        }
+                      `}
+                      data-testid={`sidebar-${folder.id}-folder-button`}
+                    >
+                      <div className={`w-2 h-2 rounded-full ${folder.dotColor} shrink-0`} />
+                      <span className="truncate flex-1 text-left">{folder.label}</span>
+                      {count > 0 && (
+                        <span className={`shrink-0 text-[11px] font-medium px-1.5 py-0.5 rounded-md border ${folder.chipBg} ${folder.chipText} ${folder.chipBorder}`}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
         )}
 
         {/* Divider */}
-        <div className="!my-2 h-px bg-border/50" />
+        <div className="!my-3 h-px bg-border/60" />
 
         {/* Other Items */}
         {mainItems.map(item => renderNavItem(item, false))}
       </nav>
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* User Section - Always at bottom */}
+      {/* User Section */}
       <div className="p-2 border-t border-border/40">
         {isExpanded && user && (
-          <div className="px-2 py-2 mb-1">
-            <div className="flex items-center gap-2">
+          <div className="px-3 py-2.5 mb-1">
+            <div className="flex items-center gap-2.5">
               {user.picture ? (
                 <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-semibold">
+                <div className="w-8 h-8 rounded-full bg-foreground/10 flex items-center justify-center text-foreground text-sm font-semibold">
                   {user.name?.charAt(0).toUpperCase()}
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium truncate">{user.name}</p>
-                <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+                <p className="text-[14px] font-medium truncate">{user.name}</p>
+                <p className="text-[12px] text-muted-foreground truncate">{user.email}</p>
               </div>
             </div>
           </div>
         )}
         
-        {/* Sign Out */}
         <button
           onClick={handleLogout}
           className={`
-            w-full flex items-center gap-2.5 h-9 rounded-md text-[13px]
-            text-muted-foreground hover:text-foreground hover:bg-secondary/50
-            transition-interactive focus-ring
-            ${!isExpanded ? 'justify-center px-2' : 'px-2.5'}
+            w-full flex items-center gap-2.5 h-9 rounded-lg text-[14px]
+            text-muted-foreground hover:text-foreground hover:bg-foreground/4
+            transition-colors duration-150
+            ${!isExpanded ? 'justify-center px-2' : 'px-3'}
           `}
           data-testid="logout-button-sidebar"
           title={!isExpanded ? 'Sign Out' : undefined}
@@ -338,127 +352,12 @@ const Sidebar = ({ user }) => {
     </div>
   );
 
-  const renderMobileNav = () => (
-    <div className="flex-1 flex flex-col min-h-0">
-      <nav className="flex-1 px-2 py-3 space-y-0.5">
-        <button
-          onClick={() => handleNavigate('/dashboard')}
-          className={`
-            w-full flex items-center gap-2.5 px-2.5 h-9 rounded-md text-[13px]
-            transition-interactive focus-ring
-            ${isActive('/dashboard')
-              ? 'bg-primary/12 text-primary font-medium' 
-              : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'
-            }
-          `}
-        >
-          <LayoutDashboard size={16} />
-          <span>Dashboard</span>
-        </button>
-
-        <div>
-          <button
-            onClick={() => setIsTicketsExpanded(!isTicketsExpanded)}
-            className={`
-              w-full flex items-center justify-between px-2.5 h-9 rounded-md text-[13px]
-              transition-interactive focus-ring
-              ${isTicketViewActive ? 'text-primary font-medium' : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'}
-            `}
-          >
-            <div className="flex items-center gap-2.5">
-              <List size={16} />
-              <span>Tickets</span>
-            </div>
-            <ChevronDown size={14} className={`transition-transform duration-200 ${isTicketsExpanded ? 'rotate-180' : ''}`} />
-          </button>
-          
-          {isTicketsExpanded && (
-            <div className="mt-0.5 space-y-0.5">
-              {ticketViews.map(view => {
-                const Icon = view.icon;
-                const active = isActive(view.path);
-                return (
-                  <button
-                    key={view.id}
-                    onClick={() => handleNavigate(view.path)}
-                    className={`
-                      w-full flex items-center gap-2.5 px-2.5 ml-6 h-9 rounded-md text-[13px]
-                      transition-interactive focus-ring
-                      ${active 
-                        ? 'bg-primary/12 text-primary font-medium' 
-                        : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'
-                      }
-                    `}
-                  >
-                    <Icon size={16} />
-                    <span>{view.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        <div className="!my-2 h-px bg-border/50" />
-
-        {mainItems.map(item => {
-          const Icon = item.icon;
-          const active = isActive(item.path);
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleNavigate(item.path)}
-              className={`
-                w-full flex items-center gap-2.5 px-2.5 h-9 rounded-md text-[13px]
-                transition-interactive focus-ring
-                ${active 
-                  ? 'bg-primary/12 text-primary font-medium' 
-                  : 'text-foreground/70 hover:text-foreground hover:bg-secondary/50'
-                }
-              `}
-            >
-              <Icon size={16} />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Mobile User Section */}
-      {user && (
-        <div className="p-3 border-t border-border/40">
-          <div className="flex items-center gap-2.5 mb-2">
-            {user.picture ? (
-              <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-semibold">
-                {user.name?.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-medium truncate">{user.name}</p>
-              <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
-            </div>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 h-9 rounded-md text-[13px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-interactive"
-            data-testid="logout-button-mobile"
-          >
-            <LogOut size={16} />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <>
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 h-10 w-10 flex items-center justify-center rounded-lg glass hover:bg-secondary/60 transition-interactive focus-ring"
+        className="lg:hidden fixed top-4 left-4 z-50 h-10 w-10 flex items-center justify-center rounded-lg border border-border bg-background hover:bg-secondary transition-colors duration-150"
         data-testid="mobile-menu-button"
       >
         {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -467,7 +366,7 @@ const Sidebar = ({ user }) => {
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          className="lg:hidden fixed inset-0 bg-black/30 z-40"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
@@ -479,19 +378,19 @@ const Sidebar = ({ user }) => {
       >
         <aside
           ref={sidebarRef}
-          className="fixed top-0 left-0 h-screen z-40 bg-card/80 backdrop-blur-xl border-r border-border/50 flex flex-col"
+          className="fixed top-0 left-0 h-screen z-40 bg-card border-r border-border flex flex-col"
           style={{ width: sidebarWidth }}
           data-testid="sidebar"
         >
           {/* Header */}
-          <div className="h-14 flex items-center justify-center px-3 border-b border-border/40 shrink-0">
+          <div className="h-14 flex items-center justify-center px-3 border-b border-border shrink-0">
             {isExpanded ? (
-              <div className="flex items-center gap-2">
-                <TridentIcon size={20} className="text-primary" strokeWidth={2.5} />
-                <span className="brand text-base font-bold tracking-tight">Trinity</span>
+              <div className="flex items-center gap-2.5">
+                <TridentIcon size={22} className="text-foreground" strokeWidth={2.5} />
+                <span className="brand text-lg font-bold tracking-tight text-foreground">Trinity</span>
               </div>
             ) : (
-              <TridentIcon size={20} className="text-primary" strokeWidth={2.5} />
+              <TridentIcon size={22} className="text-foreground" strokeWidth={2.5} />
             )}
           </div>
 
@@ -499,22 +398,20 @@ const Sidebar = ({ user }) => {
           
           {/* Drag Handle */}
           <div
-            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group hover:bg-primary/30 transition-colors"
+            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize group hover:bg-foreground/10 transition-colors duration-150"
             onMouseDown={handleDragStart}
             onTouchStart={handleDragStart}
             onDoubleClick={handleDoubleClick}
-            title="Drag to resize • Double-click to toggle"
+            title="Drag to resize"
             data-testid="sidebar-drag-handle"
           >
-            {/* Visual indicator on hover */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="w-1 h-8 rounded-full bg-primary/50" />
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+              <div className="w-1 h-8 rounded-full bg-foreground/20" />
             </div>
           </div>
         </aside>
       </div>
 
-      {/* Drag overlay to prevent text selection during drag */}
       {isDragging && (
         <div className="fixed inset-0 z-50 cursor-col-resize" />
       )}
@@ -522,21 +419,19 @@ const Sidebar = ({ user }) => {
       {/* Mobile Sidebar */}
       <aside
         className={`
-          lg:hidden fixed top-0 left-0 h-screen w-56 z-40 
-          bg-card/95 backdrop-blur-xl border-r border-border/50
+          lg:hidden fixed top-0 left-0 h-screen w-64 z-40 
+          bg-card border-r border-border
           transition-transform duration-200 ease-out flex flex-col
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* Header */}
-        <div className="h-14 flex items-center px-4 border-b border-border/40 shrink-0">
-          <div className="flex items-center gap-2">
-            <TridentIcon size={20} className="text-primary" strokeWidth={2.5} />
-            <span className="brand text-base font-bold">Trinity</span>
+        <div className="h-14 flex items-center px-4 border-b border-border shrink-0">
+          <div className="flex items-center gap-2.5">
+            <TridentIcon size={22} className="text-foreground" strokeWidth={2.5} />
+            <span className="brand text-lg font-bold text-foreground">Trinity</span>
           </div>
         </div>
-
-        {renderMobileNav()}
+        {renderDesktopNav()}
       </aside>
     </>
   );
