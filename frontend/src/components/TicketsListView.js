@@ -140,7 +140,15 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
   const fetchTickets = async (pageNum) => {
     try {
       setLoading(true);
-      const response = await fetch(`${BACKEND_URL}/api/tickets`, {
+      let url = `${BACKEND_URL}/api/tickets`;
+      const params = new URLSearchParams();
+      if (escalationLevel) {
+        params.set('escalation_level', escalationLevel);
+      }
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      const response = await fetch(url, {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to fetch tickets');
