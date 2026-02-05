@@ -233,72 +233,79 @@ const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick,
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-border/40">
-        <h1 className="text-2xl font-semibold mb-1">{title}</h1>
+      <div className="px-6 py-5 border-b border-border">
+        <h1 className="text-xl font-semibold mb-1 text-foreground">{title}</h1>
         <p className="text-sm text-muted-foreground">
           {subtitle || `Showing ${tickets.length} tickets`}
         </p>
       </div>
 
       {/* Tickets List */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto">
         {tickets.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="glass rounded-xl p-8">
-              <div className="text-6xl mb-4">📋</div>
-              <h3 className="text-lg font-medium mb-2">No tickets found</h3>
-              <p className="text-sm text-muted-foreground">All clear in this view!</p>
-            </div>
+          <div className="flex flex-col items-start justify-center h-full px-6 py-12">
+            <h3 className="text-base font-medium mb-2 text-foreground">No tickets found</h3>
+            <p className="text-sm text-muted-foreground">All clear in this view. New tickets will appear here.</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="divide-y divide-border">
             {tickets.map((ticket) => {
               const statusBadge = getStatusBadge(ticket.status);
               const priorityColor = getPriorityColor(ticket.priority);
+              const levelBadge = ticket.escalation_level || 'L1';
               
               return (
                 <button
                   key={ticket.id}
                   onClick={() => onTicketClick(ticket)}
-                  className="w-full glass rounded-lg p-4 border border-border/40 hover:border-border/60 transition-interactive text-left group"
-                  data-testid="ticket-list-item"
+                  className="w-full px-6 py-4 hover:bg-secondary/50 transition-colors duration-150 text-left group"
+                  data-testid={`ticket-row-${ticket.ticket_id || ticket.id}`}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
                     {/* Priority Indicator */}
-                    <div className={`shrink-0 w-1 h-16 rounded-full ${priorityColor}`} />
+                    <div className={`shrink-0 w-1 self-stretch rounded-full ${priorityColor} mt-1`} style={{minHeight: '48px'}} />
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      {/* Title and Status */}
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        <h3 className="font-medium text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                      {/* Title Row */}
+                      <div className="flex items-center justify-between gap-3 mb-1">
+                        <h3 className="text-[15px] font-medium text-foreground group-hover:text-foreground/80 transition-colors duration-150 line-clamp-1">
                           {ticket.title}
                         </h3>
-                        <span className={`shrink-0 text-xs px-2 py-1 rounded-md border ${statusBadge.class}`}>
-                          {statusBadge.label}
-                        </span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded border ${
+                            levelBadge === 'L1' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                            levelBadge === 'L2' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                            'bg-rose-50 text-rose-700 border-rose-200'
+                          }`}>
+                            {levelBadge}
+                          </span>
+                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${statusBadge.class}`}>
+                            {statusBadge.label}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Description/Preview */}
+                      {/* Preview */}
                       {(ticket.description || ticket.email_preview || ticket.email_text) && (
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                        <p className="text-[13px] text-muted-foreground line-clamp-1 mb-2">
                           {getPreviewText(ticket)}
                         </p>
                       )}
 
                       {/* Metadata */}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
                         <div className="flex items-center gap-1.5">
-                          <UserIcon size={14} />
+                          <UserIcon size={13} />
                           <span>{getUserName(ticket.assignee_id)}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Clock size={14} />
-                          <span>{formatTimeAgo(ticket.created_at)}</span>
+                          <Clock size={13} />
+                          <span className="tabular-nums">{formatTimeAgo(ticket.created_at)}</span>
                         </div>
-                        <div className="text-muted-foreground/60">
-                          #{ticket.id?.slice(-6) || 'N/A'}
-                        </div>
+                        <span className="text-muted-foreground/50 font-mono text-[11px]">
+                          #{ticket.ticket_id || ticket.id?.slice(-6) || 'N/A'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -306,10 +313,10 @@ const TicketsListView = ({ title, subtitle, filterStatuses, user, onTicketClick,
               );
             })}
 
-            {/* Loading indicator for infinite scroll */}
+            {/* Loading indicator */}
             {hasMore && (
-              <div ref={observerTarget} className="flex justify-center py-4">
-                <div className="animate-pulse text-muted-foreground text-sm">Loading more...</div>
+              <div ref={observerTarget} className="flex justify-center py-6">
+                <div className="text-muted-foreground text-sm">Loading more...</div>
               </div>
             )}
 
