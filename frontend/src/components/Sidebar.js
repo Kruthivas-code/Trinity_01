@@ -150,7 +150,13 @@ const Sidebar = ({ user }) => {
   const isTicketViewActive = ticketViews.some(view => isActive(view.path));
 
   const handleNavigate = (path) => {
-    navigate(path);
+    // Handle paths with query params
+    if (path.includes('?')) {
+      const [pathname, search] = path.split('?');
+      navigate(`${pathname}?${search}`);
+    } else {
+      navigate(path);
+    }
     setIsMobileOpen(false);
   };
 
