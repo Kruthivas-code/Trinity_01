@@ -29,11 +29,11 @@ print('User ID: ' + userId);
 
 ```bash
 # Test auth endpoint
-curl -X GET "https://ticket-buddy-14.preview.emergentagent.com/api/auth/me" \
+curl -X GET "https://dense-email-viewer.preview.emergentagent.com/api/auth/me" \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"
 
 # Test protected endpoints
-curl -X GET "https://ticket-buddy-14.preview.emergentagent.com/api/tickets" \
+curl -X GET "https://dense-email-viewer.preview.emergentagent.com/api/tickets" \
   -H "Authorization: Bearer YOUR_SESSION_TOKEN"
 ```
 
@@ -50,7 +50,7 @@ await page.context.add_cookies([{
     "secure": true,
     "sameSite": "None"
 }]);
-await page.goto("https://ticket-buddy-14.preview.emergentagent.com");
+await page.goto("https://dense-email-viewer.preview.emergentagent.com");
 ```
 
 ## Quick Debug
