@@ -17,6 +17,11 @@
   background: linear-gradient(135deg, rgba(17,24,39,0) 0%, rgba(13,101,118,0.12) 35%, rgba(65,148,196,0.12) 70%, rgba(17,24,39,0) 100%);
 }
 
+.light .gradient-overlay,
+:root.light .gradient-overlay {
+  background: none;
+}
+
 /* Ensure content is above gradient */
 .content-wrapper {
   position: relative;
