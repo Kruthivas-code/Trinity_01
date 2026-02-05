@@ -1,11 +1,11 @@
 [
   {
     "content": "Update light theme CSS variables in index.css for crisp white+black high-contrast theme",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Change default theme to 'light' in ThemeContext.js",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Clean up gradient overlays and glassmorphism for light mode in App.css",
