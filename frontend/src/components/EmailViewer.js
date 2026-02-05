@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { Image, ExternalLink } from 'lucide-react';
+import { Image } from 'lucide-react';
+import ImageGallery from './ImageGallery';
 
 /**
  * EmailViewer - Ultra-compact email content viewer
@@ -37,7 +38,7 @@ const EmailViewer = ({
     
     return images.filter((img, index, self) => 
       index === self.findIndex(i => i.src === img.src)
-    ).slice(0, 10);
+    ).slice(0, 20); // Allow more images since gallery handles them well
   }, [ticket?.email_html]);
   
   // Convert HTML to clean plain text
