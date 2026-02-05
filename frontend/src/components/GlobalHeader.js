@@ -202,7 +202,7 @@ const GlobalHeader = ({ user, onCreateTicket, onOpenCommandPalette }) => {
 
         {/* Quick Results Dropdown */}
         {searchFocused && (searchQuery.length >= 2 || quickResults.length > 0) && (
-          <div className="absolute top-full left-0 right-0 mt-2 card-premium rounded-xl border border-border/60 shadow-xl overflow-hidden z-50">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-card rounded-xl border border-border shadow-lg overflow-hidden z-50">
             {loading && (
               <div className="p-4 text-center text-sm text-muted-foreground">
                 Searching...
