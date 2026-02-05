@@ -1,568 +1,399 @@
 {
-  "meta": {
-    "product": "TickFlow",
-    "app_type": "Ticket management Kanban web app",
-    "brand_attributes": ["sleek", "modern", "precise", "calm confidence", "performance-first"],
-    "style": "Dark theme with glassmorphism accents (blurred, frosted panels on matte dark backdrop). High-contrast, compact density, space-efficient." 
+  "brand": {
+    "product_name": "Trinity",
+    "design_direction": "Intercom-style inbox UI (modern, collaborative, conversation-centric)",
+    "brand_attributes": [
+      "calm under pressure",
+      "high-clarity / high-readability",
+      "operational and trustworthy",
+      "fast scanning for 8+ hour daily use",
+      "escalation-first (L1/L2/L3 always visible)"
+    ]
   },
-
+  "layout_system": {
+    "app_shell": {
+      "pattern": "3-zone app shell (Sidebar nav + Inbox/List + Main/Drawer panels)",
+      "rules": [
+        "Never center the whole app container.",
+        "Prefer left-aligned text and controls.",
+        "Keep the ticket drawer layout (customer history | conversation | details) intact; only refine spacing/typography/affordances."
+      ],
+      "grid": {
+        "container": "w-full",
+        "page_padding": "px-4 sm:px-6 lg:px-8",
+        "gutters": "gap-3 sm:gap-4",
+        "max_reading_width": "conversation content max-w-[78ch] (keep email/plain text comfortable)"
+      },
+      "recommended_widths": {
+        "sidebar": "w-[272px] (collapsible to w-[72px])",
+        "inbox_list": "w-[360px] md:w-[420px]",
+        "drawer_customer_history": "w-[320px]",
+        "drawer_conversation": "flex-1 min-w-[520px]",
+        "drawer_details": "w-[360px]"
+      },
+      "resizable": {
+        "use": "Use shadcn Resizable to allow power users to adjust list vs conversation widths.",
+        "component": "/app/frontend/src/components/ui/resizable.jsx",
+        "note": "Persist sizes in localStorage per user."
+      }
+    },
+    "information_hierarchy": {
+      "primary_focus": "Conversation reply + ticket status",
+      "secondary": "Customer context + history",
+      "tertiary": "Automation, tags, SLA, internal notes"
+    }
+  },
   "typography": {
-    "font_import": "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap",
-    "font_stack": {
-      "display": "\"Space Grotesk\", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, \"Helvetica Neue\", Arial, \"Noto Sans\", \"Apple Color Emoji\", \"Segoe UI Emoji\"",
-      "body": "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, \"Helvetica Neue\", Arial, \"Noto Sans\""
+    "font_loading": {
+      "google_fonts": [
+        "Inter (already present)",
+        "Plus Jakarta Sans (already present)"
+      ],
+      "pairing": {
+        "ui": "Inter",
+        "brand_wordmark": "Plus Jakarta Sans",
+        "mono_optional": "IBM Plex Mono (optional for IDs/log snippets in details panel)"
+      }
     },
     "scale": {
-      "h1": "text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight",
-      "h2": "text-base md:text-lg font-medium",
-      "body": "text-sm md:text-base",
-      "small": "text-xs md:text-sm text-muted-foreground"
-    }
+      "h1": "text-4xl sm:text-5xl lg:text-6xl (use only on marketing-like pages; rarely in SaaS)",
+      "h2": "text-base md:text-lg (page subheading style per constraints)",
+      "app_title": "text-lg sm:text-xl font-semibold tracking-tight",
+      "section_title": "text-sm font-semibold text-foreground",
+      "table_header": "text-xs font-medium text-muted-foreground uppercase tracking-wide",
+      "body": "text-base (mobile: text-sm) leading-6",
+      "list_primary": "text-sm sm:text-base font-medium leading-5",
+      "list_secondary": "text-xs sm:text-sm text-muted-foreground leading-5",
+      "meta": "text-xs text-muted-foreground",
+      "conversation": "text-sm sm:text-base leading-7 (increase line-height for plain-text emails)",
+      "input": "text-sm sm:text-base",
+      "button": "text-sm sm:text-base font-medium"
+    },
+    "readability_rules": [
+      "Default body text must be at least text-sm on mobile and text-base on desktop.",
+      "Conversation pane: line-height must feel airy (leading-7) with generous paragraph spacing.",
+      "Never use low-contrast muted text for primary info (subject, sender, status).",
+      "Use tabular-nums for timestamps and SLA metrics (Tailwind: tabular-nums)."
+    ]
   },
-
   "color_system": {
-    "semantic_tokens_hsl": {
-      "--background": "222 28% 6%", 
-      "--foreground": "210 25% 96%",
-      "--card": "222 28% 8%",
-      "--card-foreground": "210 25% 96%",
-      "--popover": "222 28% 8%",
-      "--popover-foreground": "210 25% 96%",
-      "--primary": "194 85% 56%", 
-      "--primary-foreground": "210 40% 8%",
-      "--secondary": "210 14% 18%",
-      "--secondary-foreground": "210 25% 96%",
-      "--muted": "215 16% 14%",
-      "--muted-foreground": "215 12% 65%",
-      "--accent": "188 72% 40%", 
-      "--accent-foreground": "210 40% 10%",
-      "--destructive": "3 83% 55%",
-      "--destructive-foreground": "0 0% 98%",
-      "--border": "215 16% 22%",
-      "--input": "215 16% 22%",
-      "--ring": "190 90% 55%",
-      "--radius": "0.7rem"
+    "mode": "Light theme as primary (white/black) with subtle neutral surfaces; dark mode remains but redesign targets light-first clarity.",
+    "semantic_tokens": {
+      "background": "hsl(var(--background))",
+      "foreground": "hsl(var(--foreground))",
+      "surface": "hsl(var(--card))",
+      "surface_2": "hsl(var(--secondary))",
+      "border": "hsl(var(--border))",
+      "muted_text": "hsl(var(--muted-foreground))",
+      "focus_ring": "hsl(var(--ring))"
     },
-    "glass_tokens": {
-      "--glass-bg": "hsla(210, 18%, 12%, 0.55)",
-      "--glass-elevated-bg": "hsla(210, 18%, 16%, 0.55)",
-      "--glass-border": "hsla(195, 25%, 85%, 0.18)",
-      "--glass-ring": "hsla(194, 85%, 56%, 0.45)",
-      "--glass-shadow": "0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)"
-    },
-    "gradient_palette": {
-      "ocean_mist": "linear-gradient(135deg, rgba(17,24,39,0) 0%, rgba(13,101,118,0.22) 35%, rgba(65,148,196,0.22) 70%, rgba(17,24,39,0) 100%)",
-      "slate_to_teal": "linear-gradient(120deg, rgba(24,32,45,0.0) 0%, rgba(26,71,84,0.22) 50%, rgba(24,32,45,0.0) 100%)",
-      "enforcement": "Use gradients only on section backgrounds or large decorative layers. Never exceed 20% viewport coverage; never on text-heavy blocks; never on small UI elements (<100px)."
-    }
-  },
-
-  "tokens_css": {
-    "snippet": """
-@layer base { 
-  :root { 
-    --background: 222 28% 6%;
-    --foreground: 210 25% 96%;
-    --card: 222 28% 8%;
-    --card-foreground: 210 25% 96%;
-    --popover: 222 28% 8%;
-    --popover-foreground: 210 25% 96%;
-    --primary: 194 85% 56%;
-    --primary-foreground: 210 40% 8%;
-    --secondary: 210 14% 18%;
-    --secondary-foreground: 210 25% 96%;
-    --muted: 215 16% 14%;
-    --muted-foreground: 215 12% 65%;
-    --accent: 188 72% 40%;
-    --accent-foreground: 210 40% 10%;
-    --destructive: 3 83% 55%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 215 16% 22%;
-    --input: 215 16% 22%;
-    --ring: 190 90% 55%;
-    --radius: 0.7rem;
-
-    --glass-bg: hsla(210, 18%, 12%, 0.55);
-    --glass-elevated-bg: hsla(210, 18%, 16%, 0.55);
-    --glass-border: hsla(195, 25%, 85%, 0.18);
-    --glass-ring: hsla(194, 85%, 56%, 0.45);
-    --glass-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
-  }
-}
-
-/* Glass utilities */
-.glass { 
-  background: var(--glass-bg);
-  backdrop-filter: saturate(140%) blur(14px);
-  -webkit-backdrop-filter: saturate(140%) blur(14px);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-}
-.glass-elevated { background: var(--glass-elevated-bg); }
-
-/* Avoid center-aligning app container per guideline */
-/* Do not add .App { text-align:center } */
-"""
-  },
-
-  "layout": {
-    "header": {
-      "structure": "Top sticky glass header with app name, analytics badges, search/command, import/export, user menu",
-      "classes": "sticky top-0 z-40 glass border-b border-border/60 backdrop-saturate-150",
-      "children": [
-        "Brand at left (Space Grotesk) with subtle ocean_mist gradient underline",
-        "Search/Command palette trigger (Command from shadcn)",
-        "Analytics badges (Badge) for total tickets, my tickets",
-        "Export/Import (Button variants)",
-        "User avatar menu (DropdownMenu + Avatar)"
+    "accent_strategy": {
+      "goal": "Intercom-like: mostly monochrome UI, accent used sparingly for selection, focus, and key states.",
+      "accent_color": "Use the existing dark charcoal primary in light mode. Add ONE additional calm accent for status highlights only: ocean-teal 187/48-ish but at low saturation in light mode.",
+      "do_not": [
+        "Do not introduce purple.",
+        "Do not use saturated gradients on content areas."
       ]
     },
-    "kanban": {
-      "columns": ["Backlog", "To Do", "In Progress", "Review", "Done"],
-      "behavior": "5 side-by-side glass columns. Horizontal scroll on small screens with snap; resizable widths on desktop; virtualized lists inside each column; smooth dnd-kit between columns.",
-      "wrapper_classes": "relative h-[calc(100vh-72px)] overflow-x-auto overflow-y-hidden snap-x snap-mandatory",
-      "track_classes": "flex h-full gap-4 px-4 pb-6",
-      "column_classes": "glass min-w-[320px] md:min-w-[360px] lg:min-w-[380px] snap-start rounded-xl border border-border/60 flex flex-col",
-      "column_header_classes": "px-4 py-3 flex items-center justify-between sticky top-0 z-10 bg-transparent backdrop-blur",
-      "list_container_classes": "flex-1 overflow-y-auto pr-1",
-      "dnd": {
-        "virtualization": "react-window FixedSizeList per column with overscanCount=6; use DragOverlay for smooth drag ghost",
-        "collision": "closestCorners for inter-column moves; pointerWithin for dense lists",
-        "sensors": "Pointer + Keyboard sensors from dnd-kit"
+    "l1_l2_l3_palette": {
+      "rule": "Escalation levels must be instantly recognizable in sidebar + list badges + kanban tags.",
+      "tokens": {
+        "l1": {
+          "label": "L1",
+          "bg": "bg-emerald-50",
+          "text": "text-emerald-800",
+          "border": "border-emerald-200",
+          "dot": "bg-emerald-500"
+        },
+        "l2": {
+          "label": "L2",
+          "bg": "bg-amber-50",
+          "text": "text-amber-900",
+          "border": "border-amber-200",
+          "dot": "bg-amber-500"
+        },
+        "l3": {
+          "label": "L3",
+          "bg": "bg-rose-50",
+          "text": "text-rose-800",
+          "border": "border-rose-200",
+          "dot": "bg-rose-500"
+        }
+      },
+      "accessibility": "Ensure badge text meets AA; if on tinted bg, use darker text (800/900)."
+    },
+    "status_palette": {
+      "todo": "slate",
+      "in_progress": "blue",
+      "waiting": "amber",
+      "review": "violet (solid only, NOT gradient; keep very muted)",
+      "resolved": "emerald",
+      "note": "Avoid heavy color fills; prefer left border + small chip + subtle column header tint."
+    },
+    "gradients_texture": {
+      "policy": "Gradients are decorative only and must cover <20% viewport.",
+      "allowed_usage": [
+        "Top-of-app subtle radial wash behind header only",
+        "Kanban empty state backdrop only"
+      ],
+      "allowed_examples": {
+        "hero_wash": "background: radial-gradient(900px circle at 12% 0%, rgba(13,101,118,0.08), transparent 55%), radial-gradient(700px circle at 88% 10%, rgba(15,23,42,0.04), transparent 45%);"
+      },
+      "texture": "Add a subtle noise overlay via CSS on large backgrounds only (opacity 0.03–0.05)."
+    }
+  },
+  "design_tokens_css": {
+    "instruction": "Main agent should implement/adjust tokens in /app/frontend/src/index.css under .light primarily (keep existing structure).",
+    "additions": {
+      "spacing": {
+        "--space-1": "0.25rem",
+        "--space-2": "0.5rem",
+        "--space-3": "0.75rem",
+        "--space-4": "1rem",
+        "--space-5": "1.25rem",
+        "--space-6": "1.5rem",
+        "--space-8": "2rem"
+      },
+      "radius": {
+        "--radius-sm": "10px",
+        "--radius-md": "14px",
+        "--radius-lg": "18px"
+      },
+      "shadow": {
+        "--shadow-1": "0 1px 2px rgba(0,0,0,0.06)",
+        "--shadow-2": "0 6px 18px rgba(0,0,0,0.08)",
+        "--shadow-focus": "0 0 0 4px hsl(var(--ring) / 0.18)"
       }
-    },
-    "auth": {
-      "layout": "Split background with subtle gradient accent and centered glass card",
-      "card_classes": "glass max-w-md w-full mx-auto rounded-2xl p-6 md:p-8 border border-border/60",
-      "form_controls": "space-y-4"
     }
   },
-
-  "buttons": {
-    "style_family": "Glass / Neomorphic",
-    "tokens": {
-      "--btn-radius": "0.75rem",
-      "--btn-shadow": "0 4px 16px rgba(0,0,0,0.25)",
-      "--btn-motion": "cubic-bezier(0.2, 0.8, 0.2, 1)"
-    },
-    "variants": {
-      "primary": "bg-primary text-primary-foreground hover:bg-cyan-400/90 active:scale-[0.985] focus-visible:ring-2 focus-visible:ring-cyan-300",
-      "secondary": "bg-secondary/70 text-secondary-foreground hover:bg-secondary/90 border border-white/10",
-      "ghost": "bg-transparent hover:bg-white/5 border border-transparent"
-    },
-    "sizes": {
-      "sm": "h-9 px-3 rounded-[var(--btn-radius)]",
-      "md": "h-10 px-4 rounded-[var(--btn-radius)]",
-      "lg": "h-12 px-5 rounded-[var(--btn-radius)]"
-    }
-  },
-
   "components": {
-    "paths": {
-      "button": "./components/ui/button.jsx",
-      "badge": "./components/ui/badge.jsx",
-      "drawer": "./components/ui/drawer.jsx",
-      "sheet": "./components/ui/sheet.jsx",
-      "dialog": "./components/ui/dialog.jsx",
-      "skeleton": "./components/ui/skeleton.jsx",
-      "card": "./components/ui/card.jsx",
-      "avatar": "./components/ui/avatar.jsx",
-      "dropdown_menu": "./components/ui/dropdown-menu.jsx",
-      "command": "./components/ui/command.jsx",
-      "input": "./components/ui/input.jsx",
-      "textarea": "./components/ui/textarea.jsx",
-      "select": "./components/ui/select.jsx",
-      "switch": "./components/ui/switch.jsx",
-      "tooltip": "./components/ui/tooltip.jsx",
-      "sonner": "./components/ui/sonner.jsx",
-      "resizable": "./components/ui/resizable.jsx",
-      "scroll_area": "./components/ui/scroll-area.jsx",
-      "sheet_component": "./components/ui/sheet.jsx"
+    "primary_component_sources": {
+      "shadcn_ui": "/app/frontend/src/components/ui",
+      "toasts": "/app/frontend/src/components/ui/sonner.jsx"
     },
-    "recipes": {
-      "header": {
-        "structure": ["Brand", "Search/Command", "Badges", "Import/Export", "UserMenu"],
-        "example": """
-<header class=\"glass border-b border-border/60\">
-  <div class=\"mx-auto max-w-[1600px] px-4 h-16 flex items-center justify-between\">
-    <div class=\"flex items-center gap-3\">
-      <span class=\"text-lg font-semibold tracking-tight\" data-testid=\"app-brand\">TickFlow</span>
-      <div class=\"hidden md:flex gap-2\">
-        <span class=\"text-xs text-muted-foreground\" data-testid=\"badge-total\">Total: 1,204</span>
-        <span class=\"text-xs text-muted-foreground\" data-testid=\"badge-mine\">Mine: 238</span>
-      </div>
-    </div>
-    <div class=\"flex items-center gap-2\">
-      <!-- Command palette trigger -->
-      <button class=\"h-9 px-3 rounded-lg glass border border-white/10 text-sm\" data-testid=\"command-trigger\">⌘K</button>
-      <button class=\"h-9 px-3 rounded-lg bg-primary text-primary-foreground\" data-testid=\"export-button\">Export</button>
-      <button class=\"h-9 px-3 rounded-lg bg-secondary/70\" data-testid=\"import-button\">Import</button>
-      <!-- User menu via DropdownMenu + Avatar -->
-    </div>
-  </div>
-</header>
-"""
-      },
-      "ticket_card": {
-        "layout": "Compact glass card: title, assignee avatar+name, priority dot, small badges.",
-        "classes": "glass rounded-xl p-3 border hover:border-white/20 transition-colors duration-200",
-        "example": """
-function TicketCard({ item, onOpen }) {
-  return (
-    <button
-      className=\"w-full text-left glass rounded-xl p-3 border hover:border-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--glass-ring)]\"
-      onClick={() => onOpen(item)}
-      data-testid=\"ticket-card\"
-    >
-      <div className=\"flex items-center justify-between gap-2\">
-        <h4 className=\"text-sm font-medium line-clamp-2\" data-testid=\"ticket-title\">{item.title}</h4>
-        <span className=\"shrink-0 w-2.5 h-2.5 rounded-full\" style={{background:item.priorityColor}} data-testid=\"ticket-priority-dot\" />
-      </div>
-      <div className=\"mt-2 flex items-center gap-2 text-xs text-muted-foreground\">
-        <img src={item.assigneeAvatar} alt=\"\" className=\"w-5 h-5 rounded-full\" />
-        <span data-testid=\"ticket-assignee\">{item.assignee}</span>
-      </div>
-    </button>
-  )
-}
-"""
-      },
-      "drawer_detail": {
-        "description": "Right-side drawer with full ticket details and actions.",
-        "example": """
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from \"./components/ui/drawer\";
-import { Button } from \"./components/ui/button\";
-
-function TicketDrawer({ open, onOpenChange, ticket }) {
-  return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className=\"glass-elevated border-l border-border/60\" side=\"right\" data-testid=\"ticket-drawer\"> 
-        <DrawerHeader>
-          <DrawerTitle className=\"font-semibold text-base\" data-testid=\"drawer-title\">{ticket?.title}</DrawerTitle>
-        </DrawerHeader>
-        <div className=\"px-6 pb-6 space-y-6\">
-          {/* details... */}
-        </div>
-        <DrawerFooter className=\"px-6 pb-6\">
-          <Button data-testid=\"drawer-save-button\">Save</Button>
-          <Button variant=\"ghost\" data-testid=\"drawer-close-button\" onClick={() => onOpenChange(false)}>Close</Button>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
-  )
-}
-"""
-      },
-      "virtualized_kanban_js": {
-        "notes": "Use dnd-kit + react-window; DragOverlay for glossy ghost; FixedSizeList itemSize ~84 for compact cards.",
-        "example": """
-import React from \"react\";
-import { DndContext, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from \"@dnd-kit/core\";
-import { SortableContext, verticalListSortingStrategy, arrayMove } from \"@dnd-kit/sortable\";
-import { FixedSizeList as List } from \"react-window\";
-import { useDroppable } from \"@dnd-kit/core\";
-
-function SortableItem({ id, item, style }) {
-  return (
-    <div style={style} className=\"px-2\" data-testid=\"sortable-item\">
-      <div className=\"\">
-        <TicketCard item={item} onOpen={() => {}} />
-      </div>
-    </div>
-  );
-}
-
-function VirtualizedColumn({ columnId, itemIds, items, height }) {
-  const { setNodeRef } = useDroppable({ id: columnId });
-
-  const Row = ({ index, style }) => {
-    const id = itemIds[index];
-    return <SortableItem id={id} item={items[id]} style={style} />
-  };
-
-  return (
-    <div ref={setNodeRef} className=\"glass rounded-xl border border-border/60 flex flex-col min-w-[360px]\" data-testid={\`kanban-column-\${columnId}\`}> 
-      <div className=\"px-4 py-3 sticky top-0 z-10 bg-transparent backdrop-blur flex items-center justify-between\">
-        <h3 className=\"text-sm font-medium\">{columnId}</h3>
-        <span className=\"text-xs text-muted-foreground\" data-testid=\"column-count\">{itemIds.length}</span>
-      </div>
-      <div className=\"flex-1 overflow-y-auto pr-1\">
-        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-          <List height={height} itemCount={itemIds.length} itemSize={84} width={\"100%\"} overscanCount={6}>
-            {Row}
-          </List>
-        </SortableContext>
-      </div>
-    </div>
-  );
-}
-
-export default function KanbanBoard({ columns, items }) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const [activeId, setActiveId] = React.useState(null);
-
-  function findContainer(id) {
-    for (const [key, ids] of Object.entries(columns)) if (ids.includes(id)) return key;
-    return id;
-  }
-
-  function onDragStart({ active }) { setActiveId(active.id); }
-
-  function onDragEnd({ active, over }) {
-    setActiveId(null);
-    if (!over) return;
-    const from = findContainer(active.id);
-    const to = findContainer(over.id);
-    if (from && to) {
-      if (from === to) {
-        const oldIndex = columns[from].indexOf(active.id);
-        const newIndex = columns[to].indexOf(over.id);
-        columns[from] = arrayMove(columns[from], oldIndex, newIndex);
-      } else {
-        const fromItems = [...columns[from]];
-        const toItems = [...columns[to]];
-        fromItems.splice(fromItems.indexOf(active.id), 1);
-        const overIndex = Math.max(0, toItems.indexOf(over.id));
-        toItems.splice(overIndex, 0, active.id);
-        columns = { ...columns, [from]: fromItems, [to]: toItems };
-      }
-    }
-  }
-
-  const listHeight = typeof window !== 'undefined' ? window.innerHeight - 160 : 600;
-
-  return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div className=\"relative h-[calc(100vh-72px)] overflow-x-auto overflow-y-hidden\">
-        <div className=\"flex h-full gap-4 px-4 pb-6\" data-testid=\"kanban-track\"> 
-          {Object.entries(columns).map(([col, ids]) => (
-            <VirtualizedColumn key={col} columnId={col} itemIds={ids} items={items} height={listHeight} />
-          ))}
-        </div>
-      </div>
-      <DragOverlay>{activeId ? <div className=\"glass rounded-xl p-3\"><span className=\"text-xs\">Dragging...</span></div> : null}</DragOverlay>
-    </DndContext>
-  );
-}
-"""
-      },
-      "empty_state": {
-        "example": """
-<div className=\"flex flex-col items-center justify-center text-center p-6 text-muted-foreground\" data-testid=\"empty-state\">
-  <div className=\"w-16 h-16 rounded-xl glass flex items-center justify-center mb-3\">💼</div>
-  <p className=\"text-sm\">No tickets yet</p>
-  <button className=\"mt-3 h-9 px-3 rounded-lg bg-primary text-primary-foreground\" data-testid=\"empty-add-ticket\">Create ticket</button>
-</div>
-"""
-      },
-      "skeleton_card": {
-        "example": """
-import { Skeleton } from \"./components/ui/skeleton\";
-
-function TicketSkeleton() {
-  return (
-    <div className=\"glass rounded-xl p-3 border\" data-testid=\"ticket-skeleton\"> 
-      <Skeleton className=\"h-4 w-3/4\" />
-      <div className=\"mt-3 flex items-center gap-2\">
-        <Skeleton className=\"h-5 w-5 rounded-full\" />
-        <Skeleton className=\"h-3 w-20\" />
-      </div>
-    </div>
-  );
-}
-"""
-      }
+    "component_path": {
+      "app_sidebar": [
+        "/app/frontend/src/components/ui/scroll-area.jsx",
+        "/app/frontend/src/components/ui/collapsible.jsx",
+        "/app/frontend/src/components/ui/separator.jsx",
+        "/app/frontend/src/components/ui/badge.jsx",
+        "/app/frontend/src/components/ui/tooltip.jsx"
+      ],
+      "command_palette": [
+        "/app/frontend/src/components/ui/command.jsx",
+        "/app/frontend/src/components/ui/dialog.jsx"
+      ],
+      "ticket_list": [
+        "/app/frontend/src/components/ui/input.jsx",
+        "/app/frontend/src/components/ui/tabs.jsx",
+        "/app/frontend/src/components/ui/scroll-area.jsx",
+        "/app/frontend/src/components/ui/avatar.jsx",
+        "/app/frontend/src/components/ui/badge.jsx",
+        "/app/frontend/src/components/ui/skeleton.jsx"
+      ],
+      "ticket_drawer": [
+        "/app/frontend/src/components/ui/drawer.jsx",
+        "/app/frontend/src/components/ui/resizable.jsx",
+        "/app/frontend/src/components/ui/tabs.jsx",
+        "/app/frontend/src/components/ui/textarea.jsx",
+        "/app/frontend/src/components/ui/hover-card.jsx"
+      ],
+      "kanban": [
+        "/app/frontend/src/components/ui/card.jsx",
+        "/app/frontend/src/components/ui/badge.jsx",
+        "/app/frontend/src/components/ui/dropdown-menu.jsx",
+        "/app/frontend/src/components/ui/tooltip.jsx"
+      ],
+      "analytics": [
+        "/app/frontend/src/components/ui/card.jsx",
+        "/app/frontend/src/components/ui/tabs.jsx",
+        "/app/frontend/src/components/ui/select.jsx",
+        "/app/frontend/src/components/ui/table.jsx"
+      ],
+      "forms": [
+        "/app/frontend/src/components/ui/form.jsx",
+        "/app/frontend/src/components/ui/label.jsx",
+        "/app/frontend/src/components/ui/input.jsx",
+        "/app/frontend/src/components/ui/textarea.jsx",
+        "/app/frontend/src/components/ui/switch.jsx",
+        "/app/frontend/src/components/ui/checkbox.jsx"
+      ],
+      "dialogs_sheets": [
+        "/app/frontend/src/components/ui/dialog.jsx",
+        "/app/frontend/src/components/ui/sheet.jsx",
+        "/app/frontend/src/components/ui/alert-dialog.jsx"
+      ],
+      "calendar_leave": [
+        "/app/frontend/src/components/ui/calendar.jsx",
+        "/app/frontend/src/components/ui/popover.jsx"
+      ]
+    },
+    "button_rules_intercom_style": {
+      "source": "https://developers.intercom.com/docs/canvas-kit/canvas-kit-inbox-best-practices",
+      "rules": [
+        "Avoid primary buttons in surfaces that load by default (e.g., right details panel cards). Use secondary/link by default.",
+        "Use primary only inside an active flow (e.g., when composing a reply, submitting escalation, saving canned response).",
+        "Use link-style buttons for navigation actions like Back/Cancel/Done.",
+        "Separate navigation actions from content with a divider/spacer; place at bottom of card/panel."
+      ]
     }
   },
-
-  "micro_interactions": {
-    "hover": "Cards: border-white/20 on hover; Buttons: subtle shade shift; No universal transition, only color/background/box-shadow transitions.",
-    "drag": "Elevate dragged item via DragOverlay with slight scale(1.02) and glow ring var(--glass-ring).",
-    "entrance": "Framer Motion: columns fade+rise 12px; cards stagger 18ms per card.",
-    "scroll": "Header reduces blur intensity on scroll; columns support subtle inertial snap on mobile."
+  "page_blueprints": {
+    "login": {
+      "layout": "Split screen: left brand + reassurance, right auth card (no heavy gradients)",
+      "components": ["Card", "Form", "Input", "Button"],
+      "details": [
+        "Increase input height: h-11 sm:h-12, text-base",
+        "Use subtle security microcopy in muted text"
+      ]
+    },
+    "all_tickets_inbox": {
+      "layout": "3-column: sidebar folders | conversation list | conversation/drawer",
+      "conversation_list": {
+        "row_height": "min-h-[76px] (larger target)",
+        "row_structure": [
+          "Top line: subject (font-medium)",
+          "Second line: last message preview (muted)",
+          "Right meta: absolute timestamp + SLA chip"
+        ],
+        "states": [
+          "Unread: left 2px border + slightly stronger subject weight",
+          "Selected: bg-secondary + ring-1 ring-border",
+          "Hover: bg-muted/60"
+        ]
+      },
+      "filters": "Tabs: All/Open/Waiting/Closed/Starred; add search input with Command-K hint",
+      "empty_state": "Left-aligned muted paragraph, with an action link (per Intercom empty state guidance)"
+    },
+    "ticket_drawer": {
+      "layout": "Resizable 3-panel drawer",
+      "conversation": {
+        "plain_text_rendering": [
+          "Use <pre> styled for wrapping: whitespace-pre-wrap break-words font-sans",
+          "Apply leading-7 and paragraph spacing (space-y-4)"
+        ],
+        "composer": [
+          "Pinned at bottom with subtle top border",
+          "Primary action: Send",
+          "Secondary: Add note, Attach, Canned responses"
+        ]
+      },
+      "details_panel": {
+        "pattern": "Stacked cards with progressive disclosure (Collapsible sections)",
+        "first_canvas_rule": "Default view shows only most relevant blocks (SLA, priority, owner); advanced blocks behind collapsibles"
+      }
+    },
+    "kanban_dashboard": {
+      "layout": "Horizontal scroll board on mobile; full columns on desktop",
+      "column_style": "Header sticky with subtle tint; cards white with hairline border",
+      "drag": "Use existing DnD; add drop indicator (2px outline + subtle scale)"
+    },
+    "analytics": {
+      "layout": "Card grid + table drilldown",
+      "charts": "Use Recharts for time series and stacked bars",
+      "key_metrics": [
+        "First response time",
+        "Time to resolve",
+        "Escalation rate L1→L2→L3",
+        "Backlog by folder",
+        "Agent load"
+      ]
+    }
   },
-
-  "accessibility": {
-    "contrast": "All text meets AA on dark glass. Primary cyan on dark background must have >=4.5:1 for body-size text.",
-    "focus": "Always render focus-visible rings (ring-2 ring-cyan-300).",
-    "motion": "Respect prefers-reduced-motion: disable entrance animations and parallax.",
-    "screenreader": "Announce column counts, drag start/destination via aria-live polite.",
-    "testing_attributes": "All interactive and key informational elements MUST include data-testid attributes using kebab-case describing role."
+  "interaction_design": {
+    "micro_interactions": {
+      "hover": [
+        "List rows: background-color transition 160ms",
+        "Buttons: shadow + background-color 160ms",
+        "Badges: border-color 160ms"
+      ],
+      "press": "Buttons scale- [0.98] with transition-transform 120ms (only on press state)",
+      "focus": "Use .focus-ring utility (already present) + visible ring on inputs and list rows",
+      "scroll": "Use ScrollArea; keep custom scrollbar subtle",
+      "loading": "Use Skeleton rows in list and conversation blocks"
+    },
+    "motion_principles": {
+      "entrance": "Use existing .animate-fade-in-up for column and drawer content; stagger list load",
+      "reduce_motion": "Respect prefers-reduced-motion (already in index.css)",
+      "never": [
+        "Never use transition: all",
+        "Avoid large parallax in productivity views"
+      ]
+    }
   },
-
-  "libraries": {
-    "install": [
-      "npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities react-window",
-      "npm install framer-motion",
-      "npm install lucide-react"
+  "testing_attributes": {
+    "rule": "All interactive and key informational elements MUST include data-testid (kebab-case).",
+    "examples": [
+      "data-testid=sidebar-l1-folder-button",
+      "data-testid=ticket-list-search-input",
+      "data-testid=ticket-row-<id>",
+      "data-testid=ticket-drawer-send-reply-button",
+      "data-testid=kanban-column-in-progress",
+      "data-testid=analytics-first-response-time-card",
+      "data-testid=command-palette-trigger"
+    ]
+  },
+  "l1_l2_l3_sidebar_rules": {
+    "structure": [
+      "Folders section: L1, L2, L3 (Collapsible groups)",
+      "Within each: Open, Waiting, Needs review, Resolved",
+      "Each folder shows count badge (monochrome) + level chip (colored)"
     ],
-    "usage_notes": [
-      "Use FixedSizeList for stable virtualization; if variable heights become necessary, switch to @tanstack/react-virtual.",
-      "Use shadcn Drawer/Sheet for edit/create flows; never raw HTML modals.",
-      "Use sonner for toasts (see ./components/ui/sonner.jsx)."
+    "interaction": [
+      "Drag ticket to a level folder to escalate (show drop target highlight)",
+      "Right-click context menu: Escalate → L2/L3, Assign, Mark waiting",
+      "Keyboard: use Command palette to jump to any folder (type 'L2 waiting')"
+    ],
+    "visual": [
+      "Level chips always visible in sidebar labels",
+      "Use small colored dot + text (avoid big color blocks)"
     ]
   },
-
-  "grid_system": {
-    "container": "mx-auto max-w-[1600px] px-4",
-    "spacing": "Use 2–3x whitespace vs typical dashboards. Column gap 1rem–1.25rem; inside card padding 0.75rem–1rem.",
-    "radius": "Use --radius = 0.7rem as base; columns rounded-xl; buttons 0.75rem."
-  },
-
-  "image_urls": [
-    {
-      "url": "https://images.pexels.com/photos/28428587/pexels-photo-28428587.jpeg",
-      "category": "accent-background",
-      "description": "Dark abstract with soft spheres; use as subtle hero/header decorative background overlay under 20% viewport coverage"
+  "libraries": {
+    "recharts": {
+      "why": "Analytics dashboard charts",
+      "install": "npm i recharts",
+      "usage_notes": [
+        "Prefer subtle gridlines: stroke=\"hsl(var(--border))\"",
+        "Use tooltip with Card-like surface",
+        "Keep axes labels text-xs text-muted-foreground"
+      ]
     },
-    {
-      "url": "https://images.pexels.com/photos/5829761/pexels-photo-5829761.jpeg",
-      "category": "glass-texture",
-      "description": "Frosted / fog gradient texture; use as noise overlay masked inside columns at low opacity (6–10%)."
-    }
-  ],
-
-  "testing_data_testids": [
-    "app-brand",
-    "command-trigger",
-    "export-button",
-    "import-button",
-    "kanban-track",
-    "kanban-column-backlog",
-    "kanban-column-to-do",
-    "kanban-column-in-progress",
-    "kanban-column-review",
-    "kanban-column-done",
-    "ticket-card",
-    "ticket-title",
-    "ticket-assignee",
-    "ticket-priority-dot",
-    "ticket-skeleton",
-    "empty-state",
-    "empty-add-ticket",
-    "drawer-title",
-    "drawer-save-button",
-    "drawer-close-button"
-  ],
-
-  "empty_and_loading": {
-    "empty_column": "Centered glass icon tile + copy + primary button. Ensure space for quick-add.",
-    "skeletons": "Use Skeleton components in lists at mount and during pagination."
-  },
-
-  "forms": {
-    "create_edit": {
-      "pattern": "Prefer Drawer (right) on desktop; Sheet on mobile; Dialog for destructive confirms only.",
-      "fields": ["title", "description", "status", "assignee", "priority", "labels", "attachments"],
-      "components": ["input", "textarea", "select", "avatar", "badge", "button"]
-    },
-    "auth": {
-      "layout": "Glass card with Input, Password, Button; visible focus state; remember me Switch",
-      "data_testids": ["login-email-input", "login-password-input", "login-submit-button", "register-submit-button"]
+    "framer_motion": {
+      "why": "Drawer transitions, list item subtle entrance, drag affordances",
+      "install": "npm i framer-motion",
+      "usage_notes": [
+        "Keep durations 0.16–0.24s",
+        "Use opacity + y 8px for entrance",
+        "Avoid overly springy motion in enterprise contexts"
+      ]
     }
   },
-
-  "motion": {
-    "durations": { "fast": 120, "base": 220, "slow": 340 },
-    "easing": "cubic-bezier(0.2,0.8,0.2,1)",
-    "rules": [
-      "Never apply transition: all; restrict to color/background/box-shadow/opacity.",
-      "Drag overlay scale 1.02 with subtle glow; drop snaps to position over 140ms."
+  "image_urls": {
+    "policy": "This is a SaaS app; avoid decorative stock photos inside operational screens. Use illustrations only in empty states.",
+    "empty_state_illustrations": [
+      {
+        "category": "empty-state",
+        "description": "Subtle monochrome inbox illustration (used in marketing/login only; in-app empty states should be text-first)",
+        "url": "https://images.unsplash.com/photo-1557682250-33bd709cbe85?auto=format&fit=crop&w=1200&q=60"
+      }
+    ],
+    "login_background": [
+      {
+        "category": "login",
+        "description": "Light texture background (very subtle; apply opacity 0.08)",
+        "url": "https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?auto=format&fit=crop&w=1600&q=60"
+      }
     ]
   },
-
   "instructions_to_main_agent": [
-    "1) Update src/index.css tokens to the semantic dark palette + glass tokens from tokens_css.snippet.",
-    "2) Build Header using shadcn Button, DropdownMenu, Avatar, Command; apply data-testid attributes.",
-    "3) Implement KanbanBoard.js using dnd-kit + react-window per the virtualized_kanban_js example; ensure columns list matches Backlog → To Do → In Progress → Review → Done.",
-    "4) Implement TicketCard.js using the glass classes and ensure compact height (~72–84px).",
-    "5) Add TicketDrawer.js using shadcn Drawer with Save/Close actions and testids.",
-    "6) Add Empty and Skeleton states to each column.",
-    "7) Ensure mobile: columns become horizontally scrollable with snap; keep min-w 320–380px.",
-    "8) Add analytics badges in header; hook to real counts later.",
-    "9) Integrate Sonner toasts for success/error.",
-    "10) Enforce gradient restriction rule; only use gradient overlays like ocean_mist at low opacity on header background.",
-    "11) All interactive elements must include data-testid in kebab-case."
+    "Prioritize light theme: enforce larger font sizes in ticket list, conversation, and sidebars.",
+    "Implement L1/L2/L3 as first-class folder groups in the sidebar with chips + counts; never hide them under a menu.",
+    "Adopt Intercom button hierarchy: avoid primary CTAs in default-loaded context panels; primary reserved for active flows (reply, save, submit).",
+    "Use progressive disclosure in details panel (Collapsible) to avoid overwhelming the agent; default to essential blocks only.",
+    "Ensure every interactive element and critical info has data-testid in kebab-case.",
+    "Keep gradients extremely subtle and decorative only; do not place gradients behind dense text.",
+    "Prefer ScrollArea for all long panes (sidebar, list, conversation, details)."
   ],
-
-  "component_path": [
-    "./components/ui/button.jsx",
-    "./components/ui/badge.jsx",
-    "./components/ui/drawer.jsx",
-    "./components/ui/sheet.jsx",
-    "./components/ui/dialog.jsx",
-    "./components/ui/skeleton.jsx",
-    "./components/ui/card.jsx",
-    "./components/ui/avatar.jsx",
-    "./components/ui/dropdown-menu.jsx",
-    "./components/ui/command.jsx",
-    "./components/ui/input.jsx",
-    "./components/ui/textarea.jsx",
-    "./components/ui/select.jsx",
-    "./components/ui/switch.jsx",
-    "./components/ui/tooltip.jsx",
-    "./components/ui/sonner.jsx",
-    "./components/ui/resizable.jsx",
-    "./components/ui/scroll-area.jsx"
-  ]
+  "appendix_general_ui_ux_design_guidelines": "<General UI UX Design Guidelines>  \n    - You must **not** apply universal transition. Eg: `transition: all`. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms\n    - You must **not** center align the app container, ie do not add `.App { text-align: center; }` in the css file. This disrupts the human natural reading flow of text\n   - NEVER: use AI assistant Emoji characters like`🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 etc for icons. Always use **FontAwesome cdn** or **lucid-react** library already installed in the package.json\n\n **GRADIENT RESTRICTION RULE**\nNEVER use dark/saturated gradient combos (e.g., purple/pink) on any UI element.  Prohibited gradients: blue-500 to purple 600, purple 500 to pink-500, green-500 to blue-500, red to pink etc\nNEVER use dark gradients for logo, testimonial, footer etc\nNEVER let gradients cover more than 20% of the viewport.\nNEVER apply gradients to text-heavy content or reading areas.\nNEVER use gradients on small UI elements (<100px width).\nNEVER stack multiple gradient layers in the same viewport.\n\n**ENFORCEMENT RULE:**\n    • Id gradient area exceeds 20% of viewport OR affects readability, **THEN** use solid colors\n\n**How and where to use:**\n   • Section backgrounds (not content backgrounds)\n   • Hero section header content. Eg: dark to light to dark color\n   • Decorative overlays and accent elements only\n   • Hero section with 2-3 mild color\n   • Gradients creation can be done for any angle say horizontal, vertical or diagonal\n\n- For AI chat, voice application, **do not use purple color. Use color like light green, ocean blue, peach orange etc**\n\n</Font Guidelines>\n\n- Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead. \n   \n- Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.\n\n- Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.\n   \n- Before generating UI, infer the visual style from the problem statement (palette, contrast, mood, motion) and immediately instantiate it by setting global design tokens (primary, secondary/accent, background, foreground, ring, state colors), rather than relying on any library defaults. Don't make the background dark as a default step, always understand problem first and define colors accordingly\n    Eg: - if it implies playful/energetic, choose a colorful scheme\n           - if it implies monochrome/minimal, choose a black–white/neutral scheme\n\n**Component Reuse:**\n\t- Prioritize using pre-existing components from src/components/ui when applicable\n\t- Create new components that match the style and conventions of existing components when needed\n\t- Examine existing components to understand the project's component patterns before creating new ones\n\n**IMPORTANT**: Do not use HTML based component like dropdown, calendar, toast etc. You **MUST** always use `/app/frontend/src/components/ui/ ` only as a primary components as these are modern and stylish component\n\n**Best Practices:**\n\t- Use Shadcn/UI as the primary component library for consistency and accessibility\n\t- Import path: ./components/[component-name]\n\n**Export Conventions:**\n\t- Components MUST use named exports (export const ComponentName = ...)\n\t- Pages MUST use default exports (export default function PageName() {...})\n\n**Toasts:**\n  - Use `sonner` for toasts\"\n  - Sonner component are located in `/app/src/components/ui/sonner.tsx`\n\nUse 2–4 color gradients, subtle textures/noise overlays, or CSS-based noise to avoid flat visuals.\n</General UI UX Design Guidelines>"
 }
-
-
-<General UI UX Design Guidelines>  
-    - You must **not** apply universal transition. Eg: `transition: all`. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms
-    - You must **not** center align the app container, ie do not add `.App { text-align: center; }` in the css file. This disrupts the human natural reading flow of text
-   - NEVER: use AI assistant Emoji characters like`🤖🧠💭💡🔮🎯📚🎭🎬🎪🎉🎊🎁🎀🎂🍰🎈🎨🎰💰💵💳🏦💎🪙💸🤑📊📈📉💹🔢🏆🥇 etc for icons. Always use **FontAwesome cdn** or **lucid-react** library already installed in the package.json
-
- **GRADIENT RESTRICTION RULE**
-NEVER use dark/saturated gradient combos (e.g., purple/pink) on any UI element.  Prohibited gradients: blue-500 to purple 600, purple 500 to pink-500, green-500 to blue-500, red to pink etc
-NEVER use dark gradients for logo, testimonial, footer etc
-NEVER let gradients cover more than 20% of the viewport.
-NEVER apply gradients to text-heavy content or reading areas.
-NEVER use gradients on small UI elements (<100px width).
-NEVER stack multiple gradient layers in the same viewport.
-
-**ENFORCEMENT RULE:**
-    • Id gradient area exceeds 20% of viewport OR affects readability, **THEN** use solid colors
-
-**How and where to use:**
-   • Section backgrounds (not content backgrounds)
-   • Hero section header content. Eg: dark to light to dark color
-   • Decorative overlays and accent elements only
-   • Hero section with 2-3 mild color
-   • Gradients creation can be done for any angle say horizontal, vertical or diagonal
-
-- For AI chat, voice application, **do not use purple color. Use color like light green, ocean blue, peach orange etc**
-
-</Font Guidelines>
-
-- Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead. 
-   
-- Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.
-
-- Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.
-   
-- Before generating UI, infer the visual style from the problem statement (palette, contrast, mood, motion) and immediately instantiate it by setting global design tokens (primary, secondary/accent, background, foreground, ring, state colors), rather than relying on any library defaults. Don't make the background dark as a default step, always understand problem first and define colors accordingly
-    Eg: - if it implies playful/energetic, choose a colorful scheme
-           - if it implies monochrome/minimal, choose a black–white/neutral scheme
-
-**Component Reuse:**
-	- Prioritize using pre-existing components from src/components/ui when applicable
-	- Create new components that match the style and conventions of existing components when needed
-	- Examine existing components to understand the project's component patterns before creating new ones
-
-**IMPORTANT**: Do not use HTML based component like dropdown, calendar, toast etc. You **MUST** always use `/app/frontend/src/components/ui/ ` only as a primary components as these are modern and stylish component
-
-**Best Practices:**
-	- Use Shadcn/UI as the primary component library for consistency and accessibility
-	- Import path: ./components/[component-name]
-
-**Export Conventions:**
-	- Components MUST use named exports (export const ComponentName = ...)
-	- Pages MUST use default exports (export default function PageName() {...})
-
-**Toasts:**
-  - Use `sonner` for toasts"  
-  - Sonner component are located in `/app/src/components/ui/sonner.tsx`
-
-Use 2–4 color gradients, subtle textures/noise overlays, or CSS-based noise to avoid flat visuals.
-</General UI UX Design Guidelines>
