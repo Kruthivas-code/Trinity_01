@@ -1313,7 +1313,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           {(ticket.customer_email || ticket.email_sender || ticket.customer_name) && (
             <div className="px-3 py-2 border-b border-border/30">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+                <div className="w-7 h-7 rounded-full bg-foreground/10 flex items-center justify-center text-xs font-medium text-foreground shrink-0">
                   {(ticket.customer_name || ticket.email_sender_name || ticket.customer_email || 'C').charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
