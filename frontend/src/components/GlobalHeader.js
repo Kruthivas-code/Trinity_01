@@ -152,7 +152,7 @@ const GlobalHeader = ({ user, onCreateTicket, onOpenCommandPalette }) => {
   };
 
   return (
-    <header className="sticky top-0 z-50 h-14 flex items-center justify-between px-4 border-b border-border/50 bg-background/80 backdrop-blur-xl backdrop-saturate-150">
+    <header className="sticky top-0 z-50 h-14 flex items-center justify-between px-4 border-b border-border bg-card">
       {/* Left: Page Title */}
       <div className="flex items-center gap-3 min-w-[200px]">
         <h1 className="text-base font-semibold text-foreground">{getPageTitle()}</h1>
@@ -163,10 +163,10 @@ const GlobalHeader = ({ user, onCreateTicket, onOpenCommandPalette }) => {
         <form onSubmit={handleSearchSubmit}>
           <div 
             className={`
-              relative flex items-center h-9 rounded-lg border transition-all duration-200
+              relative flex items-center h-10 rounded-lg border transition-all duration-200
               ${searchFocused 
-                ? 'bg-background border-primary/50 ring-2 ring-primary/20' 
-                : 'bg-secondary/40 border-border/50 hover:border-border hover:bg-secondary/60'
+                ? 'bg-background border-foreground/30 ring-2 ring-foreground/10' 
+                : 'bg-secondary/50 border-border hover:border-foreground/20'
               }
             `}
           >
@@ -177,7 +177,7 @@ const GlobalHeader = ({ user, onCreateTicket, onOpenCommandPalette }) => {
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchFocused(true)}
               placeholder="Search tickets, users, commands..."
-              className="w-full h-full pl-9 pr-20 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+              className="w-full h-full pl-9 pr-20 bg-transparent text-[14px] outline-none placeholder:text-muted-foreground/60"
               data-testid="global-search-input"
             />
             <div className="absolute right-2 flex items-center gap-1">
