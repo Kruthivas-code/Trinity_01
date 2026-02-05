@@ -136,32 +136,14 @@ const EmailViewer = ({
         {formatPlainText(getCleanText)}
       </div>
       
-      {/* Extracted images as small thumbnails */}
+      {/* Image Gallery */}
       {extractedImages.length > 0 && (
         <div className="mt-2 pt-1.5 border-t border-border/20">
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60 mb-1">
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60 mb-1.5">
             <Image size={10} />
-            <span>{extractedImages.length} images</span>
+            <span>{extractedImages.length} image{extractedImages.length !== 1 ? 's' : ''}</span>
           </div>
-          <div className="flex flex-wrap gap-1">
-            {extractedImages.map((img, index) => (
-              <a
-                key={index}
-                href={img.src}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded overflow-hidden bg-secondary/30 border border-border/20 hover:border-primary/40"
-                title={img.alt}
-              >
-                <img 
-                  src={img.src} 
-                  alt={img.alt}
-                  className="w-full h-full object-cover"
-                  onError={(e) => e.target.style.display = 'none'}
-                />
-              </a>
-            ))}
-          </div>
+          <ImageGallery images={extractedImages} />
         </div>
       )}
     </div>
