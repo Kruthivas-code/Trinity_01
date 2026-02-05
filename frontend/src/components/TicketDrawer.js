@@ -217,41 +217,35 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
   
   return (
     <div className={`${styles.alignment}`} data-testid="message-item">
-      <div className={`${styles.container} ${mergeStyles} p-3`}>
-        {/* Merged ticket indicator - shown prominently at top of message */}
+      <div className={`${styles.container} ${mergeStyles} px-2 py-1.5`}>
+        {/* Merged ticket indicator */}
         {isFromMergedTicket && (
-          <div className={`flex items-center gap-1.5 mb-2 text-[10px] ${mergeColor.text}`}>
-            <GitMerge size={10} />
+          <div className={`flex items-center gap-1 mb-1 text-[9px] ${mergeColor.text}`}>
+            <GitMerge size={9} />
             <span className="font-mono">{originalTicketId}</span>
           </div>
         )}
-        {/* Message Header - Compact */}
-        <div className={`flex items-center justify-between mb-2 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
-          <div className={`flex items-center gap-2 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium shrink-0 ${styles.avatar}`}>
-              {sender?.charAt(0).toUpperCase() || 'U'}
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-medium text-sm">{sender || 'Unknown'}</span>
-              {isNote && (
-                <span className="text-[10px] px-1 py-0.5 rounded bg-amber-400/20 text-amber-400">Note</span>
-              )}
-              {isReply && (
-                <span className="text-[10px] px-1 py-0.5 rounded bg-primary/20 text-primary">Reply</span>
-              )}
-            </div>
+        {/* Message Header - Ultra Compact: avatar + sender + timestamp inline */}
+        <div className={`flex items-center gap-1.5 mb-1 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
+          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium shrink-0 ${styles.avatar}`}>
+            {sender?.charAt(0).toUpperCase() || 'U'}
           </div>
-          <span className="text-[10px] text-muted-foreground shrink-0">
+          <span className="font-medium text-xs">{sender || 'Unknown'}</span>
+          {isNote && (
+            <span className="text-[9px] px-1 py-0.5 rounded bg-amber-400/20 text-amber-400">Note</span>
+          )}
+          {isReply && (
+            <span className="text-[9px] px-1 py-0.5 rounded bg-primary/20 text-primary">Reply</span>
+          )}
+          <span className="text-[9px] text-muted-foreground/70 ml-auto shrink-0">
             {formatDate(timestamp)}
           </span>
         </div>
         
-        {/* Removed: Subject line was redundant */}
-        
-        {/* Message Body - Use EmailViewer for email content with HTML */}
-        <div className="text-sm text-foreground/90 leading-relaxed pl-8">
+        {/* Message Body */}
+        <div className="text-[13px] text-foreground/90 leading-snug pl-6">
           {emailData && (emailData.email_html || emailData.email_text) ? (
-            <EmailViewer ticket={emailData} className="mt-2" />
+            <EmailViewer ticket={emailData} />
           ) : (
             renderContent(content)
           )}
