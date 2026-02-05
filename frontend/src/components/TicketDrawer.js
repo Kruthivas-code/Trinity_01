@@ -1622,7 +1622,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           </div>
 
           {/* Conversation Thread - Scrollable */}
-          <div ref={conversationRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div ref={conversationRef} className="flex-1 overflow-y-auto p-3 space-y-1.5">
             {/* Metadata Tab Content */}
             {activeTab === 'activity' && (
               <div className="space-y-4">
