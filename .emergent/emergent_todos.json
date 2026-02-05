@@ -1,22 +1,26 @@
 [
   {
-    "content": "Remove title/description from condition fields (frontend + backend)",
-    "status": "completed"
+    "content": "Update light theme CSS variables in index.css for crisp white+black high-contrast theme",
+    "status": "in_progress"
   },
   {
-    "content": "Add OR condition logic with condition groups",
-    "status": "completed"
+    "content": "Change default theme to 'light' in ThemeContext.js",
+    "status": "pending"
   },
   {
-    "content": "Add workload balancing (least_tickets) alongside round-robin",
-    "status": "completed"
+    "content": "Clean up gradient overlays and glassmorphism for light mode in App.css",
+    "status": "pending"
   },
   {
-    "content": "Add customer LTV as condition field with numeric operators",
-    "status": "completed"
+    "content": "Update LoginPage styling for clean white background",
+    "status": "pending"
   },
   {
-    "content": "Create SLA escalation rules system",
-    "status": "completed"
+    "content": "Take screenshots to verify all pages look correct",
+    "status": "pending"
+  },
+  {
+    "content": "Fix any remaining visual issues",
+    "status": "pending"
   }
 ]
