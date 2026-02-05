@@ -1,26 +1,34 @@
 [
   {
-    "content": "Update light theme CSS variables in index.css for crisp white+black high-contrast theme",
-    "status": "completed"
+    "content": "Phase 1: Update global typography & spacing tokens in index.css for larger, readable text",
+    "status": "in_progress"
   },
   {
-    "content": "Change default theme to 'light' in ThemeContext.js",
-    "status": "completed"
+    "content": "Phase 1: Redesign Sidebar with L1/L2/L3 folder structure + counts",
+    "status": "pending"
   },
   {
-    "content": "Clean up gradient overlays and glassmorphism for light mode in App.css",
-    "status": "completed"
+    "content": "Phase 1: Update GlobalHeader for larger fonts and cleaner look",
+    "status": "pending"
   },
   {
-    "content": "Update LoginPage styling for clean white background",
-    "status": "completed"
+    "content": "Phase 1: Update TicketsListView with Intercom-style rows and larger text",
+    "status": "pending"
   },
   {
-    "content": "Take screenshots to verify all pages look correct",
-    "status": "completed"
+    "content": "Phase 1: Update TicketDrawer conversation area font sizes",
+    "status": "pending"
   },
   {
-    "content": "Fix any remaining visual issues",
-    "status": "completed"
+    "content": "Phase 1: Update Dashboard/Kanban card typography",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: Screenshot verification and fix visual issues",
+    "status": "pending"
+  },
+  {
+    "content": "Phase 2: Test with testing agent",
+    "status": "pending"
   }
 ]
