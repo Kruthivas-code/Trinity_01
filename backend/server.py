@@ -4168,6 +4168,37 @@ async def get_starred_tickets(
     return [serialize_doc(ticket) for ticket in tickets]
 
 
+@app.get("/api/tickets/escalation-counts")
+async def get_escalation_counts(
+    current_user: dict = Depends(get_current_user)
+):
+    """Get ticket counts grouped by escalation level and status"""
+    pipeline = [
+        {"$match": {"status": {"$nin": ["merged", "resolved", "closed"]}}},
+        {"$group": {
+            "_id": {
+                "escalation_level": {"$ifNull": ["$escalation_level", "L1"]},
+                "status": "$status"
+            },
+            "count": {"$sum": 1}
+        }}
+    ]
+    results = list(tickets_collection.aggregate(pipeline))
+    
+    counts = {"L1": {"total": 0}, "L2": {"total": 0}, "L3": {"total": 0}}
+    for r in results:
+        level = r["_id"]["escalation_level"]
+        status = r["_id"]["status"]
+        count = r["count"]
+        if level not in counts:
+            counts[level] = {"total": 0}
+        counts[level][status] = count
+        counts[level]["total"] += count
+    
+    return counts
+
+
+
 @app.get("/api/tickets")
 async def get_tickets(
     status: Optional[str] = None,
