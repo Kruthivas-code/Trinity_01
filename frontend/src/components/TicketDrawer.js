@@ -1413,20 +1413,20 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         {/* Middle Panel - Conversation */}
         <div className="flex-1 bg-card border-l border-r border-border/40 flex flex-col min-w-0">
           {/* Header - Compact */}
-          <div className="h-10 px-3 flex items-center justify-between border-b border-border/30 shrink-0 bg-background/50">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <Mail size={13} className="text-primary shrink-0" />
-              <span className="text-xs font-medium truncate">{ticket.title}</span>
+          <div className="h-12 px-4 flex items-center justify-between border-b border-border shrink-0 bg-card">
+            <div className="flex items-center gap-2 min-w-0">
+              <Mail size={15} className="text-foreground shrink-0" />
+              <span className="text-sm font-medium truncate">{ticket.title}</span>
               <button
                 onClick={handleCopyTicketId}
-                className="text-[10px] text-muted-foreground/70 font-mono bg-secondary/30 px-1 py-0.5 rounded shrink-0 hover:bg-secondary/50 transition-colors cursor-pointer"
+                className="text-[11px] text-muted-foreground font-mono bg-secondary px-1.5 py-0.5 rounded shrink-0 hover:bg-secondary/80 transition-colors cursor-pointer"
                 title="Click to copy ticket ID"
                 data-testid="copy-ticket-id"
               >
                 {ticket.ticket_id || `#${ticket.id?.slice(-8)}`}
               </button>
               {snoozed && (
-                <span className="text-[9px] px-1 py-0.5 rounded bg-amber-400/20 text-amber-400 font-medium">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">
                   Snoozed
                 </span>
               )}
