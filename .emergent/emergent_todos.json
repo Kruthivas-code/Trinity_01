@@ -28,7 +28,7 @@
     "status": "completed"
   },
   {
-    "content": "Phase 2: Test with testing agent",
-    "status": "in_progress"
+    "content": "Phase 2: Test with testing agent and fix L1/L2/L3 click bug (duplicate testid)",
+    "status": "completed"
   }
 ]
