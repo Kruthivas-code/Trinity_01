@@ -130,8 +130,8 @@ const EmailViewer = ({
   
   return (
     <div className={`email-viewer ${className}`}>
-      {/* Plain text content - ultra tight */}
-      <div className="text-[13px] text-foreground/90 leading-tight">
+      {/* Plain text content - ultra tight with proper word wrapping */}
+      <div className="text-[13px] text-foreground/90 leading-tight break-words overflow-wrap-anywhere">
         {formatPlainText(getCleanText)}
       </div>
       
