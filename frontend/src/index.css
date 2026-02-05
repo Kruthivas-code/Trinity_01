@@ -184,12 +184,22 @@
   box-shadow: var(--glass-shadow);
 }
 
+.light .glass {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .glass-elevated {
   background: var(--glass-elevated-bg);
   backdrop-filter: saturate(150%) blur(20px);
   -webkit-backdrop-filter: saturate(150%) blur(20px);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
+}
+
+.light .glass-elevated {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* Card with premium depth */
