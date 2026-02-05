@@ -1593,30 +1593,30 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
             </div>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex items-center gap-1 px-4 py-2 border-b border-border/30 bg-secondary/10">
+          {/* Tab Navigation - Compact */}
+          <div className="flex items-center gap-0.5 px-3 py-1 border-b border-border/30 bg-secondary/10">
             <button
               onClick={() => setActiveTab('conversation')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                 activeTab === 'conversation'
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
               }`}
               data-testid="tab-conversation"
             >
-              <MessageCircle size={14} />
+              <MessageCircle size={12} />
               Conversation
             </button>
             <button
               onClick={() => setActiveTab('activity')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
                 activeTab === 'activity'
                   ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
               }`}
               data-testid="tab-metadata"
             >
-              <Activity size={14} />
+              <Activity size={12} />
               Metadata
             </button>
           </div>
@@ -1625,7 +1625,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           <div ref={conversationRef} className="flex-1 overflow-y-auto p-3 space-y-1.5">
             {/* Metadata Tab Content */}
             {activeTab === 'activity' && (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Email Metadata */}
                 {ticket.source === 'email' && (ticket.email_sender || ticket.email_to) && (
                   <div className="p-3 rounded-lg bg-secondary/20 border border-border/30">
