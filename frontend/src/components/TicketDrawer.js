@@ -1302,7 +1302,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           <div className="h-12 px-3 flex items-center justify-between border-b border-border/30 shrink-0">
             <div className="flex items-center gap-2">
               <Users size={14} className="text-primary" />
-              <span className="text-xs font-medium">Customer Tickets</span>
+              <span className="text-sm font-medium">Customer Tickets</span>
             </div>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
               {relatedTickets.length + 1}
