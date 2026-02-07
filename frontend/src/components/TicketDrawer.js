@@ -495,6 +495,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         ...formData,
         custom_fields: customFieldValues
       });
+      toast.success('Changes saved', { duration: 1500 });
     }, 500);
     
     return () => {
