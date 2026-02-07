@@ -32,7 +32,7 @@ const TicketCard = ({ ticket, users = [], isMentioned = false, onClick, isDraggi
     <div
       onClick={isDragging ? undefined : onClick}
       className={`w-full text-left bg-card rounded-lg p-3 border cursor-grab active:cursor-grabbing relative transition-all duration-150 ${
-        isDragging ? 'shadow-lg border-foreground/30 scale-[1.02]' : 'border-border hover:border-foreground/20 hover:shadow-sm'
+        isDragging ? 'shadow-lg border-foreground/30 scale-[1.02]' : 'border-border hover:border-foreground/20 hover:shadow-md'
       } ${isMentioned ? 'border-l-2 border-l-amber-500 bg-amber-50/50' : ''}`}
       data-testid="ticket-card"
     >
