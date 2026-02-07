@@ -783,7 +783,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const handleCopyLink = () => {
     const url = `${window.location.origin}/all-tickets?ticket=${ticket.ticket_id || ticket.id}`;
     navigator.clipboard.writeText(url);
-    // Show brief feedback
+    toast.success('Link copied to clipboard');
     setShowMoreMenu(false);
   };
 
@@ -791,6 +791,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const handleCopyTicketId = () => {
     const ticketId = ticket.ticket_id || ticket.id;
     navigator.clipboard.writeText(ticketId);
+    toast.success('Ticket ID copied');
   };
 
   // Handle snooze toggle
