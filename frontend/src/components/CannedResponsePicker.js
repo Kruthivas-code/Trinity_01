@@ -211,6 +211,7 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
 
   const handleSelectResponse = (response) => {
     setSelectedResponse(response);
+    setMode('preview');
   };
 
   const handleInsert = () => {
@@ -220,6 +221,61 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
       const htmlContent = textToHtml(filledContent);
       onSelect(htmlContent);
       onClose();
+    }
+  };
+
+  const handleCreateResponse = async () => {
+    // Validate
+    if (!newResponse.title.trim()) {
+      setCreateError('Title is required');
+      return;
+    }
+    if (!newResponse.shortcode.trim()) {
+      setCreateError('Shortcode is required');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(newResponse.shortcode.trim())) {
+      setCreateError('Shortcode can only contain letters, numbers, hyphens, and underscores');
+      return;
+    }
+    if (!newResponse.content.trim()) {
+      setCreateError('Content is required');
+      return;
+    }
+
+    setCreating(true);
+    setCreateError('');
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/canned-responses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: newResponse.title.trim(),
+          shortcode: newResponse.shortcode.trim().toLowerCase(),
+          content: newResponse.content.trim(),
+          scope: newResponse.scope
+        })
+      });
+
+      if (response.ok) {
+        const created = await response.json();
+        // Refresh the list
+        await fetchResponses();
+        // Switch to preview of the newly created response
+        setSelectedResponse(created);
+        setMode('preview');
+        setNewResponse({ title: '', shortcode: '', content: '', scope: 'personal' });
+      } else {
+        const err = await response.json();
+        setCreateError(err.detail || 'Failed to create canned response');
+      }
+    } catch (error) {
+      console.error('Failed to create canned response:', error);
+      setCreateError('Network error. Please try again.');
+    } finally {
+      setCreating(false);
     }
   };
 
