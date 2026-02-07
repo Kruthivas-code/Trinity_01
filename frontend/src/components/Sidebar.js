@@ -271,7 +271,7 @@ const Sidebar = ({ user }) => {
           <div>
             <button
               onClick={() => setIsEscalationExpanded(!isEscalationExpanded)}
-              className="w-full flex items-center justify-between px-3 h-9 rounded-lg text-[14px] text-foreground/60 hover:text-foreground hover:bg-foreground/4 transition-colors duration-150"
+              className="w-full flex items-center justify-between px-3 h-9 rounded-lg text-[14px] text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05] transition-colors duration-150"
               data-testid="nav-escalation-toggle"
             >
               <div className="flex items-center gap-2.5">
