@@ -2039,12 +2039,12 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         </div>
 
         {/* Right Panel - Details (~320px) */}
-        <div className="w-72 bg-card border-l border-border/30 flex flex-col shrink-0">
+        <div className="w-72 bg-card border-l border-border flex flex-col shrink-0">
           {/* Tabs */}
-          <div className="h-12 px-4 flex items-center gap-4 border-b border-border/30 shrink-0">
-            <button className="text-sm font-medium text-foreground relative pb-0.5">
+          <div className="h-12 px-4 flex items-center gap-4 border-b border-border shrink-0">
+            <button className="text-sm font-semibold text-foreground relative pb-0.5">
               Details
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
             </button>
           </div>
 
