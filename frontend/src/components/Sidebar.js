@@ -191,17 +191,20 @@ const Sidebar = ({ user }) => {
         key={item.id}
         onClick={() => handleNavigate(item.path)}
         className={`
-          w-full flex items-center gap-2.5 rounded-lg text-[14px] overflow-hidden
+          w-full flex items-center gap-2.5 rounded-lg text-[14px] overflow-hidden relative
           transition-colors duration-150
           ${active 
-            ? 'bg-foreground/8 text-foreground font-medium' 
-            : 'text-foreground/60 hover:text-foreground hover:bg-foreground/4'
+            ? 'bg-foreground/8 text-foreground font-semibold' 
+            : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'
           }
           ${!isExpanded && !nested ? 'justify-center px-2 h-9' : nested ? 'px-3 ml-4 h-9' : 'px-3 h-9'}
         `}
         data-testid={`nav-${item.id}`}
         title={!isExpanded ? item.label : undefined}
       >
+        {active && (
+          <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-foreground" />
+        )}
         <Icon size={16} className={`shrink-0 ${active ? 'text-foreground' : ''}`} />
         {(isExpanded || nested) && <span className="truncate">{item.label}</span>}
       </button>
