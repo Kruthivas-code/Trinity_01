@@ -2213,7 +2213,7 @@ MAX_CUSTOM_FIELD_VALUE_LENGTH = 10000
 VALID_STATUSES = ["todo", "in_progress", "waiting", "review", "resolved", "closed", "queued", "assigned"]
 VALID_PRIORITIES = ["low", "medium", "high", "urgent"]
 VALID_ESCALATION_LEVELS = ["L1", "L2", "L3"]
-VALID_SOURCES = ["manual", "email", "api", "simulator"]
+VALID_SOURCES = ["manual", "email", "api", "simulator", "atlas"]
 
 # ==================== HTML Sanitization ====================
 def sanitize_html(html_content: str) -> str:
