@@ -1,10 +1,10 @@
 [
   {
     "content": "Add inline create form to CannedResponsePicker modal",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Verify with screenshot and build check",
-    "status": "pending"
+    "status": "completed"
   }
 ]
