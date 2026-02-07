@@ -1,34 +1,42 @@
 [
   {
-    "content": "Phase 1: Update global typography & spacing tokens in index.css for larger, readable text",
-    "status": "completed"
+    "content": "Fix text contrast: ticket IDs, muted text, placeholders globally",
+    "status": "in_progress"
   },
   {
-    "content": "Phase 1: Redesign Sidebar with L1/L2/L3 folder structure + counts",
-    "status": "completed"
+    "content": "Strengthen sidebar active state with left accent bar + bold highlight",
+    "status": "pending"
   },
   {
-    "content": "Phase 1: Update GlobalHeader for larger fonts and cleaner look",
-    "status": "completed"
+    "content": "Unify badge/status styles: L1/L2/L3 and status badges consistent across views",
+    "status": "pending"
   },
   {
-    "content": "Phase 1: Update TicketsListView with Intercom-style rows and larger text",
-    "status": "completed"
+    "content": "Fix visual hierarchy: Send button primary, Reply vs Note distinction, destructive actions subdued",
+    "status": "pending"
   },
   {
-    "content": "Phase 1: Update TicketDrawer conversation area font sizes",
-    "status": "completed"
+    "content": "Improve hover/active states on ticket rows, kanban cards, buttons, header icons",
+    "status": "pending"
   },
   {
-    "content": "Phase 1: Update Dashboard/Kanban card typography",
-    "status": "completed"
+    "content": "Fix spacing/padding inconsistencies: dashboard header, ticket list, drawer panels, teams",
+    "status": "pending"
   },
   {
-    "content": "Phase 2: Screenshot verification and fix visual issues",
-    "status": "completed"
+    "content": "Reduce density: customer tickets panel, right details panel, sidebar grouping",
+    "status": "pending"
   },
   {
-    "content": "Phase 2: Test with testing agent and fix L1/L2/L3 click bug (duplicate testid)",
-    "status": "completed"
+    "content": "Add visual feedback: toasts on actions, loading skeletons, copy confirmation",
+    "status": "pending"
+  },
+  {
+    "content": "Screenshot verification across all pages",
+    "status": "pending"
+  },
+  {
+    "content": "Run testing agent to verify no functionality broken",
+    "status": "pending"
   }
 ]
