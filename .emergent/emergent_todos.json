@@ -9,34 +9,34 @@
   },
   {
     "content": "Unify badge/status styles: L1/L2/L3 and status badges consistent across views",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Fix visual hierarchy: Send button primary, Reply vs Note distinction, destructive actions subdued",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Improve hover/active states on ticket rows, kanban cards, buttons, header icons",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Fix spacing/padding inconsistencies: dashboard header, ticket list, drawer panels, teams",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Reduce density: customer tickets panel, right details panel, sidebar grouping",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Add visual feedback: toasts on actions, loading skeletons, copy confirmation",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Screenshot verification across all pages",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Run testing agent to verify no functionality broken",
-    "status": "pending"
+    "status": "in_progress"
   }
 ]
