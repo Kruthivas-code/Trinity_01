@@ -1355,6 +1355,21 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   <p className="text-[13px] font-medium text-foreground line-clamp-2 mb-1">
                     {ticket.title}
                   </p>
+                  {/* Priority & Escalation */}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="flex items-center gap-1">
+                      <span className={`w-1.5 h-1.5 rounded-full ${getPriorityConfig(ticket.priority).value === 'urgent' ? 'bg-red-500' : getPriorityConfig(ticket.priority).value === 'high' ? 'bg-orange-500' : getPriorityConfig(ticket.priority).value === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                      <span className="text-[10px] text-muted-foreground font-medium">{getPriorityConfig(ticket.priority).label}</span>
+                    </div>
+                    <span className="text-muted-foreground/30">·</span>
+                    <span className={`text-[10px] font-semibold px-1 py-0.5 rounded ${
+                      ticket.escalation_level === 'L3' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                      ticket.escalation_level === 'L2' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                      'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    }`}>
+                      {ticket.escalation_level || 'L1'}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>
                       {new Date(ticket.updated_at || ticket.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
