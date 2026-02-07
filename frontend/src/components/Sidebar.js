@@ -218,17 +218,20 @@ const Sidebar = ({ user }) => {
         <button
           onClick={() => handleNavigate('/dashboard')}
           className={`
-            w-full flex items-center gap-2.5 rounded-lg text-[14px] overflow-hidden
+            w-full flex items-center gap-2.5 rounded-lg text-[14px] overflow-hidden relative
             transition-colors duration-150
             ${isActive('/dashboard')
-              ? 'bg-foreground/8 text-foreground font-medium' 
-              : 'text-foreground/60 hover:text-foreground hover:bg-foreground/4'
+              ? 'bg-foreground/8 text-foreground font-semibold' 
+              : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'
             }
             ${!isExpanded ? 'justify-center px-2 h-9' : 'px-3 h-9'}
           `}
           data-testid="nav-dashboard"
           title={!isExpanded ? 'Dashboard' : undefined}
         >
+          {isActive('/dashboard') && (
+            <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-foreground" />
+          )}
           <LayoutDashboard size={16} className={isActive('/dashboard') ? 'text-foreground' : ''} />
           {isExpanded && <span>Dashboard</span>}
         </button>
