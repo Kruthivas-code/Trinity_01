@@ -101,7 +101,7 @@
     
     /* Muted - Soft gray tones */
     --muted: 220 10% 94%;
-    --muted-foreground: 0 0% 40%;
+    --muted-foreground: 0 0% 35%;
     
     /* Accent - Subtle dark slate for highlights */
     --accent: 220 12% 28%;
