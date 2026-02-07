@@ -353,7 +353,7 @@ const Sidebar = ({ user }) => {
           onClick={handleLogout}
           className={`
             w-full flex items-center gap-2.5 h-9 rounded-lg text-[14px]
-            text-muted-foreground hover:text-foreground hover:bg-foreground/4
+            text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05]
             transition-colors duration-150
             ${!isExpanded ? 'justify-center px-2' : 'px-3'}
           `}
