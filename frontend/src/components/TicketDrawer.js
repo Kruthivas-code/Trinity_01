@@ -2248,7 +2248,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  className="w-full h-8 px-2 text-sm rounded-md bg-card border border-border focus:outline-none focus:ring-2 focus:ring-foreground/20 transition-shadow"
                   data-testid="drawer-status-select"
                 >
                   {STATUSES.map(status => (
