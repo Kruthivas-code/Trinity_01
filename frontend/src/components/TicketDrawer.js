@@ -2052,7 +2052,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {/* Escalation Level */}
             <div>
-              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <label className="text-[11px] text-foreground/60 font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                 <ArrowUpCircle size={11} />
                 Escalation Level
               </label>
@@ -2087,7 +2087,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
 
             {/* Assignee - Enhanced with team members and other teams */}
             <div className="relative">
-              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <label className="text-[11px] text-foreground/60 font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                 <UserCheck size={11} />
                 Assignee
               </label>
@@ -2241,7 +2241,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
             {/* Status - Only show if assigned */}
             {formData.assignee_id && (
               <div>
-                <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <label className="text-[11px] text-foreground/60 font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
                   Status
                 </label>
@@ -2260,7 +2260,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
 
             {/* Priority */}
             <div>
-              <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <label className="text-[11px] text-foreground/60 font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                 <AlertCircle size={11} className={priorityConfig.color} />
                 Priority
               </label>
@@ -2751,7 +2751,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                     <div className="mt-2 space-y-3">
                       {customFields.map(field => (
                         <div key={field.field_id}>
-                          <label className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1.5 block">
+                          <label className="text-[11px] text-foreground/60 font-semibold uppercase tracking-wider mb-1.5 block">
                             {field.name}
                             {field.required && <span className="text-destructive ml-0.5">*</span>}
                           </label>
