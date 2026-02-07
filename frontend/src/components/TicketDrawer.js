@@ -1954,11 +1954,11 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               <button
                 onClick={handleSubmitInput}
                 disabled={submitting || (!stripHtml(inputText).trim() && attachedImages.length === 0)}
-                className={`h-7 px-3 flex items-center gap-1.5 rounded text-xs font-medium transition-colors ${
+                className={`h-7 px-4 flex items-center gap-1.5 rounded text-xs font-semibold transition-all duration-150 ${
                   inputMode === 'note'
-                    ? 'bg-amber-400/20 text-amber-400 hover:bg-amber-400/30'
-                    : 'bg-primary/20 text-primary hover:bg-primary/30'
-                } disabled:opacity-40 disabled:cursor-not-allowed`}
+                    ? 'bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.97]'
+                    : 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.97]'
+                } disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100`}
                 data-testid="submit-input"
               >
                 {submitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
