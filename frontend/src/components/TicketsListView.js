@@ -266,29 +266,29 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
                 <button
                   key={ticket.id}
                   onClick={() => onTicketClick(ticket)}
-                  className="w-full px-6 py-4 hover:bg-secondary/50 transition-colors duration-150 text-left group"
+                  className="w-full px-6 py-4 hover:bg-secondary/60 active:bg-secondary/80 transition-colors duration-150 text-left group"
                   data-testid={`ticket-row-${ticket.ticket_id || ticket.id}`}
                 >
                   <div className="flex items-start gap-3">
                     {/* Priority Indicator */}
-                    <div className={`shrink-0 w-1 self-stretch rounded-full ${priorityColor} mt-1`} style={{minHeight: '48px'}} />
+                    <div className={`shrink-0 w-1 self-stretch rounded-full ${priorityColor} mt-1 group-hover:w-1.5 transition-all duration-150`} style={{minHeight: '48px'}} />
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       {/* Title Row */}
                       <div className="flex items-center justify-between gap-3 mb-1">
-                        <h3 className="text-[15px] font-medium text-foreground group-hover:text-foreground/80 transition-colors duration-150 line-clamp-1">
+                        <h3 className="text-[15px] font-medium text-foreground line-clamp-1">
                           {ticket.title}
                         </h3>
                         <div className="flex items-center gap-2 shrink-0">
-                          <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded border ${
+                          <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded border ${
                             levelBadge === 'L1' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
                             levelBadge === 'L2' ? 'bg-amber-50 text-amber-800 border-amber-200' :
                             'bg-rose-50 text-rose-700 border-rose-200'
                           }`}>
                             {levelBadge}
                           </span>
-                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${statusBadge.class}`}>
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${statusBadge.class}`}>
                             {statusBadge.label}
                           </span>
                         </div>
@@ -311,7 +311,7 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
                           <Clock size={13} />
                           <span className="tabular-nums">{formatTimeAgo(ticket.created_at)}</span>
                         </div>
-                        <span className="text-muted-foreground/50 font-mono text-[11px]">
+                        <span className="text-muted-foreground/70 font-mono text-[11px]">
                           #{ticket.ticket_id || ticket.id?.slice(-6) || 'N/A'}
                         </span>
                       </div>
