@@ -2095,7 +2095,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               {/* Custom dropdown */}
               <button
                 onClick={() => setShowAssignDropdown(!showAssignDropdown)}
-                className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50 text-left flex items-center justify-between"
+                className="w-full h-8 px-2 text-sm rounded-md bg-card border border-border focus:outline-none focus:ring-2 focus:ring-foreground/20 text-left flex items-center justify-between transition-shadow"
                 data-testid="drawer-assignee-dropdown"
               >
                 <span className={formData.assignee_id ? '' : 'text-muted-foreground'}>
