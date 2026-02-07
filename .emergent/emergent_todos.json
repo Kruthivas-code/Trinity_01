@@ -13,6 +13,6 @@
   },
   {
     "content": "Test the import endpoint with curl",
-    "status": "in_progress"
+    "status": "completed"
   }
 ]
