@@ -1,10 +1,18 @@
 [
   {
-    "content": "Add inline create form to CannedResponsePicker modal",
-    "status": "completed"
+    "content": "Update VALID_SOURCES to include 'atlas' and add Atlas import Pydantic model",
+    "status": "in_progress"
   },
   {
-    "content": "Verify with screenshot and build check",
-    "status": "completed"
+    "content": "Build Atlas API client (fetch conversations, messages, tags with pagination)",
+    "status": "pending"
+  },
+  {
+    "content": "Build POST /api/import/atlas endpoint with full field mapping and deduplication",
+    "status": "pending"
+  },
+  {
+    "content": "Test the import endpoint with curl",
+    "status": "pending"
   }
 ]
