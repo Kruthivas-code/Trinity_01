@@ -4724,6 +4724,77 @@ async def import_tickets(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Import failed: {str(e)}")
 
+# ==================== Atlas Import ====================
+
+from atlas_import import run_atlas_import
+
+class AtlasImportRequest(BaseModel):
+    api_key: str = Field(..., min_length=1, description="Atlas API key (Bearer token)")
+    status: Optional[str] = Field(None, description="Filter by Atlas status: OPEN, CLOSED, SNOOZED")
+    start_date: Optional[str] = Field(None, description="Filter conversations started after this ISO date")
+    end_date: Optional[str] = Field(None, description="Filter conversations started before this ISO date")
+
+@app.post("/api/import/atlas")
+async def import_from_atlas(
+    req: AtlasImportRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Import conversations, messages, and tags from Atlas.
+
+    Provide your Atlas API key and optionally filter by status/date range.
+    The endpoint will:
+    1. Fetch all tags from Atlas (for tag-ID → name resolution)
+    2. Fetch conversations (paginated, with optional filters)
+    3. For each conversation, fetch its messages
+    4. Map Atlas data → Trinity schema and insert into the database
+    5. Deduplicate by atlas_conversation_id (safe to re-run)
+
+    Atlas field mapping:
+    - status: OPEN→todo, CLOSED→resolved, SNOOZED→waiting
+    - priority: NO_PRIORITY→medium, LOW→low, NORMAL→medium, HIGH→high, URGENT→urgent
+    - messages side: AGENT→reply, CUSTOMER→customer_reply
+    - All Atlas-specific fields (browser, OS, channel, statistics, CSAT, etc.) are preserved
+    """
+    db_collections = {
+        "tickets": tickets_collection,
+        "messages": messages_collection,
+        "users": users_collection,
+    }
+
+    try:
+        summary = await run_atlas_import(
+            api_key=req.api_key,
+            db_collections=db_collections,
+            generate_ticket_id_fn=generate_ticket_id,
+            get_or_create_customer_fn=get_or_create_customer,
+            extract_domain_fn=extract_domain,
+            importer_user_id=current_user["user_id"],
+            status_filter=req.status,
+            start_date=req.start_date,
+            end_date=req.end_date,
+        )
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 401:
+            raise HTTPException(status_code=401, detail="Invalid Atlas API key")
+        if e.response.status_code == 403:
+            raise HTTPException(status_code=403, detail="Atlas API key does not have sufficient permissions")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Atlas API error: HTTP {e.response.status_code} – {e.response.text[:200]}"
+        )
+    except httpx.ConnectError:
+        raise HTTPException(status_code=502, detail="Could not connect to Atlas API (api.atlas.so)")
+    except Exception as e:
+        logger.error(f"[ATLAS IMPORT] Unexpected error: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+
+    return {
+        "success": True,
+        "message": f"Imported {summary['conversations_imported']} conversations with {summary['messages_imported']} messages",
+        "summary": summary,
+    }
+
 # ==================== File Upload ====================
 
 # Configure upload directory
