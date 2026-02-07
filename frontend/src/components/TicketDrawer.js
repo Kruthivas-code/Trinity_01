@@ -2287,7 +2287,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               >
                 <div className="flex items-center gap-2">
                   <Link2 size={12} className="text-muted-foreground" />
-                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Links</span>
+                  <span className="text-[11px] font-semibold text-foreground/60 uppercase tracking-wider">Links</span>
                   {linkedFeatureRequests.length > 0 && (
                     <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
                       {linkedFeatureRequests.length} FR
@@ -2306,7 +2306,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   {/* Linked Feature Requests */}
                   {linkedFeatureRequests.length > 0 && (
                     <div className="space-y-1.5">
-                      <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider pl-1">
+                      <div className="text-[11px] text-foreground/60 font-semibold uppercase tracking-wider pl-1">
                         Feature Requests ({linkedFeatureRequests.length})
                       </div>
                       {linkedFeatureRequests.map(fr => (
@@ -2373,7 +2373,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   
                   {/* Linked Tickets Section */}
                   <div className="space-y-1.5">
-                    <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider pl-1">
+                    <div className="text-[11px] text-foreground/60 font-semibold uppercase tracking-wider pl-1">
                       Linked Tickets ({linkedTickets.length})
                     </div>
                     
@@ -2471,7 +2471,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               >
                 <div className="flex items-center gap-2">
                   <Sparkles size={12} className="text-muted-foreground" />
-                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Attributes</span>
+                  <span className="text-[11px] font-semibold text-foreground/60 uppercase tracking-wider">Attributes</span>
                 </div>
                 {sectionsExpanded.attributes ? (
                   <ChevronDown size={12} className="text-muted-foreground" />
@@ -2533,7 +2533,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               <div className="flex items-center justify-between py-1">
                 <div className="flex items-center gap-2">
                   <Tag size={12} className="text-muted-foreground" />
-                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Tags</span>
+                  <span className="text-[11px] font-semibold text-foreground/60 uppercase tracking-wider">Tags</span>
                 </div>
                 {loadingTags && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
               </div>
@@ -2646,7 +2646,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   <div className="flex items-center justify-between py-1">
                     <div className="flex items-center gap-2">
                       <MessageSquareHeart size={12} className="text-muted-foreground" />
-                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Customer Satisfaction</span>
+                      <span className="text-[11px] font-semibold text-foreground/60 uppercase tracking-wider">Customer Satisfaction</span>
                     </div>
                   </div>
                   
@@ -2738,7 +2738,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   >
                     <div className="flex items-center gap-2">
                       <Settings size={12} className="text-muted-foreground" />
-                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Custom Fields</span>
+                      <span className="text-[11px] font-semibold text-foreground/60 uppercase tracking-wider">Custom Fields</span>
                     </div>
                     {sectionsExpanded.customFields ? (
                       <ChevronDown size={12} className="text-muted-foreground" />
