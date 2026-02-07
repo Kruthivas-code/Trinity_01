@@ -243,7 +243,7 @@ def map_conversation_to_ticket(
     assigned_at = _parse_dt(conv.get("assignedAt"))
     started_at = _parse_dt(conv.get("startedAt"))
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)  # noqa: F841
 
     ticket_id = generate_ticket_id_fn()
 
