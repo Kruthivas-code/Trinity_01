@@ -1,15 +1,15 @@
 [
   {
     "content": "Fix text contrast: ticket IDs, muted text, placeholders globally",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Strengthen sidebar active state with left accent bar + bold highlight",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Unify badge/status styles: L1/L2/L3 and status badges consistent across views",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Fix visual hierarchy: Send button primary, Reply vs Note distinction, destructive actions subdued",
