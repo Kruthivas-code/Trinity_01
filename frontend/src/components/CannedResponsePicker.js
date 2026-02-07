@@ -648,22 +648,32 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
               )}
             </div>
 
-            {/* Footer with keyboard hints */}
+            {/* Footer with keyboard hints and create button */}
             <div className="p-2 border-t border-border/60 bg-secondary/10 shrink-0">
-              <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1 py-0.5 bg-secondary rounded text-[9px]"><ArrowUp size={9} /></kbd>
-                  <kbd className="px-1 py-0.5 bg-secondary rounded text-[9px]"><ArrowDown size={9} /></kbd>
-                  Navigate
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[9px]">Enter</kbd>
-                  Select
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[9px]">Esc</kbd>
-                  Close
-                </span>
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setMode('create')}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-primary rounded-lg hover:bg-primary/10 transition-colors"
+                  data-testid="canned-create-btn"
+                >
+                  <Plus size={13} />
+                  New Response
+                </button>
+                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1 py-0.5 bg-secondary rounded text-[9px]"><ArrowUp size={9} /></kbd>
+                    <kbd className="px-1 py-0.5 bg-secondary rounded text-[9px]"><ArrowDown size={9} /></kbd>
+                    Navigate
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[9px]">Enter</kbd>
+                    Select
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[9px]">Esc</kbd>
+                    Close
+                  </span>
+                </div>
               </div>
             </div>
           </>
