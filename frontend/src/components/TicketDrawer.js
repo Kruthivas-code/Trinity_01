@@ -2062,11 +2062,11 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                     key={level.value}
                     onClick={() => handleEscalate(level.value)}
                     disabled={escalating || formData.escalation_level === level.value}
-                    className={`flex-1 h-8 px-2 text-[11px] font-medium rounded-md transition-colors ${
+                    className={`flex-1 h-8 px-2 text-[11px] font-semibold rounded-md transition-all duration-150 ${
                       formData.escalation_level === level.value
-                        ? `${level.color} text-white`
-                        : 'bg-secondary/30 text-muted-foreground hover:bg-secondary/50'
-                    } ${escalating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        ? `${level.color} text-white shadow-sm`
+                        : 'bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground border border-transparent hover:border-border'
+                    } ${escalating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                     data-testid={`escalation-${level.value}`}
                   >
                     {escalating && formData.escalation_level !== level.value ? (
