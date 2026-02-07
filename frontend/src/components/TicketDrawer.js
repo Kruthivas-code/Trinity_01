@@ -1384,6 +1384,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 {relatedTickets.map(related => {
                   const relatedStatus = STATUSES.find(s => s.value === related.status) || STATUSES[0];
                   const relatedAssignee = Array.isArray(users) ? users.find(u => (u.id || u.user_id) === related.assignee_id) : null;
+                  const relatedPriority = PRIORITIES.find(p => p.value === related.priority) || PRIORITIES[1];
                   
                   return (
                     <div
@@ -1405,6 +1406,25 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                       <p className="text-[13px] font-medium text-foreground/80 line-clamp-2 mb-1">
                         {related.title}
                       </p>
+                      {/* Priority & Escalation */}
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="flex items-center gap-1">
+                          <span className={`w-1.5 h-1.5 rounded-full ${
+                            related.priority === 'urgent' ? 'bg-red-500' : 
+                            related.priority === 'high' ? 'bg-orange-500' : 
+                            related.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                          }`} />
+                          <span className="text-[10px] text-muted-foreground font-medium">{relatedPriority.label}</span>
+                        </div>
+                        <span className="text-muted-foreground/30">·</span>
+                        <span className={`text-[10px] font-semibold px-1 py-0.5 rounded ${
+                          related.escalation_level === 'L3' ? 'bg-rose-50 text-rose-700 border border-rose-200' :
+                          related.escalation_level === 'L2' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                          'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        }`}>
+                          {related.escalation_level || 'L1'}
+                        </span>
+                      </div>
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                         <span>
                           {new Date(related.updated_at || related.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
