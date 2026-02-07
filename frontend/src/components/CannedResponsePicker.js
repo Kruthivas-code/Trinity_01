@@ -484,7 +484,7 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
 
             <div className="flex items-center justify-between p-4 border-t border-border/60 bg-secondary/10">
               <button
-                onClick={() => setSelectedResponse(null)}
+                onClick={() => { setSelectedResponse(null); setMode('list'); }}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-secondary transition-colors"
                 data-testid="canned-back-btn"
               >
