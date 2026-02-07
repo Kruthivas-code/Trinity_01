@@ -1597,29 +1597,29 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           </div>
 
           {/* Tab Navigation - Compact */}
-          <div className="flex items-center gap-0.5 px-3 py-1 border-b border-border/30 bg-secondary/10">
+          <div className="flex items-center gap-0.5 px-4 py-1.5 border-b border-border bg-secondary/20">
             <button
               onClick={() => setActiveTab('conversation')}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[13px] font-medium transition-colors ${
                 activeTab === 'conversation'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
               }`}
               data-testid="tab-conversation"
             >
-              <MessageCircle size={12} />
+              <MessageCircle size={13} />
               Conversation
             </button>
             <button
               onClick={() => setActiveTab('activity')}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-[13px] font-medium transition-colors ${
                 activeTab === 'activity'
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
               }`}
               data-testid="tab-metadata"
             >
-              <Activity size={12} />
+              <Activity size={13} />
               Metadata
             </button>
           </div>
