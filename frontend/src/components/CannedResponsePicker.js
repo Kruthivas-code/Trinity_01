@@ -152,11 +152,22 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
 
   // Keyboard navigation
   const handleKeyDown = (e) => {
-    if (selectedResponse) {
+    // In create mode, only handle Escape
+    if (mode === 'create') {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMode('list');
+        setCreateError('');
+      }
+      return;
+    }
+
+    if (mode === 'preview') {
       // In preview mode
       if (e.key === 'Escape') {
         e.preventDefault();
         setSelectedResponse(null);
+        setMode('list');
       } else if (e.key === 'Enter') {
         e.preventDefault();
         handleInsert();
