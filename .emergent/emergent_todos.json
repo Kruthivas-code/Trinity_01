@@ -1,10 +1,10 @@
 [
   {
     "content": "Enhance left panel ticket cards in TicketDrawer to show priority, escalation level, and other metadata matching dashboard cards",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Verify changes with screenshot and test",
-    "status": "pending"
+    "status": "completed"
   }
 ]
