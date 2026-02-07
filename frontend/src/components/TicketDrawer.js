@@ -2267,7 +2267,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               <select
                 value={formData.priority}
                 onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                className="w-full h-8 px-2 text-sm rounded-md bg-secondary/30 border border-border/30 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                className="w-full h-8 px-2 text-sm rounded-md bg-card border border-border focus:outline-none focus:ring-2 focus:ring-foreground/20 transition-shadow"
                 data-testid="drawer-priority-select"
               >
                 {PRIORITIES.map(priority => (
