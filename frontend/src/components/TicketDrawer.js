@@ -887,6 +887,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         }));
         // Refresh assignment options
         fetchAssignmentOptions(ticket.id);
+        toast.success(`Escalated to ${newLevel}`);
         // Trigger parent refresh
         if (onUpdate) {
           onUpdate(ticket.id, { 
