@@ -1341,7 +1341,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               <div className="p-2 space-y-1">
                 {/* Current Ticket - highlighted */}
                 <div
-                  className="p-2.5 rounded-lg bg-foreground/5 border border-foreground/10 cursor-default"
+                  className="p-2.5 rounded-lg bg-foreground/[0.07] border-2 border-foreground/15 cursor-default"
                   data-testid="current-ticket-item"
                 >
                   <div className="flex items-center gap-1.5 mb-1">
