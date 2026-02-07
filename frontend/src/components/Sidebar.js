@@ -302,6 +302,9 @@ const Sidebar = ({ user }) => {
                       `}
                       data-testid={`sidebar-${folder.id}-folder-button`}
                     >
+                      {active && (
+                        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-foreground" />
+                      )}
                       <div className={`w-2 h-2 rounded-full ${folder.dotColor} shrink-0`} />
                       <span className="truncate flex-1 text-left">{folder.label}</span>
                       {count > 0 && (
