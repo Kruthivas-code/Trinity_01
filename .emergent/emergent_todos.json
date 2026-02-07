@@ -1,18 +1,18 @@
 [
   {
     "content": "Update VALID_SOURCES to include 'atlas' and add Atlas import Pydantic model",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Build Atlas API client (fetch conversations, messages, tags with pagination)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Build POST /api/import/atlas endpoint with full field mapping and deduplication",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Test the import endpoint with curl",
-    "status": "pending"
+    "status": "in_progress"
   }
 ]
