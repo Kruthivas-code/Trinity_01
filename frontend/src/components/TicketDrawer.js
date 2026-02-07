@@ -1860,15 +1860,15 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           )}
 
           {/* Input Area - Fixed at bottom */}
-          <div className="shrink-0 border-t border-border/30 bg-background p-3">
+          <div className="shrink-0 border-t border-border bg-background p-3">
             {/* Mode Toggle */}
             <div className="flex items-center gap-1 mb-2">
               <button
                 onClick={() => setInputMode('reply')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
                   inputMode === 'reply' 
-                    ? 'bg-primary/20 text-primary' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                    ? 'bg-foreground text-background' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                 }`}
                 data-testid="mode-reply"
               >
@@ -1880,8 +1880,8 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 onClick={() => setInputMode('note')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
                   inputMode === 'note' 
-                    ? 'bg-amber-400/20 text-amber-400' 
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                    ? 'bg-amber-500 text-white' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
                 }`}
                 data-testid="mode-note"
               >
@@ -1890,7 +1890,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 <span className="text-[10px] opacity-60 ml-0.5">N</span>
               </button>
               
-              <div className="w-px h-5 bg-border/40 mx-1" />
+              <div className="w-px h-5 bg-border mx-1" />
               
               {/* Canned Responses Button */}
               <button
