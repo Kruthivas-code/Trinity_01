@@ -81,20 +81,41 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
   const [search, setSearch] = useState('');
   const [selectedResponse, setSelectedResponse] = useState(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [mode, setMode] = useState('list'); // 'list' | 'preview' | 'create'
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [newResponse, setNewResponse] = useState({
+    title: '',
+    shortcode: '',
+    content: '',
+    scope: 'personal'
+  });
   const searchInputRef = useRef(null);
+  const titleInputRef = useRef(null);
   const listRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
       fetchResponses();
+      setMode('list');
+      setCreateError('');
+      setNewResponse({ title: '', shortcode: '', content: '', scope: 'personal' });
       // Focus search input when opened
       setTimeout(() => searchInputRef.current?.focus(), 50);
     } else {
       setSearch('');
       setSelectedResponse(null);
       setActiveIndex(0);
+      setMode('list');
     }
   }, [isOpen]);
+
+  // Focus title input when entering create mode
+  useEffect(() => {
+    if (mode === 'create') {
+      setTimeout(() => titleInputRef.current?.focus(), 50);
+    }
+  }, [mode]);
 
   const fetchResponses = async () => {
     try {
