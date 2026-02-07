@@ -312,7 +312,7 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
           <div className="flex items-center gap-2">
             <MessageSquare size={18} className="text-primary" />
             <h3 className="font-medium text-sm">
-              {selectedResponse ? 'Preview & Insert' : 'Select Canned Response'}
+              {mode === 'create' ? 'Create New Response' : mode === 'preview' ? 'Preview & Insert' : 'Select Canned Response'}
             </h3>
           </div>
           <button
@@ -324,7 +324,135 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
           </button>
         </div>
 
-        {selectedResponse ? (
+        {mode === 'create' ? (
+          // Create Mode
+          <div className="flex flex-col">
+            <div className="p-4 space-y-3 flex-1 max-h-[60vh] overflow-y-auto">
+              {/* Title */}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Title</label>
+                <input
+                  ref={titleInputRef}
+                  type="text"
+                  placeholder="e.g. Welcome greeting"
+                  value={newResponse.title}
+                  onChange={(e) => { setNewResponse(prev => ({ ...prev, title: e.target.value })); setCreateError(''); }}
+                  className="w-full h-9 px-3 rounded-lg bg-secondary/50 border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
+                  data-testid="create-canned-title"
+                  maxLength={100}
+                />
+              </div>
+
+              {/* Shortcode */}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Shortcode <span className="text-muted-foreground/50">(type /{'{shortcode}'} to quick-insert)</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">/</span>
+                  <input
+                    type="text"
+                    placeholder="e.g. welcome"
+                    value={newResponse.shortcode}
+                    onChange={(e) => { 
+                      const val = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
+                      setNewResponse(prev => ({ ...prev, shortcode: val })); 
+                      setCreateError(''); 
+                    }}
+                    className="w-full h-9 pl-7 pr-3 rounded-lg bg-secondary/50 border border-border text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60"
+                    data-testid="create-canned-shortcode"
+                    maxLength={50}
+                  />
+                </div>
+              </div>
+
+              {/* Content */}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Content</label>
+                <textarea
+                  placeholder="Type your canned response content here...&#10;&#10;Available placeholders: {{customer_name}}, {{ticket_id}}, {{agent_name}}"
+                  value={newResponse.content}
+                  onChange={(e) => { setNewResponse(prev => ({ ...prev, content: e.target.value })); setCreateError(''); }}
+                  className="w-full h-32 px-3 py-2 rounded-lg bg-secondary/50 border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-muted-foreground/60 resize-none"
+                  data-testid="create-canned-content"
+                  maxLength={5000}
+                />
+                <p className="text-[10px] text-muted-foreground/60 mt-1">{newResponse.content.length}/5000 characters</p>
+              </div>
+
+              {/* Scope */}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Visibility</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewResponse(prev => ({ ...prev, scope: 'personal' }))}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                      newResponse.scope === 'personal'
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-700'
+                        : 'border-border hover:bg-secondary/50 text-muted-foreground'
+                    }`}
+                    data-testid="create-scope-personal"
+                  >
+                    <User size={13} />
+                    Personal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewResponse(prev => ({ ...prev, scope: 'global' }))}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                      newResponse.scope === 'global'
+                        ? 'bg-primary/10 border-primary/30 text-primary'
+                        : 'border-border hover:bg-secondary/50 text-muted-foreground'
+                    }`}
+                    data-testid="create-scope-global"
+                  >
+                    <Globe size={13} />
+                    Global (all agents)
+                  </button>
+                </div>
+              </div>
+
+              {/* Error */}
+              {createError && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-600" data-testid="create-canned-error">
+                  <AlertCircle size={14} className="shrink-0" />
+                  {createError}
+                </div>
+              )}
+            </div>
+
+            {/* Create Footer */}
+            <div className="flex items-center justify-between p-3 border-t border-border/60 bg-secondary/10">
+              <button
+                onClick={() => { setMode('list'); setCreateError(''); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-secondary transition-colors"
+                data-testid="create-canned-back"
+              >
+                <ChevronRight size={14} className="rotate-180" />
+                Back
+              </button>
+              <button
+                onClick={handleCreateResponse}
+                disabled={creating || !newResponse.title.trim() || !newResponse.shortcode.trim() || !newResponse.content.trim()}
+                className="flex items-center gap-2 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                data-testid="create-canned-submit"
+              >
+                {creating ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Check size={14} />
+                    Create Response
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        ) : mode === 'preview' ? (
           // Preview Mode
           <div className="flex flex-col">
             <div className="p-4 flex-1">
