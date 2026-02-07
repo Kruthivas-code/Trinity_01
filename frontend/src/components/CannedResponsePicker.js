@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   MessageSquare, Search, Globe, User, X, Eye, Command, Slash,
-  ChevronRight, Keyboard, ArrowUp, ArrowDown, CornerDownLeft
+  ChevronRight, Keyboard, ArrowUp, ArrowDown, CornerDownLeft,
+  Plus, Loader2, AlertCircle, Check
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
