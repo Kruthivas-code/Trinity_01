@@ -1,10 +1,10 @@
 [
   {
-    "content": "Enhance left panel ticket cards in TicketDrawer to show priority, escalation level, and other metadata matching dashboard cards",
-    "status": "completed"
+    "content": "Add inline create form to CannedResponsePicker modal",
+    "status": "in_progress"
   },
   {
-    "content": "Verify changes with screenshot and test",
-    "status": "completed"
+    "content": "Verify with screenshot and build check",
+    "status": "pending"
   }
 ]
