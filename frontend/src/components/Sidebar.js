@@ -244,7 +244,7 @@ const Sidebar = ({ user }) => {
               className={`
                 w-full flex items-center justify-between px-3 h-9 rounded-lg text-[14px] overflow-hidden
                 transition-colors duration-150
-                ${isTicketViewActive ? 'text-foreground font-medium' : 'text-foreground/60 hover:text-foreground hover:bg-foreground/4'}
+                ${isTicketViewActive ? 'text-foreground font-semibold' : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'}
               `}
               data-testid="nav-tickets-toggle"
             >
