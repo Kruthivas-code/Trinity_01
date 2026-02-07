@@ -540,11 +540,20 @@ const CannedResponsePicker = ({ isOpen, onClose, onSelect, ticket, user }) => {
                   <p className="text-sm text-muted-foreground">
                     {search ? 'No responses match your search' : 'No canned responses yet'}
                   </p>
-                  {!search && (
-                    <p className="text-xs text-muted-foreground/60 mt-1">
-                      Go to Canned Responses page to create some
-                    </p>
-                  )}
+                  <button
+                    onClick={() => {
+                      setMode('create');
+                      // Pre-fill shortcode from search if applicable
+                      if (search && /^[a-zA-Z0-9_-]+$/.test(search)) {
+                        setNewResponse(prev => ({ ...prev, shortcode: search.toLowerCase() }));
+                      }
+                    }}
+                    className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    data-testid="canned-create-from-empty"
+                  >
+                    <Plus size={14} />
+                    Create New Response
+                  </button>
                 </div>
               ) : (
                 <div className="p-2 space-y-0.5">
