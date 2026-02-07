@@ -1895,7 +1895,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               {/* Canned Responses Button */}
               <button
                 onClick={() => setShowCannedPicker(true)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
                 title="Insert canned response (⌘/)"
                 data-testid="canned-responses-btn"
               >
