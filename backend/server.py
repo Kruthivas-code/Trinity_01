@@ -604,6 +604,7 @@ async def create_mongodb_indexes():
         tickets_collection.create_index([("mentioned_users", ASCENDING)], background=True)
         tickets_collection.create_index("ticket_id", unique=True, background=True)
         tickets_collection.create_index("uuid", unique=True, sparse=True, background=True)
+        tickets_collection.create_index("atlas_conversation_id", unique=True, sparse=True, background=True)
         logger.info("[INDEXES] Created tickets collection indexes")
         
         # User sessions collection indexes  
