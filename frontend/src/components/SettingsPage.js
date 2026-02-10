@@ -43,11 +43,11 @@ const SettingsPage = ({ user }) => {
     
     if (gmailConnected === 'true') {
       // Success
-      window.history.replaceState({}, '', '/settings');
+      navigate('/settings', { replace: true });
       fetchGmailStatus();
     } else if (gmailError) {
       // Error
-      window.history.replaceState({}, '', '/settings');
+      navigate('/settings', { replace: true });
     }
   }, [searchParams, user]);
 
