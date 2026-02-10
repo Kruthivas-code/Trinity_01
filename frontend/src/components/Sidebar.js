@@ -6,6 +6,7 @@ import {
   Bookmark, BarChart3, UserCircle, Star, MessageSquare,
   Inbox, AlertTriangle, Zap, ChevronRight
 } from 'lucide-react';
+import { clearCachedUser } from './ProtectedRoute';
 
 import { TridentIcon } from './TridentIcon';
 
