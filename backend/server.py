@@ -563,7 +563,7 @@ async def startup_event():
     # Note: We need to use async motor client for the adapters
     from motor.motor_asyncio import AsyncIOMotorClient
     motor_client = AsyncIOMotorClient(MONGO_URL)
-    motor_db = motor_client.tickflow  # Use same database as sync client
+    motor_db = motor_client[os.environ.get('DB_NAME', 'tickflow')]
     
     # Set up adapters for distributed presence and locking
     set_database(motor_db)
@@ -704,7 +704,7 @@ async def shutdown_event():
 # MongoDB
 MONGO_URL = os.environ.get("MONGO_URL")
 client = MongoClient(MONGO_URL)
-db = client.tickflow
+db = client[os.environ.get('DB_NAME', 'tickflow')]
 users_collection = db.users
 tickets_collection = db.tickets
 sessions_collection = db.user_sessions
@@ -717,7 +717,7 @@ limiter = Limiter(
     default_limits=["1000/hour", "100/minute"],
     strategy="fixed-window",
     storage_uri=MONGO_URL,  # MONGO_URL already contains mongodb:// prefix
-    storage_options={"database_name": "tickflow"}  # Use same database as app
+    storage_options={"database_name": os.environ.get("DB_NAME", "tickflow")}
 )
 # Update the app's limiter reference to use MongoDB storage
 app.state.limiter = limiter
