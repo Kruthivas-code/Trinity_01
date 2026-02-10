@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { setCachedUser } from './ProtectedRoute';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
