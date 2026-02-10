@@ -618,9 +618,14 @@ async def create_mongodb_indexes():
         users_collection.create_index("email", unique=True, sparse=True, background=True)
         logger.info("[INDEXES] Created users collection indexes")
         
+        # Customers collection indexes (Atlas import deduplication)
+        customers_collection.create_index("atlas_user_id", unique=True, sparse=True, background=True)
+        logger.info("[INDEXES] Created customers collection indexes")
+        
         # Messages collection indexes
         messages_collection.create_index([("ticket_id", ASCENDING), ("created_at", ASCENDING)], background=True)
         messages_collection.create_index([("ticket_id", ASCENDING)], background=True)
+        messages_collection.create_index("atlas_message_id", unique=True, sparse=True, background=True)
         logger.info("[INDEXES] Created messages collection indexes")
         
         # Ticket changelog indexes
