@@ -1,18 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Module-level auth cache - persists across route changes and remounts
+let _cachedUser = null;
+
+export const setCachedUser = (user) => {
+  _cachedUser = user;
+};
+
+export const clearCachedUser = () => {
+  _cachedUser = null;
+};
+
 const ProtectedRoute = ({ children }) => {
-  const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(
-    location.state?.user ? true : null
+    _cachedUser ? true : null
   );
-  const [user, setUser] = useState(location.state?.user || null);
+  const [user, setUser] = useState(_cachedUser);
 
   useEffect(() => {
-    // Skip auth check if user was passed from AuthCallback
-    if (location.state?.user) {
+    // If we already have a cached user, use it immediately
+    if (_cachedUser) {
+      setIsAuthenticated(true);
+      setUser(_cachedUser);
       return;
     }
 
@@ -27,15 +39,17 @@ const ProtectedRoute = ({ children }) => {
         }
 
         const userData = await response.json();
+        _cachedUser = userData;
         setIsAuthenticated(true);
         setUser(userData);
       } catch (error) {
+        _cachedUser = null;
         setIsAuthenticated(false);
       }
     };
 
     checkAuth();
-  }, [location.state]);
+  }, []);
 
   // Loading state
   if (isAuthenticated === null) {
@@ -54,7 +68,6 @@ const ProtectedRoute = ({ children }) => {
   }
 
   // Authenticated - render children with user prop
-  // Support both component children and render function patterns
   if (typeof children === 'function') {
     return children(user);
   }
