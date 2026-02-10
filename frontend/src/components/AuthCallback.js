@@ -45,12 +45,10 @@ const AuthCallback = () => {
 
         const userData = data;
 
-        // Navigate to dashboard with user data
+        // Cache user data and navigate to dashboard
         console.log('AuthCallback: Success! Navigating to dashboard');
-        navigate('/dashboard', {
-          replace: true,
-          state: { user: userData }
-        });
+        setCachedUser(userData);
+        navigate('/dashboard', { replace: true });
         
         // Success
       } catch (error) {
