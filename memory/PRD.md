@@ -22,7 +22,8 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - Atlas Import backend logic (`POST /api/import/atlas`)
 - Database indexes for Atlas deduplication (tickets, messages, customers)
 - Deployment blocker fixes (hardcoded DB name → env variable)
-- **Production navigation bug fix** (React.lazy + window.history.pushState desync)
+- Production navigation bug fix (React.lazy + window.history.pushState desync)
+- Post-login auth cache fix (module-level user cache in ProtectedRoute)
 
 ## Architecture
 ```
@@ -36,7 +37,9 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 │   └── src/
 │       ├── App.js               # Router + AppWithRealtime wrapper
 │       ├── components/
-│       │   ├── MainLayout.js    # Main layout with view switching
+│       │   ├── ProtectedRoute.js  # Auth guard with module-level cache
+│       │   ├── AuthCallback.js    # Google OAuth callback handler
+│       │   ├── MainLayout.js      # Main layout with view switching
 │       │   ├── DashboardContainer.js
 │       │   ├── Sidebar.js
 │       │   ├── CannedResponsePicker.js
@@ -47,11 +50,12 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 ```
 
 ## Key Bug Fixes
-- 2026-02-10: Fixed production navigation (React.lazy inside render + pushState desync)
+- 2026-02-10: Fixed post-login auth (module-level cache replaces location.state)
+- 2026-02-10: Fixed production navigation (React.lazy + pushState desync)
 - 2026-02-10: Fixed 3 deployment blockers (hardcoded DB name)
 - 2026-02-10: Added missing deduplication indexes
 
 ## Pending Items
 - P1: End-to-end Atlas import test with real credentials
 - P2: N+1 query optimization in agent assignment logic
-- Verify production navigation fix after redeployment
+- Verify production navigation after redeployment
