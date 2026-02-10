@@ -168,9 +168,11 @@ const Sidebar = ({ user }) => {
         credentials: 'include'
       });
       localStorage.removeItem('theme');
+      clearCachedUser();
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('Logout error:', error);
+      clearCachedUser();
       navigate('/login', { replace: true });
     }
   };
