@@ -159,8 +159,6 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const handleTicketClick = (ticket) => {
     setSelectedTicket(ticket);
     setIsDrawerOpen(true);
-    // Update URL with query param to maintain dashboard context
-    window.history.pushState({}, '', `/dashboard?ticket=${ticket.ticket_id}`);
   };
 
   const handleCreateTicket = async (ticketData) => {
@@ -676,8 +674,6 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
         onClose={() => {
           setIsDrawerOpen(false);
           setSelectedTicket(null);
-          // Reset URL to dashboard without ticket param
-          window.history.pushState({}, '', '/dashboard');
         }}
         onUpdate={handleUpdateTicket}
         onDelete={handleDeleteTicket}
