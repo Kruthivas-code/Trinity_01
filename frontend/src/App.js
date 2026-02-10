@@ -361,9 +361,6 @@ function AppWithRealtime({ user, children }) {
     setKeyboardHelpOpen(true);
   }, []);
 
-  // Dynamically import KeyboardShortcutsHelp
-  const KeyboardShortcutsHelp = React.lazy(() => import('./components/KeyboardShortcutsHelp'));
-
   return (
     <RealtimeProvider user={user}>
       <MentionNotificationHandler />
