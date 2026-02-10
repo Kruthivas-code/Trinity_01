@@ -35,10 +35,6 @@ const MainLayout = ({ user, view }) => {
         const ticket = await response.json();
         setSelectedTicket(ticket);
         setIsDrawerOpen(true);
-        // Update URL to unique ticket URL (without full page reload)
-        if (window.location.pathname !== `/ticket/${ticketId}`) {
-          window.history.pushState({}, '', `/ticket/${ticketId}`);
-        }
       }
     } catch (error) {
       console.error('Failed to fetch ticket:', error);
@@ -177,20 +173,14 @@ const MainLayout = ({ user, view }) => {
   const handleTicketClick = (ticket) => {
     setSelectedTicket(ticket);
     setIsDrawerOpen(true);
-    // Update URL to unique ticket URL
-    window.history.pushState({}, '', `/ticket/${ticket.ticket_id}`);
   };
 
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false);
     setSelectedTicket(null);
-    // Navigate back to the appropriate view when closing
-    if (view === 'ticket' || window.location.pathname.startsWith('/ticket/')) {
-      // Navigate to all-tickets when closing from unique ticket URL
-      navigate('/all-tickets');
-    } else {
-      // Just update URL back to current view
-      window.history.pushState({}, '', `/${view === 'dashboard' ? 'dashboard' : view}`);
+    // Navigate back to the appropriate view when closing from direct ticket URL
+    if (view === 'ticket') {
+      navigate('/all-tickets', { replace: true });
     }
   };
 
