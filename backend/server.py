@@ -4606,24 +4606,43 @@ async def reorder_tickets(
 # Analytics endpoint
 @app.get("/api/analytics/summary")
 async def get_analytics_summary(current_user: dict = Depends(get_current_user)):
-    status_counts = {}
-    for ticket_status in ["todo", "in_progress", "waiting", "review", "resolved"]:
-        count = tickets_collection.count_documents({"status": ticket_status})
-        status_counts[ticket_status] = count
-    
     pipeline = [
-        {"$match": {"assignee_id": {"$ne": None}}},
-        {"$group": {"_id": "$assignee_id", "count": {"$sum": 1}}}
+        {"$facet": {
+            "by_status": [
+                {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+            ],
+            "by_assignee": [
+                {"$match": {"assignee_id": {"$ne": None}}},
+                {"$group": {"_id": "$assignee_id", "count": {"$sum": 1}}}
+            ],
+            "my_tickets": [
+                {"$match": {"assignee_id": current_user["user_id"]}},
+                {"$count": "count"}
+            ],
+            "total": [
+                {"$count": "count"}
+            ]
+        }}
     ]
-    assignee_counts = list(tickets_collection.aggregate(pipeline))
+    result = list(tickets_collection.aggregate(pipeline))
+    facets = result[0] if result else {}
     
-    my_tickets_count = tickets_collection.count_documents({"assignee_id": current_user["user_id"]})
+    status_counts = {s: 0 for s in ["todo", "in_progress", "waiting", "review", "resolved"]}
+    for item in facets.get("by_status", []):
+        if item["_id"] in status_counts:
+            status_counts[item["_id"]] = item["count"]
+    
+    my_count = facets.get("my_tickets", [{}])
+    my_tickets_count = my_count[0].get("count", 0) if my_count else 0
+    
+    total_list = facets.get("total", [{}])
+    total = total_list[0].get("count", 0) if total_list else 0
     
     return {
         "by_status": status_counts,
-        "by_assignee": [{"assignee_id": item["_id"], "count": item["count"]} for item in assignee_counts],
+        "by_assignee": [{"assignee_id": item["_id"], "count": item["count"]} for item in facets.get("by_assignee", [])],
         "my_tickets": my_tickets_count,
-        "total": tickets_collection.count_documents({})
+        "total": total
     }
 
 # Export endpoint
