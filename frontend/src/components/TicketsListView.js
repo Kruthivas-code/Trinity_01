@@ -80,6 +80,7 @@ const formatTimeAgo = (dateString) => {
 
 const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, user, onTicketClick, refreshKey }) => {
   const [tickets, setTickets] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
