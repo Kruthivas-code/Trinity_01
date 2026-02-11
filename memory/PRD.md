@@ -9,30 +9,35 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - Canned response system with in-app creation
 - Data import from external tools (Zendesk, Atlas)
 - Gmail integration for email-based tickets
+- Email ingestion via IMAP (forwarded from support@emergent.sh)
 - Team management, routing rules, SLA escalation
 
 ## Tech Stack
 - **Frontend**: React 19, React Router v7, Shadcn UI
 - **Backend**: Python, FastAPI
 - **Database**: MongoDB (Motor async driver)
+- **Email**: IMAP (Gmail App Password)
 
 ## What's Been Implemented
 - Ticket Drawer UI Enhancement (priority + escalation badges in left panel)
 - In-App Canned Response Creation (create directly from picker modal)
 - Atlas Import backend logic (`POST /api/import/atlas`)
 - Database indexes for Atlas deduplication (tickets, messages, customers)
-- Deployment blocker fixes (hardcoded DB name → env variable)
+- Deployment blocker fixes (hardcoded DB name -> env variable)
 - Production navigation bug fix (React.lazy + window.history.pushState desync)
 - Post-login auth cache fix (module-level user cache in ProtectedRoute)
+- **IMAP Email Integration** — polls trinitysuccess44@gmail.com for new emails, creates tickets with threading
 
 ## Architecture
 ```
 /app
 ├── backend/
+│   ├── imap_sync.py             # IMAP email fetcher and parser
 │   ├── atlas_import.py          # Atlas API data fetching & transformation
 │   ├── server.py                # FastAPI main server
+│   ├── email_utils.py           # Email parsing utilities
 │   ├── realtime.py              # Socket.IO realtime module
-│   └── .env                     # MONGO_URL, DB_NAME, etc.
+│   └── .env                     # MONGO_URL, DB_NAME, IMAP_EMAIL, IMAP_PASSWORD, etc.
 ├── frontend/
 │   └── src/
 │       ├── App.js               # Router + AppWithRealtime wrapper
@@ -49,7 +54,14 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 │           └── RealtimeContext.js  # Socket.IO context
 ```
 
+## Key API Endpoints
+- `POST /api/email/sync?fetch_all=false` — Manual IMAP email sync
+- `GET /api/email/status` — Check IMAP connection status
+- `POST /api/import/atlas` — Import data from Atlas
+- `GET /api/health` — Health check
+
 ## Key Bug Fixes
+- 2026-02-11: IMAP email integration replacing Gmail OAuth approach
 - 2026-02-10: Fixed post-login auth (module-level cache replaces location.state)
 - 2026-02-10: Fixed production navigation (React.lazy + pushState desync)
 - 2026-02-10: Fixed 3 deployment blockers (hardcoded DB name)
@@ -58,4 +70,4 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 ## Pending Items
 - P1: End-to-end Atlas import test with real credentials
 - P2: N+1 query optimization in agent assignment logic
-- Verify production navigation after redeployment
+- Verify email forwarding from support@emergent.sh works end-to-end
