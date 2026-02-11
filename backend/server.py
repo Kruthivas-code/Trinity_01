@@ -10380,7 +10380,7 @@ def filter_tree_to_mongo(filter_tree: dict) -> dict:
 
     # Process direct conditions
     for cond in filter_tree.get("conditions", []):
-        if "field" in cond and "op" in cond:
+        if cond.get("field") and "op" in cond:
             fragment = _condition_to_mongo(cond)
             if fragment:
                 parts.append(fragment)
