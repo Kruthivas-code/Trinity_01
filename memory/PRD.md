@@ -13,6 +13,8 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - Server-side pagination with infinite scroll
 - Scalable analytics via MongoDB aggregation pipelines
 - Real-time ticket updates via Socket.IO (no page refresh needed)
+- Advanced filtering with AND/OR logic, nested groups
+- Custom inboxes (saved filter configurations)
 
 ## Tech Stack
 - **Frontend**: React 19, React Router v7, Shadcn UI
@@ -31,24 +33,25 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - Post-login auth cache fix (module-level user cache in ProtectedRoute)
 - Server-side pagination on GET /api/tickets with infinite scroll
 - **8 Scalability Fixes**: analytics aggregation, auto-close batch ops, streaming export, notes pagination, N+1 fix, compound indexes
-- **IMAP Email Sync (UID-based + IDLE push)** — Feb 2026:
-  - Replaced unreliable time-based IMAP fetching with UID-tracking mechanism
-  - **IMAP IDLE** for near-realtime push notifications (~1-5s latency vs 60s polling)
-  - `IMAPIdleWatcher` class maintains persistent IMAP connection using `imapclient`
-  - Auto-reconnects with exponential backoff (5s→60s) on failures
-  - Renews IDLE every 25 min (Gmail drops after ~29 min)
-  - Thread-safe callback via `asyncio.run_coroutine_threadsafe`
-  - `imap_sync_state` MongoDB collection stores last_uid persistently
-  - First-run seeding: sets last_uid to current max UID (no backfill)
-  - Fixed Gmail IMAP connection hang on close/logout (force-close socket)
-  - Unique sparse index on `email_replies.email_rfc_message_id`
-- **Real-time ticket push** — Feb 2026:
-  - Fixed ObjectId serialization in Socket.IO broadcasts (serialize_doc before emit)
-  - Fixed wrong function name/signature (broadcast_ticket_updated → broadcast_ticket_update)
-  - Fixed Socket.IO routing for Kubernetes ingress (/api/socket.io/ path)
-  - Fixed RequestIdFilter applied to all logger handlers (not just module logger)
-  - Added error-level logging for broadcast failures in email sync task
-  - New email-created tickets now appear in UI without page refresh (verified E2E)
+- **IMAP Email Sync (UID-based + IDLE push)** — Feb 2026
+- **Real-time ticket push** — Feb 2026
+- **Advanced Filters + Custom Inboxes** — Feb 2026:
+  - Server-side filter engine: `filter_tree_to_mongo()` translates recursive AND/OR filter trees to MongoDB `$and`/`$or` queries
+  - 15+ operators: is, is_not, contains, is_one_of, is_none, before, after, between, etc.
+  - Supports nested groups (brackets) for full set theory (unions/intersections)
+  - Filters on ALL ticket metadata: status, priority, source, assignee, dates, custom fields
+  - Custom Inboxes: save filter configs, share with team (decoupled copies), 3-dot menu (edit/share/delete)
+  - Sidebar integration: custom inboxes appear under Tickets section with colored dots
+  - New endpoints: `POST /api/filter/tickets`, `GET /api/filter/fields`, CRUD `/api/inboxes`
+- **Bug Fix: Filter UI crash** — Feb 2026:
+  - Fixed `users.map is not a function` in FilterBuilder.js and TicketsListView.js
+  - Root cause: `/api/users` returns paginated `{items: [], total, ...}` but frontend set users state to full response
+  - Fix: Extract `.items` array from response before setting state
+  - Added guard for empty field conditions in `filter_tree_to_mongo()`
+- **Scalable Filtering Indexes** — Feb 2026:
+  - Added 7 new ticket indexes: source, tags, priority+date, source+date, status+priority+date, assignee+status+date, email_sender_name
+  - Added 3 custom_inboxes indexes: inbox_id (unique), owner_id, shared_with
+  - Isolated index creation in separate try blocks to prevent cascading failures
 
 ## Key API Endpoints
 - `GET /api/tickets?page=1&limit=50&status=todo&status=in_progress` — Paginated, multi-status
@@ -58,24 +61,26 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - `GET /api/export?format=json|csv` — Streaming export
 - `POST /api/email/sync?fetch_all=false` — Manual IMAP sync (UID-based)
 - `GET /api/email/status` — IMAP connection + sync state status
+- `GET /api/filter/fields` — Available filter fields
+- `POST /api/filter/tickets` — Apply filter tree to get matching tickets
+- `GET /api/inboxes` — List custom inboxes
+- `POST /api/inboxes` — Create custom inbox
+- `PUT /api/inboxes/{inbox_id}` — Update custom inbox
+- `DELETE /api/inboxes/{inbox_id}` — Delete custom inbox
+- `POST /api/inboxes/{inbox_id}/share` — Share inbox (decoupled copy)
+- `GET /api/inboxes/{inbox_id}/tickets` — Get tickets for a saved inbox
 
 ## Key DB Collections
 - `tickets` — Ticket data with email metadata
-- `email_replies` — Incoming/outgoing email replies (unique index on email_rfc_message_id)
-- `imap_sync_state` — Stores `{_id: "imap_last_uid", last_uid: <int>, seeded: <bool>, updated_at: <datetime>}`
+- `email_replies` — Incoming/outgoing email replies
+- `imap_sync_state` — IMAP UID tracking
 - `users`, `user_sessions`, `customers`, `notes`, `messages`
-
-- **Advanced Filters + Custom Inboxes** — Feb 2026:
-  - Server-side filter engine: `filter_tree_to_mongo()` translates recursive AND/OR filter trees to MongoDB `$and`/`$or` queries
-  - 15+ operators: is, is_not, contains, is_one_of, is_none, before, after, between, etc.
-  - Supports nested groups (brackets) for full set theory (unions/intersections)
-  - Filters on ALL ticket metadata: status, priority, source, assignee, dates, custom fields
-  - Custom Inboxes: save filter configs, share with team (decoupled copies), 3-dot menu (edit/share/delete)
-  - Sidebar integration: custom inboxes appear under Tickets section with colored dots
-  - New endpoints: `POST /api/filter/tickets`, `GET /api/filter/fields`, CRUD `/api/inboxes`
+- `custom_inboxes` — Saved filter configurations
 
 ## Pending Items
+- P1: Custom Inbox Sharing UI (share modal with user picker)
+- P1: Custom Inbox Edit/Delete (wiring 3-dot menu actions fully)
 - P2: End-to-end Atlas import test with real credentials
-- P3: Remaining N+1 query patterns (non-critical)
+- P2: Refactor large components (TicketsListView, MainLayout, server.py)
+- P2: WebSocket upgrade investigation (polling fallback)
 - P3: Redis caching for analytics at higher scale
-- P3: Break down server.py (10K+ lines) into route modules
