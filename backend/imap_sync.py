@@ -3,6 +3,7 @@ IMAP Email Sync Module for Trinity
 
 Connects to a Gmail mailbox via IMAP and converts incoming emails into tickets.
 Uses UID-based tracking to ensure no emails are missed.
+Supports IMAP IDLE for near-realtime push notifications (~1-5s latency).
 """
 
 import imaplib
@@ -14,10 +15,17 @@ import os
 import re
 import socket
 import logging
+import threading
+import time
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Callable, Optional
 
 logger = logging.getLogger(__name__)
+
+# IDLE re-issue interval (Gmail drops IDLE after ~29 min)
+IDLE_RENEW_SECONDS = 25 * 60  # 25 minutes
+# How long to wait for IDLE responses before re-checking
+IDLE_POLL_SECONDS = 30
 
 
 def get_imap_config() -> Dict[str, Any]:
@@ -99,19 +107,72 @@ def parse_email_date(msg: email.message.Message) -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _parse_raw_email(uid_int: int, raw_email: bytes) -> Optional[Dict[str, Any]]:
+    """Parse a raw email into our standard dict format."""
+    try:
+        msg = email.message_from_bytes(raw_email)
+
+        from_header = decode_mime_header(msg.get("From", ""))
+        to_header = decode_mime_header(msg.get("To", ""))
+        cc_header = decode_mime_header(msg.get("Cc", ""))
+        subject = decode_mime_header(msg.get("Subject", ""))
+        message_id = msg.get("Message-ID", "").strip()
+        in_reply_to = msg.get("In-Reply-To", "").strip()
+        references = msg.get("References", "").strip()
+        email_date = parse_email_date(msg)
+
+        _, sender_email = parseaddr(from_header)
+        sender_email = sender_email.lower() if sender_email else ""
+
+        sender_name, _ = parseaddr(from_header)
+        if not sender_name:
+            sender_name = sender_email.split("@")[0].replace(".", " ").title() if sender_email else "Unknown"
+
+        body = extract_body(msg)
+        preview = (body["text"] or "")[:150].strip()
+        if len(body["text"] or "") > 150:
+            preview += "..."
+
+        return {
+            "imap_uid": uid_int,
+            "message_id": message_id,
+            "in_reply_to": in_reply_to,
+            "references": references,
+            "from_header": from_header,
+            "sender_email": sender_email,
+            "sender_name": sender_name,
+            "to": to_header,
+            "cc": cc_header,
+            "subject": subject,
+            "date": email_date,
+            "text": body["text"],
+            "html": body["html"],
+            "preview": preview,
+        }
+    except Exception as e:
+        logger.error(f"[IMAP] Error parsing email UID {uid_int}: {e}")
+        return None
+
+
+def _close_connection(conn):
+    """Force-close an IMAP connection without hanging."""
+    if not conn:
+        return
+    try:
+        conn.socket().settimeout(0.5)
+        conn.logout()
+    except Exception:
+        pass
+    try:
+        conn.socket().close()
+    except Exception:
+        pass
+
+
 def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List[Dict[str, Any]], int]:
     """
     Connect to IMAP server and fetch emails with UID greater than last_uid.
-
     Uses IMAP UID commands for reliable, gap-free email fetching.
-
-    Args:
-        config: IMAP connection config
-        last_uid: The last processed UID. Fetches emails with UID > last_uid.
-                  Use 0 to fetch all emails.
-
-    Returns:
-        Tuple of (list of parsed email dicts, highest UID processed)
     """
     imap_email = config["email"]
     imap_password = config["password"]
@@ -127,7 +188,6 @@ def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List
     conn = None
 
     try:
-        # Set socket timeout to prevent hanging on slow Gmail responses
         old_timeout = socket.getdefaulttimeout()
         socket.setdefaulttimeout(30)
         try:
@@ -138,13 +198,10 @@ def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List
         conn.login(imap_email, imap_password)
         conn.select("INBOX", readonly=True)
 
-        # UID SEARCH for emails with UID > last_uid
-        # UID range: (last_uid+1):* means "from last_uid+1 to the latest"
         if last_uid > 0:
             search_range = f"{last_uid + 1}:*"
             status, data = conn.uid("SEARCH", None, f"UID {search_range}")
         else:
-            # First run: fetch all emails in inbox
             status, data = conn.uid("SEARCH", None, "ALL")
 
         if status != "OK" or not data[0]:
@@ -152,7 +209,6 @@ def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List
             return [], last_uid
 
         uid_list = data[0].split()
-        # Filter out UIDs <= last_uid (IMAP range search can include the boundary)
         uid_list = [uid for uid in uid_list if int(uid) > last_uid]
 
         if not uid_list:
@@ -167,54 +223,13 @@ def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List
                 status, data = conn.uid("FETCH", uid, "(RFC822)")
                 if status != "OK" or not data or not data[0]:
                     continue
-
-                raw_email = data[0][1]
-                msg = email.message_from_bytes(raw_email)
-
-                from_header = decode_mime_header(msg.get("From", ""))
-                to_header = decode_mime_header(msg.get("To", ""))
-                cc_header = decode_mime_header(msg.get("Cc", ""))
-                subject = decode_mime_header(msg.get("Subject", ""))
-                message_id = msg.get("Message-ID", "").strip()
-                in_reply_to = msg.get("In-Reply-To", "").strip()
-                references = msg.get("References", "").strip()
-                email_date = parse_email_date(msg)
-
-                _, sender_email = parseaddr(from_header)
-                sender_email = sender_email.lower() if sender_email else ""
-
-                sender_name, _ = parseaddr(from_header)
-                if not sender_name:
-                    sender_name = sender_email.split("@")[0].replace(".", " ").title() if sender_email else "Unknown"
-
-                body = extract_body(msg)
-
-                preview = (body["text"] or "")[:150].strip()
-                if len(body["text"] or "") > 150:
-                    preview += "..."
-
-                emails.append({
-                    "imap_uid": uid_int,
-                    "message_id": message_id,
-                    "in_reply_to": in_reply_to,
-                    "references": references,
-                    "from_header": from_header,
-                    "sender_email": sender_email,
-                    "sender_name": sender_name,
-                    "to": to_header,
-                    "cc": cc_header,
-                    "subject": subject,
-                    "date": email_date,
-                    "text": body["text"],
-                    "html": body["html"],
-                    "preview": preview,
-                })
-
-                if uid_int > max_uid:
-                    max_uid = uid_int
-
+                parsed = _parse_raw_email(uid_int, data[0][1])
+                if parsed:
+                    emails.append(parsed)
+                    if uid_int > max_uid:
+                        max_uid = uid_int
             except Exception as e:
-                logger.error(f"[IMAP] Error parsing email UID {uid}: {e}")
+                logger.error(f"[IMAP] Error fetching email UID {uid}: {e}")
                 continue
 
     except imaplib.IMAP4.error as e:
@@ -222,27 +237,13 @@ def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List
     except Exception as e:
         logger.error(f"[IMAP] Connection error: {e}")
     finally:
-        if conn:
-            # Gmail IMAP can hang on close()/logout(). Set a very short timeout
-            # for cleanup, then force-close the socket.
-            try:
-                conn.socket().settimeout(0.5)
-                conn.logout()
-            except Exception:
-                pass
-            try:
-                conn.socket().close()
-            except Exception:
-                pass
+        _close_connection(conn)
 
     return emails, max_uid
 
 
 def get_current_max_uid(config: Dict[str, Any]) -> int:
-    """
-    Get the current highest UID in the INBOX without fetching any emails.
-    Used for seeding the initial sync state so we only track new emails going forward.
-    """
+    """Get the current highest UID in the INBOX without fetching any emails."""
     imap_email = config["email"]
     imap_password = config["password"]
     imap_server = config["server"]
@@ -267,12 +268,9 @@ def get_current_max_uid(config: Dict[str, Any]) -> int:
         if msg_count == 0:
             return 0
 
-        # Fetch the UID of the last message by sequence number
         typ2, data2 = conn.fetch(str(msg_count), "(UID)")
         if typ2 == "OK" and data2:
-            # Response like b'269 (UID 269)'
-            import re as re_mod
-            match = re_mod.search(rb"UID (\d+)", data2[0] if isinstance(data2[0], bytes) else data2[0][0])
+            match = re.search(rb"UID (\d+)", data2[0] if isinstance(data2[0], bytes) else data2[0][0])
             if match:
                 return int(match.group(1))
         return 0
@@ -280,13 +278,209 @@ def get_current_max_uid(config: Dict[str, Any]) -> int:
         logger.error(f"[IMAP] Error getting max UID: {e}")
         return 0
     finally:
-        if conn:
+        _close_connection(conn)
+
+
+# ============================================================
+# IMAP IDLE - Push-based near-realtime email monitoring
+# ============================================================
+
+class IMAPIdleWatcher:
+    """
+    Watches a Gmail IMAP inbox using IDLE for near-realtime email notifications.
+    
+    When new mail arrives, calls the on_new_mail callback with the list of new
+    parsed emails and the new max UID.
+    
+    Architecture:
+    - Runs in a background thread (IMAP IDLE is blocking)
+    - Maintains a persistent connection to Gmail IMAP
+    - Uses IDLE command to wait for server-side notifications
+    - Renews IDLE every 25 minutes (Gmail drops after ~29 min)
+    - Auto-reconnects on any failure with exponential backoff
+    - Uses UID tracking to never miss emails
+    """
+    
+    def __init__(self, config: Dict[str, Any], last_uid: int = 0,
+                 on_new_mail: Optional[Callable] = None):
+        self.config = config
+        self.last_uid = last_uid
+        self.on_new_mail = on_new_mail
+        self._client = None
+        self._stop_event = threading.Event()
+        self._thread = None
+        self._backoff = 5  # seconds, grows on repeated failures
+    
+    def start(self):
+        """Start the IDLE watcher in a background thread."""
+        if self._thread and self._thread.is_alive():
+            logger.warning("[IDLE] Watcher already running")
+            return
+        self._stop_event.clear()
+        self._thread = threading.Thread(target=self._run_loop, daemon=True, name="imap-idle")
+        self._thread.start()
+        logger.info("[IDLE] Watcher started")
+    
+    def stop(self):
+        """Stop the IDLE watcher gracefully."""
+        self._stop_event.set()
+        self._disconnect()
+        if self._thread:
+            self._thread.join(timeout=10)
+        logger.info("[IDLE] Watcher stopped")
+    
+    def update_last_uid(self, uid: int):
+        """Update the last processed UID (called after successful processing)."""
+        if uid > self.last_uid:
+            self.last_uid = uid
+    
+    @property
+    def is_running(self) -> bool:
+        return self._thread is not None and self._thread.is_alive()
+    
+    def _connect(self):
+        """Establish IMAP connection using imapclient."""
+        from imapclient import IMAPClient
+        
+        self._disconnect()
+        
+        logger.info(f"[IDLE] Connecting to {self.config['server']}:{self.config['port']}")
+        client = IMAPClient(
+            self.config["server"],
+            port=self.config["port"],
+            ssl=True,
+            timeout=30
+        )
+        client.login(self.config["email"], self.config["password"])
+        client.select_folder("INBOX", readonly=True)
+        
+        # Verify IDLE is supported
+        capabilities = client.capabilities()
+        if b"IDLE" not in capabilities:
+            raise RuntimeError("Server does not support IMAP IDLE")
+        
+        self._client = client
+        self._backoff = 5  # Reset backoff on successful connection
+        logger.info("[IDLE] Connected and INBOX selected")
+    
+    def _disconnect(self):
+        """Disconnect the IMAP client."""
+        if self._client:
             try:
-                conn.socket().settimeout(0.5)
-                conn.logout()
+                self._client.logout()
             except Exception:
                 pass
+            self._client = None
+    
+    def _fetch_new_emails(self) -> Tuple[List[Dict[str, Any]], int]:
+        """Fetch new emails using UID tracking on the current connection."""
+        if not self._client:
+            return [], self.last_uid
+        
+        emails = []
+        max_uid = self.last_uid
+        
+        # Search for UIDs > last_uid
+        if self.last_uid > 0:
+            criteria = f"UID {self.last_uid + 1}:*"
+        else:
+            criteria = "ALL"
+        
+        uids = self._client.search(criteria)
+        # Filter UIDs > last_uid (IMAP range can include boundary)
+        uids = [u for u in uids if u > self.last_uid]
+        
+        if not uids:
+            return [], self.last_uid
+        
+        logger.info(f"[IDLE] Found {len(uids)} new email(s) (UIDs > {self.last_uid})")
+        
+        # Fetch full message for each new UID
+        for uid in uids:
             try:
-                conn.socket().close()
-            except Exception:
-                pass
+                response = self._client.fetch([uid], ["RFC822"])
+                if uid in response and b"RFC822" in response[uid]:
+                    raw = response[uid][b"RFC822"]
+                    parsed = _parse_raw_email(uid, raw)
+                    if parsed:
+                        emails.append(parsed)
+                        if uid > max_uid:
+                            max_uid = uid
+            except Exception as e:
+                logger.error(f"[IDLE] Error fetching UID {uid}: {e}")
+                continue
+        
+        return emails, max_uid
+    
+    def _run_loop(self):
+        """Main loop: connect → IDLE → process → repeat."""
+        logger.info("[IDLE] Background thread started")
+        
+        while not self._stop_event.is_set():
+            try:
+                self._connect()
+                
+                # Initial check for any emails that arrived since last sync
+                new_emails, new_max_uid = self._fetch_new_emails()
+                if new_emails and self.on_new_mail:
+                    self.on_new_mail(new_emails, new_max_uid)
+                    self.last_uid = new_max_uid
+                
+                # Enter IDLE loop
+                idle_start = time.monotonic()
+                
+                while not self._stop_event.is_set():
+                    # Start IDLE
+                    self._client.idle()
+                    logger.debug("[IDLE] Entered IDLE mode, waiting for notifications...")
+                    
+                    # Wait for server responses (blocks until data or timeout)
+                    try:
+                        responses = self._client.idle_check(timeout=IDLE_POLL_SECONDS)
+                    except Exception as e:
+                        logger.warning(f"[IDLE] idle_check error: {e}")
+                        self._client.idle_done()
+                        break  # Reconnect
+                    
+                    # Exit IDLE mode to process
+                    try:
+                        self._client.idle_done()
+                    except Exception as e:
+                        logger.warning(f"[IDLE] idle_done error: {e}")
+                        break  # Reconnect
+                    
+                    if self._stop_event.is_set():
+                        break
+                    
+                    # Check if we got a meaningful response (EXISTS = new mail)
+                    has_new_mail = any(
+                        b"EXISTS" in (r[1] if isinstance(r, tuple) and len(r) > 1 else b"")
+                        for r in responses
+                    ) if responses else False
+                    
+                    if has_new_mail:
+                        logger.info("[IDLE] New mail notification received!")
+                        new_emails, new_max_uid = self._fetch_new_emails()
+                        if new_emails and self.on_new_mail:
+                            self.on_new_mail(new_emails, new_max_uid)
+                            self.last_uid = new_max_uid
+                    
+                    # Renew IDLE before Gmail drops the connection (~29 min)
+                    elapsed = time.monotonic() - idle_start
+                    if elapsed >= IDLE_RENEW_SECONDS:
+                        logger.debug("[IDLE] Renewing connection (25 min elapsed)")
+                        break  # Will reconnect in outer loop
+                
+            except Exception as e:
+                if self._stop_event.is_set():
+                    break
+                logger.error(f"[IDLE] Error in watcher loop: {e}")
+                self._disconnect()
+                
+                # Exponential backoff: 5s, 10s, 20s, 40s, max 60s
+                logger.info(f"[IDLE] Reconnecting in {self._backoff}s...")
+                self._stop_event.wait(self._backoff)
+                self._backoff = min(self._backoff * 2, 60)
+        
+        self._disconnect()
+        logger.info("[IDLE] Background thread exiting")
