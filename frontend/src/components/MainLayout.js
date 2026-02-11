@@ -322,6 +322,15 @@ const MainLayout = ({ user, view }) => {
               onTicketClick={handleTicketClick}
             />
           )}
+          {view === 'custom-inbox' && (
+            <CustomInboxPage
+              key={refreshKey}
+              refreshKey={refreshKey}
+              user={user}
+              onTicketClick={handleTicketClick}
+              onInboxUpdated={() => fetchInboxes()}
+            />
+          )}
         </main>
       </div>
 
