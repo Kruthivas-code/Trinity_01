@@ -3891,33 +3891,55 @@ async def add_internal_note(
 @app.get("/api/tickets/{ticket_id}/notes")
 async def get_ticket_notes(
     ticket_id: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(100, ge=1, le=500),
     current_user: dict = Depends(get_current_user)
 ):
     """Get all notes, replies, and merged messages for a ticket"""
-    # Return internal_note, reply, merge_divider, system, and customer_reply types
-    # This includes messages from merged tickets
-    notes = list(messages_collection.find(
-        {
-            "ticket_id": ticket_id, 
-            "type": {"$in": ["internal_note", "reply", "merge_divider", "system", "customer_reply"]}
-        },
-        {"_id": 0}
-    ).sort("created_at", ASCENDING))
+    query = {
+        "ticket_id": ticket_id, 
+        "type": {"$in": ["internal_note", "reply", "merge_divider", "system", "customer_reply"]}
+    }
     
-    return [serialize_doc(n) for n in notes]
+    total = messages_collection.count_documents(query)
+    skip = (page - 1) * limit
+    
+    notes = list(messages_collection.find(query, {"_id": 0})
+        .sort("created_at", ASCENDING)
+        .skip(skip)
+        .limit(limit))
+    
+    return {
+        "messages": [serialize_doc(n) for n in notes],
+        "total": total,
+        "page": page,
+        "has_more": skip + limit < total
+    }
 
 @app.get("/api/tickets/{ticket_id}/activity")
 async def get_ticket_activity(
     ticket_id: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(100, ge=1, le=500),
     current_user: dict = Depends(get_current_user)
 ):
     """Get all activity (notes, replies, system messages) for a ticket - for conversation view"""
-    messages = list(messages_collection.find(
-        {"ticket_id": ticket_id},
-        {"_id": 0}
-    ).sort("created_at", ASCENDING))
+    query = {"ticket_id": ticket_id}
     
-    return [serialize_doc(m) for m in messages]
+    total = messages_collection.count_documents(query)
+    skip = (page - 1) * limit
+    
+    messages = list(messages_collection.find(query, {"_id": 0})
+        .sort("created_at", ASCENDING)
+        .skip(skip)
+        .limit(limit))
+    
+    return {
+        "messages": [serialize_doc(m) for m in messages],
+        "total": total,
+        "page": page,
+        "has_more": skip + limit < total
+    }
 
 
 @app.get("/api/tickets/{ticket_id}/activity-feed")
