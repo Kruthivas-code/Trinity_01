@@ -286,19 +286,23 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
           {subtitle || `Showing ${tickets.length} of ${totalCount} tickets`}
         </p>
         {showFilterBuilder && (
-          <FilterBuilder
-            onFilter={handleFilterApply}
-            onSaveInbox={onSaveInbox ? () => setShowSaveModal(true) : null}
-            initialFilters={propFilterTree}
-          />
+          <React.Suspense fallback={null}>
+            <FilterBuilder
+              onFilter={handleFilterApply}
+              onSaveInbox={onSaveInbox ? () => setShowSaveModal(true) : null}
+              initialFilters={propFilterTree}
+            />
+          </React.Suspense>
         )}
       </div>
 
-      <SaveInboxModal
-        isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
-        onSave={handleSaveInbox}
-      />
+      <React.Suspense fallback={null}>
+        <SaveInboxModal
+          isOpen={showSaveModal}
+          onClose={() => setShowSaveModal(false)}
+          onSave={handleSaveInbox}
+        />
+      </React.Suspense>
 
       {/* Tickets List */}
       <div className="flex-1 overflow-y-auto">
