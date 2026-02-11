@@ -50,9 +50,14 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-# Add filter to root logger so ALL loggers (including Socket.IO) have request_id
+# Add filter to ALL existing handlers on root logger
 root_logger = logging.getLogger()
-root_logger.addFilter(RequestIdFilter())
+request_id_filter = RequestIdFilter()
+for handler in root_logger.handlers:
+    handler.addFilter(request_id_filter)
+
+# Also add to root logger itself for any future handlers
+root_logger.addFilter(request_id_filter)
 
 logger = logging.getLogger(__name__)
 
