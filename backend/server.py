@@ -6752,115 +6752,116 @@ async def get_analytics_overview(
     days: int = 30,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get overview analytics for the dashboard"""
+    """Get overview analytics for the dashboard — fully aggregated server-side"""
     from_date = datetime.now(timezone.utc) - timedelta(days=days)
     
-    def parse_date(date_val):
-        """Safely parse date and make it timezone-aware"""
-        if date_val is None:
-            return None
-        if isinstance(date_val, datetime):
-            if date_val.tzinfo is None:
-                return date_val.replace(tzinfo=timezone.utc)
-            return date_val
-        try:
-            dt = datetime.fromisoformat(str(date_val).replace("Z", "+00:00"))
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            return dt
-        except (ValueError, TypeError):
-            return None
+    pipeline = [
+        {"$facet": {
+            "total": [{"$count": "count"}],
+            "open": [
+                {"$match": {"status": {"$nin": ["resolved", "closed"]}}},
+                {"$count": "count"}
+            ],
+            "in_period": [
+                {"$match": {"created_at": {"$gte": from_date}}},
+                {"$count": "count"}
+            ],
+            "resolved_in_period": [
+                {"$match": {"created_at": {"$gte": from_date}, "status": {"$in": ["resolved", "closed"]}}},
+                {"$count": "count"}
+            ],
+            "priority_breakdown": [
+                {"$match": {"status": {"$nin": ["resolved", "closed"]}}},
+                {"$group": {"_id": "$priority", "count": {"$sum": 1}}}
+            ],
+            "status_breakdown": [
+                {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+            ],
+            "volume_trend": [
+                {"$match": {"created_at": {"$gte": from_date}}},
+                {"$group": {
+                    "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+                    "count": {"$sum": 1}
+                }},
+                {"$sort": {"_id": 1}}
+            ],
+            "resolution_times": [
+                {"$match": {
+                    "created_at": {"$gte": from_date},
+                    "resolved_at": {"$ne": None}
+                }},
+                {"$project": {
+                    "hours": {"$divide": [
+                        {"$subtract": ["$resolved_at", "$created_at"]},
+                        3600000  # ms to hours
+                    ]}
+                }},
+                {"$group": {
+                    "_id": None,
+                    "avg_hours": {"$avg": "$hours"},
+                    "sla_met": {"$sum": {"$cond": [{"$lte": ["$hours", 24]}, 1, 0]}},
+                    "sla_breached": {"$sum": {"$cond": [{"$gt": ["$hours", 24]}, 1, 0]}}
+                }}
+            ],
+            "top_assignees": [
+                {"$match": {"created_at": {"$gte": from_date}, "assignee_id": {"$ne": None}}},
+                {"$group": {"_id": "$assignee_id", "count": {"$sum": 1}}},
+                {"$sort": {"count": -1}},
+                {"$limit": 5}
+            ]
+        }}
+    ]
     
-    # Get all tickets in range
-    all_tickets = list(tickets_collection.find({}, {"_id": 0}))
-    recent_tickets = []
-    for t in all_tickets:
-        created = parse_date(t.get("created_at"))
-        if created and created >= from_date:
-            recent_tickets.append(t)
+    result = list(tickets_collection.aggregate(pipeline))
+    facets = result[0] if result else {}
     
-    # Basic counts
-    total_tickets = len(all_tickets)
-    tickets_in_period = len(recent_tickets)
-    open_tickets = len([t for t in all_tickets if t.get("status") not in ["resolved", "closed"]])
-    resolved_in_period = len([t for t in recent_tickets if t.get("status") in ["resolved", "closed"]])
+    def facet_count(key):
+        v = facets.get(key, [])
+        return v[0].get("count", 0) if v else 0
     
     # Priority breakdown
     priority_counts = {"urgent": 0, "high": 0, "medium": 0, "low": 0}
-    for t in all_tickets:
-        if t.get("status") not in ["resolved", "closed"]:
-            p = t.get("priority", "medium")
-            if p in priority_counts:
-                priority_counts[p] += 1
+    for item in facets.get("priority_breakdown", []):
+        if item["_id"] in priority_counts:
+            priority_counts[item["_id"]] = item["count"]
     
     # Status breakdown
     status_counts = {"todo": 0, "in_progress": 0, "waiting": 0, "review": 0, "resolved": 0}
-    for t in all_tickets:
-        s = t.get("status", "todo")
-        if s in status_counts:
-            status_counts[s] += 1
+    for item in facets.get("status_breakdown", []):
+        if item["_id"] in status_counts:
+            status_counts[item["_id"]] = item["count"]
     
-    # Volume by day (last N days)
-    volume_by_day = {}
-    for t in recent_tickets:
-        created = parse_date(t.get("created_at"))
-        if created:
-            date = created.strftime("%Y-%m-%d")
-            volume_by_day[date] = volume_by_day.get(date, 0) + 1
+    # Volume trend
+    volume_trend = [{"date": item["_id"], "count": item["count"]} for item in facets.get("volume_trend", [])]
     
-    # Sort by date
-    volume_trend = [{"date": k, "count": v} for k, v in sorted(volume_by_day.items())]
-    
-    # Average resolution time
-    resolution_times = []
-    for t in recent_tickets:
-        created = parse_date(t.get("created_at"))
-        resolved = parse_date(t.get("resolved_at"))
-        if created and resolved:
-            resolution_times.append((resolved - created).total_seconds() / 3600)
-    
-    avg_resolution_hours = sum(resolution_times) / len(resolution_times) if resolution_times else None
-    
-    # SLA compliance (simplified)
-    sla_met = 0
-    sla_breached = 0
-    for t in recent_tickets:
-        created = parse_date(t.get("created_at"))
-        resolved = parse_date(t.get("resolved_at"))
-        if created and resolved:
-            hours = (resolved - created).total_seconds() / 3600
-            # Default SLA: 24 hours for resolution
-            if hours <= 24:
-                sla_met += 1
-            else:
-                sla_breached += 1
-    
+    # Resolution times and SLA
+    res_data = facets.get("resolution_times", [{}])
+    res = res_data[0] if res_data else {}
+    avg_resolution_hours = res.get("avg_hours")
+    sla_met = res.get("sla_met", 0)
+    sla_breached = res.get("sla_breached", 0)
     sla_compliance = (sla_met / (sla_met + sla_breached) * 100) if (sla_met + sla_breached) > 0 else None
     
-    # Top assignees
-    assignee_counts = {}
-    for t in recent_tickets:
-        assignee = t.get("assignee_id")
-        if assignee:
-            assignee_counts[assignee] = assignee_counts.get(assignee, 0) + 1
+    # Top assignees — batch-fetch user names
+    top_raw = facets.get("top_assignees", [])
+    assignee_ids = [a["_id"] for a in top_raw]
+    user_map = {}
+    if assignee_ids:
+        for u in users_collection.find({"user_id": {"$in": assignee_ids}}, {"_id": 0, "user_id": 1, "name": 1}):
+            user_map[u["user_id"]] = u.get("name", "Unknown")
     
-    # Get user names
-    top_assignees = []
-    for user_id, count in sorted(assignee_counts.items(), key=lambda x: -x[1])[:5]:
-        user = users_collection.find_one({"user_id": user_id}, {"_id": 0, "name": 1})
-        top_assignees.append({
-            "user_id": user_id,
-            "name": user.get("name") if user else "Unknown",
-            "ticket_count": count
-        })
+    top_assignees = [
+        {"user_id": a["_id"], "name": user_map.get(a["_id"], "Unknown"), "ticket_count": a["count"]}
+        for a in top_raw
+    ]
     
     return {
         "period_days": days,
         "summary": {
-            "total_tickets": total_tickets,
-            "open_tickets": open_tickets,
-            "tickets_in_period": tickets_in_period,
-            "resolved_in_period": resolved_in_period,
+            "total_tickets": facet_count("total"),
+            "open_tickets": facet_count("open"),
+            "tickets_in_period": facet_count("in_period"),
+            "resolved_in_period": facet_count("resolved_in_period"),
             "avg_resolution_hours": round(avg_resolution_hours, 1) if avg_resolution_hours else None,
             "sla_compliance_percent": round(sla_compliance, 1) if sla_compliance else None
         },
