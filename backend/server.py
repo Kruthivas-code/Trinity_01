@@ -4905,24 +4905,46 @@ async def trigger_email_sync(
 
 @app.get("/api/email/status")
 async def email_sync_status(current_user: dict = Depends(get_current_user)):
-    """Check IMAP connection status."""
+    """Check IMAP connection and sync status."""
     from imap_sync import get_imap_config
-    import imaplib
+    import imaplib as imaplib_mod
+    import socket as socket_mod
     
     config = get_imap_config()
     if not config["email"] or not config["password"]:
         return {"connected": False, "email": None, "error": "IMAP not configured"}
     
+    # Get UID sync state
+    imap_state = db.imap_sync_state.find_one({"_id": "imap_last_uid"})
+    sync_info = {
+        "last_uid": imap_state["last_uid"] if imap_state else 0,
+        "last_synced": imap_state["updated_at"].isoformat() if imap_state and "updated_at" in imap_state else None,
+        "seeded": imap_state.get("seeded", False) if imap_state else False
+    }
+    
     try:
-        conn = imaplib.IMAP4_SSL(config["server"], config["port"])
+        old_timeout = socket_mod.getdefaulttimeout()
+        socket_mod.setdefaulttimeout(15)
+        try:
+            conn = imaplib_mod.IMAP4_SSL(config["server"], config["port"])
+        finally:
+            socket_mod.setdefaulttimeout(old_timeout)
+        conn.socket().settimeout(15)
         conn.login(config["email"], config["password"])
         status, data = conn.select("INBOX", readonly=True)
         msg_count = int(data[0]) if status == "OK" else 0
-        conn.close()
-        conn.logout()
-        return {"connected": True, "email": config["email"], "inbox_count": msg_count}
+        try:
+            conn.socket().settimeout(0.5)
+            conn.logout()
+        except Exception:
+            pass
+        try:
+            conn.socket().close()
+        except Exception:
+            pass
+        return {"connected": True, "email": config["email"], "inbox_count": msg_count, "sync": sync_info}
     except Exception as e:
-        return {"connected": False, "email": config["email"], "error": str(e)}
+        return {"connected": False, "email": config["email"], "error": str(e), "sync": sync_info}
 
 # Import endpoint
 @app.post("/api/import")
