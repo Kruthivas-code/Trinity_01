@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Clock, User as UserIcon } from 'lucide-react';
 import { useRealtime } from '../contexts/RealtimeContext';
-import FilterBuilder from './FilterBuilder';
-import SaveInboxModal from './SaveInboxModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const FilterBuilder = React.lazy(() => import('./FilterBuilder'));
+const SaveInboxModal = React.lazy(() => import('./SaveInboxModal'));
 const ITEMS_PER_PAGE = 50;
 
 // Get the best preview text for a ticket
