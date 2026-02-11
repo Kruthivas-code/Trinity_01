@@ -4941,9 +4941,9 @@ async def email_sync_status(current_user: dict = Depends(get_current_user)):
             conn.socket().close()
         except Exception:
             pass
-        return {"connected": True, "email": config["email"], "inbox_count": msg_count, "sync": sync_info}
+        return {"connected": True, "email": config["email"], "inbox_count": msg_count, "sync": sync_info, "mode": "idle"}
     except Exception as e:
-        return {"connected": False, "email": config["email"], "error": str(e), "sync": sync_info}
+        return {"connected": False, "email": config["email"], "error": str(e), "sync": sync_info, "mode": "idle"}
 
 # Import endpoint
 @app.post("/api/import")
