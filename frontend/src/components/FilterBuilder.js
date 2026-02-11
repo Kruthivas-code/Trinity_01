@@ -196,7 +196,10 @@ function FilterBuilder({ onFilter, onSaveInbox, initialFilters }) {
         var fRes = await fetch(BACKEND_URL + '/api/filter/fields', { credentials: 'include' });
         var uRes = await fetch(BACKEND_URL + '/api/users', { credentials: 'include' });
         if (!aborted && fRes.ok) setFields(await fRes.json());
-        if (!aborted && uRes.ok) setUsers(await uRes.json());
+        if (!aborted && uRes.ok) {
+          var uData = await uRes.json();
+          setUsers(Array.isArray(uData) ? uData : (uData.items || []));
+        }
       } catch (e) { /* ignore */ }
     }
     load();
