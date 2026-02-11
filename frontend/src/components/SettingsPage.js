@@ -305,7 +305,7 @@ const SettingsPage = ({ user }) => {
       
       switch (type) {
         case 'tickets':
-          url = `${BACKEND_URL}/api/tickets`;
+          url = `${BACKEND_URL}/api/tickets?limit=10000`;
           filename = `trinity-tickets-${new Date().toISOString().split('T')[0]}.csv`;
           headers = ['ticket_id', 'title', 'status', 'priority', 'escalation_level', 'assignee_id', 'created_at'];
           break;
@@ -326,7 +326,8 @@ const SettingsPage = ({ user }) => {
       const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) throw new Error('Export failed');
       
-      const data = await response.json();
+      let data = await response.json();
+      if (data.tickets) data = data.tickets;
       
       // Convert to CSV
       const csvRows = [headers.join(',')];
