@@ -275,7 +275,9 @@ const SettingsPage = ({ user }) => {
       const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) throw new Error('Export failed');
       
-      const data = await response.json();
+      let data = await response.json();
+      // Handle paginated response format
+      if (data.tickets) data = data.tickets;
       
       // Create and download file
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
