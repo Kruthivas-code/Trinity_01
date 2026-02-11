@@ -4149,6 +4149,7 @@ async def get_escalation_counts(
 
 @app.get("/api/tickets")
 async def get_tickets(
+    request: Request,
     status: Optional[str] = None,
     assignee_id: Optional[str] = None,
     mentioned_user_id: Optional[str] = None,
@@ -4162,10 +4163,17 @@ async def get_tickets(
     current_user: dict = Depends(get_current_user)
 ):
     query = {}
-    if status:
-        query["status"] = status
+    
+    # Support multiple status values via repeated query params
+    status_values = request.query_params.getlist("status")
+    if status_values:
+        if len(status_values) == 1:
+            query["status"] = status_values[0]
+        else:
+            query["status"] = {"$in": status_values}
     elif not include_merged:
         query["status"] = {"$ne": "merged"}
+    
     if assignee_id:
         query["assignee_id"] = assignee_id
     if mentioned_user_id:
