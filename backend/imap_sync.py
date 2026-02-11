@@ -223,11 +223,19 @@ def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List
         logger.error(f"[IMAP] Connection error: {e}")
     finally:
         if conn:
-            # Skip close() as Gmail IMAP can hang on it; logout() is sufficient
+            # Gmail IMAP can hang on close()/logout(). Since we use readonly mode,
+            # it's safe to just shut down the socket directly.
             try:
-                conn.logout()
+                conn.shutdown()
             except Exception:
-                pass
+                try:
+                    conn.socket().shutdown(socket.SHUT_RDWR)
+                except Exception:
+                    pass
+                try:
+                    conn.socket().close()
+                except Exception:
+                    pass
 
     return emails, max_uid
 
