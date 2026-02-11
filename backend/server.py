@@ -304,7 +304,7 @@ async def auto_sync_emails():
             try:
                 # Run IMAP fetch in thread pool (it's blocking I/O)
                 loop = asyncio.get_event_loop()
-                new_emails = await loop.run_in_executor(None, fetch_new_emails, config, None)
+                new_emails = await loop.run_in_executor(None, lambda: fetch_new_emails(config))
                 
                 created_count = 0
                 reply_count = 0
@@ -4643,7 +4643,7 @@ async def trigger_email_sync(
     
     loop = asyncio.get_event_loop()
     new_emails = await loop.run_in_executor(
-        None, lambda: fetch_new_emails(config, since_uid=None, fetch_all=fetch_all)
+        None, lambda: fetch_new_emails(config, fetch_all=fetch_all)
     )
     
     created_count = 0
