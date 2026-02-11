@@ -92,35 +92,27 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
   // Subscribe to real-time ticket updates
   useEffect(() => {
     const unsubscribe = onTicketUpdate((data) => {
-      console.log('[RT] Received ticket event:', data?.ticket?.ticket_id, data?.action || 'created');
       if (data.ticket) {
         const ticket = data.ticket;
-        // Check if ticket matches our filter
         const matchesFilter = !filterStatuses || filterStatuses.includes(ticket.status);
-        console.log('[RT] matchesFilter:', matchesFilter, 'status:', ticket.status, 'filterStatuses:', filterStatuses);
         
         setTickets(prev => {
           const existingIndex = prev.findIndex(t => t.ticket_id === ticket.ticket_id);
           
           if (existingIndex >= 0) {
-            // Update existing ticket
             if (matchesFilter) {
               const updated = [...prev];
               updated[existingIndex] = { ...updated[existingIndex], ...ticket };
               return updated;
             } else {
-              // Remove if no longer matches filter
               return prev.filter(t => t.ticket_id !== ticket.ticket_id);
             }
           } else if (matchesFilter) {
-            // New ticket that matches filter - add to top
-            console.log('[RT] Adding new ticket to top:', ticket.ticket_id);
             return [ticket, ...prev];
           }
           return prev;
         });
       } else if (data.ticket_id && data.deleted) {
-        // Ticket deleted - remove from list
         setTickets(prev => prev.filter(t => t.ticket_id !== data.ticket_id));
       }
     });
