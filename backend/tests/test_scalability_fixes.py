@@ -29,7 +29,7 @@ def create_test_session():
     )
     
     # Create session
-    db.sessions.update_one(
+    db.user_sessions.update_one(
         {"session_token": token},
         {"$set": {
             "session_token": token,
