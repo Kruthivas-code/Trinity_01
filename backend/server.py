@@ -496,8 +496,9 @@ async def auto_sync_emails():
                     try:
                         from realtime import broadcast_ticket_created
                         await broadcast_ticket_created(serialize_doc(ticket_doc), {"user_id": "system", "name": "Email Sync"})
+                        logger.info(f"[EMAIL-SYNC] Broadcast ticket:created for {ticket_id}")
                     except Exception as e:
-                        logger.debug(f"[EMAIL-SYNC] Could not broadcast: {e}")
+                        logger.error(f"[EMAIL-SYNC] FAILED to broadcast ticket:created: {e}", exc_info=True)
                 
                 # Persist the new max UID so next cycle starts from here
                 if new_max_uid > last_uid:
