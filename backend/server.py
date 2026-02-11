@@ -317,6 +317,20 @@ async def auto_sync_emails():
                 state = imap_sync_state.find_one({"_id": "imap_last_uid"})
                 last_uid = state["last_uid"] if state else 0
                 
+                # First run: seed with current max UID so we only track new emails
+                if last_uid == 0:
+                    from imap_sync import get_current_max_uid
+                    seed_uid = await loop.run_in_executor(None, lambda: get_current_max_uid(config))
+                    if seed_uid > 0:
+                        imap_sync_state.update_one(
+                            {"_id": "imap_last_uid"},
+                            {"$set": {"last_uid": seed_uid, "updated_at": datetime.now(timezone.utc), "seeded": True}},
+                            upsert=True
+                        )
+                        logger.info(f"[EMAIL-SYNC] Seeded initial UID to {seed_uid} (existing emails skipped)")
+                        await asyncio.sleep(60)
+                        continue
+                
                 # Run IMAP fetch in thread pool (it's blocking I/O)
                 loop = asyncio.get_event_loop()
                 new_emails, new_max_uid = await loop.run_in_executor(
