@@ -167,6 +167,10 @@ def fetch_new_emails(config: Dict[str, Any], since_minutes: int = 2, fetch_all: 
                 references = msg.get("References", "").strip()
                 email_date = parse_email_date(msg)
 
+                # Skip emails older than cutoff
+                if cutoff and email_date < cutoff:
+                    continue
+
                 # Extract sender email
                 _, sender_email = parseaddr(from_header)
                 sender_email = sender_email.lower() if sender_email else ""
