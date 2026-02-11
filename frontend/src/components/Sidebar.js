@@ -262,6 +262,88 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
             {isTicketsExpanded && (
               <div className="mt-0.5 space-y-0.5">
                 {ticketViews.map(view => renderNavItem(view, true))}
+                
+                {/* Custom Inboxes */}
+                {customInboxes.length > 0 && (
+                  <>
+                    <div className="!my-2 mx-3 h-px bg-border/40" />
+                    {customInboxes.map(inbox => {
+                      const inboxPath = `/inbox/${inbox.inbox_id}`;
+                      const active = location.pathname === inboxPath;
+                      return (
+                        <div key={inbox.inbox_id} className="relative group" data-testid={`sidebar-inbox-${inbox.inbox_id}`}>
+                          <button
+                            onClick={() => handleNavigate(inboxPath)}
+                            className={`
+                              w-full flex items-center gap-2.5 px-3 ml-4 h-9 rounded-lg text-[14px] overflow-hidden relative
+                              transition-colors duration-150
+                              ${active 
+                                ? 'bg-foreground/8 text-foreground font-semibold' 
+                                : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'
+                              }
+                            `}
+                          >
+                            {active && (
+                              <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-foreground" />
+                            )}
+                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: inbox.color || '#6b7280' }} />
+                            <span className="truncate flex-1 text-left">{inbox.name}</span>
+                          </button>
+                          {/* 3-dot menu trigger */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setInboxMenuOpen(inboxMenuOpen === inbox.inbox_id ? null : inbox.inbox_id); }}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
+                            data-testid={`inbox-menu-trigger-${inbox.inbox_id}`}
+                          >
+                            <MoreHorizontal size={14} />
+                          </button>
+                          {/* 3-dot dropdown */}
+                          {inboxMenuOpen === inbox.inbox_id && (
+                            <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-border bg-background shadow-lg py-1 animate-in fade-in zoom-in-95 duration-150" data-testid={`inbox-menu-${inbox.inbox_id}`}>
+                              <button
+                                onClick={() => { handleNavigate(inboxPath); setInboxMenuOpen(null); }}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted text-left"
+                                data-testid={`inbox-edit-${inbox.inbox_id}`}
+                              >
+                                <Pencil size={13} /> Edit filters
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setInboxMenuOpen(null);
+                                  const users = await fetch(`${BACKEND_URL}/api/users`, { credentials: 'include' }).then(r => r.json());
+                                  const userIds = users.filter(u => u.user_id !== user?.user_id).map(u => u.user_id);
+                                  if (userIds.length === 0) { alert('No other users to share with'); return; }
+                                  const res = await fetch(`${BACKEND_URL}/api/inboxes/${inbox.inbox_id}/share`, {
+                                    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+                                    body: JSON.stringify({ user_ids: userIds })
+                                  });
+                                  if (res.ok) { const d = await res.json(); alert(`Shared with ${d.total} user(s)`); }
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted text-left"
+                                data-testid={`inbox-share-${inbox.inbox_id}`}
+                              >
+                                <Share2 size={13} /> Share
+                              </button>
+                              <div className="my-1 h-px bg-border" />
+                              <button
+                                onClick={async () => {
+                                  setInboxMenuOpen(null);
+                                  if (!window.confirm(`Delete "${inbox.name}"?`)) return;
+                                  const res = await fetch(`${BACKEND_URL}/api/inboxes/${inbox.inbox_id}`, { method: 'DELETE', credentials: 'include' });
+                                  if (res.ok && onInboxesChange) onInboxesChange();
+                                }}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted text-left text-red-500"
+                                data-testid={`inbox-delete-${inbox.inbox_id}`}
+                              >
+                                <Trash2 size={13} /> Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
               </div>
             )}
           </div>
