@@ -287,6 +287,7 @@ const MainLayout = ({ user, view }) => {
               refreshKey={refreshKey}
               user={user} 
               onTicketClick={handleTicketClick}
+              onInboxCreated={() => fetchInboxes()}
             />
           )}
           {view === 'open-tickets' && (
