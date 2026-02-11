@@ -197,8 +197,11 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
 
   useEffect(() => {
     fetchUsers();
+    setPage(1);
+    setTickets([]);
+    setHasMore(true);
     fetchTickets(1);
-  }, [escalationLevel]);
+  }, [escalationLevel, activeFilterTree]);
 
   // Re-fetch tickets when refreshKey changes (e.g., after merge)
   useEffect(() => {
