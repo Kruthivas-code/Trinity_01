@@ -537,6 +537,21 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
         </div>
         {renderDesktopNav()}
       </aside>
+
+      <ShareInboxModal
+        isOpen={!!shareModalInbox}
+        onClose={() => setShareModalInbox(null)}
+        inbox={shareModalInbox}
+        currentUserId={user?.user_id}
+        onShared={() => { if (onInboxesChange) onInboxesChange(); }}
+      />
+
+      <EditInboxModal
+        isOpen={!!editModalInbox}
+        onClose={() => setEditModalInbox(null)}
+        inbox={editModalInbox}
+        onUpdated={() => { if (onInboxesChange) onInboxesChange(); }}
+      />
     </>
   );
 };
