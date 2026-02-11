@@ -238,8 +238,55 @@ def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List
     return emails, max_uid
 
 
-# Keep the old function signature for backward compatibility with the manual sync endpoint
-def fetch_new_emails(config: Dict[str, Any], since_minutes: int = 2, fetch_all: bool = False) -> List[Dict[str, Any]]:
-    """Legacy wrapper - calls fetch_emails_by_uid with uid=0 to fetch all."""
-    emails, _ = fetch_emails_by_uid(config, last_uid=0)
-    return emails
+def get_current_max_uid(config: Dict[str, Any]) -> int:
+    """
+    Get the current highest UID in the INBOX without fetching any emails.
+    Used for seeding the initial sync state so we only track new emails going forward.
+    """
+    imap_email = config["email"]
+    imap_password = config["password"]
+    imap_server = config["server"]
+    imap_port = config["port"]
+
+    if not imap_email or not imap_password:
+        return 0
+
+    conn = None
+    try:
+        old_timeout = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(30)
+        try:
+            conn = imaplib.IMAP4_SSL(imap_server, imap_port)
+        finally:
+            socket.setdefaulttimeout(old_timeout)
+        conn.socket().settimeout(30)
+        conn.login(imap_email, imap_password)
+        typ, data = conn.select("INBOX", readonly=True)
+        msg_count = int(data[0]) if typ == "OK" else 0
+
+        if msg_count == 0:
+            return 0
+
+        # Fetch the UID of the last message by sequence number
+        typ2, data2 = conn.fetch(str(msg_count), "(UID)")
+        if typ2 == "OK" and data2:
+            # Response like b'269 (UID 269)'
+            import re as re_mod
+            match = re_mod.search(rb"UID (\d+)", data2[0] if isinstance(data2[0], bytes) else data2[0][0])
+            if match:
+                return int(match.group(1))
+        return 0
+    except Exception as e:
+        logger.error(f"[IMAP] Error getting max UID: {e}")
+        return 0
+    finally:
+        if conn:
+            try:
+                conn.socket().settimeout(0.5)
+                conn.logout()
+            except Exception:
+                pass
+            try:
+                conn.socket().close()
+            except Exception:
+                pass
