@@ -160,6 +160,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
       navigate(path);
     }
     setIsMobileOpen(false);
+    setInboxMenuOpen(null);
   };
 
   const handleLogout = async () => {
