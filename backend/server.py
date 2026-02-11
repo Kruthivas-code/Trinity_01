@@ -4737,19 +4737,28 @@ async def export_tickets(
 # IMAP Email Sync endpoint
 @app.post("/api/email/sync")
 async def trigger_email_sync(
-    fetch_all: bool = Query(False, description="Fetch all emails, not just unseen"),
+    fetch_all: bool = Query(False, description="If true, resets UID state and re-fetches all emails"),
     current_user: dict = Depends(get_current_user)
 ):
-    """Manually trigger IMAP email sync."""
-    from imap_sync import get_imap_config, fetch_new_emails
+    """Manually trigger IMAP email sync using UID-based tracking."""
+    from imap_sync import get_imap_config, fetch_emails_by_uid
     
     config = get_imap_config()
     if not config["email"] or not config["password"]:
         raise HTTPException(status_code=400, detail="IMAP not configured")
     
+    imap_sync_state = db.imap_sync_state
+    
+    # Determine starting UID
+    if fetch_all:
+        last_uid = 0
+    else:
+        state = imap_sync_state.find_one({"_id": "imap_last_uid"})
+        last_uid = state["last_uid"] if state else 0
+    
     loop = asyncio.get_event_loop()
-    new_emails = await loop.run_in_executor(
-        None, lambda: fetch_new_emails(config, fetch_all=fetch_all)
+    new_emails, new_max_uid = await loop.run_in_executor(
+        None, lambda: fetch_emails_by_uid(config, last_uid=last_uid)
     )
     
     created_count = 0
@@ -4863,12 +4872,21 @@ async def trigger_email_sync(
         })
         created_count += 1
     
+    # Update UID state
+    if new_max_uid > last_uid:
+        imap_sync_state.update_one(
+            {"_id": "imap_last_uid"},
+            {"$set": {"last_uid": new_max_uid, "updated_at": datetime.now(timezone.utc)}},
+            upsert=True
+        )
+    
     return {
         "status": "success",
         "emails_found": len(new_emails),
         "tickets_created": created_count,
         "replies_added": reply_count,
-        "skipped_duplicates": skipped_count
+        "skipped_duplicates": skipped_count,
+        "last_uid": new_max_uid
     }
 
 @app.get("/api/email/status")
