@@ -32,10 +32,11 @@ export const RealtimeProvider = ({ children, user }) => {
   useEffect(() => {
     if (!user) return;
 
-    const socketUrl = BACKEND_URL?.replace('/api', '') || window.location.origin;
+    // Connect to the backend Socket.IO endpoint via /api routing
+    const socketUrl = BACKEND_URL || window.location.origin;
     
     const newSocket = io(socketUrl, {
-      path: '/socket.io/',
+      path: '/api/socket.io/',
       transports: ['polling', 'websocket'],
       upgrade: true,
       reconnection: true,
