@@ -10,6 +10,7 @@ import ClosedTicketsPage from './ClosedTicketsPage';
 import StarredTicketsPage from './StarredTicketsPage';
 import TicketDrawer from './TicketDrawer';
 import CreateTicketModal from './CreateTicketModal';
+import CustomInboxPage from './CustomInboxPage';
 import { CommandPaletteContext } from '../App';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
