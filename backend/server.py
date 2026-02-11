@@ -286,249 +286,233 @@ async def auto_close_resolved_tickets():
 
 async def auto_sync_emails():
     """
-    Background task that automatically syncs emails from IMAP mailbox every 60 seconds.
-    Uses UID-based tracking to ensure no emails are missed, even across restarts.
-    Uses distributed locking to ensure only one instance runs the sync.
-    """
-    lock_name = "auto_sync_emails"
-    lock_ttl = 120  # 2 minute lock
+    Background task that monitors the IMAP mailbox using IDLE for near-realtime sync.
     
+    Uses IMAP IDLE (push) instead of polling - new emails appear in ~1-5 seconds.
+    Falls back to UID-based polling every 60s if IDLE fails.
+    """
     # Wait a bit before starting to let the app fully initialize
     await asyncio.sleep(10)
     
-    # Collection to persist sync state (last processed UID)
     imap_sync_state = db.imap_sync_state
     
-    while True:
-        acquired = False
-        try:
-            lock_adapter = get_lock_adapter()
-            acquired = await lock_adapter.acquire(lock_name, _instance_id, lock_ttl)
+    from imap_sync import get_imap_config, fetch_emails_by_uid, get_current_max_uid, IMAPIdleWatcher
+    
+    config = get_imap_config()
+    if not config["email"] or not config["password"]:
+        logger.info("[EMAIL-SYNC] IMAP not configured, email sync disabled")
+        return
+    
+    # Read or seed the last processed UID
+    state = imap_sync_state.find_one({"_id": "imap_last_uid"})
+    last_uid = state["last_uid"] if state else 0
+    
+    if last_uid == 0:
+        loop = asyncio.get_event_loop()
+        seed_uid = await loop.run_in_executor(None, lambda: get_current_max_uid(config))
+        if seed_uid > 0:
+            imap_sync_state.update_one(
+                {"_id": "imap_last_uid"},
+                {"$set": {"last_uid": seed_uid, "updated_at": datetime.now(timezone.utc), "seeded": True}},
+                upsert=True
+            )
+            last_uid = seed_uid
+            logger.info(f"[EMAIL-SYNC] Seeded initial UID to {seed_uid}")
+    
+    # Get reference to the running event loop for thread-safe callbacks
+    loop = asyncio.get_event_loop()
+    
+    def on_new_mail(new_emails, new_max_uid):
+        """Called from the IDLE thread when new mail arrives."""
+        # Schedule the async processing on the event loop
+        asyncio.run_coroutine_threadsafe(
+            _process_new_emails(new_emails, new_max_uid),
+            loop
+        )
+    
+    async def _process_new_emails(new_emails, new_max_uid):
+        """Process new emails: create tickets/replies and broadcast."""
+        created_count = 0
+        reply_count = 0
+        
+        for eml in new_emails:
+            if eml["message_id"]:
+                existing = tickets_collection.find_one({"email_rfc_message_id": eml["message_id"]})
+                if existing:
+                    continue
+                existing_reply = email_replies_collection.find_one({"email_rfc_message_id": eml["message_id"]})
+                if existing_reply:
+                    continue
             
-            if not acquired:
-                logger.debug("[EMAIL-SYNC] Another instance is syncing, skipping")
-                await asyncio.sleep(60)
+            existing_thread_ticket = None
+            
+            if eml["in_reply_to"]:
+                existing_thread_ticket = tickets_collection.find_one({
+                    "$or": [
+                        {"email_rfc_message_id": eml["in_reply_to"]},
+                        {"last_reply_message_id": eml["in_reply_to"]},
+                        {"email_thread_message_ids": eml["in_reply_to"]}
+                    ]
+                })
+                if not existing_thread_ticket:
+                    sent_reply = email_replies_collection.find_one({
+                        "our_message_id": eml["in_reply_to"],
+                        "direction": "outgoing"
+                    })
+                    if sent_reply:
+                        existing_thread_ticket = tickets_collection.find_one({"ticket_id": sent_reply["ticket_id"]})
+            
+            if not existing_thread_ticket and eml["references"]:
+                for ref in eml["references"].split():
+                    ref = ref.strip()
+                    if not ref:
+                        continue
+                    existing_thread_ticket = tickets_collection.find_one({
+                        "$or": [
+                            {"email_rfc_message_id": ref},
+                            {"last_reply_message_id": ref},
+                            {"email_thread_message_ids": ref}
+                        ]
+                    })
+                    if existing_thread_ticket:
+                        break
+            
+            if existing_thread_ticket:
+                sanitized_html_content = sanitize_html(eml["html"][:100000]) if eml["html"] else None
+                
+                reply_id = f"reply_{uuid.uuid4().hex[:12]}"
+                email_replies_collection.insert_one({
+                    "reply_id": reply_id,
+                    "ticket_id": existing_thread_ticket["ticket_id"],
+                    "direction": "incoming",
+                    "from_email": eml["sender_email"],
+                    "from_name": eml["sender_name"],
+                    "to_email": eml["to"],
+                    "subject": eml["subject"] or "Re: " + existing_thread_ticket.get("title", ""),
+                    "body": (eml["text"] or "")[:50000],
+                    "body_html": sanitized_html_content,
+                    "email_rfc_message_id": eml["message_id"],
+                    "email_in_reply_to": eml["in_reply_to"],
+                    "email_references": eml["references"],
+                    "email_date": eml["date"].isoformat() if eml["date"] else None,
+                    "created_at": datetime.now(timezone.utc),
+                    "status": "received"
+                })
+                
+                messages_collection.insert_one({
+                    "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+                    "ticket_id": existing_thread_ticket["ticket_id"],
+                    "type": "customer_reply",
+                    "content": (eml["text"] or "")[:50000],
+                    "content_html": sanitized_html_content,
+                    "author_id": None,
+                    "author_name": eml["sender_name"],
+                    "author_email": eml["sender_email"],
+                    "email_reply_id": reply_id,
+                    "email_date": eml["date"].isoformat() if eml["date"] else None,
+                    "created_at": datetime.now(timezone.utc)
+                })
+                
+                tickets_collection.update_one(
+                    {"ticket_id": existing_thread_ticket["ticket_id"]},
+                    {
+                        "$set": {
+                            "status": "todo",
+                            "updated_at": datetime.now(timezone.utc),
+                            "last_customer_reply_at": datetime.now(timezone.utc),
+                            "last_reply_message_id": eml["message_id"]
+                        },
+                        "$push": {
+                            "email_thread_message_ids": eml["message_id"]
+                        }
+                    }
+                )
+                reply_count += 1
+                logger.info(f"[EMAIL-SYNC] Added reply to ticket {existing_thread_ticket['ticket_id']} from {eml['sender_email']}")
+                
+                try:
+                    from realtime import broadcast_ticket_update
+                    updated_ticket = tickets_collection.find_one({"ticket_id": existing_thread_ticket["ticket_id"]})
+                    await broadcast_ticket_update(
+                        existing_thread_ticket["ticket_id"],
+                        "updated",
+                        serialize_doc(updated_ticket),
+                        {"user_id": "system", "name": "Email Sync"}
+                    )
+                except Exception as e:
+                    logger.error(f"[EMAIL-SYNC] FAILED to broadcast ticket:update: {e}", exc_info=True)
+                
                 continue
             
-            logger.debug(f"[EMAIL-SYNC] Starting IMAP sync on {_instance_id}")
+            # --- New ticket ---
+            ticket_id = generate_ticket_id()
+            sanitized_html_content = sanitize_html(eml["html"][:100000]) if eml["html"] else None
             
-            from imap_sync import get_imap_config, fetch_emails_by_uid
-            
-            config = get_imap_config()
-            if not config["email"] or not config["password"]:
-                logger.debug("[EMAIL-SYNC] IMAP not configured, skipping")
-                await asyncio.sleep(60)
-                continue
+            ticket_doc = {
+                "ticket_id": ticket_id,
+                "uuid": str(uuid.uuid4()),
+                "title": (eml["subject"] or "No Subject")[:200],
+                "description": (eml["text"] or "")[:5000],
+                "status": "todo",
+                "priority": "medium",
+                "source": "email",
+                "email_rfc_message_id": eml["message_id"],
+                "email_references": eml["references"],
+                "email_in_reply_to": eml["in_reply_to"],
+                "email_sender": eml["from_header"],
+                "email_sender_name": eml["sender_name"],
+                "customer_email": eml["sender_email"],
+                "email_to": eml["to"],
+                "email_cc": eml["cc"],
+                "email_date": eml["date"].isoformat() if eml["date"] else None,
+                "email_html": sanitized_html_content,
+                "email_text": (eml["text"] or "")[:50000],
+                "email_preview": eml["preview"],
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+                "assignee_id": None,
+                "escalation_level": "L1"
+            }
+            tickets_collection.insert_one(ticket_doc)
+            created_count += 1
             
             try:
-                # Read last processed UID from persistent state
-                state = imap_sync_state.find_one({"_id": "imap_last_uid"})
-                last_uid = state["last_uid"] if state else 0
-                loop = asyncio.get_event_loop()
-                
-                # First run: seed with current max UID so we only track new emails
-                if last_uid == 0:
-                    from imap_sync import get_current_max_uid
-                    seed_uid = await loop.run_in_executor(None, lambda: get_current_max_uid(config))
-                    if seed_uid > 0:
-                        imap_sync_state.update_one(
-                            {"_id": "imap_last_uid"},
-                            {"$set": {"last_uid": seed_uid, "updated_at": datetime.now(timezone.utc), "seeded": True}},
-                            upsert=True
-                        )
-                        logger.info(f"[EMAIL-SYNC] Seeded initial UID to {seed_uid} (existing emails skipped)")
-                        await asyncio.sleep(60)
-                        continue
-                
-                # Run IMAP fetch in thread pool (it's blocking I/O)
-                new_emails, new_max_uid = await loop.run_in_executor(
-                    None, lambda: fetch_emails_by_uid(config, last_uid=last_uid)
-                )
-                
-                created_count = 0
-                reply_count = 0
-                
-                for eml in new_emails:
-                    # Dedup: check if we already processed this Message-ID
-                    if eml["message_id"]:
-                        existing = tickets_collection.find_one({"email_rfc_message_id": eml["message_id"]})
-                        if existing:
-                            continue
-                        existing_reply = email_replies_collection.find_one({"email_rfc_message_id": eml["message_id"]})
-                        if existing_reply:
-                            continue
-                    
-                    # --- Threading: check if this is a reply to an existing ticket ---
-                    existing_thread_ticket = None
-                    
-                    if eml["in_reply_to"]:
-                        existing_thread_ticket = tickets_collection.find_one({
-                            "$or": [
-                                {"email_rfc_message_id": eml["in_reply_to"]},
-                                {"last_reply_message_id": eml["in_reply_to"]},
-                                {"email_thread_message_ids": eml["in_reply_to"]}
-                            ]
-                        })
-                        if not existing_thread_ticket:
-                            sent_reply = email_replies_collection.find_one({
-                                "our_message_id": eml["in_reply_to"],
-                                "direction": "outgoing"
-                            })
-                            if sent_reply:
-                                existing_thread_ticket = tickets_collection.find_one({"ticket_id": sent_reply["ticket_id"]})
-                    
-                    if not existing_thread_ticket and eml["references"]:
-                        for ref in eml["references"].split():
-                            ref = ref.strip()
-                            if not ref:
-                                continue
-                            existing_thread_ticket = tickets_collection.find_one({
-                                "$or": [
-                                    {"email_rfc_message_id": ref},
-                                    {"last_reply_message_id": ref},
-                                    {"email_thread_message_ids": ref}
-                                ]
-                            })
-                            if existing_thread_ticket:
-                                break
-                    
-                    if existing_thread_ticket:
-                        sanitized_html_content = sanitize_html(eml["html"][:100000]) if eml["html"] else None
-                        
-                        reply_id = f"reply_{uuid.uuid4().hex[:12]}"
-                        incoming_reply = {
-                            "reply_id": reply_id,
-                            "ticket_id": existing_thread_ticket["ticket_id"],
-                            "direction": "incoming",
-                            "from_email": eml["sender_email"],
-                            "from_name": eml["sender_name"],
-                            "to_email": eml["to"],
-                            "subject": eml["subject"] or "Re: " + existing_thread_ticket.get("title", ""),
-                            "body": (eml["text"] or "")[:50000],
-                            "body_html": sanitized_html_content,
-                            "email_rfc_message_id": eml["message_id"],
-                            "email_in_reply_to": eml["in_reply_to"],
-                            "email_references": eml["references"],
-                            "email_date": eml["date"].isoformat() if eml["date"] else None,
-                            "created_at": datetime.now(timezone.utc),
-                            "status": "received"
-                        }
-                        email_replies_collection.insert_one(incoming_reply)
-                        
-                        message_doc = {
-                            "message_id": f"msg_{uuid.uuid4().hex[:12]}",
-                            "ticket_id": existing_thread_ticket["ticket_id"],
-                            "type": "customer_reply",
-                            "content": (eml["text"] or "")[:50000],
-                            "content_html": sanitized_html_content,
-                            "author_id": None,
-                            "author_name": eml["sender_name"],
-                            "author_email": eml["sender_email"],
-                            "email_reply_id": reply_id,
-                            "email_date": eml["date"].isoformat() if eml["date"] else None,
-                            "created_at": datetime.now(timezone.utc)
-                        }
-                        messages_collection.insert_one(message_doc)
-                        
-                        tickets_collection.update_one(
-                            {"ticket_id": existing_thread_ticket["ticket_id"]},
-                            {
-                                "$set": {
-                                    "status": "todo",
-                                    "updated_at": datetime.now(timezone.utc),
-                                    "last_customer_reply_at": datetime.now(timezone.utc),
-                                    "last_reply_message_id": eml["message_id"]
-                                },
-                                "$push": {
-                                    "email_thread_message_ids": eml["message_id"]
-                                }
-                            }
-                        )
-                        reply_count += 1
-                        logger.info(f"[EMAIL-SYNC] Added reply to ticket {existing_thread_ticket['ticket_id']} from {eml['sender_email']}")
-                        
-                        try:
-                            from realtime import broadcast_ticket_update
-                            updated_ticket = tickets_collection.find_one({"ticket_id": existing_thread_ticket["ticket_id"]})
-                            await broadcast_ticket_update(
-                                existing_thread_ticket["ticket_id"],
-                                "updated",
-                                serialize_doc(updated_ticket),
-                                {"user_id": "system", "name": "Email Sync"}
-                            )
-                            logger.info(f"[EMAIL-SYNC] Broadcast ticket:update for {existing_thread_ticket['ticket_id']}")
-                        except Exception as e:
-                            logger.error(f"[EMAIL-SYNC] FAILED to broadcast ticket:update: {e}", exc_info=True)
-                        
-                        continue
-                    
-                    # --- New ticket ---
-                    ticket_id = generate_ticket_id()
-                    sanitized_html_content = sanitize_html(eml["html"][:100000]) if eml["html"] else None
-                    
-                    ticket_doc = {
-                        "ticket_id": ticket_id,
-                        "uuid": str(uuid.uuid4()),
-                        "title": (eml["subject"] or "No Subject")[:200],
-                        "description": (eml["text"] or "")[:5000],
-                        "status": "todo",
-                        "priority": "medium",
-                        "source": "email",
-                        "email_rfc_message_id": eml["message_id"],
-                        "email_references": eml["references"],
-                        "email_in_reply_to": eml["in_reply_to"],
-                        "email_sender": eml["from_header"],
-                        "email_sender_name": eml["sender_name"],
-                        "customer_email": eml["sender_email"],
-                        "email_to": eml["to"],
-                        "email_cc": eml["cc"],
-                        "email_date": eml["date"].isoformat() if eml["date"] else None,
-                        "email_html": sanitized_html_content,
-                        "email_text": (eml["text"] or "")[:50000],
-                        "email_preview": eml["preview"],
-                        "created_at": datetime.now(timezone.utc),
-                        "updated_at": datetime.now(timezone.utc),
-                        "assignee_id": None,
-                        "escalation_level": "L1"
-                    }
-                    tickets_collection.insert_one(ticket_doc)
-                    created_count += 1
-                    
-                    try:
-                        from realtime import broadcast_ticket_created
-                        await broadcast_ticket_created(serialize_doc(ticket_doc), {"user_id": "system", "name": "Email Sync"})
-                        logger.info(f"[EMAIL-SYNC] Broadcast ticket:created for {ticket_id}")
-                    except Exception as e:
-                        logger.error(f"[EMAIL-SYNC] FAILED to broadcast ticket:created: {e}", exc_info=True)
-                
-                # Persist the new max UID so next cycle starts from here
-                if new_max_uid > last_uid:
-                    imap_sync_state.update_one(
-                        {"_id": "imap_last_uid"},
-                        {"$set": {"last_uid": new_max_uid, "updated_at": datetime.now(timezone.utc)}},
-                        upsert=True
-                    )
-                    logger.info(f"[EMAIL-SYNC] Updated last_uid to {new_max_uid}")
-                
-                if created_count > 0 or reply_count > 0:
-                    logger.info(f"[EMAIL-SYNC] Created {created_count} tickets, added {reply_count} replies")
-                    
+                from realtime import broadcast_ticket_created
+                await broadcast_ticket_created(serialize_doc(ticket_doc), {"user_id": "system", "name": "Email Sync"})
+                logger.info(f"[EMAIL-SYNC] Broadcast ticket:created for {ticket_id}")
             except Exception as e:
-                logger.error(f"[EMAIL-SYNC] Error syncing emails: {e}", exc_info=True)
-                
-        except asyncio.CancelledError:
-            logger.info("[EMAIL-SYNC] Task cancelled")
-            raise
-        except Exception as e:
-            logger.error(f"[EMAIL-SYNC] Error in email sync task: {e}", exc_info=True)
-        finally:
-            if acquired:
-                try:
-                    await lock_adapter.release(lock_name, _instance_id)
-                except Exception:
-                    pass
+                logger.error(f"[EMAIL-SYNC] FAILED to broadcast ticket:created: {e}", exc_info=True)
         
-        await asyncio.sleep(60)
+        # Persist the new max UID
+        if new_max_uid > last_uid:
+            imap_sync_state.update_one(
+                {"_id": "imap_last_uid"},
+                {"$set": {"last_uid": new_max_uid, "updated_at": datetime.now(timezone.utc)}},
+                upsert=True
+            )
+            # Update the watcher's state too
+            if idle_watcher:
+                idle_watcher.update_last_uid(new_max_uid)
+        
+        if created_count > 0 or reply_count > 0:
+            logger.info(f"[EMAIL-SYNC] Created {created_count} tickets, added {reply_count} replies")
+    
+    # Start the IDLE watcher
+    idle_watcher = IMAPIdleWatcher(config, last_uid=last_uid, on_new_mail=on_new_mail)
+    idle_watcher.start()
+    logger.info("[EMAIL-SYNC] IMAP IDLE watcher started for near-realtime sync")
+    
+    # Keep this task alive and monitor the watcher
+    try:
+        while True:
+            await asyncio.sleep(30)
+            if not idle_watcher.is_running:
+                logger.warning("[EMAIL-SYNC] IDLE watcher died, restarting...")
+                idle_watcher.start()
+    except asyncio.CancelledError:
+        logger.info("[EMAIL-SYNC] Task cancelled, stopping IDLE watcher")
+        idle_watcher.stop()
+        raise
 
 
 def extract_email_address(from_header):
