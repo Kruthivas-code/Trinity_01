@@ -12,12 +12,14 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - Team management, routing rules, SLA escalation
 - Server-side pagination with infinite scroll
 - Scalable analytics via MongoDB aggregation pipelines
+- Real-time ticket updates via Socket.IO (no page refresh needed)
 
 ## Tech Stack
 - **Frontend**: React 19, React Router v7, Shadcn UI
 - **Backend**: Python, FastAPI
 - **Database**: MongoDB (sync pymongo driver)
-- **Email**: IMAP (Gmail App Password)
+- **Email**: IMAP (Gmail App Password), UID-based tracking
+- **Real-time**: Socket.IO (WebSocket + polling fallback)
 
 ## What's Been Implemented
 - Ticket Drawer UI Enhancement (priority + escalation badges in left panel)
@@ -29,13 +31,20 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - Post-login auth cache fix (module-level user cache in ProtectedRoute)
 - Server-side pagination on GET /api/tickets with infinite scroll
 - **8 Scalability Fixes**: analytics aggregation, auto-close batch ops, streaming export, notes pagination, N+1 fix, compound indexes
-- **IMAP Email Sync (UID-based)** — Replaced unreliable time-based IMAP fetching with UID-tracking mechanism (Feb 2026):
+- **IMAP Email Sync (UID-based)** — Feb 2026:
+  - Replaced unreliable time-based IMAP fetching with UID-tracking mechanism
   - `fetch_emails_by_uid()` in `imap_sync.py` — fetches only emails with UID > last processed
   - `imap_sync_state` MongoDB collection stores last_uid persistently
   - First-run seeding: automatically sets last_uid to current max UID (no backfill)
   - Fixed Gmail IMAP connection hang on close/logout (force-close socket)
   - Unique sparse index on `email_replies.email_rfc_message_id` ensured
   - Background task runs every 60s with distributed locking
+- **Real-time ticket push** — Feb 2026:
+  - Fixed ObjectId serialization in Socket.IO broadcasts (serialize_doc before emit)
+  - Fixed wrong function name/signature (broadcast_ticket_updated → broadcast_ticket_update)
+  - Fixed Socket.IO routing for Kubernetes ingress (/api/socket.io/ path)
+  - Fixed RequestIdFilter applied to all logger handlers (not just module logger)
+  - New email-created tickets now appear in UI without page refresh
 
 ## Key API Endpoints
 - `GET /api/tickets?page=1&limit=50&status=todo&status=in_progress` — Paginated, multi-status
@@ -53,6 +62,8 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - `users`, `user_sessions`, `customers`, `notes`, `messages`
 
 ## Pending Items
-- P1: End-to-end Atlas import test with real credentials
-- P2: Remaining N+1 query patterns (non-critical)
+- P2: IMAP IDLE (push-based) for near-realtime email sync (~1-5s latency instead of 60s polling). No Google config changes needed — purely app-side.
+- P2: End-to-end Atlas import test with real credentials
+- P3: Remaining N+1 query patterns (non-critical)
 - P3: Redis caching for analytics at higher scale
+- P3: Break down server.py (10K+ lines) into route modules
