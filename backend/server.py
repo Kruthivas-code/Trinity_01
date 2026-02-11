@@ -10421,7 +10421,7 @@ class InboxShare(BaseModel):
 
 # --- Filter endpoint ---
 
-@app.post("/api/tickets/filter")
+@app.post("/api/filter/tickets")
 async def filter_tickets(
     req: FilterRequest,
     current_user: dict = Depends(get_current_user)
@@ -10459,7 +10459,7 @@ async def filter_tickets(
     }
 
 
-@app.get("/api/tickets/filter-fields")
+@app.get("/api/filter/fields")
 async def get_filter_fields(current_user: dict = Depends(get_current_user)):
     """
     Returns all available fields for filtering, including base ticket fields
