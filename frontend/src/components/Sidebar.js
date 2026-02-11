@@ -32,6 +32,8 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
   const [isEscalationExpanded, setIsEscalationExpanded] = useState(true);
   const [escalationCounts, setEscalationCounts] = useState({ L1: { total: 0 }, L2: { total: 0 }, L3: { total: 0 } });
   const [inboxMenuOpen, setInboxMenuOpen] = useState(null); // inbox_id of open menu
+  const [shareModalInbox, setShareModalInbox] = useState(null);
+  const [editModalInbox, setEditModalInbox] = useState(null);
   const sidebarRef = useRef(null);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
