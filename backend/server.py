@@ -554,6 +554,14 @@ async def create_mongodb_indexes():
         tickets_collection.create_index("ticket_id", unique=True, background=True)
         tickets_collection.create_index("uuid", unique=True, sparse=True, background=True)
         tickets_collection.create_index("atlas_conversation_id", unique=True, sparse=True, background=True)
+        # Compound indexes for paginated queries
+        tickets_collection.create_index([("status", ASCENDING), ("created_at", DESCENDING)], background=True)
+        tickets_collection.create_index([("escalation_level", ASCENDING), ("created_at", DESCENDING)], background=True)
+        tickets_collection.create_index([("assignee_id", ASCENDING), ("created_at", DESCENDING)], background=True)
+        # Index for auto-close query
+        tickets_collection.create_index([("status", ASCENDING), ("resolved_at", ASCENDING)], background=True)
+        # Index for email dedup
+        tickets_collection.create_index("email_rfc_message_id", unique=True, sparse=True, background=True)
         logger.info("[INDEXES] Created tickets collection indexes")
         
         # User sessions collection indexes  
