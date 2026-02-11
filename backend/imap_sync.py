@@ -2,7 +2,7 @@
 IMAP Email Sync Module for Trinity
 
 Connects to a Gmail mailbox via IMAP and converts incoming emails into tickets.
-Supports threading: replies to existing tickets are added as messages.
+Uses UID-based tracking to ensure no emails are missed.
 """
 
 import imaplib
@@ -12,10 +12,9 @@ from email.header import decode_header
 from email.utils import parseaddr, parsedate_to_datetime
 import os
 import re
-import uuid
 import logging
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Dict, Any, List
+from datetime import datetime, timezone
+from typing import Optional, Dict, Any, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +80,6 @@ def extract_body(msg: email.message.Message) -> Dict[str, str]:
         except Exception as e:
             logger.warning(f"Failed to decode email body: {e}")
 
-    # Fallback: convert HTML to plain text if no text body
     if not text_body and html_body:
         text_body = re.sub(r"<[^>]+>", " ", html_body)
         text_body = re.sub(r"\s+", " ", text_body).strip()
@@ -100,17 +98,19 @@ def parse_email_date(msg: email.message.Message) -> datetime:
     return datetime.now(timezone.utc)
 
 
-def fetch_new_emails(config: Dict[str, Any], since_minutes: int = 2, fetch_all: bool = False) -> List[Dict[str, Any]]:
+def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List[Dict[str, Any]], int]:
     """
-    Connect to IMAP server and fetch recent emails.
+    Connect to IMAP server and fetch emails with UID greater than last_uid.
+
+    Uses IMAP UID commands for reliable, gap-free email fetching.
 
     Args:
         config: IMAP connection config
-        since_minutes: Fetch emails from the last N minutes (default 2)
-        fetch_all: If True, fetch ALL emails regardless of date
+        last_uid: The last processed UID. Fetches emails with UID > last_uid.
+                  Use 0 to fetch all emails.
 
     Returns:
-        List of parsed email dicts
+        Tuple of (list of parsed email dicts, highest UID processed)
     """
     imap_email = config["email"]
     imap_password = config["password"]
@@ -119,45 +119,50 @@ def fetch_new_emails(config: Dict[str, Any], since_minutes: int = 2, fetch_all: 
 
     if not imap_email or not imap_password:
         logger.debug("[IMAP] No IMAP credentials configured, skipping")
-        return []
+        return [], last_uid
 
     emails = []
+    max_uid = last_uid
     conn = None
+
     try:
         conn = imaplib.IMAP4_SSL(imap_server, imap_port)
         conn.login(imap_email, imap_password)
         conn.select("INBOX", readonly=True)
 
-        if fetch_all:
-            search_criteria = "ALL"
+        # UID SEARCH for emails with UID > last_uid
+        # UID range: (last_uid+1):* means "from last_uid+1 to the latest"
+        if last_uid > 0:
+            search_range = f"{last_uid + 1}:*"
+            status, data = conn.uid("SEARCH", None, f"UID {search_range}")
         else:
-            # IMAP SINCE only supports date granularity, not minutes.
-            # Use today's date as the IMAP filter, then filter by timestamp in code.
-            since_date = datetime.now(timezone.utc).strftime("%d-%b-%Y")
-            search_criteria = f'(SINCE {since_date})'
+            # First run: fetch all emails in inbox
+            status, data = conn.uid("SEARCH", None, "ALL")
 
-        status, msg_ids = conn.search(None, search_criteria)
-        if status != "OK" or not msg_ids[0]:
-            return []
+        if status != "OK" or not data[0]:
+            logger.debug("[IMAP] No new emails found")
+            return [], last_uid
 
-        id_list = msg_ids[0].split()
-        logger.info(f"[IMAP] Found {len(id_list)} emails matching criteria")
+        uid_list = data[0].split()
+        # Filter out UIDs <= last_uid (IMAP range search can include the boundary)
+        uid_list = [uid for uid in uid_list if int(uid) > last_uid]
 
-        # For time-based filtering, compute the cutoff
-        cutoff = None
-        if not fetch_all:
-            cutoff = datetime.now(timezone.utc) - timedelta(minutes=since_minutes)
+        if not uid_list:
+            logger.debug("[IMAP] No new emails after UID filtering")
+            return [], last_uid
 
-        for msg_id in id_list:
+        logger.info(f"[IMAP] Found {len(uid_list)} new email(s) (UIDs > {last_uid})")
+
+        for uid in uid_list:
+            uid_int = int(uid)
             try:
-                status, data = conn.fetch(msg_id, "(RFC822)")
-                if status != "OK":
+                status, data = conn.uid("FETCH", uid, "(RFC822)")
+                if status != "OK" or not data or not data[0]:
                     continue
 
                 raw_email = data[0][1]
                 msg = email.message_from_bytes(raw_email)
 
-                # Extract headers
                 from_header = decode_mime_header(msg.get("From", ""))
                 to_header = decode_mime_header(msg.get("To", ""))
                 cc_header = decode_mime_header(msg.get("Cc", ""))
@@ -167,29 +172,21 @@ def fetch_new_emails(config: Dict[str, Any], since_minutes: int = 2, fetch_all: 
                 references = msg.get("References", "").strip()
                 email_date = parse_email_date(msg)
 
-                # Skip emails older than cutoff
-                if cutoff and email_date < cutoff:
-                    continue
-
-                # Extract sender email
                 _, sender_email = parseaddr(from_header)
                 sender_email = sender_email.lower() if sender_email else ""
 
-                # Extract sender name
                 sender_name, _ = parseaddr(from_header)
                 if not sender_name:
                     sender_name = sender_email.split("@")[0].replace(".", " ").title() if sender_email else "Unknown"
 
-                # Extract body
                 body = extract_body(msg)
 
-                # Generate preview
                 preview = (body["text"] or "")[:150].strip()
                 if len(body["text"] or "") > 150:
                     preview += "..."
 
                 emails.append({
-                    "imap_msg_id": msg_id.decode() if isinstance(msg_id, bytes) else str(msg_id),
+                    "imap_uid": uid_int,
                     "message_id": message_id,
                     "in_reply_to": in_reply_to,
                     "references": references,
@@ -204,8 +201,12 @@ def fetch_new_emails(config: Dict[str, Any], since_minutes: int = 2, fetch_all: 
                     "html": body["html"],
                     "preview": preview,
                 })
+
+                if uid_int > max_uid:
+                    max_uid = uid_int
+
             except Exception as e:
-                logger.error(f"[IMAP] Error parsing email {msg_id}: {e}")
+                logger.error(f"[IMAP] Error parsing email UID {uid}: {e}")
                 continue
 
     except imaplib.IMAP4.error as e:
@@ -220,4 +221,11 @@ def fetch_new_emails(config: Dict[str, Any], since_minutes: int = 2, fetch_all: 
             except Exception:
                 pass
 
+    return emails, max_uid
+
+
+# Keep the old function signature for backward compatibility with the manual sync endpoint
+def fetch_new_emails(config: Dict[str, Any], since_minutes: int = 2, fetch_all: bool = False) -> List[Dict[str, Any]]:
+    """Legacy wrapper - calls fetch_emails_by_uid with uid=0 to fetch all."""
+    emails, _ = fetch_emails_by_uid(config, last_uid=0)
     return emails
