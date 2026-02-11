@@ -265,7 +265,7 @@ const MainLayout = ({ user, view }) => {
 
   return (
     <div className="min-h-screen flex bg-background overflow-hidden">
-      <Sidebar user={user} />
+      <Sidebar user={user} customInboxes={customInboxes} onInboxesChange={fetchInboxes} />
       
       <div className="flex-1 flex flex-col relative min-w-0">
         <GlobalHeader 
