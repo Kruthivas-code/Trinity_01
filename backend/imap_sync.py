@@ -216,10 +216,7 @@ def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List
         logger.error(f"[IMAP] Connection error: {e}")
     finally:
         if conn:
-            try:
-                conn.close()
-            except Exception:
-                pass
+            # Skip close() as Gmail IMAP can hang on it; logout() is sufficient
             try:
                 conn.logout()
             except Exception:
