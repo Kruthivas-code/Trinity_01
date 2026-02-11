@@ -127,6 +127,7 @@ def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List
 
     try:
         conn = imaplib.IMAP4_SSL(imap_server, imap_port)
+        conn.socket().settimeout(30)  # 30 second timeout on all socket operations
         conn.login(imap_email, imap_password)
         conn.select("INBOX", readonly=True)
 
