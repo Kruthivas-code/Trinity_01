@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Clock, User as UserIcon } from 'lucide-react';
 import { useRealtime } from '../contexts/RealtimeContext';
-// import FilterBuilder from './FilterBuilder';
-// import SaveInboxModal from './SaveInboxModal';
+import FilterBuilder from './FilterBuilder';
+import SaveInboxModal from './SaveInboxModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const ITEMS_PER_PAGE = 50;
@@ -286,15 +286,15 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
           {subtitle || `Showing ${tickets.length} of ${totalCount} tickets`}
         </p>
         {showFilterBuilder && (
-          /*<FilterBuilder
+          <FilterBuilder
             onFilter={handleFilterApply}
             onSaveInbox={onSaveInbox ? () => setShowSaveModal(true) : null}
-            initialFilters={propFilterTree}*/
+            initialFilters={propFilterTree}
           />
         )}
       </div>
 
-      /*<SaveInboxModal
+      <SaveInboxModal
         isOpen={showSaveModal}
         onClose={() => setShowSaveModal(false)}
         onSave={handleSaveInbox}
