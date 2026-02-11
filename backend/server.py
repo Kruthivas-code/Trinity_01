@@ -1904,14 +1904,11 @@ def check_sla_escalations() -> dict:
     debounce_minutes = sla_settings.get("escalation_debounce_minutes", 10)
     debounce_ago = datetime.now(timezone.utc) - timedelta(minutes=debounce_minutes)
     
-    # Get open tickets - we'll check debounce per-rule rather than globally
-    open_tickets = list(tickets_collection.find({
-        "status": {"$nin": ["resolved", "closed"]}
-    }, {"_id": 0}))
+    # Get open tickets - use cursor to avoid loading all into memory
+    open_query = {"status": {"$nin": ["resolved", "closed"]}}
+    results["checked"] = tickets_collection.count_documents(open_query)
     
-    results["checked"] = len(open_tickets)
-    
-    for ticket in open_tickets:
+    for ticket in tickets_collection.find(open_query, {"_id": 0}):
         ticket_id = ticket.get("ticket_id")
         priority = ticket.get("priority", "medium")
         escalation_level = ticket.get("escalation_level", "L1")
