@@ -66,7 +66,6 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - `users`, `user_sessions`, `customers`, `notes`, `messages`
 
 ## Pending Items
-- P2: IMAP IDLE (push-based) for near-realtime email sync (~1-5s latency instead of 60s polling). No Google config changes needed — purely app-side.
 - P2: End-to-end Atlas import test with real credentials
 - P3: Remaining N+1 query patterns (non-critical)
 - P3: Redis caching for analytics at higher scale
