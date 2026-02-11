@@ -1588,20 +1588,17 @@ def least_tickets_assign(team_id: str) -> Optional[str]:
     if not available:
         return None
     
-    # Find agent with fewest open tickets
-    best_agent = None
-    min_tickets = float('inf')
+    agent_ids = [a["user_id"] for a in available]
     
-    for agent in available:
-        agent_id = agent["user_id"]
-        ticket_count = tickets_collection.count_documents({
-            "assignee_id": agent_id,
-            "status": {"$nin": ["resolved", "closed"]}
-        })
-        if ticket_count < min_tickets:
-            min_tickets = ticket_count
-            best_agent = agent_id
+    # Single aggregation to count open tickets per agent
+    pipeline = [
+        {"$match": {"assignee_id": {"$in": agent_ids}, "status": {"$nin": ["resolved", "closed"]}}},
+        {"$group": {"_id": "$assignee_id", "count": {"$sum": 1}}}
+    ]
+    counts = {doc["_id"]: doc["count"] for doc in tickets_collection.aggregate(pipeline)}
     
+    # Find agent with fewest (agents not in counts have 0 tickets)
+    best_agent = min(agent_ids, key=lambda aid: counts.get(aid, 0))
     return best_agent
 
 def apply_routing_actions(ticket_id: str, actions: list, assignment_method: str = "round_robin") -> dict:
