@@ -7,6 +7,8 @@ import {
   Inbox, AlertTriangle, Zap, ChevronRight, MoreHorizontal, Pencil, Trash2, Share2
 } from 'lucide-react';
 import { clearCachedUser } from './ProtectedRoute';
+import ShareInboxModal from './ShareInboxModal';
+import EditInboxModal from './EditInboxModal';
 
 import { TridentIcon } from './TridentIcon';
 
