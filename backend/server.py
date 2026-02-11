@@ -667,7 +667,12 @@ async def create_mongodb_indexes():
         shifts_collection.create_index([("team_id", ASCENDING)], background=True)
         logger.info("[INDEXES] Created shifts collection indexes")
         
-        # Advanced filtering indexes - for 100K+ ticket scalability
+        logger.info("[INDEXES] All MongoDB indexes created successfully")
+    except Exception as e:
+        logger.warning(f"[INDEXES] Some indexes may already exist: {e}")
+    
+    # Advanced filtering indexes - separate try block to ensure creation
+    try:
         tickets_collection.create_index([("source", ASCENDING)], background=True)
         tickets_collection.create_index([("tags", ASCENDING)], background=True)
         tickets_collection.create_index([("priority", ASCENDING), ("created_at", DESCENDING)], background=True)
@@ -676,16 +681,16 @@ async def create_mongodb_indexes():
         tickets_collection.create_index([("assignee_id", ASCENDING), ("status", ASCENDING), ("created_at", DESCENDING)], background=True)
         tickets_collection.create_index([("email_sender_name", ASCENDING)], background=True)
         logger.info("[INDEXES] Created advanced filtering indexes")
-        
-        # Custom inboxes collection indexes
+    except Exception as e:
+        logger.warning(f"[INDEXES] Advanced filtering indexes partial: {e}")
+    
+    try:
         custom_inboxes_collection.create_index("inbox_id", unique=True, background=True)
         custom_inboxes_collection.create_index([("owner_id", ASCENDING)], background=True)
         custom_inboxes_collection.create_index([("shared_with", ASCENDING)], background=True)
         logger.info("[INDEXES] Created custom_inboxes collection indexes")
-        
-        logger.info("[INDEXES] All MongoDB indexes created successfully")
     except Exception as e:
-        logger.warning(f"[INDEXES] Some indexes may already exist: {e}")
+        logger.warning(f"[INDEXES] Custom inboxes indexes partial: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
