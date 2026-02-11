@@ -7,6 +7,7 @@ Supports threading: replies to existing tickets are added as messages.
 
 import imaplib
 import email
+import email.message
 from email.header import decode_header
 from email.utils import parseaddr, parsedate_to_datetime
 import os
