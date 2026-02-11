@@ -244,7 +244,7 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
       <div className="px-6 py-5 border-b border-border">
         <h1 className="text-xl font-semibold mb-1 text-foreground">{title}</h1>
         <p className="text-sm text-muted-foreground">
-          {subtitle || `Showing ${tickets.length} tickets`}
+          {subtitle || `Showing ${tickets.length} of ${totalCount} tickets`}
         </p>
       </div>
 
