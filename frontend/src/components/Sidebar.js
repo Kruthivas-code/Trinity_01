@@ -17,7 +17,7 @@ const MAX_WIDTH = 280;
 const DEFAULT_WIDTH = 260;
 const COLLAPSE_THRESHOLD = 100;
 
-const Sidebar = ({ user }) => {
+const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarWidth, setSidebarWidth] = useState(() => {
@@ -29,6 +29,7 @@ const Sidebar = ({ user }) => {
   const [isTicketsExpanded, setIsTicketsExpanded] = useState(true);
   const [isEscalationExpanded, setIsEscalationExpanded] = useState(true);
   const [escalationCounts, setEscalationCounts] = useState({ L1: { total: 0 }, L2: { total: 0 }, L3: { total: 0 } });
+  const [inboxMenuOpen, setInboxMenuOpen] = useState(null); // inbox_id of open menu
   const sidebarRef = useRef(null);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
