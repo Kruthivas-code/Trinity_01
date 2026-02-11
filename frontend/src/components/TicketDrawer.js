@@ -658,11 +658,12 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   // Fetch all available tags from existing tickets
   const fetchAvailableTags = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/tickets`, {
+      const response = await fetch(`${BACKEND_URL}/api/tickets?limit=200`, {
         credentials: 'include'
       });
       if (response.ok) {
-        const tickets = await response.json();
+        const data = await response.json();
+        const tickets = data.tickets || data;
         const allTags = new Set();
         tickets.forEach(t => (t.tags || []).forEach(tag => allTags.add(tag)));
         setAvailableTags(Array.from(allTags).sort());
