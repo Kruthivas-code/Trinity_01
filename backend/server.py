@@ -4628,6 +4628,159 @@ async def export_tickets(
             headers={"Content-Disposition": "attachment; filename=tickets.json"}
         )
 
+# IMAP Email Sync endpoint
+@app.post("/api/email/sync")
+async def trigger_email_sync(current_user: dict = Depends(get_current_user)):
+    """Manually trigger IMAP email sync."""
+    from imap_sync import get_imap_config, fetch_new_emails
+    
+    config = get_imap_config()
+    if not config["email"] or not config["password"]:
+        raise HTTPException(status_code=400, detail="IMAP not configured")
+    
+    loop = asyncio.get_event_loop()
+    new_emails = await loop.run_in_executor(None, fetch_new_emails, config, None)
+    
+    created_count = 0
+    reply_count = 0
+    skipped_count = 0
+    
+    for eml in new_emails:
+        # Dedup
+        if eml["message_id"]:
+            existing = tickets_collection.find_one({"email_rfc_message_id": eml["message_id"]})
+            if existing:
+                skipped_count += 1
+                continue
+            existing_reply = email_replies_collection.find_one({"email_rfc_message_id": eml["message_id"]})
+            if existing_reply:
+                skipped_count += 1
+                continue
+        
+        # Threading
+        existing_thread_ticket = None
+        if eml["in_reply_to"]:
+            existing_thread_ticket = tickets_collection.find_one({
+                "$or": [
+                    {"email_rfc_message_id": eml["in_reply_to"]},
+                    {"last_reply_message_id": eml["in_reply_to"]},
+                    {"email_thread_message_ids": eml["in_reply_to"]}
+                ]
+            })
+        
+        if not existing_thread_ticket and eml["references"]:
+            for ref in eml["references"].split():
+                ref = ref.strip()
+                if not ref:
+                    continue
+                existing_thread_ticket = tickets_collection.find_one({
+                    "$or": [
+                        {"email_rfc_message_id": ref},
+                        {"last_reply_message_id": ref},
+                        {"email_thread_message_ids": ref}
+                    ]
+                })
+                if existing_thread_ticket:
+                    break
+        
+        if existing_thread_ticket:
+            sanitized_html_content = sanitize_html(eml["html"][:100000]) if eml["html"] else None
+            reply_id = f"reply_{uuid.uuid4().hex[:12]}"
+            email_replies_collection.insert_one({
+                "reply_id": reply_id,
+                "ticket_id": existing_thread_ticket["ticket_id"],
+                "direction": "incoming",
+                "from_email": eml["sender_email"],
+                "from_name": eml["sender_name"],
+                "to_email": eml["to"],
+                "subject": eml["subject"] or "Re: " + existing_thread_ticket.get("title", ""),
+                "body": (eml["text"] or "")[:50000],
+                "body_html": sanitized_html_content,
+                "email_rfc_message_id": eml["message_id"],
+                "created_at": datetime.now(timezone.utc),
+                "status": "received"
+            })
+            messages_collection.insert_one({
+                "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+                "ticket_id": existing_thread_ticket["ticket_id"],
+                "type": "customer_reply",
+                "content": (eml["text"] or "")[:50000],
+                "content_html": sanitized_html_content,
+                "author_id": None,
+                "author_name": eml["sender_name"],
+                "author_email": eml["sender_email"],
+                "email_reply_id": reply_id,
+                "created_at": datetime.now(timezone.utc)
+            })
+            tickets_collection.update_one(
+                {"ticket_id": existing_thread_ticket["ticket_id"]},
+                {
+                    "$set": {"status": "todo", "updated_at": datetime.now(timezone.utc), "last_reply_message_id": eml["message_id"]},
+                    "$push": {"email_thread_message_ids": eml["message_id"]}
+                }
+            )
+            reply_count += 1
+            continue
+        
+        # New ticket
+        ticket_id = generate_ticket_id()
+        sanitized_html_content = sanitize_html(eml["html"][:100000]) if eml["html"] else None
+        tickets_collection.insert_one({
+            "ticket_id": ticket_id,
+            "uuid": str(uuid.uuid4()),
+            "title": (eml["subject"] or "No Subject")[:200],
+            "description": (eml["text"] or "")[:5000],
+            "status": "todo",
+            "priority": "medium",
+            "source": "email",
+            "email_rfc_message_id": eml["message_id"],
+            "email_references": eml["references"],
+            "email_in_reply_to": eml["in_reply_to"],
+            "email_sender": eml["from_header"],
+            "email_sender_name": eml["sender_name"],
+            "customer_email": eml["sender_email"],
+            "email_to": eml["to"],
+            "email_cc": eml["cc"],
+            "email_date": eml["date"].isoformat() if eml["date"] else None,
+            "email_html": sanitized_html_content,
+            "email_text": (eml["text"] or "")[:50000],
+            "email_preview": eml["preview"],
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            "assignee_id": None,
+            "escalation_level": "L1"
+        })
+        created_count += 1
+    
+    return {
+        "status": "success",
+        "emails_found": len(new_emails),
+        "tickets_created": created_count,
+        "replies_added": reply_count,
+        "skipped_duplicates": skipped_count
+    }
+
+@app.get("/api/email/status")
+async def email_sync_status(current_user: dict = Depends(get_current_user)):
+    """Check IMAP connection status."""
+    from imap_sync import get_imap_config
+    import imaplib
+    
+    config = get_imap_config()
+    if not config["email"] or not config["password"]:
+        return {"connected": False, "email": None, "error": "IMAP not configured"}
+    
+    try:
+        conn = imaplib.IMAP4_SSL(config["server"], config["port"])
+        conn.login(config["email"], config["password"])
+        status, data = conn.select("INBOX", readonly=True)
+        msg_count = int(data[0]) if status == "OK" else 0
+        conn.close()
+        conn.logout()
+        return {"connected": True, "email": config["email"], "inbox_count": msg_count}
+    except Exception as e:
+        return {"connected": False, "email": config["email"], "error": str(e)}
+
 # Import endpoint
 @app.post("/api/import")
 async def import_tickets(
