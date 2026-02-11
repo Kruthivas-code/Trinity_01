@@ -36,22 +36,25 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 import bcrypt
 
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-logger = logging.getLogger(__name__)
-
-# Add filter for request_id
+# Add filter for request_id - needed BEFORE configuring basicConfig
 class RequestIdFilter(logging.Filter):
     def filter(self, record):
         if not hasattr(record, 'request_id'):
             record.request_id = 'no-request-id'
         return True
 
-logger.addFilter(RequestIdFilter())
+# Configure structured logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+
+# Add filter to root logger so ALL loggers (including Socket.IO) have request_id
+root_logger = logging.getLogger()
+root_logger.addFilter(RequestIdFilter())
+
+logger = logging.getLogger(__name__)
 
 # Real-time and Search imports
 from realtime import (
