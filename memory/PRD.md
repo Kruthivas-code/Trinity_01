@@ -65,6 +65,15 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - `imap_sync_state` — Stores `{_id: "imap_last_uid", last_uid: <int>, seeded: <bool>, updated_at: <datetime>}`
 - `users`, `user_sessions`, `customers`, `notes`, `messages`
 
+- **Advanced Filters + Custom Inboxes** — Feb 2026:
+  - Server-side filter engine: `filter_tree_to_mongo()` translates recursive AND/OR filter trees to MongoDB `$and`/`$or` queries
+  - 15+ operators: is, is_not, contains, is_one_of, is_none, before, after, between, etc.
+  - Supports nested groups (brackets) for full set theory (unions/intersections)
+  - Filters on ALL ticket metadata: status, priority, source, assignee, dates, custom fields
+  - Custom Inboxes: save filter configs, share with team (decoupled copies), 3-dot menu (edit/share/delete)
+  - Sidebar integration: custom inboxes appear under Tickets section with colored dots
+  - New endpoints: `POST /api/filter/tickets`, `GET /api/filter/fields`, CRUD `/api/inboxes`
+
 ## Pending Items
 - P2: End-to-end Atlas import test with real credentials
 - P3: Remaining N+1 query patterns (non-critical)
