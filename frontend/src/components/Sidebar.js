@@ -306,24 +306,21 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
                           {inboxMenuOpen === inbox.inbox_id && (
                             <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-lg border border-border bg-background shadow-lg py-1 animate-in fade-in zoom-in-95 duration-150" data-testid={`inbox-menu-${inbox.inbox_id}`}>
                               <button
-                                onClick={() => { handleNavigate(inboxPath); setInboxMenuOpen(null); }}
+                                onClick={() => { setInboxMenuOpen(null); setEditModalInbox(inbox); }}
                                 className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted text-left"
                                 data-testid={`inbox-edit-${inbox.inbox_id}`}
                               >
-                                <Pencil size={13} /> Edit filters
+                                <Pencil size={13} /> Rename
                               </button>
                               <button
-                                onClick={async () => {
-                                  setInboxMenuOpen(null);
-                                  const users = await fetch(`${BACKEND_URL}/api/users`, { credentials: 'include' }).then(r => r.json());
-                                  const userIds = users.filter(u => u.user_id !== user?.user_id).map(u => u.user_id);
-                                  if (userIds.length === 0) { alert('No other users to share with'); return; }
-                                  const res = await fetch(`${BACKEND_URL}/api/inboxes/${inbox.inbox_id}/share`, {
-                                    method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-                                    body: JSON.stringify({ user_ids: userIds })
-                                  });
-                                  if (res.ok) { const d = await res.json(); alert(`Shared with ${d.total} user(s)`); }
-                                }}
+                                onClick={() => { handleNavigate(inboxPath); setInboxMenuOpen(null); }}
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted text-left"
+                                data-testid={`inbox-edit-filters-${inbox.inbox_id}`}
+                              >
+                                <List size={13} /> Edit filters
+                              </button>
+                              <button
+                                onClick={() => { setInboxMenuOpen(null); setShareModalInbox(inbox); }}
                                 className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted text-left"
                                 data-testid={`inbox-share-${inbox.inbox_id}`}
                               >
