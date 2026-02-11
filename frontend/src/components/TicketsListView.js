@@ -255,7 +255,19 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
     return user ? user.name : 'Unassigned';
   };
 
-  if (loading && page === 1) {
+  const handleFilterApply = useCallback((tree) => {
+    setActiveFilterTree(tree);
+    setPage(1);
+    setTickets([]);
+    setHasMore(true);
+  }, []);
+
+  const handleSaveInbox = useCallback(({ name, color }) => {
+    if (!activeFilterTree || !onSaveInbox) return;
+    onSaveInbox({ name, color, filter_tree: activeFilterTree });
+  }, [activeFilterTree, onSaveInbox]);
+
+  if (loading && page === 1 && !activeFilterTree) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="glass rounded-xl p-6">
@@ -270,10 +282,23 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
       {/* Header */}
       <div className="px-6 py-5 border-b border-border">
         <h1 className="text-xl font-semibold mb-1 text-foreground">{title}</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-3">
           {subtitle || `Showing ${tickets.length} of ${totalCount} tickets`}
         </p>
+        {showFilterBuilder && (
+          <FilterBuilder
+            onFilter={handleFilterApply}
+            onSaveInbox={onSaveInbox ? () => setShowSaveModal(true) : null}
+            initialFilters={propFilterTree}
+          />
+        )}
       </div>
+
+      <SaveInboxModal
+        isOpen={showSaveModal}
+        onClose={() => setShowSaveModal(false)}
+        onSave={handleSaveInbox}
+      />
 
       {/* Tickets List */}
       <div className="flex-1 overflow-y-auto">
