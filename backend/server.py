@@ -618,6 +618,7 @@ async def create_mongodb_indexes():
         email_replies_collection.create_index([("ticket_id", ASCENDING)], background=True)
         email_replies_collection.create_index([("gmail_message_id", ASCENDING)], sparse=True, background=True)
         email_replies_collection.create_index([("our_message_id", ASCENDING)], sparse=True, background=True)
+        email_replies_collection.create_index("email_rfc_message_id", unique=True, sparse=True, background=True)
         logger.info("[INDEXES] Created email threading indexes")
         
         # Canned responses indexes
