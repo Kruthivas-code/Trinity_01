@@ -4661,26 +4661,41 @@ async def export_tickets(
     format: str = "json",
     current_user: dict = Depends(get_current_user)
 ):
-    tickets = list(tickets_collection.find({}, {"_id": 0}))
-    tickets_data = [serialize_doc(ticket) for ticket in tickets]
+    from starlette.responses import StreamingResponse
+    
+    fieldnames = ["ticket_id", "title", "description", "status", "assignee_id", "priority", "order", "created_at", "updated_at"]
     
     if format == "csv":
-        output = io.StringIO()
-        if tickets_data:
-            fieldnames = ["ticket_id", "title", "description", "status", "assignee_id", "priority", "order", "created_at", "updated_at"]
+        def csv_generator():
+            output = io.StringIO()
             writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
             writer.writeheader()
-            for ticket in tickets_data:
-                writer.writerow(ticket)
+            yield output.getvalue()
+            
+            for ticket in tickets_collection.find({}, {"_id": 0}).batch_size(500):
+                output = io.StringIO()
+                writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
+                writer.writerow(serialize_doc(ticket))
+                yield output.getvalue()
         
-        return Response(
-            content=output.getvalue(),
+        return StreamingResponse(
+            csv_generator(),
             media_type="text/csv",
             headers={"Content-Disposition": "attachment; filename=tickets.csv"}
         )
     else:
-        return Response(
-            content=json.dumps(tickets_data, indent=2),
+        def json_generator():
+            yield "[\n"
+            first = True
+            for ticket in tickets_collection.find({}, {"_id": 0}).batch_size(500):
+                if not first:
+                    yield ",\n"
+                first = False
+                yield json.dumps(serialize_doc(ticket))
+            yield "\n]"
+        
+        return StreamingResponse(
+            json_generator(),
             media_type="application/json",
             headers={"Content-Disposition": "attachment; filename=tickets.json"}
         )
