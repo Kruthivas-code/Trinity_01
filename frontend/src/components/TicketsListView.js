@@ -140,37 +140,35 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
   const fetchTickets = async (pageNum) => {
     try {
       setLoading(true);
-      let url = `${BACKEND_URL}/api/tickets`;
       const params = new URLSearchParams();
       if (escalationLevel) {
         params.set('escalation_level', escalationLevel);
       }
-      if (params.toString()) {
-        url += `?${params.toString()}`;
+      // Server-side filtering by status
+      if (filterStatuses && filterStatuses.length > 0) {
+        filterStatuses.forEach(s => params.append('status', s));
       }
+      params.set('page', pageNum);
+      params.set('limit', ITEMS_PER_PAGE);
+      params.set('sort_by', 'created_at');
+      params.set('sort_order', 'desc');
+      
+      const url = `${BACKEND_URL}/api/tickets?${params.toString()}`;
       const response = await fetch(url, {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to fetch tickets');
       const data = await response.json();
       
-      // Filter tickets based on provided statuses
-      const filteredTickets = data
-        .filter(t => filterStatuses.includes(t.status))
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      
-      // Simulate pagination
-      const startIdx = (pageNum - 1) * ITEMS_PER_PAGE;
-      const endIdx = startIdx + ITEMS_PER_PAGE;
-      const paginatedTickets = filteredTickets.slice(startIdx, endIdx);
+      const newTickets = data.tickets || [];
       
       if (pageNum === 1) {
-        setTickets(paginatedTickets);
+        setTickets(newTickets);
       } else {
-        setTickets(prev => [...prev, ...paginatedTickets]);
+        setTickets(prev => [...prev, ...newTickets]);
       }
       
-      setHasMore(endIdx < filteredTickets.length);
+      setHasMore(data.has_more || false);
     } catch (error) {
       console.error('Failed to fetch tickets:', error);
     } finally {
