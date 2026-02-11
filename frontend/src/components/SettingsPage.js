@@ -253,7 +253,7 @@ const SettingsPage = ({ user }) => {
       
       switch (type) {
         case 'tickets':
-          url = `${BACKEND_URL}/api/tickets`;
+          url = `${BACKEND_URL}/api/tickets?limit=10000`;
           filename = `trinity-tickets-${new Date().toISOString().split('T')[0]}.json`;
           break;
         case 'users':
