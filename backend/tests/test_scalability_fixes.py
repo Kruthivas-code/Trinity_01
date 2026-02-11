@@ -47,7 +47,7 @@ TOKEN, USER_ID, DB = create_test_session()
 @pytest.fixture(scope="module")
 def s():
     session = requests.Session()
-    session.cookies.set("session_token", TOKEN)
+    session.headers.update({"Cookie": f"session_token={TOKEN}"})
     return session
 
 
