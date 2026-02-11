@@ -100,14 +100,14 @@ def parse_email_date(msg: email.message.Message) -> datetime:
     return datetime.now(timezone.utc)
 
 
-def fetch_new_emails(config: Dict[str, Any], since_uid: Optional[int] = None, fetch_all: bool = False) -> List[Dict[str, Any]]:
+def fetch_new_emails(config: Dict[str, Any], since_minutes: int = 2, fetch_all: bool = False) -> List[Dict[str, Any]]:
     """
-    Connect to IMAP server and fetch emails.
+    Connect to IMAP server and fetch recent emails.
 
     Args:
         config: IMAP connection config
-        since_uid: Only fetch emails with UID greater than this (optional)
-        fetch_all: If True, fetch ALL emails (not just unseen)
+        since_minutes: Fetch emails from the last N minutes (default 2)
+        fetch_all: If True, fetch ALL emails regardless of date
 
     Returns:
         List of parsed email dicts
@@ -126,22 +126,27 @@ def fetch_new_emails(config: Dict[str, Any], since_uid: Optional[int] = None, fe
     try:
         conn = imaplib.IMAP4_SSL(imap_server, imap_port)
         conn.login(imap_email, imap_password)
-        conn.select("INBOX")
+        conn.select("INBOX", readonly=True)
 
-        # Search criteria
         if fetch_all:
             search_criteria = "ALL"
         else:
-            search_criteria = "UNSEEN"
-        if since_uid:
-            search_criteria = f"(UNSEEN UID {since_uid}:*)"
+            # IMAP SINCE only supports date granularity, not minutes.
+            # Use today's date as the IMAP filter, then filter by timestamp in code.
+            since_date = datetime.now(timezone.utc).strftime("%d-%b-%Y")
+            search_criteria = f'(SINCE {since_date})'
 
         status, msg_ids = conn.search(None, search_criteria)
         if status != "OK" or not msg_ids[0]:
             return []
 
         id_list = msg_ids[0].split()
-        logger.info(f"[IMAP] Found {len(id_list)} unseen emails")
+        logger.info(f"[IMAP] Found {len(id_list)} emails matching criteria")
+
+        # For time-based filtering, compute the cutoff
+        cutoff = None
+        if not fetch_all:
+            cutoff = datetime.now(timezone.utc) - timedelta(minutes=since_minutes)
 
         for msg_id in id_list:
             try:
