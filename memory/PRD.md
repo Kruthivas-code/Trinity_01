@@ -18,7 +18,7 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - **Frontend**: React 19, React Router v7, Shadcn UI
 - **Backend**: Python, FastAPI
 - **Database**: MongoDB (sync pymongo driver)
-- **Email**: IMAP (Gmail App Password), UID-based tracking
+- **Email**: IMAP (Gmail App Password), UID-based tracking, **IMAP IDLE push**
 - **Real-time**: Socket.IO (WebSocket + polling fallback)
 
 ## What's Been Implemented
