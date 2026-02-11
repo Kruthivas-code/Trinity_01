@@ -44,7 +44,8 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
   - Fixed wrong function name/signature (broadcast_ticket_updated → broadcast_ticket_update)
   - Fixed Socket.IO routing for Kubernetes ingress (/api/socket.io/ path)
   - Fixed RequestIdFilter applied to all logger handlers (not just module logger)
-  - New email-created tickets now appear in UI without page refresh
+  - Added error-level logging for broadcast failures in email sync task
+  - New email-created tickets now appear in UI without page refresh (verified E2E)
 
 ## Key API Endpoints
 - `GET /api/tickets?page=1&limit=50&status=todo&status=in_progress` — Paginated, multi-status
