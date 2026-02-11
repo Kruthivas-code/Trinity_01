@@ -24,7 +24,7 @@ def create_test_session():
     # Ensure test user exists
     db.users.update_one(
         {"user_id": user_id},
-        {"$set": {"user_id": user_id, "name": "Test User", "email": "test@test.com", "role": "admin"}},
+        {"$set": {"user_id": user_id, "name": "Test User", "email": f"{user_id}@test.com", "role": "admin"}},
         upsert=True
     )
     
