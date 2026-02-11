@@ -66,25 +66,24 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
 
   const fetchTickets = useCallback(async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/tickets`, {
+      const userId = user?.user_id || user?.id;
+      const params = new URLSearchParams();
+      if (userId) params.set('assignee_id', userId);
+      params.set('limit', '200');
+      
+      const response = await fetch(`${BACKEND_URL}/api/tickets?${params.toString()}`, {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to fetch tickets');
       const data = await response.json();
+      const allTickets = data.tickets || data;
       
       // Collect all unique tags
       const tags = new Set();
-      data.forEach(t => (t.tags || []).forEach(tag => tags.add(tag)));
+      allTickets.forEach(t => (t.tags || []).forEach(tag => tags.add(tag)));
       setAvailableTags(Array.from(tags).sort());
       
-      // Filter to show tickets assigned to current user OR where user is mentioned
-      // This combines both views into one unified kanban
-      const userId = user?.user_id || user?.id;
-      const myTickets = data.filter(t => 
-        t.assignee_id === userId || 
-        (Array.isArray(t.mentioned_users) && t.mentioned_users.includes(userId))
-      );
-      setTickets(myTickets);
+      setTickets(allTickets);
     } catch (error) {
       console.error('Failed to fetch tickets:', error);
     }
