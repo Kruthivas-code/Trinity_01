@@ -24,7 +24,25 @@ const MainLayout = ({ user, view }) => {
   const [users, setUsers] = useState([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [customInboxes, setCustomInboxes] = useState([]);
   const { openCommandPalette } = useContext(CommandPaletteContext);
+
+  // Fetch custom inboxes
+  const fetchInboxes = useCallback(async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/inboxes`, { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setCustomInboxes(data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch inboxes:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchInboxes();
+  }, [fetchInboxes]);
 
   // Open ticket by ID (fetch from API)
   const openTicketById = useCallback(async (ticketId) => {
