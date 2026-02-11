@@ -220,38 +220,45 @@ async def auto_close_resolved_tickets():
             cutoff_time = datetime.now(timezone.utc) - timedelta(hours=AUTO_CLOSE_HOURS)
             
             # Find resolved tickets older than 24 hours
-            resolved_tickets = list(tickets_collection.find({
+            query = {
                 "status": "resolved",
                 "resolved_at": {"$lte": cutoff_time}
-            }))
+            }
             
-            closed_count = 0
-            for ticket in resolved_tickets:
-                # Update to closed status
-                tickets_collection.update_one(
-                    {"ticket_id": ticket["ticket_id"]},
+            # Get ticket IDs for system messages
+            tickets_to_close = list(tickets_collection.find(query, {"ticket_id": 1, "_id": 0}))
+            
+            if tickets_to_close:
+                ticket_ids = [t["ticket_id"] for t in tickets_to_close]
+                now = datetime.now(timezone.utc)
+                
+                # Batch update all tickets at once
+                result = tickets_collection.update_many(
+                    query,
                     {"$set": {
                         "status": "closed",
-                        "closed_at": datetime.now(timezone.utc),
+                        "closed_at": now,
                         "auto_closed": True,
-                        "updated_at": datetime.now(timezone.utc)
+                        "updated_at": now
                     }}
                 )
                 
-                # Add system message
-                messages_collection.insert_one({
-                    "message_id": f"msg_{uuid4().hex[:12]}",
-                    "ticket_id": ticket["ticket_id"],
-                    "type": "system",
-                    "text": f"Auto-closed after {AUTO_CLOSE_HOURS} hours in resolved status",
-                    "created_by": "system",
-                    "created_at": datetime.now(timezone.utc)
-                })
+                # Batch insert system messages
+                system_messages = [
+                    {
+                        "message_id": f"msg_{uuid4().hex[:12]}",
+                        "ticket_id": tid,
+                        "type": "system",
+                        "text": f"Auto-closed after {AUTO_CLOSE_HOURS} hours in resolved status",
+                        "created_by": "system",
+                        "created_at": now
+                    }
+                    for tid in ticket_ids
+                ]
+                if system_messages:
+                    messages_collection.insert_many(system_messages)
                 
-                closed_count += 1
-                logger.info(f"[AUTO-CLOSE] Closed ticket {ticket['ticket_id']} after 24 hours in resolved status")
-            
-            if closed_count > 0:
+                closed_count = result.modified_count
                 logger.info(f"[AUTO-CLOSE] Auto-closed {closed_count} resolved tickets")
                 
         except asyncio.CancelledError:
