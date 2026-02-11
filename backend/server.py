@@ -279,6 +279,7 @@ async def auto_close_resolved_tickets():
 async def auto_sync_emails():
     """
     Background task that automatically syncs emails from IMAP mailbox every 60 seconds.
+    Uses UID-based tracking to ensure no emails are missed, even across restarts.
     Uses distributed locking to ensure only one instance runs the sync.
     """
     lock_name = "auto_sync_emails"
@@ -286,6 +287,9 @@ async def auto_sync_emails():
     
     # Wait a bit before starting to let the app fully initialize
     await asyncio.sleep(10)
+    
+    # Collection to persist sync state (last processed UID)
+    imap_sync_state = db.imap_sync_state
     
     while True:
         acquired = False
@@ -300,7 +304,7 @@ async def auto_sync_emails():
             
             logger.debug(f"[EMAIL-SYNC] Starting IMAP sync on {_instance_id}")
             
-            from imap_sync import get_imap_config, fetch_new_emails
+            from imap_sync import get_imap_config, fetch_emails_by_uid
             
             config = get_imap_config()
             if not config["email"] or not config["password"]:
@@ -309,9 +313,15 @@ async def auto_sync_emails():
                 continue
             
             try:
+                # Read last processed UID from persistent state
+                state = imap_sync_state.find_one({"_id": "imap_last_uid"})
+                last_uid = state["last_uid"] if state else 0
+                
                 # Run IMAP fetch in thread pool (it's blocking I/O)
                 loop = asyncio.get_event_loop()
-                new_emails = await loop.run_in_executor(None, lambda: fetch_new_emails(config))
+                new_emails, new_max_uid = await loop.run_in_executor(
+                    None, lambda: fetch_emails_by_uid(config, last_uid=last_uid)
+                )
                 
                 created_count = 0
                 reply_count = 0
@@ -329,7 +339,6 @@ async def auto_sync_emails():
                     # --- Threading: check if this is a reply to an existing ticket ---
                     existing_thread_ticket = None
                     
-                    # Check In-Reply-To header
                     if eml["in_reply_to"]:
                         existing_thread_ticket = tickets_collection.find_one({
                             "$or": [
@@ -346,7 +355,6 @@ async def auto_sync_emails():
                             if sent_reply:
                                 existing_thread_ticket = tickets_collection.find_one({"ticket_id": sent_reply["ticket_id"]})
                     
-                    # Check References header
                     if not existing_thread_ticket and eml["references"]:
                         for ref in eml["references"].split():
                             ref = ref.strip()
@@ -363,7 +371,6 @@ async def auto_sync_emails():
                                 break
                     
                     if existing_thread_ticket:
-                        # This is a reply to an existing ticket
                         sanitized_html_content = sanitize_html(eml["html"][:100000]) if eml["html"] else None
                         
                         reply_id = f"reply_{uuid.uuid4().hex[:12]}"
@@ -386,7 +393,6 @@ async def auto_sync_emails():
                         }
                         email_replies_collection.insert_one(incoming_reply)
                         
-                        # Add to messages collection for conversation thread
                         message_doc = {
                             "message_id": f"msg_{uuid.uuid4().hex[:12]}",
                             "ticket_id": existing_thread_ticket["ticket_id"],
@@ -402,7 +408,6 @@ async def auto_sync_emails():
                         }
                         messages_collection.insert_one(message_doc)
                         
-                        # Update ticket
                         tickets_collection.update_one(
                             {"ticket_id": existing_thread_ticket["ticket_id"]},
                             {
@@ -420,7 +425,6 @@ async def auto_sync_emails():
                         reply_count += 1
                         logger.info(f"[EMAIL-SYNC] Added reply to ticket {existing_thread_ticket['ticket_id']} from {eml['sender_email']}")
                         
-                        # Broadcast update
                         try:
                             from realtime import broadcast_ticket_updated
                             updated_ticket = tickets_collection.find_one({"ticket_id": existing_thread_ticket["ticket_id"]})
@@ -462,24 +466,32 @@ async def auto_sync_emails():
                     tickets_collection.insert_one(ticket_doc)
                     created_count += 1
                     
-                    # Broadcast new ticket
                     try:
                         from realtime import broadcast_ticket_created
                         await broadcast_ticket_created(ticket_doc, {"user_id": "system", "name": "Email Sync"})
                     except Exception as e:
                         logger.debug(f"[EMAIL-SYNC] Could not broadcast: {e}")
                 
+                # Persist the new max UID so next cycle starts from here
+                if new_max_uid > last_uid:
+                    imap_sync_state.update_one(
+                        {"_id": "imap_last_uid"},
+                        {"$set": {"last_uid": new_max_uid, "updated_at": datetime.now(timezone.utc)}},
+                        upsert=True
+                    )
+                    logger.info(f"[EMAIL-SYNC] Updated last_uid to {new_max_uid}")
+                
                 if created_count > 0 or reply_count > 0:
                     logger.info(f"[EMAIL-SYNC] Created {created_count} tickets, added {reply_count} replies")
                     
             except Exception as e:
-                logger.error(f"[EMAIL-SYNC] Error syncing emails: {e}")
+                logger.error(f"[EMAIL-SYNC] Error syncing emails: {e}", exc_info=True)
                 
         except asyncio.CancelledError:
             logger.info("[EMAIL-SYNC] Task cancelled")
             raise
         except Exception as e:
-            logger.error(f"[EMAIL-SYNC] Error in email sync task: {e}")
+            logger.error(f"[EMAIL-SYNC] Error in email sync task: {e}", exc_info=True)
         finally:
             if acquired:
                 try:
