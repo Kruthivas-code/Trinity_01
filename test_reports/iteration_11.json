@@ -1,0 +1,72 @@
+{
+  "summary": "Backend-only testing of IMAP IDLE (push-based) email sync. All 13 tests passed. IDLE watcher is running, connected to Gmail, and processing emails in near-realtime (~1-5s latency). Socket.IO broadcasting working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "IMAP IDLE watcher",
+        "issue": "Intermittent 'Server replied with a response that violates the IMAP protocol' error during idle_check - occurs during server restarts, not normal operation",
+        "priority": "LOW",
+        "note": "IDLE watcher auto-reconnects with exponential backoff, system is resilient"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_imap_idle.py",
+    "/app/test_reports/pytest/pytest_imap_idle_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "IMAPIdleWatcher class correctly uses imapclient library (v3.1.0) for IDLE support",
+    "IDLE loop renews every 25 minutes before Gmail's ~29 min timeout",
+    "Auto-reconnect with exponential backoff (5s, 10s, 20s, 40s, max 60s) on failures",
+    "on_new_mail callback uses asyncio.run_coroutine_threadsafe for thread-safe event loop integration",
+    "UID tracking persists in imap_sync_state collection with seeded flag",
+    "Socket.IO broadcasts ticket:created and ticket:update events with properly serialized data"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_imap_idle.py"
+  ],
+  "success_rate": {
+    "backend": "100% (13/13 tests passed)",
+    "frontend": "N/A (backend only testing)"
+  },
+  "seed_data_creation": "Created temporary test user/session for API testing, cleaned up after",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "IMAP IDLE push-based sync is fully working. State in MongoDB: imap_sync_state collection stores last_uid (currently 342) and seeded=true. GET /api/email/status returns mode='idle'. Test file at /app/backend/tests/test_imap_idle.py can be reused for regression testing.",
+  "verified_features": {
+    "backend_health": "GET /api/health returns healthy with database check",
+    "idle_watcher_running": "Backend logs show '[IDLE] Connected and INBOX selected' - watcher is active",
+    "email_status_mode": "GET /api/email/status returns mode='idle' and connected=true with sync state",
+    "manual_sync_endpoint": "POST /api/email/sync works with UID tracking (fetch_all parameter supported)",
+    "uid_state_persistence": "imap_sync_state collection has last_uid=342, seeded=true, updated_at timestamp",
+    "dedup_protection": "Duplicate emails not re-processed via UID tracking and message_id checks",
+    "socketio_broadcast": "Socket.IO broadcasts ticket:created and ticket:update events (verified in logs)"
+  },
+  "test_results_detail": {
+    "tests_passed": 13,
+    "tests_failed": 0,
+    "test_duration": "110.38s",
+    "current_last_uid": 342,
+    "recent_tickets_created_via_idle": ["TKT-000119", "TKT-000120"],
+    "imap_email": "trinitysuccess44@gmail.com",
+    "inbox_count": 343
+  },
+  "evidence": {
+    "idle_connected_log": "[IDLE] Connected and INBOX selected",
+    "idle_found_emails_log": "[IDLE] Found 2 new email(s) (UIDs > 340)",
+    "broadcast_log": "[EMAIL-SYNC] Broadcast ticket:created for TKT-000119",
+    "status_response": {
+      "connected": true,
+      "mode": "idle",
+      "last_uid": 342,
+      "seeded": true
+    }
+  }
+}
