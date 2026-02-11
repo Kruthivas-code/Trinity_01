@@ -440,9 +440,14 @@ async def auto_sync_emails():
                         logger.info(f"[EMAIL-SYNC] Added reply to ticket {existing_thread_ticket['ticket_id']} from {eml['sender_email']}")
                         
                         try:
-                            from realtime import broadcast_ticket_updated
+                            from realtime import broadcast_ticket_update
                             updated_ticket = tickets_collection.find_one({"ticket_id": existing_thread_ticket["ticket_id"]})
-                            await broadcast_ticket_updated(serialize_doc(updated_ticket), {"user_id": "system", "name": "Email Sync"})
+                            await broadcast_ticket_update(
+                                existing_thread_ticket["ticket_id"],
+                                "updated",
+                                serialize_doc(updated_ticket),
+                                {"user_id": "system", "name": "Email Sync"}
+                            )
                         except Exception as e:
                             logger.debug(f"[EMAIL-SYNC] Could not broadcast: {e}")
                         
