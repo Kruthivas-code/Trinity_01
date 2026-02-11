@@ -4630,7 +4630,10 @@ async def export_tickets(
 
 # IMAP Email Sync endpoint
 @app.post("/api/email/sync")
-async def trigger_email_sync(current_user: dict = Depends(get_current_user)):
+async def trigger_email_sync(
+    fetch_all: bool = Query(False, description="Fetch all emails, not just unseen"),
+    current_user: dict = Depends(get_current_user)
+):
     """Manually trigger IMAP email sync."""
     from imap_sync import get_imap_config, fetch_new_emails
     
@@ -4639,7 +4642,9 @@ async def trigger_email_sync(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=400, detail="IMAP not configured")
     
     loop = asyncio.get_event_loop()
-    new_emails = await loop.run_in_executor(None, fetch_new_emails, config, None)
+    new_emails = await loop.run_in_executor(
+        None, lambda: fetch_new_emails(config, since_uid=None, fetch_all=fetch_all)
+    )
     
     created_count = 0
     reply_count = 0
