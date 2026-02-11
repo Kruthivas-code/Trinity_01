@@ -127,8 +127,14 @@ def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List
     conn = None
 
     try:
-        conn = imaplib.IMAP4_SSL(imap_server, imap_port)
-        conn.socket().settimeout(30)  # 30 second timeout on all socket operations
+        # Set socket timeout to prevent hanging on slow Gmail responses
+        old_timeout = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(30)
+        try:
+            conn = imaplib.IMAP4_SSL(imap_server, imap_port)
+        finally:
+            socket.setdefaulttimeout(old_timeout)
+        conn.socket().settimeout(30)
         conn.login(imap_email, imap_password)
         conn.select("INBOX", readonly=True)
 
