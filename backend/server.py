@@ -130,8 +130,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
 # Mount Socket.IO for WebSocket support
-# Socket.IO handles /api/socket.io/ routes (via ingress /api -> backend)
-app.mount("/api/socket.io", socket_app)
+# Socket.IO handles /socket.io/ routes (ingress strips /api prefix)
+app.mount("/socket.io", socket_app)
 
 # ==================== Request ID Middleware ====================
 @app.middleware("http")
