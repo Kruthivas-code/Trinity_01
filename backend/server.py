@@ -316,6 +316,7 @@ async def auto_sync_emails():
                 # Read last processed UID from persistent state
                 state = imap_sync_state.find_one({"_id": "imap_last_uid"})
                 last_uid = state["last_uid"] if state else 0
+                loop = asyncio.get_event_loop()
                 
                 # First run: seed with current max UID so we only track new emails
                 if last_uid == 0:
@@ -332,7 +333,6 @@ async def auto_sync_emails():
                         continue
                 
                 # Run IMAP fetch in thread pool (it's blocking I/O)
-                loop = asyncio.get_event_loop()
                 new_emails, new_max_uid = await loop.run_in_executor(
                     None, lambda: fetch_emails_by_uid(config, last_uid=last_uid)
                 )
