@@ -570,4 +570,5 @@ async def get_typing_in_ticket(ticket_id: str) -> list:
 
 
 # Create ASGI app for Socket.IO
-socket_app = socketio.ASGIApp(sio)
+# Configure socketio_path to match where we expect requests
+socket_app = socketio.ASGIApp(sio, socketio_path='/')
