@@ -140,25 +140,43 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
   const fetchTickets = async (pageNum) => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (escalationLevel) {
-        params.set('escalation_level', escalationLevel);
-      }
-      // Server-side filtering by status
-      if (filterStatuses && filterStatuses.length > 0) {
-        filterStatuses.forEach(s => params.append('status', s));
-      }
-      params.set('page', pageNum);
-      params.set('limit', ITEMS_PER_PAGE);
-      params.set('sort_by', 'created_at');
-      params.set('sort_order', 'desc');
+      let data;
       
-      const url = `${BACKEND_URL}/api/tickets?${params.toString()}`;
-      const response = await fetch(url, {
-        credentials: 'include'
-      });
-      if (!response.ok) throw new Error('Failed to fetch tickets');
-      const data = await response.json();
+      if (activeFilterTree) {
+        // Use advanced filter endpoint
+        const response = await fetch(`${BACKEND_URL}/api/filter/tickets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            filter_tree: activeFilterTree,
+            page: pageNum,
+            limit: ITEMS_PER_PAGE,
+            sort_by: 'created_at',
+            sort_order: 'desc',
+          }),
+        });
+        if (!response.ok) throw new Error('Failed to filter tickets');
+        data = await response.json();
+      } else {
+        // Use existing simple filter endpoint
+        const params = new URLSearchParams();
+        if (escalationLevel) {
+          params.set('escalation_level', escalationLevel);
+        }
+        if (filterStatuses && filterStatuses.length > 0) {
+          filterStatuses.forEach(s => params.append('status', s));
+        }
+        params.set('page', pageNum);
+        params.set('limit', ITEMS_PER_PAGE);
+        params.set('sort_by', 'created_at');
+        params.set('sort_order', 'desc');
+        
+        const url = `${BACKEND_URL}/api/tickets?${params.toString()}`;
+        const response = await fetch(url, { credentials: 'include' });
+        if (!response.ok) throw new Error('Failed to fetch tickets');
+        data = await response.json();
+      }
       
       const newTickets = data.tickets || [];
       setTotalCount(data.total || newTickets.length);
