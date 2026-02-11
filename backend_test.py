@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class TrinityAPITester:
-    def __init__(self, base_url="https://email-ingestion-test.preview.emergentagent.com"):
+    def __init__(self, base_url="https://filter-inbox-fix.preview.emergentagent.com"):
         self.base_url = base_url
         self.session = requests.Session()
         # Set the required session token for authentication
@@ -90,7 +90,7 @@ def main():
     print("=" * 60)
     
     # Setup tester
-    tester = TrinityAPITester("https://email-ingestion-test.preview.emergentagent.com")
+    tester = TrinityAPITester("https://filter-inbox-fix.preview.emergentagent.com")
 
     print(f"\n🔗 Testing against: {tester.base_url}")
     print(f"🔐 Using session token: UWPr27rM-BUZI_ufRFg7F0GkJzN8ZmzH2Cq6Zuu6VG8")
