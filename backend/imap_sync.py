@@ -100,13 +100,14 @@ def parse_email_date(msg: email.message.Message) -> datetime:
     return datetime.now(timezone.utc)
 
 
-def fetch_new_emails(config: Dict[str, Any], since_uid: Optional[int] = None) -> List[Dict[str, Any]]:
+def fetch_new_emails(config: Dict[str, Any], since_uid: Optional[int] = None, fetch_all: bool = False) -> List[Dict[str, Any]]:
     """
-    Connect to IMAP server and fetch new (UNSEEN) emails.
+    Connect to IMAP server and fetch emails.
 
     Args:
         config: IMAP connection config
         since_uid: Only fetch emails with UID greater than this (optional)
+        fetch_all: If True, fetch ALL emails (not just unseen)
 
     Returns:
         List of parsed email dicts
@@ -127,8 +128,11 @@ def fetch_new_emails(config: Dict[str, Any], since_uid: Optional[int] = None) ->
         conn.login(imap_email, imap_password)
         conn.select("INBOX")
 
-        # Search for unseen emails
-        search_criteria = "UNSEEN"
+        # Search criteria
+        if fetch_all:
+            search_criteria = "ALL"
+        else:
+            search_criteria = "UNSEEN"
         if since_uid:
             search_criteria = f"(UNSEEN UID {since_uid}:*)"
 
