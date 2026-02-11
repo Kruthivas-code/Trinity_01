@@ -4155,13 +4155,16 @@ async def get_tickets(
     is_starred: Optional[bool] = None,
     include_merged: Optional[bool] = False,
     escalation_level: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    sort_by: str = Query("created_at"),
+    sort_order: str = Query("desc"),
     current_user: dict = Depends(get_current_user)
 ):
     query = {}
     if status:
         query["status"] = status
     elif not include_merged:
-        # Exclude merged tickets by status
         query["status"] = {"$ne": "merged"}
     if assignee_id:
         query["assignee_id"] = assignee_id
@@ -4172,8 +4175,25 @@ async def get_tickets(
     if escalation_level:
         query["escalation_level"] = escalation_level
     
-    tickets = list(tickets_collection.find(query).sort("order", ASCENDING))
-    return [serialize_doc(ticket) for ticket in tickets]
+    total = tickets_collection.count_documents(query)
+    
+    sort_dir = DESCENDING if sort_order == "desc" else ASCENDING
+    skip = (page - 1) * limit
+    
+    tickets = list(
+        tickets_collection.find(query)
+        .sort(sort_by, sort_dir)
+        .skip(skip)
+        .limit(limit)
+    )
+    
+    return {
+        "tickets": [serialize_doc(ticket) for ticket in tickets],
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "has_more": skip + limit < total
+    }
 
 @app.post("/api/tickets")
 async def create_ticket(
