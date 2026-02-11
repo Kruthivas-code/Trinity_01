@@ -12,6 +12,7 @@ from email.header import decode_header
 from email.utils import parseaddr, parsedate_to_datetime
 import os
 import re
+import socket
 import logging
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List, Tuple
