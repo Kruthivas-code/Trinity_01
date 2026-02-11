@@ -203,6 +203,13 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
     fetchTickets(1);
   }, [escalationLevel, activeFilterTree]);
 
+  // Sync propFilterTree changes
+  useEffect(() => {
+    if (propFilterTree) {
+      setActiveFilterTree(propFilterTree);
+    }
+  }, [propFilterTree]);
+
   // Re-fetch tickets when refreshKey changes (e.g., after merge)
   useEffect(() => {
     if (refreshKey !== undefined && refreshKey > 0) {
