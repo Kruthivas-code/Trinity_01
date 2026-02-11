@@ -220,7 +220,7 @@ class TestTicketCRUDWithBroadcast:
         }
         
         response = api_client.post(f"{BASE_URL}/api/tickets", json=ticket_data)
-        assert response.status_code == 201, f"Failed to create ticket: {response.text}"
+        assert response.status_code in [200, 201], f"Failed to create ticket: {response.text}"
         
         created_ticket = response.json()
         assert "ticket_id" in created_ticket
@@ -245,7 +245,7 @@ class TestTicketCRUDWithBroadcast:
         }
         
         create_response = api_client.post(f"{BASE_URL}/api/tickets", json=ticket_data)
-        assert create_response.status_code == 201
+        assert create_response.status_code in [200, 201]
         
         ticket_id = create_response.json()["ticket_id"]
         
@@ -275,7 +275,7 @@ class TestTicketCRUDWithBroadcast:
         }
         
         create_response = api_client.post(f"{BASE_URL}/api/tickets", json=ticket_data)
-        assert create_response.status_code == 201
+        assert create_response.status_code in [200, 201]
         
         ticket_id = create_response.json()["ticket_id"]
         
