@@ -80,7 +80,7 @@ const formatTimeAgo = (dateString) => {
   });
 };
 
-const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, user, onTicketClick, refreshKey }) => {
+const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, user, onTicketClick, refreshKey, filterTree: propFilterTree, showFilterBuilder, onSaveInbox }) => {
   const [tickets, setTickets] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [users, setUsers] = useState([]);
@@ -88,6 +88,8 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const observerTarget = useRef(null);
+  const [activeFilterTree, setActiveFilterTree] = useState(propFilterTree || null);
+  const [showSaveModal, setShowSaveModal] = useState(false);
   
   const { onTicketUpdate } = useRealtime();
 
