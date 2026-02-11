@@ -102,6 +102,18 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
     localStorage.setItem('sidebarWidth', sidebarWidth.toString());
   }, [sidebarWidth]);
 
+  // Close inbox menu when clicking outside
+  useEffect(() => {
+    if (!inboxMenuOpen) return;
+    const handler = (e) => {
+      if (!e.target.closest(`[data-testid="inbox-menu-${inboxMenuOpen}"]`) && !e.target.closest(`[data-testid="inbox-menu-trigger-${inboxMenuOpen}"]`)) {
+        setInboxMenuOpen(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [inboxMenuOpen]);
+
   const handleDragStart = useCallback((e) => {
     e.preventDefault();
     setIsDragging(true);
