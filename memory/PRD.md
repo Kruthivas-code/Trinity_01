@@ -31,14 +31,17 @@ Build a web-based customer support ticketing system ("Trinity") with ticket mana
 - Post-login auth cache fix (module-level user cache in ProtectedRoute)
 - Server-side pagination on GET /api/tickets with infinite scroll
 - **8 Scalability Fixes**: analytics aggregation, auto-close batch ops, streaming export, notes pagination, N+1 fix, compound indexes
-- **IMAP Email Sync (UID-based)** — Feb 2026:
+- **IMAP Email Sync (UID-based + IDLE push)** — Feb 2026:
   - Replaced unreliable time-based IMAP fetching with UID-tracking mechanism
-  - `fetch_emails_by_uid()` in `imap_sync.py` — fetches only emails with UID > last processed
+  - **IMAP IDLE** for near-realtime push notifications (~1-5s latency vs 60s polling)
+  - `IMAPIdleWatcher` class maintains persistent IMAP connection using `imapclient`
+  - Auto-reconnects with exponential backoff (5s→60s) on failures
+  - Renews IDLE every 25 min (Gmail drops after ~29 min)
+  - Thread-safe callback via `asyncio.run_coroutine_threadsafe`
   - `imap_sync_state` MongoDB collection stores last_uid persistently
-  - First-run seeding: automatically sets last_uid to current max UID (no backfill)
+  - First-run seeding: sets last_uid to current max UID (no backfill)
   - Fixed Gmail IMAP connection hang on close/logout (force-close socket)
-  - Unique sparse index on `email_replies.email_rfc_message_id` ensured
-  - Background task runs every 60s with distributed locking
+  - Unique sparse index on `email_replies.email_rfc_message_id`
 - **Real-time ticket push** — Feb 2026:
   - Fixed ObjectId serialization in Socket.IO broadcasts (serialize_doc before emit)
   - Fixed wrong function name/signature (broadcast_ticket_updated → broadcast_ticket_update)
