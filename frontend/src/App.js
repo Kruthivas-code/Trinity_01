@@ -109,6 +109,18 @@ function AppRouter() {
         }
       />
       <Route
+        path="/inbox/:inboxId"
+        element={
+          <ProtectedRoute>
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <MainLayout view="custom-inbox" user={user} />
+              </AppWithRealtime>
+            )}
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/profile"
         element={
           <ProtectedRoute>
