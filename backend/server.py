@@ -456,8 +456,9 @@ async def auto_sync_emails():
                                 serialize_doc(updated_ticket),
                                 {"user_id": "system", "name": "Email Sync"}
                             )
+                            logger.info(f"[EMAIL-SYNC] Broadcast ticket:update for {existing_thread_ticket['ticket_id']}")
                         except Exception as e:
-                            logger.debug(f"[EMAIL-SYNC] Could not broadcast: {e}")
+                            logger.error(f"[EMAIL-SYNC] FAILED to broadcast ticket:update: {e}", exc_info=True)
                         
                         continue
                     
