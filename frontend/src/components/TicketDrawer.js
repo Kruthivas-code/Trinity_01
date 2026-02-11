@@ -1055,12 +1055,12 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const fetchNotes = async (ticketId) => {
     setLoadingNotes(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}/notes`, {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}/notes?limit=500`, {
         credentials: 'include'
       });
       if (response.ok) {
         const data = await response.json();
-        setNotes(data);
+        setNotes(data.messages || data);
       }
     } catch (error) {
       console.error('Failed to fetch notes:', error);
