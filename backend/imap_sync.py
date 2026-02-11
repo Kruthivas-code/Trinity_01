@@ -217,6 +217,9 @@ def fetch_emails_by_uid(config: Dict[str, Any], last_uid: int = 0) -> Tuple[List
         if conn:
             try:
                 conn.close()
+            except Exception:
+                pass
+            try:
                 conn.logout()
             except Exception:
                 pass
