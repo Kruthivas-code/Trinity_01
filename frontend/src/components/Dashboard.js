@@ -50,7 +50,7 @@ const Dashboard = ({ user, token, onLogout }) => {
       });
       if (!response.ok) throw new Error('Failed to fetch tickets');
       const data = await response.json();
-      setTickets(data);
+      setTickets(data.tickets || data);
     } catch (error) {
       console.error('Operation failed');
     }
