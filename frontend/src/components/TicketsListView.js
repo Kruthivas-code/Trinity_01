@@ -162,6 +162,7 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
       const data = await response.json();
       
       const newTickets = data.tickets || [];
+      setTotalCount(data.total || newTickets.length);
       
       if (pageNum === 1) {
         setTickets(newTickets);
