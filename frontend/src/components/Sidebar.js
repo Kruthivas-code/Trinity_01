@@ -4,7 +4,7 @@ import {
   LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, 
   User, ChevronDown, Menu, X, LogOut, Users, Shield, CalendarDays,
   Bookmark, BarChart3, UserCircle, Star, MessageSquare,
-  Inbox, AlertTriangle, Zap, ChevronRight
+  Inbox, AlertTriangle, Zap, ChevronRight, MoreHorizontal, Pencil, Trash2, Share2
 } from 'lucide-react';
 import { clearCachedUser } from './ProtectedRoute';
 
