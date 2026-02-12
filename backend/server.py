@@ -5125,6 +5125,130 @@ async def get_agent_analytics(
 
 # canned_responses routes extracted to routes/canned_responses.py
 
+# ==================== Bulk Operations ====================
+
+@app.post("/api/tickets/bulk-update")
+async def bulk_update_tickets(
+    request: BulkUpdateRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Bulk update multiple tickets at once"""
+    if not request.ticket_ids:
+        raise HTTPException(status_code=400, detail="No ticket IDs provided")
+    
+    if len(request.ticket_ids) > 100:
+        raise HTTPException(status_code=400, detail="Maximum 100 tickets per bulk operation")
+    
+    # Validate updates
+    allowed_fields = {"status", "priority", "assignee_id", "team_id", "escalation_level"}
+    update_fields = {k: v for k, v in request.updates.items() if k in allowed_fields}
+    
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No valid update fields provided")
+    
+    update_fields["updated_at"] = datetime.now(timezone.utc)
+    
+    # Perform bulk update
+    result = tickets_collection.update_many(
+        {"ticket_id": {"$in": request.ticket_ids}},
+        {"$set": update_fields}
+    )
+    
+    # Log to changelog for each ticket
+    for ticket_id in request.ticket_ids:
+        for field, new_value in update_fields.items():
+            if field != "updated_at":
+                ticket_changelog_collection.insert_one({
+                    "changelog_id": f"cl_{uuid.uuid4().hex[:12]}",
+                    "ticket_id": ticket_id,
+                    "field": field,
+                    "old_value": None,  # Unknown in bulk operation
+                    "new_value": new_value,
+                    "changed_by": current_user.get("user_id"),
+                    "changed_by_name": current_user.get("name"),
+                    "timestamp": datetime.now(timezone.utc),
+                    "bulk_operation": True
+                })
+    
+    return {
+        "message": f"Updated {result.modified_count} tickets",
+        "matched": result.matched_count,
+        "modified": result.modified_count
+    }
+
+@app.post("/api/tickets/bulk-tag")
+async def bulk_tag_tickets(
+    request: BulkTagRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Bulk add or remove tags from multiple tickets"""
+    if not request.ticket_ids:
+        raise HTTPException(status_code=400, detail="No ticket IDs provided")
+    
+    if len(request.ticket_ids) > 100:
+        raise HTTPException(status_code=400, detail="Maximum 100 tickets per bulk operation")
+    
+    modified_count = 0
+    
+    for ticket_id in request.ticket_ids:
+        update_ops = {}
+        
+        if request.tags_to_add:
+            update_ops["$addToSet"] = {"tags": {"$each": request.tags_to_add}}
+        
+        if request.tags_to_remove:
+            update_ops["$pull"] = {"tags": {"$in": request.tags_to_remove}}
+        
+        if update_ops:
+            # MongoDB doesn't allow $addToSet and $pull in same operation
+            if request.tags_to_add:
+                tickets_collection.update_one(
+                    {"ticket_id": ticket_id},
+                    {"$addToSet": {"tags": {"$each": request.tags_to_add}}}
+                )
+            if request.tags_to_remove:
+                tickets_collection.update_one(
+                    {"ticket_id": ticket_id},
+                    {"$pull": {"tags": {"$in": request.tags_to_remove}}}
+                )
+            modified_count += 1
+    
+    return {
+        "message": f"Updated tags for {modified_count} tickets",
+        "tags_added": request.tags_to_add,
+        "tags_removed": request.tags_to_remove
+    }
+
+@app.post("/api/tickets/bulk-close")
+async def bulk_close_tickets(
+    ticket_ids: List[str],
+    current_user: dict = Depends(get_current_user)
+):
+    """Bulk close multiple tickets"""
+    if not ticket_ids:
+        raise HTTPException(status_code=400, detail="No ticket IDs provided")
+    
+    if len(ticket_ids) > 100:
+        raise HTTPException(status_code=400, detail="Maximum 100 tickets per bulk operation")
+    
+    now = datetime.now(timezone.utc)
+    result = tickets_collection.update_many(
+        {"ticket_id": {"$in": ticket_ids}},
+        {"$set": {
+            "status": "resolved",
+            "resolved_at": now,
+            "updated_at": now
+        }}
+    )
+    
+    return {
+        "message": f"Closed {result.modified_count} tickets",
+        "modified": result.modified_count
+    }
+
+
+
+
 # customers routes extracted to routes/customers.py
 
 # csat routes extracted to routes/csat.py
