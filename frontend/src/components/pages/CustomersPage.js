@@ -16,7 +16,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "../ui/select";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
