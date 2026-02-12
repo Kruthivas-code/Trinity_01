@@ -240,7 +240,7 @@ async def export_customers(
             "name": {"$first": "$customer_name"},
             "domain": {"$first": "$domain"},
             "ticket_count": {"$sum": 1},
-            "open_tickets": {"$sum": {"$cond": [{"$nin": ["$status", ["resolved", "closed"]]}, 1, 0]}},
+            "open_tickets": {"$sum": {"$cond": [{"$not": {"$in": ["$status", ["resolved", "closed"]]}}, 1, 0]}},
             "resolved_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["resolved", "closed"]]}, 1, 0]}},
             "first_contact": {"$min": "$created_at"},
             "last_contact": {"$max": "$created_at"},
