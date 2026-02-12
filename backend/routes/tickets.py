@@ -376,6 +376,7 @@ async def get_starred_tickets(current_user: dict = Depends(get_current_user)):
 
 @router.get("/tickets/escalation-counts")
 async def get_escalation_counts(current_user: dict = Depends(get_current_user)):
+    """Get ticket counts grouped by escalation level (L1/L2/L3) and status."""
     pipeline = [
         {"$match": {"status": {"$nin": ["merged", "resolved", "closed"]}}},
         {"$group": {"_id": {"escalation_level": {"$ifNull": ["$escalation_level", "L1"]}, "status": "$status"}, "count": {"$sum": 1}}}
@@ -410,6 +411,7 @@ async def get_tickets(
     sort_order: str = Query("desc"),
     current_user: dict = Depends(get_current_user)
 ):
+    """List tickets with filtering, pagination, and sorting. Supports multi-value status filter."""
     query = {}
     status_values = request.query_params.getlist("status")
     if status_values:
@@ -439,6 +441,7 @@ async def create_ticket(
     ticket_data: TicketCreate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Create a new ticket. Automatically runs routing rules and creates a customer record."""
     max_order_ticket = tickets_collection.find_one({"status": ticket_data.status}, sort=[("order", DESCENDING)])
     next_order = (max_order_ticket["order"] + 1) if max_order_ticket and "order" in max_order_ticket else 0
     ticket_id = generate_ticket_id()
@@ -475,6 +478,7 @@ async def create_ticket(
 
 @router.get("/tickets/{ticket_id}")
 async def get_ticket(ticket_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a single ticket by ID."""
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -487,6 +491,7 @@ async def update_ticket(
     ticket_data: TicketUpdate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Update a ticket's fields. Logs changes, handles reassignment on reopen, and triggers webhooks."""
     current_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not current_ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -551,6 +556,7 @@ async def update_ticket(
 
 @router.delete("/tickets/{ticket_id}")
 async def delete_ticket(ticket_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a ticket by ID and broadcast the deletion event."""
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
