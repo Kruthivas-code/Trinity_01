@@ -145,6 +145,7 @@ async def update_admin_settings(
 
 @router.get("/admin/routing-rules")
 async def get_routing_rules(current_user: dict = Depends(get_current_user)):
+    """List all ticket routing rules, sorted by priority."""
     rules = list(routing_rules_collection.find({}, {"_id": 0}).sort("priority", -1))
     return [serialize_doc(r) for r in rules]
 
@@ -154,6 +155,7 @@ async def create_routing_rule(
     rule_data: RoutingRuleCreate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Create a new ticket routing rule with conditions and actions."""
     rule_id = f"rule_{uuid.uuid4().hex[:12]}"
     condition_groups = rule_data.condition_groups
     if not condition_groups and rule_data.conditions:
@@ -181,6 +183,7 @@ async def update_routing_rule(
     rule_data: RoutingRuleUpdate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Update an existing routing rule."""
     update_data = {"updated_at": datetime.now(timezone.utc)}
     if rule_data.name is not None:
         update_data["name"] = rule_data.name
@@ -210,6 +213,7 @@ async def delete_routing_rule(
     rule_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Delete a routing rule by ID."""
     result = routing_rules_collection.delete_one({"rule_id": rule_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Rule not found")
@@ -221,6 +225,7 @@ async def test_routing_rule(
     ticket_data: dict,
     current_user: dict = Depends(get_current_user)
 ):
+    """Test routing rules against sample ticket data without applying changes."""
     rules = list(routing_rules_collection.find({"is_active": True}, {"_id": 0}).sort("priority", -1))
     matched_rules = []
     for rule in rules:
@@ -252,6 +257,7 @@ async def route_ticket(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Run routing rules on a specific ticket and apply matching actions."""
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
