@@ -415,6 +415,7 @@ async def import_tickets(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
+    """Import tickets from a JSON or CSV file upload."""
     content = await file.read()
     
     try:
