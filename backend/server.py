@@ -566,18 +566,6 @@ async def auto_sync_emails():
         raise
 
 
-def extract_email_address(from_header):
-    """Extract just the email address from a 'From' header like 'Name <email@example.com>'"""
-    if not from_header:
-        return None
-    import re
-    match = re.search(r'<([^>]+)>', from_header)
-    if match:
-        return match.group(1)
-    # Maybe it's just an email address
-    if '@' in from_header:
-        return from_header.strip()
-    return None
 
 @app.on_event("startup")
 async def startup_event():
