@@ -5,7 +5,8 @@ from fastapi import HTTPException, Depends, Request, Cookie, Security
 from fastapi.security import APIKeyHeader
 from typing import Optional, List
 from datetime import datetime, timezone
-import hashlib
+import secrets
+import bcrypt
 
 from database import (
     users_collection, sessions_collection, api_keys_collection,
@@ -15,16 +16,29 @@ from database import (
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
+def generate_api_key() -> tuple:
+    """Generate API key and its bcrypt hash"""
+    key = f"tk_live_{secrets.token_urlsafe(32)}"
+    key_hash = bcrypt.hashpw(key.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    return key, key_hash
+
+
 def verify_api_key(key: str) -> Optional[dict]:
-    """Verify an API key and return the key document if valid"""
-    key_hash = hashlib.sha256(key.encode()).hexdigest()
-    api_key_doc = api_keys_collection.find_one({"key_hash": key_hash}, {"_id": 0})
-    if api_key_doc and api_key_doc.get("is_active", True):
-        api_keys_collection.update_one(
-            {"key_hash": key_hash},
-            {"$set": {"last_used_at": datetime.now(timezone.utc).isoformat()}}
-        )
-        return api_key_doc
+    """Verify API key using bcrypt and return associated data"""
+    if not key:
+        return None
+    api_keys = list(api_keys_collection.find({"revoked": {"$ne": True}}))
+    for api_key_doc in api_keys:
+        stored_hash = api_key_doc.get("key_hash", "")
+        try:
+            if bcrypt.checkpw(key.encode('utf-8'), stored_hash.encode('utf-8')):
+                api_keys_collection.update_one(
+                    {"_id": api_key_doc["_id"]},
+                    {"$set": {"last_used_at": datetime.now(timezone.utc)}, "$inc": {"usage_count": 1}}
+                )
+                return api_key_doc
+        except (ValueError, TypeError):
+            continue
     return None
 
 
