@@ -55,17 +55,18 @@ class TestPhase7LeaveManagement:
         # Create leave for Feb 20-21
         leave_data = {
             "user_id": ADMIN_USER_ID,
-            "start_date": "2026-02-20",
-            "end_date": "2026-02-21",
+            "start_date": "2026-02-22",
+            "end_date": "2026-02-23",
             "leave_type": "vacation",
-            "reason": "TEST_Phase7_Leave_Creation"
+            "reason": "TEST_Phase7_Leave_Creation_V2"
         }
         response = api_client.post(f"{BASE_URL}/api/leaves", json=leave_data)
         assert response.status_code == 200, f"Leave creation failed with {response.status_code}: {response.text}"
         
         data = response.json()
-        assert "leave_id" in data, "Response should contain leave_id"
-        TestPhase7LeaveManagement.created_leave_id = data.get("leave_id")
+        # Leave API returns 'id' not 'leave_id'
+        assert "id" in data, "Response should contain 'id' field"
+        TestPhase7LeaveManagement.created_leave_id = data.get("id")
         print(f"Created leave: {TestPhase7LeaveManagement.created_leave_id}")
     
     def test_get_leave_by_id(self, api_client):
