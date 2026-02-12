@@ -198,9 +198,9 @@
 | Phase 3 | NOT STARTED | | | | |
 | Phase 4 | COMPLETE | Feb 12, 2026 | Feb 12, 2026 | 0 | 2 teams, members visible |
 | Phase 5 | COMPLETE | Feb 12, 2026 | Feb 12, 2026 | 1 (fixed) | Empty state works, agent loading fixed |
-| Phase 6 | COMPLETE | Feb 12, 2026 | Feb 12, 2026 | 1 (fixed) | Feature Requests crash fixed |
-| Phase 7 | NOT STARTED | | | | |
-| Phase 8 | NOT STARTED | | | | |
+| Phase 6 | COMPLETE | Feb 12, 2026 | Feb 12, 2026 | 2 (fixed) | Feature Requests crash fixed + type/status mismatch |
+| Phase 7 | COMPLETE | Feb 12, 2026 | Feb 12, 2026 | 1 (fixed) | Leave creation bug fixed, calendar works |
+| Phase 8 | IN PROGRESS | Feb 12, 2026 | | 1 (fixed) | Admin page array fix, export fix, custom field created |
 | Phase 9 | NOT STARTED | | | | |
 | Phase 10 | NOT STARTED | | | | |
 
@@ -220,6 +220,9 @@
 | 8 | 7 | Leave Page | MEDIUM | Users list not extracted from `{items:[]}` | FIXED | LeavePage.js line 110 |
 | 9 | 8 | Admin Page | MEDIUM | Users list not extracted from `{items:[]}` | FIXED | AdminPage.js line 486 |
 | 10 | 8 | Settings Export | LOW | Export functions only handle `{tickets:[]}` not `{items:[]}` | FIXED | SettingsPage.js lines 280,330 |
+| 11 | 7 | Leave Creation | CRITICAL | `LeaveManager.create_leave()` called with wrong args (dict + user_id instead of LeaveRequest) | FIXED | routes/leaves.py line 39 |
+| 12 | 6 | Feature Request Status | MEDIUM | Backend creates with `status: "proposed"` but frontend expects `"new"` | FIXED | routes/feature_requests.py line 35 |
+| 13 | 6 | Feature Request Type | MEDIUM | Backend returns `category` but frontend reads `request_type` | FIXED | FeatureRequestsPage.js (3 locations) |
 
 ---
 
