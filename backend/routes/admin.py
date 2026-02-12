@@ -270,6 +270,7 @@ async def route_ticket(
 
 @router.get("/admin/sla-policies")
 async def get_sla_policies(current_user: dict = Depends(get_current_user)):
+    """Get SLA policy configuration including priority-based targets and business hours."""
     settings = admin_settings_collection.find_one({"type": "sla_settings"}) or {}
     return {
         "default_first_response_hours": settings.get("default_first_response_hours", 4),
@@ -294,6 +295,7 @@ async def update_sla_policies(
     data: SLAPoliciesUpdate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Update SLA policy settings (response/resolution targets, business hours, holidays)."""
     update_data = {"updated_at": datetime.now(timezone.utc)}
     if data.default_first_response_hours is not None:
         update_data["default_first_response_hours"] = data.default_first_response_hours
@@ -318,6 +320,7 @@ async def update_sla_policies(
 
 @router.get("/admin/sla-escalation-rules")
 async def get_sla_escalation_rules(current_user: dict = Depends(get_current_user)):
+    """List all SLA escalation rules, sorted by priority."""
     rules = list(sla_escalation_rules_collection.find({}, {"_id": 0}).sort("priority", -1))
     return [serialize_doc(r) for r in rules]
 
@@ -327,6 +330,7 @@ async def create_sla_escalation_rule(
     rule_data: SLAEscalationRuleCreate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Create a new SLA escalation rule with trigger conditions and actions."""
     rule_id = f"sla_rule_{uuid.uuid4().hex[:12]}"
     rule_doc = {
         "rule_id": rule_id,
@@ -353,6 +357,7 @@ async def update_sla_escalation_rule(
     rule_data: SLAEscalationRuleUpdate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Update an existing SLA escalation rule."""
     update_data = {"updated_at": datetime.now(timezone.utc)}
     if rule_data.name is not None:
         update_data["name"] = rule_data.name
@@ -384,6 +389,7 @@ async def delete_sla_escalation_rule(
     rule_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Delete an SLA escalation rule by ID."""
     result = sla_escalation_rules_collection.delete_one({"rule_id": rule_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Rule not found")
