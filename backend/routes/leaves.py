@@ -26,12 +26,7 @@ async def get_leaves(
 ):
     """Get leaves with optional filters"""
     leave_mgr = get_leave_manager(db)
-    filters = {}
-    if status:
-        filters["status"] = status
-    if user_id:
-        filters["user_id"] = user_id
-    return leave_mgr.get_leaves(filters)
+    return await leave_mgr.get_leaves(user_id=user_id, status=status)
 
 
 @router.post("/leaves")
