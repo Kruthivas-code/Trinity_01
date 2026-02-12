@@ -127,6 +127,7 @@ from routes.search_presence import router as search_presence_router
 from routes.leaves import router as leaves_router
 from routes.feature_requests import router as feature_requests_router
 from routes.exports import router as exports_router
+from routes.knowledge_base import router as knowledge_base_router
 
 app.include_router(filters_router)
 app.include_router(webhooks_router)
