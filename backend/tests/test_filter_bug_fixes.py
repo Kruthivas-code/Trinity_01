@@ -10,7 +10,7 @@ import requests
 import os
 from pymongo import MongoClient
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://api-guide-2.preview.emergentagent.com")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://docs-integration.preview.emergentagent.com")
 SESSION_TOKEN = "7N_TW_9vqeefrLlsBi_s9cZyXCYznDfSPaSt8iwcJic"
 
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")

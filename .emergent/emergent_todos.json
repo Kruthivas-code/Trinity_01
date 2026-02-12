@@ -1,18 +1,38 @@
 [
   {
-    "content": "Update VALID_SOURCES to include 'atlas' and add Atlas import Pydantic model",
+    "content": "Fix 1: API Key Verification Performance (SHA-256 lookup)",
     "status": "completed"
   },
   {
-    "content": "Build Atlas API client (fetch conversations, messages, tags with pagination)",
+    "content": "Fix 2: SSRF Protection in Webhook Delivery",
     "status": "completed"
   },
   {
-    "content": "Build POST /api/import/atlas endpoint with full field mapping and deduplication",
+    "content": "Fix 3: Import File Size Limit (5MB)",
     "status": "completed"
   },
   {
-    "content": "Test the import endpoint with curl",
+    "content": "Fix 4: Graceful Shutdown (cancel email_sync_task)",
+    "status": "completed"
+  },
+  {
+    "content": "Fix 5: Replace deprecated bleach with nh3",
+    "status": "completed"
+  },
+  {
+    "content": "Fix 6: Request Body Size Middleware (50MB limit)",
+    "status": "completed"
+  },
+  {
+    "content": "Fix 7: Clean Up .env (remove CORS_ORIGINS)",
+    "status": "completed"
+  },
+  {
+    "content": "Run linter and verify server health",
+    "status": "completed"
+  },
+  {
+    "content": "Run Playwright verification tests",
     "status": "completed"
   }
 ]
