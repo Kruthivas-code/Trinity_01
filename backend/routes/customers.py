@@ -4,6 +4,8 @@ Routes for customers.
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 import uuid
+import asyncio
+import logging
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pymongo import ASCENDING, DESCENDING
 from database import (
@@ -12,7 +14,9 @@ from database import (
 )
 from dependencies import get_current_user
 from models.schemas import CustomerCreate, CustomerUpdate, LinkEmailRequest, MergeCustomersRequest
-from utils import serialize_doc, extract_domain, is_b2c_email, detect_company_from_domain, generate_customer_id
+from utils import serialize_doc, extract_domain, is_b2c_email, detect_company_from_domain, generate_customer_id, trigger_webhooks
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["customers"])
 
