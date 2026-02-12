@@ -58,7 +58,7 @@ async def search_tickets(
     search_engine = get_search_engine(db)
     results = search_engine.search_all(
         query=query.query,
-        limit=query.limit if hasattr(query, 'limit') else 20,
+        limit_per_category=query.limit if hasattr(query, 'limit') else 20,
         current_user_id=current_user.get("user_id")
     )
     return results
