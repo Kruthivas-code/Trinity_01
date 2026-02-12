@@ -37,6 +37,7 @@ async def get_custom_fields(
     entity_type: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
+    """List all custom fields, optionally filtered by entity type (ticket or user)."""
     query = {}
     if entity_type:
         query["entity_type"] = entity_type
@@ -49,6 +50,7 @@ async def create_custom_field(
     field_data: CustomFieldCreate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Create a new custom field for tickets or users."""
     valid_types = ["text", "number", "select", "date", "boolean"]
     if field_data.field_type not in valid_types:
         raise HTTPException(status_code=400, detail=f"Invalid field type. Must be one of: {valid_types}")
@@ -79,6 +81,7 @@ async def update_custom_field(
     field_data: CustomFieldUpdate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Update an existing custom field definition."""
     field = custom_fields_collection.find_one({"field_id": field_id})
     if not field:
         raise HTTPException(status_code=404, detail="Field not found")
@@ -95,6 +98,7 @@ async def delete_custom_field(
     field_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Delete a custom field by ID."""
     result = custom_fields_collection.delete_one({"field_id": field_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Field not found")
@@ -105,6 +109,7 @@ async def delete_custom_field(
 
 @router.get("/admin/settings")
 async def get_admin_settings(current_user: dict = Depends(get_current_user)):
+    """Get global admin settings (company name, auto-assignment, defaults)."""
     settings = admin_settings_collection.find_one({"type": "global"})
     if not settings:
         return {
@@ -127,6 +132,7 @@ async def update_admin_settings(
     settings: Dict[str, Any],
     current_user: dict = Depends(get_current_user)
 ):
+    """Update global admin settings."""
     settings["type"] = "global"
     settings["updated_at"] = datetime.now(timezone.utc)
     settings["updated_by"] = current_user.get("user_id")
