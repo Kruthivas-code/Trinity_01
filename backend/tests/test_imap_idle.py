@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 # BASE_URL from environment
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://filter-inbox-fix.preview.emergentagent.com"
+    BASE_URL = "https://modular-backend-46.preview.emergentagent.com"
 
 # Read session token from temp file or use hardcoded
 try:

@@ -1,182 +1,164 @@
 <analysis>**original_problem_statement:**
-The user wants to add a new feature to filter tickets in the All Tickets view.
+The user initially requested to fix a P0 bug related to user filtering, improve filter performance with database indexes, and then implement P1 features for custom inbox management (sharing, renaming, deleting). After completing these, the user asked for an analysis of a potential P2 refactoring task. Upon the agent's recommendation, the user decided to proceed with a major refactoring of both the backend () and the frontend () to improve maintainability, starting with the backend.
 
-PRODUCT REQUIREMENTS:
-1.  **Advanced Filtering**:
-    *   Ability to filter on any metadata field associated with a ticket, including existing fields (status, priority, agent, etc.) and any custom fields.
-    *   The search bar should also act as an entry point to the filter view.
-    *   Support for complex logic using AND/OR conditions, including nested groups with brackets (set theory).
-2.  **Custom Inboxes**:
-    *   From a filtered view, users should be able to create and save new custom inboxes.
-    *   These custom inboxes should appear in the main navigation sidebar under the Tickets menu.
-3.  **Inbox Management & Sharing**:
-    *   Users should be able to manage their custom inboxes (edit, delete) via a 3-dot menu next to the inbox name in the sidebar.
-    *   A user who creates a custom inbox should be able to share it with other team members.
-    *   Once shared, the recipient can edit their version of the inbox independently (decoupled from the creator).
-4.  **Performance**:
-    *   Filtering must be performant and scalable, designed to handle up to 100,000 tickets. This implies that filtering logic must be executed on the database side, not in the frontend.
-    *   Database indexing must be implemented to support this.
+**PRODUCT REQUIREMENTS:**
+1.  **P0 - Bug Fix & Scalability:**
+    *   Fix user dropdown in filters not populating correctly.
+    *   Add database indexes for filterable fields to improve performance.
+2.  **P1 - Custom Inbox Management:**
+    *   Implement sharing of custom inboxes with specific users.
+    *   Implement renaming and deleting custom inboxes.
+    *   Ensure the UI for these actions is intuitive (e.g., modals, menus).
+3.  **P2 - Code Refactoring & Tech Debt:**
+    *   Refactor the monolithic  into a modular structure.
+    *   Refactor the flat  directory into a logical folder structure.
+    *   Investigate and optimize WebSocket connection issues (fallback to polling).
+    *   (Deferred) Implement Atlas search import.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a customer support ticketing system. The backend is built with FastAPI and MongoDB, and the frontend with React. Key features implemented in this session include:
-- A robust, UID-based email synchronization system to prevent duplicate tickets from being created.
-- IMAP IDLE support for near real-time email fetching, replacing the previous 60-second polling mechanism.
-- Real-time UI updates for new tickets using Socket.IO, which pushes new tickets to the frontend without requiring a page refresh.
-- A foundational implementation of the advanced filtering and custom inbox feature, including backend APIs and the frontend UI. However, this new feature is currently buggy.
+The project consists of a FastAPI backend and a React frontend. A significant backend refactoring is currently in progress. The original 10,708-line monolithic  has been partially broken down. Core logic like database connections, Pydantic models, authentication dependencies, and shared utilities have been moved into separate modules (, , , ). Several route groups (filters, webhooks, customers, CSAT, canned responses) have been extracted into their own  files within the  directory.
 
 **Last working item**:
-The agent was working on fixing a bug reported by the user for the newly implemented advanced filtering feature. The user also requested scalable database indexing to ensure performance.
-
--   **Last item agent was working**: Investigating and fixing a frontend error  that occurs in the  component when a user tries to use the new ticket filtering feature. The user also explicitly requested adding database indexes to handle 100,000+ tickets efficiently.
--   **Status**: IN PROGRESS
--   **Agent Testing Done**: N
--   **Which testing method agent to use?**: Use the screenshot tool to verify the filter UI is working correctly after the fix, as requested by the user. Then, use the backend testing agent to verify filter performance after adding indexes.
--   **User Testing Done**: N
+    - Last item agent was working: The agent was continuing the major refactoring of the  file. It had just successfully extracted the , , , and  route groups into their respective files in . The agent fixed several import and dependency issues that arose during this extraction and verified the changes by running the backend and then running the full test suite with the testing agent.
+    - Status: IN PROGRESS
+    - Agent Testing Done: Y
+    - Which testing method agent to use? backend testing agent
+    - User Testing Done: N
 
 **All Pending/In progress Issue list**:
--   Issue 1: Frontend crashes when using ticket filters (P0).
--   Issue 2: Lack of database indexing for scalable filtering (P1).
-
-**Issues Detail**:
--   **Issue 1**:
-    -   **Description**: The application throws a runtime error  in  when the user interacts with the filter UI. The agent suspects the  endpoint is not returning data in the expected array format.
-    -   **Attempted fixes**: None yet. The agent just acknowledged the error.
-    -   **Next debug checklist**:
-        1.  Inspect the network response of the  call in the browser's developer tools to confirm its structure.
-        2.  Examine the backend code for the  endpoint in  to ensure it returns a JSON array of user objects.
-        3.  Check the frontend code in  where the  data is fetched and processed to handle the actual data structure correctly.
-    -   **Why fix this issue and what will be achieved with the fix?**: This is a critical bug blocking the entire filtering feature. Fixing it will make the filter UI usable.
-    -   **Status**: NOT STARTED
-    -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: Both. Frontend with the screenshot tool to confirm UI works, and backend to ensure the API response is correct.
-    -   **Blocked on other issue**: None.
-
--   **Issue 2**:
-    -   **Description**: The user has specified a requirement for the filtering feature to be scalable up to 100,000 tickets. The current implementation does not have the necessary database indexes to support performant queries on large datasets.
-    -   **Attempted fixes**: None.
-    -   **Next debug checklist**:
-        1.  Analyze the  function in  to identify all fields used for filtering.
-        2.  Identify the most commonly filtered fields (e.g., , , , , custom fields).
-        3.  Add compound indexes in MongoDB on these fields using . The startup script or a migration script is a good place for this. For example: .
-    -   **Why fix this issue and what will be achieved with the fix?**: To meet the user's performance and scalability requirements. Without indexes, queries will become slow and time out as the number of tickets grows.
-    -   **Status**: NOT STARTED
-    -   **Is recurring issue?**: N
-    -   **Should Test frontend/backend/both after fix?**: Backend. Verify query performance.
-    -   **Blocked on other issue**: None.
+There are no outstanding bugs or issues. The current focus is on the planned refactoring tasks.
 
 **In progress Task List**:
--   Task 1: Complete the Advanced Filtering and Custom Inboxes Feature.
-
-**Task Detail**:
--   **Task 1**:
-    -   **Where to resume**: Resume by fixing the  bug (Issue 1) and then implementing database indexing (Issue 2). After fixing, conduct thorough testing of the entire filter -> save inbox -> view inbox flow.
-    -   **What will be achieved with this?**: A fully functional, performant, and scalable advanced filtering system with custom inboxes.
-    -   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: Both.
-    -   **Blocked on something**: Issue 1 (Frontend bug).
+  - Task 1: Complete Backend Refactoring (Priority: P0)
+     - Where to resume: The  file is still at 6,774 lines. The next step is to continue extracting the remaining route groups (e.g., tickets, email/gmail, admin, users, analytics) into their own files under . The established pattern of creating an , moving the code, fixing imports, and including the router in the main  should be followed.
+     - What will be achieved with this? This will complete the backend modularization, making the codebase significantly easier to navigate, maintain, and extend. It will drastically reduce the size of , turning it into a lean application orchestrator.
+     - Status: IN PROGRESS
+     - Should Test frontend/backend/both after fix? backend
+     - Blocked on something: No
 
 **Upcoming and Future Tasks**
--   **Upcoming Tasks**:
-    -   **P1: Custom Inbox Sharing**: Implement the backend and frontend logic to allow a user to share a custom inbox with other team members. This involves adding a Share option to the 3-dot menu and creating an association between users and shared inboxes.
-    -   **P1: Custom Inbox Management**: Fully implement the Edit and Delete functionality for custom inboxes from the 3-dot menu in the sidebar. Currently, the menu exists but the actions are not fully wired.
+    Upcoming Tasks:
+    - **P1: Frontend Component Refactoring**: Once the backend refactoring is stable, the agent should organize the flat  directory into a structured set of subfolders (e.g., , , , ). This will involve creating the new directory structure, moving the component files, and updating all import paths across the frontend application. (Priority: P1)
 
--   **Future Tasks**:
-    -   **P2: Refactor  and **: These components have grown large and complex. They should be broken down into smaller, more manageable sub-components to improve maintainability.
-    -   **P2: Investigate WebSocket Upgrade Failure**: The agent noted that the Socket.IO connection falls back from WebSocket to long-polling. While real-time updates work, fixing the upgrade to a persistent WebSocket connection would be more efficient.
+    Future Tasks:
+    - **Atlas Search Import**: This was a P2 item from the original plan that was explicitly deferred. It can be revisited after all refactoring work is complete.
 
 **Completed work in this session**
--   **UID-Based Email Sync**: Migrated the email fetching logic from time-based to IMAP UID-based. This resolved issues with duplicate tickets being created on re-sync. Implemented in  and .
--   **Real-time Ticket Creation UI Update**: Implemented Socket.IO broadcasts () from the backend when new tickets are created (both via API and email sync). The frontend now listens for these events and adds new tickets to the list without a page refresh. Implemented in  and .
--   **IMAP IDLE for Near Real-Time Sync**: Replaced the 60-second polling for new emails with a persistent IMAP IDLE connection, making email sync near-instantaneous. Implemented in  and  using the  library.
--   **Advanced Filter & Custom Inbox (Foundation)**: Built the backend APIs and frontend components for creating advanced filters and saving them as custom inboxes. This includes , , and API endpoints in .
+- List of all completed tasks with file and method name:
+  - **P0 Bug Fix**: Fixed user list population in  and  by correctly accessing the  array from the paginated API response.
+  - **P0 Scalability Fix**: Added MongoDB indexes for , , and  collections in  (initially, now part of  startup). The index creation logic was made more robust to handle pre-existing indexes.
+  - **P1 Inbox Features**:
+    - Created  to allow sharing inboxes with specific users.
+    - Created  for renaming inboxes.
+    - Updated  to integrate the new share and rename modals into the custom inbox menu.
+  - **P2 WebSocket Optimization**: Modified the Socket.IO client connection options in  to prioritize the 'websocket' transport over 'polling', improving real-time connection performance.
+  - **P2 Backend Refactoring (In Progress)**:
+    - Created  to centralize DB connection logic and collection definitions.
+    - Created  to contain all Pydantic models.
+    - Created  for authentication helpers.
+    - Created  for shared utility functions.
+    - Extracted routes into , , , , and .
+    - Reduced  line count from 10,708 to 6,774.
+
+- Recently completed:
+  - Backend route extraction for webhooks, customers, canned responses, and CSAT. (DONE)
+  - Full regression testing via testing agent to verify refactoring. (DONE)
+  - Custom Inbox Share/Rename feature implementation. (DONE)
+  - User filter bug fix. (DONE)
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: WebSocket Connection Falls Back to Polling**
-    -   **Debug checklist**: Check the  in both frontend and backend configurations. Inspect Nginx/ingress controller configurations for WebSocket protocol ( and ) support, including headers like  and . Review  and  server configurations for async modes (e.g., ).
-    -   **Why to solve this issue and what will be achieved with this?**: While polling works as a fallback, a persistent WebSocket connection is more efficient, reduces latency, and lowers server load for real-time communication.
-    -   **Should Test frontend/backend/both after fix**: Both.
-    -   **Is recurring issue?**: N
+   - None. All identified issues were addressed.
 
 **Known issue recurrence from previous fork**
--   None.
+  - Not applicable.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Backend**: FastAPI (Python), MongoDB (with  for async access),  for real-time communication.
--   **Frontend**: React, ,  component library, Axios.
--   **Email Sync**: IMAP protocol, using  library for UID tracking and IDLE support.
--   **Architecture**: Monolithic backend service with a background thread for IMAP sync. Single Page Application (SPA) frontend.
+- **Backend**: FastAPI, MongoDB (via ), Pydantic, Socket.IO, uvicorn.
+- **Frontend**: React, Material-UI (MUI), .
+- **Architecture**: Monolithic backend (in the process of being modularized) with a separate single-page application (SPA) frontend.
 
 **key DB schema**
--   : 
--   : 
--   :  (New)
--   :  (Modified)
+  - : Stores all ticket information.
+  - : Stores user accounts and roles.
+  - : Stores customer information linked to tickets.
+  - : Stores user-defined filter configurations for saved inboxes.
+  - : Stores predefined reply templates.
 
 **changes in tech stack**
--   The  library was introduced to support IMAP IDLE functionality.
+  - No change in the underlying technologies.
+  - Major architectural refactoring of the backend code from a single-file monolith towards a modular, router-based structure.
 
 **All files of reference**
--   **Created Files**:
-    -   : The UI component for building nested filter logic.
-    -   : A modal dialog to name and save the current filter set as a custom inbox.
-    -   : A page component to display tickets that match a saved custom inbox filter.
--   **Updated Files**:
-    -   : Added new API endpoints for filtering () and CRUD for custom inboxes (). Replaced polling sync with IMAP IDLE.
-    -   : Rewritten to use  for a persistent IDLE connection and UID-based fetching.
-    -   : Integrated the  component.
-    -   : Modified to accept and apply a  object for advanced filtering.
-    -    & : Updated to fetch and display the list of custom inboxes in the navigation menu.
-    -   : Added a new route for custom inbox pages ().
+- **Created/Refactored (Backend)**:
+  - : Centralizes MongoDB connection and collection objects.
+  - : Contains all Pydantic data models.
+  - : Holds authentication and authorization dependency functions.
+  - : Contains shared helper functions like .
+  - : New files containing extracted  instances for different feature groups.
+- **Modified (Backend)**:
+  - : Significantly slimmed down by moving code to the modules above and including the new routers. Still the main application entry point.
+- **Created (Frontend)**:
+  - : For renaming inboxes.
+  - : For sharing inboxes.
+- **Modified (Frontend)**:
+  - : Integrated modals for inbox actions.
+  - , : Fixed bug related to handling paginated user data.
+  - : Optimized WebSocket transport order.
 
-**Areas that need refactoring**
--   : This component has become very large and handles multiple modes (standard view, filtered view). It should be broken down into smaller hooks and components.
--   : This component now manages state for custom inboxes and passes it down. This state management could be lifted to a more global context (e.g., React Context or Zustand) to avoid prop drilling.
--   : The file is extremely large (over 10,000 lines). The new filter and inbox endpoints should be moved to their own router files (e.g., , ) using FastAPI's  to improve organization.
+**Areas that need refactoring**:
+- ****: Still contains thousands of lines of code for routes that need to be extracted into the  directory (e.g., tickets, users, admin, analytics).
+- ****: This directory is a flat list of over 50 components and needs to be organized into logical subdirectories (e.g., , , , ).
 
 **key api endpoints**
--   : Get a list of all available fields for filtering.
--   : Apply a filter tree and get the matching tickets.
--   : Get all custom inboxes for the current user.
--   : Create a new custom inbox.
--   : Update a custom inbox.
--   : Delete a custom inbox.
+- : Endpoints for managing filters and custom inboxes (now in ).
+- : Webhook management endpoints (now in ).
+- : Customer data endpoints (now in ).
+- : CRUD for canned responses (now in ).
+- : CSAT survey endpoints (now in ).
+- : Endpoint for fetching users.
+- : Endpoint for fetching tickets.
 
 **Critical Info for New Agent**
--   The user is blocked by a frontend bug (). This is your highest priority.
--   The user has a strict performance requirement for filtering. You must implement database indexing after fixing the UI bug.
--   The backend API for filtering uses a nested JSON structure called  to represent AND/OR logic. The frontend  is responsible for generating this structure.
--   The backend was refactored significantly to use IMAP IDLE. The old polling code in  was removed and replaced with a background thread manager that uses .
+- The backend refactoring is the top priority and is currently in progress. The established pattern is to extract logical groups of routes from  into new files in  using FastAPI's .
+- Do not change the application entry point.  must continue to work, meaning  will remain the top-level file that initializes the FastAPI app and includes all the routers.
+- The testing agent has been used successfully after each major refactoring step. Continue this practice to ensure no regressions are introduced.
+- The frontend refactoring is the next major task after the backend work is complete.
 
 **documents and test reports created in this job**
--   : Updated with the status of completed tasks (IMAP IDLE, Real-time push) and the new requirements for filtering.
--   : Multiple test reports were generated by the testing agent, showing 100% pass rates for the IMAP and real-time features before the filter feature was added.
+  -  (updated to reflect completed and in-progress tasks)
+  -  (multiple test reports were generated and passed)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: Requested a new feature for advanced ticket filtering, creating custom inboxes from filters, and sharing them. (IN PROGRESS)
-2.  **Agent**: Acknowledged the request and asked for clarification on the design.
-3.  **User**: Provided detailed feedback on the agent's initial design, including a request to filter on any metadata/custom field and clarification on how sharing and inbox management should work.
-4.  **Agent**: Proposed a refined, phased implementation plan based on user feedback.
-5.  **User**: Approved the refined plan and provided more specific UI/UX feedback (e.g., using the search bar for filters, 3-dot menu for actions, support for AND/OR logic).
-6.  **Agent**: Confirmed understanding and proposed a final plan.
-7.  **User**: lets start building. (COMPLETED)
-8.  **Agent**: (After implementation) Informed the user that the filter feature was complete and tested.
-9.  **User**: Reported seeing errors while using the new filters (). Requested a comprehensive fix using the screenshot tool and also asked for scalable indexing to be implemented. (PENDING - This is the current task)
-10. **Agent**: Acknowledged the error and confirmed the plan to fix it and add indexing. (IN PROGRESS)
+1.  **User**:  - Acknowledged the agent's summary and instructed it to proceed with the planned work (continuing the backend refactoring).
+2.  **Agent**: Provided a plan to continue extracting routes from , starting with the largest groups.
+3.  **User**:  - Confirmed the agent's plan to proceed.
+4.  **Agent**: Summarized the passed tests and updated PRD, confirming readiness for the next steps.
+5.  **User**:  - Agreed to the refactoring but emphasized the importance of not breaking the existing deployment/execution template ().
+6.  **Agent**: Confirmed understanding and outlined a detailed, step-by-step plan for the refactoring.
+7.  **User**:  - Questioned the agent's initial cautious stance on refactoring and pushed to do it now, correctly identifying the long-term cost of delaying it.
+8.  **Agent**: Agreed with the user's reasoning, explained the WebSocket usage, and committed to performing the refactoring immediately.
+9.  **User**:  - Requested a detailed analysis of the proposed refactoring.
+10. **Agent**: Provided a detailed breakdown of the pros, cons, and risks of refactoring  and the frontend components.
 
 **Project Health Check:**
--   **Broken**: The new Advanced Filtering feature is broken due to a JavaScript error on the frontend.
--   **Mocked**: None.
+- **Broken**: None. All changes have been verified with a 100% pass rate from the testing agent.
+- **Mocked**: None.
 
 **3rd Party Integrations**
--   None explicitly mentioned or configured in this session.
+- **Google Auth**: Used for user authentication into the application. Requires user-provided credentials/configuration.
+- **Socket.IO**: Used for real-time updates (e.g., new tickets appearing without a page refresh).
+- **Emergent LLM Key**: The agent itself operates using the Emergent LLM key.
 
 **Testing status**
--   **Testing agent used after significant changes**: YES. The agent was used successfully to test the IMAP IDLE and Socket.IO real-time features.
--   **Troubleshoot agent used after agent stuck in loop**: NO.
--   **Test files created**: The testing agent created and ran multiple test suites. The last successful run had 25 backend tests and a full suite of frontend tests.
--   **Known regressions**: The newly implemented filter feature has a critical bug.</analysis>
+  - Testing agent used after significant changes: YES
+  - Troubleshoot agent used after agent stuck in loop: NO (not needed)
+  - Test files created: The testing agent has created and maintained test files, and successfully used them to achieve 100% pass rates after the P0/P1 fixes and after each major refactoring step.
+  - Known regressions: None. A potential regression in the  endpoint was caught and fixed by the testing agent during the last run.
+
+**Credentials to test flow:**
+N/A. The application uses Google OAuth, which is handled by the browser flow. API testing by the agent was performed by creating a test session programmatically.</analysis>
