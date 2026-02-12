@@ -42,8 +42,8 @@ from datetime import datetime
 BASE_URL = "https://modular-backend-46.preview.emergentagent.com"
 
 # Test credentials - create new session for each test run
-SESSION_TOKEN = "test_session_1770873490956"
-USER_ID = "test-user-1770873490956"
+SESSION_TOKEN = "test_session_regression_1770873791877"
+USER_ID = "test-user-regression-1770873791877"
 
 
 @pytest.fixture
