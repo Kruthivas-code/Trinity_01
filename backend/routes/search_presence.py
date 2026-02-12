@@ -106,7 +106,7 @@ async def get_search_suggestions(
 @router.get("/presence/stats")
 async def presence_stats(current_user: dict = Depends(get_current_user)):
     """Get presence statistics"""
-    return get_presence_stats()
+    return await get_presence_stats()
 
 
 @router.get("/presence/ticket/{ticket_id}")
@@ -115,4 +115,4 @@ async def ticket_presence(
     current_user: dict = Depends(get_current_user)
 ):
     """Get users viewing a specific ticket"""
-    return {"users": get_users_viewing_ticket(ticket_id)}
+    return {"users": await get_users_viewing_ticket(ticket_id)}
