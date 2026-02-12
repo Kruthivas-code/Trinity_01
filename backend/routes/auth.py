@@ -15,6 +15,7 @@ from database import (
 from dependencies import get_current_user, generate_api_key
 from models.schemas import SessionCreate, APIKeyCreate
 from utils import serialize_doc
+from rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ router = APIRouter(prefix="/api", tags=["auth"])
 
 
 @router.post("/auth/session")
+@limiter.limit("10/minute")
 async def create_session(request: Request, session_data: SessionCreate, response: Response):
     """Exchange session_id for session_token"""
     try:
