@@ -185,7 +185,7 @@ app.add_middleware(
 )
 
 # ==================== Health Check ====================
-@app.get("/api/health")
+@app.get("/api/health", tags=["health"])
 async def health():
     health_status = {
         "status": "healthy",
