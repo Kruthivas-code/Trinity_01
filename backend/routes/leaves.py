@@ -65,7 +65,7 @@ async def update_leave(
 ):
     """Update a leave request"""
     leave_mgr = get_leave_manager(db)
-    updated = await leave_mgr.update_leave(leave_id, leave_data.dict(exclude_unset=True), current_user["user_id"])
+    updated = await leave_mgr.update_leave(leave_id, leave_data)
     if not updated:
         raise HTTPException(status_code=404, detail="Leave not found")
     asyncio.create_task(broadcast_leave_updated(
@@ -82,7 +82,7 @@ async def delete_leave(
 ):
     """Delete a leave request"""
     leave_mgr = get_leave_manager(db)
-    deleted = await leave_mgr.delete_leave(leave_id, current_user["user_id"])
+    deleted = await leave_mgr.delete_leave(leave_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Leave not found")
     asyncio.create_task(broadcast_leave_deleted(
