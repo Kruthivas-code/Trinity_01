@@ -363,3 +363,86 @@ async def trigger_webhooks(event_type: str, payload: dict):
     }))
     for webhook in webhooks:
         asyncio.create_task(deliver_webhook(webhook, event_type, payload))
+
+
+# ==================== Time Utilities ====================
+
+def get_ist_now():
+    """Get current time in IST timezone"""
+    ist = pytz.timezone(SYSTEM_TIMEZONE)
+    return datetime.now(ist)
+
+
+def parse_time_str(time_str: str) -> time:
+    """Parse time string (HH:MM) to time object"""
+    try:
+        parts = time_str.split(":")
+        return time(int(parts[0]), int(parts[1]))
+    except (ValueError, IndexError):
+        return time(0, 0)
+
+
+# ==================== Export Utilities ====================
+
+def serialize_for_export(doc):
+    """Convert MongoDB document to JSON-serializable format for export"""
+    if doc is None:
+        return None
+    result = {}
+    for key, value in doc.items():
+        if key == '_id':
+            continue
+        if isinstance(value, datetime):
+            result[key] = value.isoformat()
+        elif isinstance(value, list):
+            result[key] = [serialize_for_export(item) if isinstance(item, dict) else item for item in value]
+        elif isinstance(value, dict):
+            result[key] = serialize_for_export(value)
+        else:
+            result[key] = value
+    return result
+
+
+def generate_json_export(data, filename_prefix):
+    """Generate JSON file download response"""
+    json_str = json.dumps(data, indent=2, default=str)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{filename_prefix}_{timestamp}.json"
+    return StreamingResponse(
+        io.StringIO(json_str),
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+def generate_csv_export(data, filename_prefix):
+    """Generate CSV file download response"""
+    if not data:
+        return StreamingResponse(
+            io.StringIO("No data to export"),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename_prefix}_empty.csv"}
+        )
+    flat_data = []
+    for item in data:
+        flat_item = {}
+        for key, value in item.items():
+            if isinstance(value, (list, dict)):
+                flat_item[key] = json.dumps(value)
+            else:
+                flat_item[key] = value
+        flat_data.append(flat_item)
+    all_keys = sorted({k for item in flat_data for k in item.keys()})
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=all_keys, extrasaction='ignore')
+    writer.writeheader()
+    writer.writerows(flat_data)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{filename_prefix}_{timestamp}.csv"
+    output.seek(0)
+    return StreamingResponse(
+        output,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
