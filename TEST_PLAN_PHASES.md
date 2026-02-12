@@ -200,9 +200,9 @@
 | Phase 5 | COMPLETE | Feb 12, 2026 | Feb 12, 2026 | 1 (fixed) | Empty state works, agent loading fixed |
 | Phase 6 | COMPLETE | Feb 12, 2026 | Feb 12, 2026 | 2 (fixed) | Feature Requests crash fixed + type/status mismatch |
 | Phase 7 | COMPLETE | Feb 12, 2026 | Feb 12, 2026 | 1 (fixed) | Leave creation bug fixed, calendar works |
-| Phase 8 | IN PROGRESS | Feb 12, 2026 | | 1 (fixed) | Admin page array fix, export fix, custom field created |
-| Phase 9 | NOT STARTED | | | | |
-| Phase 10 | NOT STARTED | | | | |
+| Phase 8 | COMPLETE | Feb 12, 2026 | Feb 12, 2026 | 1 (fixed) | Admin page array fix, export fix, custom field created |
+| Phase 9 | COMPLETE | Feb 12, 2026 | Feb 12, 2026 | 1 (fixed) | Search endpoint bug fixed (missing db arg + wrong method) |
+| Phase 10 | COMPLETE | Feb 12, 2026 | Feb 12, 2026 | 0 | Full ticket lifecycle E2E verified |
 
 ---
 
@@ -223,6 +223,8 @@
 | 11 | 7 | Leave Creation | CRITICAL | `LeaveManager.create_leave()` called with wrong args (dict + user_id instead of LeaveRequest) | FIXED | routes/leaves.py line 39 |
 | 12 | 6 | Feature Request Status | MEDIUM | Backend creates with `status: "proposed"` but frontend expects `"new"` | FIXED | routes/feature_requests.py line 35 |
 | 13 | 6 | Feature Request Type | MEDIUM | Backend returns `category` but frontend reads `request_type` | FIXED | FeatureRequestsPage.js (3 locations) |
+| 14 | 9 | Search Endpoint | CRITICAL | `get_search_engine()` called without db arg + wrong method name | FIXED | routes/search_presence.py |
+| 15 | 6 | Feature Request Index | MEDIUM | MongoDB had legacy `feature_id` index conflicting with `feature_request_id` | FIXED | Dropped index |
 
 ---
 
