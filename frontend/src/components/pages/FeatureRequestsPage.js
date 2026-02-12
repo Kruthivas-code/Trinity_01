@@ -55,7 +55,7 @@ const FeatureRequestsPage = ({ user }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        setFeatureRequests(data);
+        setFeatureRequests(Array.isArray(data) ? data : data.items || []);
       }
     } catch (error) {
       console.error('Failed to fetch feature requests:', error);
