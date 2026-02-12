@@ -1174,6 +1174,47 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
     setShowCannedPicker(false);
   };
 
+  // Handle KB insert link
+  const handleKBInsertLink = (url, title) => {
+    const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer">${title || url}</a>`;
+    if (inputText.trim()) {
+      setInputText(prev => prev + '<br>' + linkHtml);
+    } else {
+      setInputText(linkHtml);
+    }
+  };
+
+  // Handle KB insert content
+  const handleKBInsertContent = (content) => {
+    const htmlContent = content.replace(/\n/g, '<br>');
+    if (inputText.trim()) {
+      setInputText(prev => prev + '<br><br>' + htmlContent);
+    } else {
+      setInputText(htmlContent);
+    }
+  };
+
+  // Save agent reply as KB snippet
+  const handleSaveToKB = async (content, title) => {
+    const plainText = stripHtml(content);
+    try {
+      await fetch(`${BACKEND_URL}/api/knowledge-base`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          title: title || ticket?.title || 'Untitled Snippet',
+          content: plainText,
+          source_ticket_id: ticket?.ticket_id,
+          status: 'draft',
+          snippet_type: 'internal',
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to save to KB:', err);
+    }
+  };
+
   // Image upload handlers
   const handleImageUpload = async (event) => {
     const files = event.target.files;
