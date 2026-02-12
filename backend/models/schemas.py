@@ -357,6 +357,8 @@ class EmailReplyRequest(BaseModel):
     subject: str
     body: str
 
+    model_config = {"json_schema_extra": {"examples": [{"ticket_id": "TKT-00042", "to_email": "jane@acme.com", "subject": "Re: Login page returns 500 error", "body": "Hi Jane, we've identified the issue and deployed a fix. Could you try again?"}]}}
+
 
 class SimulatedEmail(BaseModel):
     from_email: str
@@ -364,6 +366,8 @@ class SimulatedEmail(BaseModel):
     to_email: str = "support@emergent.sh"
     subject: str
     body: str
+
+    model_config = {"json_schema_extra": {"examples": [{"from_email": "jane@acme.com", "from_name": "Jane Doe", "to_email": "support@emergent.sh", "subject": "Cannot access my dashboard", "body": "Hi, I've been unable to access my dashboard since this morning. Getting a blank white screen."}]}}
 
 
 # ==================== Admin ====================
@@ -375,6 +379,8 @@ class CustomFieldCreate(BaseModel):
     options: Optional[List[str]] = None
     required: bool = False
     description: Optional[str] = None
+
+    model_config = {"json_schema_extra": {"examples": [{"name": "Product Area", "field_type": "select", "entity_type": "ticket", "options": ["Billing", "Auth", "Dashboard", "API"], "required": False, "description": "Which product area this ticket relates to"}]}}
 
 
 class CustomFieldUpdate(BaseModel):
@@ -410,6 +416,8 @@ class WebhookCreate(BaseModel):
     secret: Optional[str] = Field(default=None, max_length=100)
     headers: Optional[Dict[str, str]] = Field(default={})
     is_active: bool = True
+
+    model_config = {"json_schema_extra": {"examples": [{"name": "Slack Notifications", "url": "https://hooks.slack.com/services/T00/B00/xxxx", "events": ["ticket.created", "ticket.resolved"], "secret": "whsec_abc123", "headers": {"X-Custom-Header": "trinity"}, "is_active": True}]}}
 
     @validator('url')
     def validate_url(cls, v):
@@ -461,6 +469,8 @@ class CustomerCreate(BaseModel):
     tags: Optional[List[str]] = []
     notes: Optional[str] = ""
     custom_fields: Optional[Dict[str, Any]] = {}
+
+    model_config = {"json_schema_extra": {"examples": [{"name": "Jane Doe", "primary_email": "jane@acme.com", "company_name": "Acme Corp", "company_domain": "acme.com", "priority_level": "vip", "net_payments": 12500.00, "tags": ["enterprise", "annual-plan"]}]}}
 
 
 class CustomerUpdate(BaseModel):
