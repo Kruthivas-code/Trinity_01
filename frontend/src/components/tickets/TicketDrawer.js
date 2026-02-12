@@ -2001,6 +2001,17 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                 <ChevronDown size={11} className="opacity-60" />
               </button>
               
+              {/* Knowledge Base Button */}
+              <button
+                onClick={() => setShowKBPicker(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                title="Insert KB article"
+                data-testid="kb-picker-btn"
+              >
+                <BookOpen size={13} />
+                <span>KB</span>
+              </button>
+              
               {/* Image Attachment Button */}
               <button
                 onClick={() => imageInputRef.current?.click()}
