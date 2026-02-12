@@ -403,7 +403,6 @@ function App() {
       <Router>
         <div className="App min-h-screen bg-background">
           <AppRouter />
-          <Toaster richColors position="top-right" />
         </div>
       </Router>
     </ThemeProvider>
