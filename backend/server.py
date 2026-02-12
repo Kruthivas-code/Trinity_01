@@ -778,6 +778,21 @@ search_engine = get_search_engine(db)
 # Webhook delivery (deliver_webhook, trigger_webhooks) now in utils.py
 
 
+def get_ist_now():
+    """Get current time in IST timezone"""
+    ist = pytz.timezone(SYSTEM_TIMEZONE)
+    return datetime.now(ist)
+
+
+def parse_time_str(time_str: str) -> time:
+    """Parse time string (HH:MM) to time object"""
+    try:
+        parts = time_str.split(":")
+        return time(int(parts[0]), int(parts[1]))
+    except (ValueError, IndexError):
+        return time(0, 0)
+
+
 # Routes
 @app.get("/api/health")
 async def health():
