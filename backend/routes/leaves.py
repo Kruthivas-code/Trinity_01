@@ -40,7 +40,7 @@ async def create_leave(
     current_user: dict = Depends(get_current_user)
 ):
     """Create a new leave request"""
-    leave_mgr = get_leave_manager()
+    leave_mgr = get_leave_manager(db)
     leave = leave_mgr.create_leave(leave_data.dict(), current_user["user_id"])
     asyncio.create_task(broadcast_leave_created(
         leave,
