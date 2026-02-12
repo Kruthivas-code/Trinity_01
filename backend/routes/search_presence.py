@@ -55,7 +55,7 @@ async def search_tickets(
     current_user: dict = Depends(get_current_user)
 ):
     """Search tickets using text search"""
-    search_engine = get_search_engine()
+    search_engine = get_search_engine(db)
     results = search_engine.search(
         query=query.query,
         filters=query.filters if hasattr(query, 'filters') else None,
