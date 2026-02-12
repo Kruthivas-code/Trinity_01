@@ -6,6 +6,7 @@ from typing import Optional
 import uuid
 from fastapi import APIRouter, HTTPException, Depends, Query
 from database import canned_responses_collection
+from pymongo import ASCENDING
 from dependencies import get_current_user
 from models.schemas import CannedResponseCreate, CannedResponseUpdate
 from utils import serialize_doc
