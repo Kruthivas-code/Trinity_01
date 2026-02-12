@@ -248,6 +248,7 @@ async def get_ticket_notes(
     limit: int = Query(100, ge=1, le=500),
     current_user: dict = Depends(get_current_user)
 ):
+    """Get paginated notes and messages for a ticket."""
     query = {"ticket_id": ticket_id, "type": {"$in": ["internal_note", "reply", "merge_divider", "system", "customer_reply"]}}
     total = messages_collection.count_documents(query)
     skip = (page - 1) * limit
@@ -262,6 +263,7 @@ async def get_ticket_activity(
     limit: int = Query(100, ge=1, le=500),
     current_user: dict = Depends(get_current_user)
 ):
+    """Get paginated activity log (all message types) for a ticket."""
     query = {"ticket_id": ticket_id}
     total = messages_collection.count_documents(query)
     skip = (page - 1) * limit
@@ -274,6 +276,7 @@ async def get_ticket_activity_feed(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Get a rich activity feed for a ticket including changelog, merges, and system events."""
     ticket = tickets_collection.find_one({"ticket_id": ticket_id})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -343,6 +346,7 @@ async def get_ticket_activity_feed(
 
 @router.post("/tickets/{ticket_id}/tags")
 async def add_tags(ticket_id: str, tags: List[str], current_user: dict = Depends(get_current_user)):
+    """Add one or more tags to a ticket."""
     result = tickets_collection.update_one({"ticket_id": ticket_id}, {"$addToSet": {"tags": {"$each": tags}}, "$set": {"updated_at": datetime.now(timezone.utc)}})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -352,6 +356,7 @@ async def add_tags(ticket_id: str, tags: List[str], current_user: dict = Depends
 
 @router.delete("/tickets/{ticket_id}/tags/{tag}")
 async def remove_tag(ticket_id: str, tag: str, current_user: dict = Depends(get_current_user)):
+    """Remove a single tag from a ticket."""
     result = tickets_collection.update_one({"ticket_id": ticket_id}, {"$pull": {"tags": tag}, "$set": {"updated_at": datetime.now(timezone.utc)}})
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -363,6 +368,7 @@ async def remove_tag(ticket_id: str, tag: str, current_user: dict = Depends(get_
 
 @router.get("/tickets/starred")
 async def get_starred_tickets(current_user: dict = Depends(get_current_user)):
+    """Get all starred tickets, sorted by last update."""
     query = {"is_starred": True}
     tickets = list(tickets_collection.find(query).sort("updated_at", DESCENDING))
     return [serialize_doc(ticket) for ticket in tickets]
