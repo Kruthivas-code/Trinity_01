@@ -75,7 +75,8 @@ class TestPhase7LeaveManagement:
         response = api_client.get(f"{BASE_URL}/api/leaves/{leave_id}")
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         data = response.json()
-        assert data.get("leave_id") == leave_id
+        # Leave API returns 'id' not 'leave_id'
+        assert data.get("id") == leave_id, f"Expected id={leave_id}, got {data.get('id')}"
     
     def test_update_leave(self, api_client):
         """Test PUT /api/leaves/{leave_id} - Update leave"""
