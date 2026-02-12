@@ -1313,11 +1313,11 @@ async def reply_to_ticket(
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
 
 @router.get("/tickets/{ticket_id}/replies")
-async def get_ticket_replies(
+async def get_ticket_email_replies(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
 ):
-    """Get all replies for a ticket"""
+    """Get all email replies for a ticket"""
     replies = list(email_replies_collection.find(
         {"ticket_id": ticket_id},
         sort=[("created_at", ASCENDING)]
