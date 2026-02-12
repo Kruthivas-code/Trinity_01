@@ -16,6 +16,8 @@ from database import (
 class SessionCreate(BaseModel):
     session_id: str = Field(..., min_length=10, max_length=500)
 
+    model_config = {"json_schema_extra": {"examples": [{"session_id": "abc123def456ghi789jkl012mno345pqr"}]}}
+
 
 # ==================== Tickets ====================
 
@@ -29,6 +31,8 @@ class TicketCreate(BaseModel):
     customer_email: Optional[EmailStr] = None
     source: Optional[str] = Field(default="manual")
     escalation_level: Optional[str] = Field(default="L1")
+
+    model_config = {"json_schema_extra": {"examples": [{"title": "Login page returns 500 error", "description": "Users see a 500 error when clicking Sign In with Google on the login page.", "status": "todo", "priority": "high", "tags": ["bug", "auth"], "customer_email": "jane@acme.com", "source": "manual", "escalation_level": "L1"}]}}
 
     @validator('status')
     def validate_status(cls, v):
