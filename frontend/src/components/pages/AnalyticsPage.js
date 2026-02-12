@@ -142,7 +142,8 @@ const AnalyticsPage = ({ user }) => {
         setOverview(await overviewRes.json());
       }
       if (agentsRes.ok) {
-        setAgents(await agentsRes.json());
+        const agentsData = await agentsRes.json();
+        setAgents(agentsData.agents || []);
       }
       if (csatRes.ok) {
         setCsatAnalytics(await csatRes.json());
