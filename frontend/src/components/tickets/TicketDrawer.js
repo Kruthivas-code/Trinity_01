@@ -3105,6 +3105,14 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         ticket={ticket}
         user={currentUser}
       />
+      
+      {/* Knowledge Base Picker Modal */}
+      <KnowledgeBasePicker
+        isOpen={showKBPicker}
+        onClose={() => setShowKBPicker(false)}
+        onInsertLink={handleKBInsertLink}
+        onInsertContent={handleKBInsertContent}
+      />
     </>
   );
 };
