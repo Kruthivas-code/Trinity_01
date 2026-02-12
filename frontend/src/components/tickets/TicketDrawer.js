@@ -334,6 +334,9 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   // Canned responses picker
   const [showCannedPicker, setShowCannedPicker] = useState(false);
   
+  // Knowledge Base picker
+  const [showKBPicker, setShowKBPicker] = useState(false);
+  
   // Related tickets (from same customer)
   const [relatedTickets, setRelatedTickets] = useState([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
