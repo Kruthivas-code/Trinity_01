@@ -50,8 +50,9 @@ const ProfilePage = ({ user: currentUser }) => {
         credentials: 'include'
       });
       if (response.ok) {
-        const users = await response.json();
-        const foundUser = Array.isArray(users) ? users.find(u => u.user_id === userId) : null;
+        const data = await response.json();
+        const userList = Array.isArray(data) ? data : (data.items || []);
+        const foundUser = userList.find(u => u.user_id === userId);
         if (foundUser) {
           setViewedUser(foundUser);
           // Fetch their teams
