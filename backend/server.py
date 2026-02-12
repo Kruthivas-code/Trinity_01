@@ -6218,8 +6218,6 @@ async def get_related_tickets(
 
 # ==================== SLA Management ====================
 
-sla_policies_collection = db.sla_policies
-
 @app.get("/api/sla-policies")
 async def list_sla_policies(current_user: dict = Depends(get_current_user)):
     """Get all SLA policies"""
@@ -9610,8 +9608,6 @@ async def trigger_auto_close(current_user: dict = Depends(get_current_user)):
 # ============================================================
 # Advanced Filter Engine + Custom Inboxes
 # ============================================================
-
-custom_inboxes_collection = db.custom_inboxes
 
 # --- Filter tree → MongoDB query translation ---
 
