@@ -278,6 +278,8 @@ class RoutingRuleCreate(BaseModel):
     is_active: bool = True
     assignment_method: str = "round_robin"
 
+    model_config = {"json_schema_extra": {"examples": [{"name": "Route urgent billing to L2", "description": "Auto-route urgent billing tickets to the L2 billing team", "condition_groups": [[{"field": "priority", "operator": "equals", "value": "urgent"}, {"field": "tags", "operator": "contains", "value": "billing"}]], "actions": [{"type": "assign_team", "value": "team_billing_l2"}], "priority": 10, "is_active": True, "assignment_method": "round_robin"}]}}
+
 
 class RoutingRuleUpdate(BaseModel):
     name: Optional[str] = None
@@ -302,6 +304,8 @@ class SLAEscalationRuleCreate(BaseModel):
     actions: List[Dict[str, Any]] = Field(min_length=1)
     priority: int = Field(default=0, ge=0, le=1000)
     is_active: bool = True
+
+    model_config = {"json_schema_extra": {"examples": [{"name": "Urgent first-response breach", "description": "Escalate urgent tickets if first response SLA is breached", "trigger_type": "first_response_breach", "trigger_threshold": 100, "priority_filter": ["urgent", "high"], "actions": [{"type": "escalate", "value": "L2"}, {"type": "notify", "value": "team_lead"}], "priority": 10, "is_active": True}]}}
 
 
 class SLAEscalationRuleUpdate(BaseModel):
@@ -331,6 +335,8 @@ class SLAPoliciesUpdate(BaseModel):
     business_hours: Optional[Dict[str, Any]] = None
     holidays: Optional[List[str]] = None
     escalation_debounce_minutes: Optional[int] = Field(None, ge=1, le=1440)
+
+    model_config = {"json_schema_extra": {"examples": [{"default_first_response_hours": 4, "default_resolution_hours": 24, "priority_slas": {"urgent": {"first_response_minutes": 15, "resolution_minutes": 120}, "high": {"first_response_minutes": 60, "resolution_minutes": 480}}, "business_hours_only": True, "business_hours": {"start": "09:00", "end": "18:00", "days": [1, 2, 3, 4, 5]}}]}}
 
 
 class SLAPolicy(BaseModel):
