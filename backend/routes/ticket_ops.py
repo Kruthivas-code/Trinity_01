@@ -254,8 +254,6 @@ async def merge_consecutive_tickets(
 
 # csat routes extracted to routes/csat.py
 
-@router.get("/notifications")
-
 
 # ==================== Ticket Merge/Link/Split APIs ====================
 
