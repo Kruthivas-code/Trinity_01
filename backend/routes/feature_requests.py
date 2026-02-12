@@ -32,7 +32,7 @@ async def create_feature_request(
         "feature_request_id": fr_id,
         "title": data.title,
         "description": data.description or "",
-        "status": "proposed",
+        "status": "new",
         "priority": data.priority or "medium",
         "category": data.request_type,
         "tags": [],
