@@ -55,7 +55,7 @@ async def get_leave(
     current_user: dict = Depends(get_current_user)
 ):
     """Get a specific leave"""
-    leave_mgr = get_leave_manager()
+    leave_mgr = get_leave_manager(db)
     leave = leave_mgr.get_leave(leave_id)
     if not leave:
         raise HTTPException(status_code=404, detail="Leave not found")
@@ -69,7 +69,7 @@ async def update_leave(
     current_user: dict = Depends(get_current_user)
 ):
     """Update a leave request"""
-    leave_mgr = get_leave_manager()
+    leave_mgr = get_leave_manager(db)
     updated = leave_mgr.update_leave(leave_id, leave_data.dict(exclude_unset=True), current_user["user_id"])
     if not updated:
         raise HTTPException(status_code=404, detail="Leave not found")
@@ -86,7 +86,7 @@ async def delete_leave(
     current_user: dict = Depends(get_current_user)
 ):
     """Delete a leave request"""
-    leave_mgr = get_leave_manager()
+    leave_mgr = get_leave_manager(db)
     deleted = leave_mgr.delete_leave(leave_id, current_user["user_id"])
     if not deleted:
         raise HTTPException(status_code=404, detail="Leave not found")
@@ -103,7 +103,7 @@ async def approve_leave(
     current_user: dict = Depends(require_lead_or_admin)
 ):
     """Approve a leave request"""
-    leave_mgr = get_leave_manager()
+    leave_mgr = get_leave_manager(db)
     approved = leave_mgr.approve_leave(leave_id, current_user["user_id"])
     if not approved:
         raise HTTPException(status_code=404, detail="Leave not found or already processed")
@@ -120,7 +120,7 @@ async def reject_leave(
     current_user: dict = Depends(require_lead_or_admin)
 ):
     """Reject a leave request"""
-    leave_mgr = get_leave_manager()
+    leave_mgr = get_leave_manager(db)
     rejected = leave_mgr.reject_leave(leave_id, current_user["user_id"])
     if not rejected:
         raise HTTPException(status_code=404, detail="Leave not found or already processed")
