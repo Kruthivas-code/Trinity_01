@@ -82,6 +82,8 @@ class TicketUpdate(BaseModel):
     is_starred: Optional[bool] = None
     snoozed: Optional[bool] = None
 
+    model_config = {"json_schema_extra": {"examples": [{"status": "in_progress", "priority": "urgent", "assignee_id": "user_abc123", "tags": ["bug", "auth", "critical"]}]}}
+
     @validator('status')
     def validate_status(cls, v):
         if v and v not in VALID_STATUSES:
@@ -124,21 +126,29 @@ class TicketReorder(BaseModel):
     new_status: str
     new_order: int
 
+    model_config = {"json_schema_extra": {"examples": [{"ticket_id": "TKT-00042", "new_status": "in_progress", "new_order": 2}]}}
+
 
 class TicketAssign(BaseModel):
     assignee_id: Optional[str] = None
     team_id: Optional[str] = None
+
+    model_config = {"json_schema_extra": {"examples": [{"assignee_id": "user_abc123", "team_id": "team_support01"}]}}
 
 
 class TicketEscalate(BaseModel):
     escalation_level: str  # L1, L2, L3
     reason: Optional[str] = None
 
+    model_config = {"json_schema_extra": {"examples": [{"escalation_level": "L2", "reason": "Customer is a VIP and issue is unresolved for 48 hours"}]}}
+
 
 class InternalNoteCreate(BaseModel):
     content: str
     mentions: Optional[List[str]] = []
     type: Optional[str] = "internal_note"
+
+    model_config = {"json_schema_extra": {"examples": [{"content": "Checked logs — this is caused by the OAuth redirect URI mismatch. @user_jsmith can you update the config?", "mentions": ["user_jsmith"], "type": "internal_note"}]}}
 
 
 class BulkUpdateRequest(BaseModel):
