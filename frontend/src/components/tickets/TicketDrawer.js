@@ -15,7 +15,7 @@ import MentionInput, { renderTextWithMentions } from '../common/MentionInput';
 import ActivityTimeline from '../common/ActivityTimeline';
 import EmailViewer from '../common/EmailViewer';
 import CannedResponsePicker from '../common/CannedResponsePicker';
-import { useRealtime } from '../contexts/RealtimeContext';
+import { useRealtime } from '../../contexts/RealtimeContext';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;

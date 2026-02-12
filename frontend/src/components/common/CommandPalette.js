@@ -10,7 +10,7 @@ import {
   Settings, LayoutDashboard, Zap, Clock, FileText,
   Loader2, X, ArrowUp, ArrowDown, CornerDownLeft
 } from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 

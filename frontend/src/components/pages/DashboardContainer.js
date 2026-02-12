@@ -5,7 +5,7 @@ import KanbanBoard from '../tickets/KanbanBoard';
 import TicketDrawer from '../tickets/TicketDrawer';
 import CreateTicketModal from '../tickets/CreateTicketModal';
 import ImportModal from '../common/ImportModal';
-import { useRealtime } from '../contexts/RealtimeContext';
+import { useRealtime } from '../../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 

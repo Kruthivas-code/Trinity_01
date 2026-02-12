@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import GlobalHeader from './GlobalHeader';
 import CreateTicketModal from '../tickets/CreateTicketModal';
-import { CommandPaletteContext } from '../App';
+import { CommandPaletteContext } from '../../App';
 
 /**
  * PageLayout - Wrapper that adds Sidebar and GlobalHeader to standalone pages

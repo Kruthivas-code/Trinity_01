@@ -6,7 +6,7 @@ import {
   Users, TrendingUp, PieChart, Wifi, WifiOff
 } from 'lucide-react';
 
-import { useRealtime } from '../contexts/RealtimeContext';
+import { useRealtime } from '../../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
