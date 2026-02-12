@@ -368,12 +368,13 @@ class TestPhase9TicketOperations:
         print("Internal note added successfully")
     
     def test_star_ticket(self, api_client):
-        """Test POST /api/tickets/{id}/star - Star ticket"""
+        """Test PUT /api/tickets/{id} - Star ticket by setting is_starred=true"""
         ticket_id = TestPhase9TicketOperations.test_ticket_id
         if not ticket_id:
             pytest.skip("No ticket available")
         
-        response = api_client.post(f"{BASE_URL}/api/tickets/{ticket_id}/star")
+        # Star ticket via regular update endpoint
+        response = api_client.put(f"{BASE_URL}/api/tickets/{ticket_id}", json={"is_starred": True})
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
     
     def test_get_starred_tickets(self, api_client):
@@ -382,12 +383,13 @@ class TestPhase9TicketOperations:
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
     
     def test_unstar_ticket(self, api_client):
-        """Test DELETE /api/tickets/{id}/star - Unstar ticket"""
+        """Test PUT /api/tickets/{id} - Unstar ticket by setting is_starred=false"""
         ticket_id = TestPhase9TicketOperations.test_ticket_id
         if not ticket_id:
             pytest.skip("No ticket available")
         
-        response = api_client.delete(f"{BASE_URL}/api/tickets/{ticket_id}/star")
+        # Unstar ticket via regular update endpoint
+        response = api_client.put(f"{BASE_URL}/api/tickets/{ticket_id}", json={"is_starred": False})
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
 
 
