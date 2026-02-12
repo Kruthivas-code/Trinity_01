@@ -908,42 +908,6 @@ def get_or_create_customer(email: str, name: str = None) -> dict:
     
     return serialize_doc(new_customer)
 
-def generate_api_key() -> tuple:
-    """Generate API key and its bcrypt hash"""
-    # Generate a secure random key
-    key = f"tk_live_{secrets.token_urlsafe(32)}"
-    # Use bcrypt for secure hashing (with salt)
-    key_hash = bcrypt.hashpw(key.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    return key, key_hash
-
-def verify_api_key(key: str) -> Optional[dict]:
-    """Verify API key using bcrypt and return associated data"""
-    if not key:
-        return None
-    
-    # Get all non-revoked API keys (we need to check each with bcrypt)
-    # In production, you might want to cache this or use a different approach
-    api_keys = list(api_keys_collection.find({
-        "revoked": {"$ne": True}
-    }))
-    
-    for api_key_doc in api_keys:
-        stored_hash = api_key_doc.get("key_hash", "")
-        try:
-            # bcrypt.checkpw handles the salt extraction automatically
-            if bcrypt.checkpw(key.encode('utf-8'), stored_hash.encode('utf-8')):
-                # Update last used
-                api_keys_collection.update_one(
-                    {"_id": api_key_doc["_id"]},
-                    {"$set": {"last_used_at": datetime.now(timezone.utc)}, "$inc": {"usage_count": 1}}
-                )
-                return api_key_doc
-        except (ValueError, TypeError):
-            # Invalid hash format - skip this key (might be old SHA256 hash)
-            continue
-    
-    return None
-
 # Helper functions
 def serialize_doc(doc):
     """Convert MongoDB document to JSON-serializable format"""
