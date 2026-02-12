@@ -511,7 +511,6 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         ...formData,
         custom_fields: customFieldValues
       });
-      toast.success('Changes saved', { duration: 1500 });
     }, 500);
     
     return () => {
@@ -801,7 +800,6 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const handleCopyLink = () => {
     const url = `${window.location.origin}/all-tickets?ticket=${ticket.ticket_id || ticket.id}`;
     navigator.clipboard.writeText(url);
-    toast.success('Link copied to clipboard');
     setShowMoreMenu(false);
   };
 
@@ -809,7 +807,6 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
   const handleCopyTicketId = () => {
     const ticketId = ticket.ticket_id || ticket.id;
     navigator.clipboard.writeText(ticketId);
-    toast.success('Ticket ID copied');
   };
 
   // Handle snooze toggle
@@ -905,7 +902,6 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         }));
         // Refresh assignment options
         fetchAssignmentOptions(ticket.id);
-        toast.success(`Escalated to ${newLevel}`);
         // Trigger parent refresh
         if (onUpdate) {
           onUpdate(ticket.id, { 
@@ -1228,13 +1224,11 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       for (const file of files) {
         // Validate file type
         if (!file.type.startsWith('image/')) {
-          toast.error(`${file.name} is not an image file`);
           continue;
         }
         
         // Validate file size (10MB max)
         if (file.size > 10 * 1024 * 1024) {
-          toast.error(`${file.name} is too large (max 10MB)`);
           continue;
         }
         
@@ -1257,17 +1251,14 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           });
         } else {
           const error = await response.json();
-          toast.error(error.detail || 'Failed to upload image');
         }
       }
       
       if (newImages.length > 0) {
         setAttachedImages(prev => [...prev, ...newImages]);
-        toast.success(`${newImages.length} image${newImages.length > 1 ? 's' : ''} attached`);
       }
     } catch (error) {
       console.error('Image upload failed:', error);
-      toast.error('Failed to upload image');
     } finally {
       setUploadingImage(false);
       // Reset file input

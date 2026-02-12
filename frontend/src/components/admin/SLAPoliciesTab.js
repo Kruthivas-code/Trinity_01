@@ -4,7 +4,7 @@ import {
   Timer, Zap, AlertTriangle, Flame, Calendar,
   Sun, RefreshCw, Info, Settings
 } from 'lucide-react';
-import { toast } from 'sonner';
+
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -184,7 +184,6 @@ const SLAPoliciesTab = () => {
       }
     } catch (error) {
       console.error('Failed to fetch SLA policies:', error);
-      toast.error('Failed to load SLA policies');
     } finally {
       setLoading(false);
     }
@@ -201,15 +200,12 @@ const SLAPoliciesTab = () => {
       });
 
       if (response.ok) {
-        toast.success('SLA policies saved successfully');
         setHasChanges(false);
       } else {
         const error = await response.json();
-        toast.error(error.detail || 'Failed to save SLA policies');
       }
     } catch (error) {
       console.error('Failed to save SLA policies:', error);
-      toast.error('Failed to save SLA policies');
     } finally {
       setSaving(false);
     }

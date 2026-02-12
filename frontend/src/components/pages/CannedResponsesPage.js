@@ -4,7 +4,7 @@ import {
   MessageSquare, Copy, Check, X, AlertCircle,
   Loader2, ChevronRight, Info, Keyboard, Slash
 } from 'lucide-react';
-import { toast } from 'sonner';
+
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 
@@ -52,7 +52,6 @@ const CannedResponsesPage = ({ user }) => {
       }
     } catch (error) {
       console.error('Failed to fetch canned responses:', error);
-      toast.error('Failed to load canned responses');
     } finally {
       setLoading(false);
     }
@@ -120,7 +119,6 @@ const CannedResponsesPage = ({ user }) => {
       });
 
       if (response.ok) {
-        toast.success(editingResponse ? 'Response updated successfully' : 'Response created successfully');
         handleCloseModal();
         fetchResponses();
       } else {
@@ -128,12 +126,10 @@ const CannedResponsesPage = ({ user }) => {
         if (error.detail?.includes('shortcode')) {
           setErrors({ shortcode: 'This shortcode is already in use' });
         } else {
-          toast.error(error.detail || 'Failed to save response');
         }
       }
     } catch (error) {
       console.error('Failed to save response:', error);
-      toast.error('Failed to save response');
     } finally {
       setSaving(false);
     }
@@ -150,15 +146,12 @@ const CannedResponsesPage = ({ user }) => {
       });
 
       if (response.ok) {
-        toast.success('Response deleted');
         fetchResponses();
       } else {
         const error = await response.json();
-        toast.error(error.detail || 'Failed to delete response');
       }
     } catch (error) {
       console.error('Failed to delete response:', error);
-      toast.error('Failed to delete response');
     } finally {
       setDeleting(null);
     }
@@ -167,7 +160,6 @@ const CannedResponsesPage = ({ user }) => {
   const handleCopyShortcode = (shortcode, id) => {
     navigator.clipboard.writeText(`/${shortcode}`);
     setCopiedId(id);
-    toast.success('Shortcode copied to clipboard');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
