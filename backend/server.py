@@ -173,6 +173,10 @@ app.add_middleware(SlowAPIMiddleware)
 # Socket.IO handles /api/socket.io/ routes (path prefix is NOT stripped by ingress)
 app.mount("/api/socket.io", socket_app)
 
+# Include extracted route modules
+from routes.filters import router as filters_router
+app.include_router(filters_router)
+
 # ==================== Request ID Middleware ====================
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
