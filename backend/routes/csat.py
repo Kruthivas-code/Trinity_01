@@ -543,29 +543,3 @@ async def get_csat_analytics(
     }
 
 
-@router.get("/notifications")
-async def get_notifications(
-    current_user: dict = Depends(get_current_user)
-):
-    """Get notifications (including low CSAT alerts)"""
-    notifications = list(db.notifications.find(
-        {},
-        {"_id": 0}
-    ).sort("created_at", -1).limit(50))
-    
-    return notifications
-
-
-@router.put("/notifications/{notification_id}/read")
-async def mark_notification_read(
-    notification_id: str,
-    current_user: dict = Depends(get_current_user)
-):
-    """Mark notification as read"""
-    db.notifications.update_one(
-        {"notification_id": notification_id},
-        {"$set": {"read": True, "read_at": datetime.now(timezone.utc)}}
-    )
-    return {"message": "Notification marked as read"}
-
-
