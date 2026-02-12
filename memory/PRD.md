@@ -91,6 +91,7 @@ Enterprise ticket management platform with real-time collaboration. Features inc
   - Added docstrings to all 175 endpoints across 19 route files
   - OpenAPI 3.1 schema at /api/openapi.json fully populated
   - Fixed duplicate operation ID (get_ticket_replies → get_ticket_email_replies in email.py)
+  - Added pre-filled sample payloads to 34 Pydantic models (TicketCreate, TeamCreate, FilterRequest, etc.)
 
 ### P1 - Frontend Component Refactoring (Feb 12, 2026)
 - [x] **Frontend Modularization COMPLETE**
