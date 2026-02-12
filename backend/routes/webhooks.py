@@ -8,7 +8,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Depends, Query
 from database import (
     webhooks_collection, webhook_logs_collection, tickets_collection,
-    messages_collection, WEBHOOK_EVENT_TYPES,
+    messages_collection, WEBHOOK_EVENT_TYPES, AUTO_CLOSE_HOURS,
 )
 from dependencies import get_current_user, require_admin
 from models.schemas import WebhookCreate, WebhookUpdate
