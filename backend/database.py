@@ -69,6 +69,9 @@ custom_inboxes_collection = db.custom_inboxes
 # Notifications
 notifications_collection = db.notifications
 
+# Knowledge Base
+knowledge_snippets_collection = db.knowledge_snippets
+
 # ==================== Constants ====================
 
 # Webhook event types
