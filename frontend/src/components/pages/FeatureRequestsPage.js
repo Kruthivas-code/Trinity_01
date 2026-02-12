@@ -72,7 +72,7 @@ const FeatureRequestsPage = ({ user }) => {
       fr.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       fr.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || fr.status === statusFilter;
-    const matchesType = typeFilter === 'all' || fr.request_type === typeFilter;
+    const matchesType = typeFilter === 'all' || (fr.request_type || fr.category) === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });
 
@@ -108,9 +108,9 @@ const FeatureRequestsPage = ({ user }) => {
     inProgress: featureRequests.filter(fr => fr.status === 'in_progress').length,
     completed: featureRequests.filter(fr => fr.status === 'completed').length,
     totalMentions: featureRequests.reduce((sum, fr) => sum + (fr.mentions_count || 0), 0),
-    features: featureRequests.filter(fr => fr.request_type === 'feature').length,
-    bugFixes: featureRequests.filter(fr => fr.request_type === 'bug_fix').length,
-    enhancements: featureRequests.filter(fr => fr.request_type === 'enhancement').length,
+    features: featureRequests.filter(fr => (fr.request_type || fr.category) === 'feature').length,
+    bugFixes: featureRequests.filter(fr => (fr.request_type || fr.category) === 'bug_fix').length,
+    enhancements: featureRequests.filter(fr => (fr.request_type || fr.category) === 'enhancement').length,
   };
 
   const handleCreateRequest = async (data) => {
@@ -347,7 +347,7 @@ const FeatureRequestsPage = ({ user }) => {
 // Feature Request Card Component
 const FeatureRequestCard = ({ request, statusConfig, onClick, onStatusChange }) => {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
-  const typeConfig = TYPE_CONFIG[request.request_type] || TYPE_CONFIG.feature;
+  const typeConfig = TYPE_CONFIG[request.request_type || request.category] || TYPE_CONFIG.feature;
   const priorityConfig = PRIORITY_CONFIG[request.priority] || PRIORITY_CONFIG.medium;
   const TypeIcon = typeConfig.icon;
 
