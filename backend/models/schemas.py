@@ -493,6 +493,8 @@ class MergeCustomersRequest(BaseModel):
     source_customer_id: str
     target_customer_id: str
 
+    model_config = {"json_schema_extra": {"examples": [{"source_customer_id": "cust_old123", "target_customer_id": "cust_primary456"}]}}
+
 
 # ==================== CSAT ====================
 
@@ -500,6 +502,8 @@ class CSATRequest(BaseModel):
     ticket_id: str
     customer_email: str
     customer_name: Optional[str] = None
+
+    model_config = {"json_schema_extra": {"examples": [{"ticket_id": "TKT-00042", "customer_email": "jane@acme.com", "customer_name": "Jane Doe"}]}}
 
 
 class CSATFeedbackRequest(BaseModel):
@@ -510,6 +514,8 @@ class CSATFeedbackRequest(BaseModel):
 class CSATRatingRequest(BaseModel):
     rating: int = Field(..., ge=1, le=5)
 
+    model_config = {"json_schema_extra": {"examples": [{"rating": 4}]}}
+
 
 # ==================== Canned Responses ====================
 
@@ -518,6 +524,8 @@ class CannedResponseCreate(BaseModel):
     shortcode: str = Field(..., min_length=1, max_length=50, pattern=r'^[a-zA-Z0-9_-]+$')
     content: str = Field(..., min_length=1, max_length=5000)
     scope: str = Field(default="global", pattern=r'^(global|personal)$')
+
+    model_config = {"json_schema_extra": {"examples": [{"title": "Greeting", "shortcode": "greeting", "content": "Hi {{customer_name}},\n\nThank you for reaching out! I'd be happy to help with your issue.", "scope": "global"}]}}
 
 
 class CannedResponseUpdate(BaseModel):
@@ -543,6 +551,8 @@ class FeatureRequestCreate(BaseModel):
     request_type: str = "feature"
     priority: Optional[str] = "medium"
     linked_ticket_id: Optional[str] = None
+
+    model_config = {"json_schema_extra": {"examples": [{"title": "Dark mode for email viewer", "description": "Users have requested a dark mode option for the email viewer component.", "request_type": "feature", "priority": "medium", "linked_ticket_id": "TKT-00099"}]}}
 
 
 class FeatureRequestUpdate(BaseModel):
@@ -576,6 +586,8 @@ class FilterRequest(BaseModel):
     limit: int = 50
     sort_by: str = "created_at"
     sort_order: str = "desc"
+
+    model_config = {"json_schema_extra": {"examples": [{"filter_tree": {"logic": "and", "conditions": [{"field": "status", "op": "is", "value": "in_progress"}, {"field": "priority", "op": "is_one_of", "value": ["high", "urgent"]}], "groups": []}, "page": 1, "limit": 25, "sort_by": "updated_at", "sort_order": "desc"}]}}
 
 
 class InboxCreate(BaseModel):
