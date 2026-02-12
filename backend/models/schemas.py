@@ -399,6 +399,8 @@ class ExportRequest(BaseModel):
     date_to: Optional[str] = None
     status_filter: Optional[List[str]] = None
 
+    model_config = {"json_schema_extra": {"examples": [{"format": "json", "include_notes": True, "include_changelog": True, "include_csat": True, "date_from": "2026-01-01", "date_to": "2026-02-12", "status_filter": ["resolved", "closed"]}]}}
+
 
 class AtlasImportRequest(BaseModel):
     api_key: str = Field(..., min_length=1)
@@ -596,6 +598,8 @@ class InboxCreate(BaseModel):
     color: Optional[str] = None
     icon: Optional[str] = None
 
+    model_config = {"json_schema_extra": {"examples": [{"name": "My Urgent Tickets", "filter_tree": {"logic": "and", "conditions": [{"field": "priority", "op": "is", "value": "urgent"}, {"field": "assignee_id", "op": "is", "value": "user_me"}], "groups": []}, "color": "#ef4444", "icon": "alert-triangle"}]}}
+
 
 class InboxUpdate(BaseModel):
     name: Optional[str] = None
@@ -606,3 +610,5 @@ class InboxUpdate(BaseModel):
 
 class InboxShare(BaseModel):
     user_ids: List[str]
+
+    model_config = {"json_schema_extra": {"examples": [{"user_ids": ["user_abc123", "user_def456"]}]}}
