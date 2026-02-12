@@ -149,6 +149,15 @@ app.include_router(feature_requests_router)
 app.include_router(exports_router)
 
 # ==================== Middleware ====================
+MAX_REQUEST_BODY_SIZE = 50 * 1024 * 1024  # 50MB
+
+@app.middleware("http")
+async def limit_request_body_size(request: Request, call_next):
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > MAX_REQUEST_BODY_SIZE:
+        return JSONResponse(status_code=413, content={"detail": "Request body too large. Maximum size is 50MB."})
+    return await call_next(request)
+
 @app.middleware("http")
 async def add_request_id(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4())[:8])
@@ -435,6 +444,7 @@ async def create_mongodb_indexes():
         ticket_changelog_collection.create_index([("ticket_uuid", ASCENDING)], background=True)
         teams_collection.create_index("team_id", unique=True, background=True)
         api_keys_collection.create_index("key_hash", unique=True, background=True)
+        api_keys_collection.create_index("key_sha256", unique=True, sparse=True, background=True)
         api_keys_collection.create_index([("user_id", ASCENDING)], background=True)
         feature_requests_collection.create_index("feature_id", unique=True, background=True)
         feature_requests_collection.create_index([("status", ASCENDING)], background=True)
@@ -480,14 +490,15 @@ async def create_mongodb_indexes():
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    global auto_close_task
+    global auto_close_task, email_sync_task
     await stop_pubsub()
-    if auto_close_task:
-        auto_close_task.cancel()
-        try:
-            await auto_close_task
-        except asyncio.CancelledError:
-            pass
+    for task_ref, name in [(auto_close_task, "auto_close"), (email_sync_task, "email_sync")]:
+        if task_ref:
+            task_ref.cancel()
+            try:
+                await task_ref
+            except asyncio.CancelledError:
+                pass
     logger.info(f"[SHUTDOWN] Instance {_instance_id} shutdown complete")
 
 

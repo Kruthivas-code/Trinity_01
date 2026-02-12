@@ -12,7 +12,7 @@ from database import (
 )
 from dependencies import get_current_user, require_admin
 from models.schemas import WebhookCreate, WebhookUpdate
-from utils import serialize_doc, deliver_webhook
+from utils import serialize_doc, deliver_webhook, validate_webhook_url
 
 router = APIRouter(prefix="/api", tags=["webhooks"])
 
@@ -52,6 +52,11 @@ async def create_webhook(
     current_user: dict = Depends(require_admin)
 ):
     """Create a new webhook subscription (admin only)"""
+    try:
+        validate_webhook_url(webhook.url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid webhook URL: {e}")
+
     webhook_id = f"wh_{uuid.uuid4().hex[:12]}"
     
     webhook_doc = {

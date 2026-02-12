@@ -153,12 +153,13 @@ async def create_api_key(
     current_user: dict = Depends(get_current_user)
 ):
     """Generate a new API key"""
-    key, key_hash = generate_api_key()
+    key, key_hash, key_sha256 = generate_api_key()
     key_id = f"key_{uuid.uuid4().hex[:12]}"
 
     api_key_doc = {
         "key_id": key_id,
         "key_hash": key_hash,
+        "key_sha256": key_sha256,
         "key_prefix": key[:12],
         "name": key_data.name,
         "description": key_data.description,

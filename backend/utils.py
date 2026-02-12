@@ -16,7 +16,7 @@ from typing import Any, Dict, Optional, Tuple
 from uuid import uuid4
 from email.utils import parseaddr
 
-import bleach
+import nh3
 import httpx
 from bson import ObjectId
 from fastapi.responses import StreamingResponse
@@ -230,26 +230,64 @@ def sanitize_html(html_content: str) -> str:
     if not html_content:
         return html_content
 
-    allowed_tags = [
+    allowed_tags = {
         'p', 'br', 'b', 'i', 'u', 'strong', 'em', 'a', 'ul', 'ol', 'li',
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code',
         'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'span', 'img',
         'hr', 'sub', 'sup'
-    ]
+    }
     allowed_attrs = {
-        '*': ['class', 'style'],
-        'a': ['href', 'title', 'target'],
-        'img': ['src', 'alt', 'width', 'height'],
-        'td': ['colspan', 'rowspan'],
-        'th': ['colspan', 'rowspan']
+        '*': {'class', 'style'},
+        'a': {'href', 'title', 'target'},
+        'img': {'src', 'alt', 'width', 'height'},
+        'td': {'colspan', 'rowspan'},
+        'th': {'colspan', 'rowspan'}
     }
 
-    return bleach.clean(
+    return nh3.clean(
         html_content,
         tags=allowed_tags,
         attributes=allowed_attrs,
-        strip=True
+        strip_comments=True
     )
+
+
+# ==================== Webhook URL Validation ====================
+
+def validate_webhook_url(url: str) -> str:
+    """Validate webhook URL to prevent SSRF attacks.
+    Returns the URL if valid, raises ValueError if blocked."""
+    from urllib.parse import urlparse
+    import ipaddress
+    import socket
+
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(f"Invalid URL scheme '{parsed.scheme}'. Only http and https are allowed.")
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("URL must include a hostname.")
+
+    # Resolve hostname to IP and check for private/internal ranges
+    try:
+        addr_infos = socket.getaddrinfo(hostname, None)
+    except socket.gaierror:
+        raise ValueError(f"Cannot resolve hostname '{hostname}'.")
+
+    for addr_info in addr_infos:
+        ip_str = addr_info[4][0]
+        try:
+            ip = ipaddress.ip_address(ip_str)
+        except ValueError:
+            continue
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            raise ValueError(f"URL resolves to a blocked address ({ip_str}).")
+        # Block cloud metadata endpoint specifically
+        if ip_str == "169.254.169.254":
+            raise ValueError("URL targets a blocked metadata endpoint.")
+
+    return url
 
 
 # ==================== Webhook Delivery ====================
@@ -258,6 +296,24 @@ async def deliver_webhook(webhook: dict, event_type: str, payload: dict):
     """Deliver a webhook with retry logic and logging"""
     webhook_id = webhook.get("webhook_id")
     url = webhook.get("url")
+
+    # SSRF protection: validate the URL before delivery
+    try:
+        validate_webhook_url(url)
+    except ValueError as e:
+        logger.warning(f"[WEBHOOK] Blocked delivery to {url}: {e}")
+        webhook_logs_collection.insert_one({
+            "log_id": f"whl_{uuid.uuid4().hex[:12]}",
+            "webhook_id": webhook_id,
+            "event": event_type,
+            "url": url,
+            "status": "blocked",
+            "error": str(e),
+            "created_at": datetime.now(timezone.utc),
+            "completed_at": datetime.now(timezone.utc),
+            "attempts": []
+        })
+        return False
     secret = webhook.get("secret")
     custom_headers = webhook.get("headers", {})
 

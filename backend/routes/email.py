@@ -416,7 +416,10 @@ async def import_tickets(
     current_user: dict = Depends(get_current_user)
 ):
     """Import tickets from a JSON or CSV file upload."""
+    MAX_IMPORT_SIZE = 5 * 1024 * 1024  # 5MB
     content = await file.read()
+    if len(content) > MAX_IMPORT_SIZE:
+        raise HTTPException(status_code=413, detail="Import file too large. Maximum size is 5MB.")
     
     try:
         if file.filename.endswith(".json"):

@@ -6,6 +6,7 @@ from fastapi.security import APIKeyHeader
 from typing import Optional, List
 from datetime import datetime, timezone
 import secrets
+import hashlib
 import bcrypt
 
 from database import (
@@ -17,18 +18,20 @@ API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 
 def generate_api_key() -> tuple:
-    """Generate API key and its bcrypt hash"""
+    """Generate API key, its bcrypt hash, and a SHA-256 hash for fast lookup"""
     key = f"tk_live_{secrets.token_urlsafe(32)}"
     key_hash = bcrypt.hashpw(key.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    return key, key_hash
+    key_sha256 = hashlib.sha256(key.encode('utf-8')).hexdigest()
+    return key, key_hash, key_sha256
 
 
 def verify_api_key(key: str) -> Optional[dict]:
-    """Verify API key using bcrypt and return associated data"""
+    """Verify API key using SHA-256 indexed lookup + bcrypt verification"""
     if not key:
         return None
-    api_keys = list(api_keys_collection.find({"revoked": {"$ne": True}}))
-    for api_key_doc in api_keys:
+    key_sha256 = hashlib.sha256(key.encode('utf-8')).hexdigest()
+    api_key_doc = api_keys_collection.find_one({"key_sha256": key_sha256, "revoked": {"$ne": True}})
+    if api_key_doc:
         stored_hash = api_key_doc.get("key_hash", "")
         try:
             if bcrypt.checkpw(key.encode('utf-8'), stored_hash.encode('utf-8')):
@@ -37,6 +40,19 @@ def verify_api_key(key: str) -> Optional[dict]:
                     {"$set": {"last_used_at": datetime.now(timezone.utc)}, "$inc": {"usage_count": 1}}
                 )
                 return api_key_doc
+        except (ValueError, TypeError):
+            pass
+    # Fallback: scan for keys without key_sha256 (migration support)
+    legacy_keys = list(api_keys_collection.find({"revoked": {"$ne": True}, "key_sha256": {"$exists": False}}))
+    for legacy_doc in legacy_keys:
+        stored_hash = legacy_doc.get("key_hash", "")
+        try:
+            if bcrypt.checkpw(key.encode('utf-8'), stored_hash.encode('utf-8')):
+                api_keys_collection.update_one(
+                    {"_id": legacy_doc["_id"]},
+                    {"$set": {"last_used_at": datetime.now(timezone.utc), "key_sha256": key_sha256}, "$inc": {"usage_count": 1}}
+                )
+                return legacy_doc
         except (ValueError, TypeError):
             continue
     return None
