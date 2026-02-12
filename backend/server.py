@@ -2183,230 +2183,11 @@ def sanitize_html(html_content: str) -> str:
     )
 
 # Models
-class SessionCreate(BaseModel):
-    session_id: str = Field(..., min_length=10, max_length=500)
-
-class TicketCreate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=MAX_TITLE_LENGTH)
-    description: Optional[str] = Field(default="", max_length=MAX_DESCRIPTION_LENGTH)
-    status: str = Field(default="todo")
-    assignee_id: Optional[str] = Field(default=None, max_length=100)
-    priority: Optional[str] = Field(default="medium")
-    tags: Optional[List[str]] = Field(default=[])
-    customer_email: Optional[EmailStr] = None
-    source: Optional[str] = Field(default="manual")
-    escalation_level: Optional[str] = Field(default="L1")
-    
-    @validator('status')
-    def validate_status(cls, v):
-        if v not in VALID_STATUSES:
-            raise ValueError(f'Status must be one of: {", ".join(VALID_STATUSES)}')
-        return v
-    
-    @validator('priority')
-    def validate_priority(cls, v):
-        if v and v not in VALID_PRIORITIES:
-            raise ValueError(f'Priority must be one of: {", ".join(VALID_PRIORITIES)}')
-        return v
-    
-    @validator('escalation_level')
-    def validate_escalation(cls, v):
-        if v and v not in VALID_ESCALATION_LEVELS:
-            raise ValueError(f'Escalation level must be one of: {", ".join(VALID_ESCALATION_LEVELS)}')
-        return v
-    
-    @validator('source')
-    def validate_source(cls, v):
-        if v and v not in VALID_SOURCES:
-            raise ValueError(f'Source must be one of: {", ".join(VALID_SOURCES)}')
-        return v
-    
-    @validator('tags')
-    def validate_tags(cls, v):
-        if v:
-            if len(v) > MAX_TAGS:
-                raise ValueError(f'Maximum {MAX_TAGS} tags allowed')
-            for tag in v:
-                if len(tag) > MAX_TAG_LENGTH:
-                    raise ValueError(f'Tag length cannot exceed {MAX_TAG_LENGTH} characters')
-        return v
-
-class TicketUpdate(BaseModel):
-    title: Optional[str] = Field(default=None, max_length=MAX_TITLE_LENGTH)
-    description: Optional[str] = Field(default=None, max_length=MAX_DESCRIPTION_LENGTH)
-    status: Optional[str] = None
-    assignee_id: Optional[str] = Field(default=None, max_length=100)
-    priority: Optional[str] = None
-    tags: Optional[List[str]] = None
-    custom_fields: Optional[Dict[str, Any]] = None
-    escalation_level: Optional[str] = None
-    team_id: Optional[str] = Field(default=None, max_length=100)
-    is_starred: Optional[bool] = None
-    snoozed: Optional[bool] = None
-    
-    @validator('status')
-    def validate_status(cls, v):
-        if v and v not in VALID_STATUSES:
-            raise ValueError(f'Status must be one of: {", ".join(VALID_STATUSES)}')
-        return v
-    
-    @validator('priority')
-    def validate_priority(cls, v):
-        if v and v not in VALID_PRIORITIES:
-            raise ValueError(f'Priority must be one of: {", ".join(VALID_PRIORITIES)}')
-        return v
-    
-    @validator('escalation_level')
-    def validate_escalation(cls, v):
-        if v and v not in VALID_ESCALATION_LEVELS:
-            raise ValueError(f'Escalation level must be one of: {", ".join(VALID_ESCALATION_LEVELS)}')
-        return v
-    
-    @validator('tags')
-    def validate_tags(cls, v):
-        if v:
-            if len(v) > MAX_TAGS:
-                raise ValueError(f'Maximum {MAX_TAGS} tags allowed')
-            for tag in v:
-                if len(tag) > MAX_TAG_LENGTH:
-                    raise ValueError(f'Tag length cannot exceed {MAX_TAG_LENGTH} characters')
-        return v
-    
-    @validator('custom_fields')
-    def validate_custom_fields(cls, v):
-        if v:
-            for key, value in v.items():
-                if isinstance(value, str) and len(value) > MAX_CUSTOM_FIELD_VALUE_LENGTH:
-                    raise ValueError(f'Custom field value cannot exceed {MAX_CUSTOM_FIELD_VALUE_LENGTH} characters')
-        return v
-
-class TicketReorder(BaseModel):
-    ticket_id: str
-    new_status: str
-    new_order: int
-
-class UserPreferences(BaseModel):
-    theme: Optional[str] = "dark"
-
-class APIKeyCreate(BaseModel):
-    name: str
-    description: Optional[str] = ""
-
-class APIKeyResponse(BaseModel):
-    key_id: str
-    name: str
-    key: Optional[str] = None  # Only returned on creation
-    created_at: str
-    last_used_at: Optional[str] = None
-
 # Phase 2: Team Models
-class TeamCreate(BaseModel):
-    name: str
-    escalation_level: str = "L1"  # L1, L2, L3
-    description: Optional[str] = ""
-
-class TeamUpdate(BaseModel):
-    name: Optional[str] = None
-    escalation_level: Optional[str] = None  # L1, L2, L3
-    description: Optional[str] = None
-    lead_id: Optional[str] = None
-
-class TeamMemberAdd(BaseModel):
-    user_id: str
-
-class UserRoleUpdate(BaseModel):
-    role: str  # agent, lead, admin
-    team_id: Optional[str] = None
-    skills: Optional[List[str]] = None
-    max_tickets: Optional[int] = 10
-
 # Phase 2: Internal Notes Model
-class InternalNoteCreate(BaseModel):
-    content: str
-    mentions: Optional[List[str]] = []  # List of user_ids to mention
-    type: Optional[str] = "internal_note"  # internal_note or reply
-
-class TicketAssign(BaseModel):
-    assignee_id: Optional[str] = None
-    team_id: Optional[str] = None
-
 # Phase 4: Shift & Escalation Models
-class ShiftCreate(BaseModel):
-    team_id: str
-    name: str
-    start_time: str  # HH:MM format in IST
-    end_time: str    # HH:MM format in IST
-    days_of_week: List[int] = [1, 2, 3, 4, 5]  # 1=Monday, 7=Sunday
-
-class ShiftUpdate(BaseModel):
-    name: Optional[str] = None
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    days_of_week: Optional[List[int]] = None
-    is_active: Optional[bool] = None
-
-class UserShiftAssign(BaseModel):
-    shift_id: str
-    is_primary: bool = True
-    effective_from: Optional[str] = None  # ISO date string
-
-class TicketEscalate(BaseModel):
-    escalation_level: str  # L1, L2, L3
-    reason: Optional[str] = None
-
 # Phase 5: Routing Rule Models
-class RoutingRuleCondition(BaseModel):
-    field: str  # priority, tags, customer_email, escalation_level, domain, source, status, customer_ltv
-    operator: str  # equals, contains, starts_with, ends_with, in, not_in, greater_than, less_than, etc.
-    value: Any  # The value to compare against
-
-class RoutingRuleAction(BaseModel):
-    type: str  # assign_team, assign_user, set_priority, set_escalation, add_tag, set_status
-    value: str  # team_id, user_id, priority value, escalation level, tag name, or status
-
-class RoutingRuleCreate(BaseModel):
-    name: str
-    description: Optional[str] = ""
-    condition_groups: Optional[List[List[Dict[str, Any]]]] = None  # OR between groups, AND within groups
-    conditions: Optional[List[Dict[str, Any]]] = None  # Legacy: single group (AND logic)
-    actions: List[Dict[str, Any]]  # List of actions to perform
-    priority: int = 0  # Higher priority rules run first
-    is_active: bool = True
-    assignment_method: str = "round_robin"  # round_robin or least_tickets
-
-class RoutingRuleUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    condition_groups: Optional[List[List[Dict[str, Any]]]] = None
-    conditions: Optional[List[Dict[str, Any]]] = None  # Legacy support
-    actions: Optional[List[Dict[str, Any]]] = None
-    priority: Optional[int] = None
-    is_active: Optional[bool] = None
-    assignment_method: Optional[str] = None
-
 # ==================== SLA Escalation Rules Models ====================
-class SLAEscalationRuleCreate(BaseModel):
-    name: str
-    description: Optional[str] = ""
-    trigger_type: str = Field(..., pattern="^(first_response_warning|first_response_breach|resolution_warning|resolution_breach|idle_ticket)$")
-    trigger_threshold: int = Field(ge=1, le=10000, description="Percentage (1-100) of SLA elapsed or minutes for idle")  
-    priority_filter: Optional[List[str]] = None  # Apply only to these priorities, None = all
-    escalation_level_filter: Optional[List[str]] = None  # Apply only to these levels, None = all
-    actions: List[Dict[str, Any]] = Field(min_length=1, description="Actions to take: set_priority, escalate_level, reassign_team, notify_user, add_tag")
-    priority: int = Field(default=0, ge=0, le=1000, description="Higher priority rules run first")
-    is_active: bool = True
-
-class SLAEscalationRuleUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    trigger_type: Optional[str] = None
-    trigger_threshold: Optional[int] = None
-    priority_filter: Optional[List[str]] = None
-    escalation_level_filter: Optional[List[str]] = None
-    actions: Optional[List[Dict[str, Any]]] = None
-    priority: Optional[int] = None
-    is_active: Optional[bool] = None
-
 # ==================== Role-Based Authorization ====================
 VALID_ROLES = ["agent", "lead", "admin"]
 
@@ -2444,49 +2225,6 @@ def require_lead_or_admin(current_user: dict = Depends(get_current_user)):
     return current_user
 
 # ==================== Webhook Models ====================
-
-class WebhookCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
-    url: str = Field(..., min_length=10, max_length=500)
-    events: List[str] = Field(..., min_items=1)
-    secret: Optional[str] = Field(default=None, max_length=100)
-    headers: Optional[Dict[str, str]] = Field(default={})
-    is_active: bool = True
-    
-    @validator('url')
-    def validate_url(cls, v):
-        if not v.startswith(('http://', 'https://')):
-            raise ValueError('URL must start with http:// or https://')
-        return v
-    
-    @validator('events')
-    def validate_events(cls, v):
-        for event in v:
-            if event not in WEBHOOK_EVENT_TYPES:
-                raise ValueError(f'Invalid event type: {event}. Valid types: {", ".join(WEBHOOK_EVENT_TYPES)}')
-        return v
-
-class WebhookUpdate(BaseModel):
-    name: Optional[str] = Field(default=None, max_length=100)
-    url: Optional[str] = Field(default=None, max_length=500)
-    events: Optional[List[str]] = None
-    secret: Optional[str] = Field(default=None, max_length=100)
-    headers: Optional[Dict[str, str]] = None
-    is_active: Optional[bool] = None
-    
-    @validator('url')
-    def validate_url(cls, v):
-        if v and not v.startswith(('http://', 'https://')):
-            raise ValueError('URL must start with http:// or https://')
-        return v
-    
-    @validator('events')
-    def validate_events(cls, v):
-        if v:
-            for event in v:
-                if event not in WEBHOOK_EVENT_TYPES:
-                    raise ValueError(f'Invalid event type: {event}')
-        return v
 
 # ==================== Webhook Delivery System ====================
 
@@ -4949,12 +4687,6 @@ async def import_tickets(
 
 from atlas_import import run_atlas_import
 
-class AtlasImportRequest(BaseModel):
-    api_key: str = Field(..., min_length=1, description="Atlas API key (Bearer token)")
-    status: Optional[str] = Field(None, description="Filter by Atlas status: OPEN, CLOSED, SNOOZED")
-    start_date: Optional[str] = Field(None, description="Filter conversations started after this ISO date")
-    end_date: Optional[str] = Field(None, description="Filter conversations started before this ISO date")
-
 @app.post("/api/import/atlas")
 async def import_from_atlas(
     req: AtlasImportRequest,
@@ -5643,12 +5375,6 @@ async def backfill_email_content(
 
 # ==================== Email Reply ====================
 
-class EmailReplyRequest(BaseModel):
-    ticket_id: str
-    to_email: str
-    subject: str
-    body: str
-    
 @app.post("/api/tickets/{ticket_id}/reply")
 async def reply_to_ticket(
     ticket_id: str,
@@ -5829,13 +5555,6 @@ async def get_ticket_replies(
 
 # ==================== Email Simulator (For Testing) ====================
 
-class SimulatedEmail(BaseModel):
-    from_email: str
-    from_name: Optional[str] = None
-    to_email: str = "support@emergent.sh"
-    subject: str
-    body: str
-    
 @app.post("/api/email/simulate")
 async def simulate_incoming_email(
     email: SimulatedEmail,
@@ -6130,20 +5849,6 @@ async def stop_gmail_watch(current_user: dict = Depends(get_current_user)):
 
 # ==================== Admin Panel Endpoints ====================
 
-class CustomFieldCreate(BaseModel):
-    name: str = Field(..., min_length=1, max_length=100)
-    field_type: str = Field(..., description="text, number, select, date, boolean")
-    entity_type: str = Field(..., description="ticket or user")
-    options: Optional[List[str]] = None  # For select type
-    required: bool = False
-    description: Optional[str] = None
-
-class CustomFieldUpdate(BaseModel):
-    name: Optional[str] = None
-    options: Optional[List[str]] = None
-    required: Optional[bool] = None
-    description: Optional[str] = None
-
 @app.get("/api/admin/custom-fields")
 async def get_custom_fields(
     entity_type: Optional[str] = None,
@@ -6422,19 +6127,6 @@ async def route_ticket(
 
 # ==================== SLA Policies Endpoints ====================
 
-class SLAPolicyPriority(BaseModel):
-    first_response_minutes: int = Field(ge=1, description="First response time in minutes")
-    resolution_minutes: int = Field(ge=1, description="Resolution time in minutes")
-
-class SLAPoliciesUpdate(BaseModel):
-    default_first_response_hours: Optional[int] = Field(None, ge=1, le=168, description="Default first response hours (1-168)")
-    default_resolution_hours: Optional[int] = Field(None, ge=1, le=720, description="Default resolution hours (1-720)")
-    priority_slas: Optional[Dict[str, SLAPolicyPriority]] = None
-    business_hours_only: Optional[bool] = None
-    business_hours: Optional[Dict[str, Any]] = None
-    holidays: Optional[List[str]] = None
-    escalation_debounce_minutes: Optional[int] = Field(None, ge=1, le=1440, description="Minutes before same rule can trigger again (1-1440)")
-
 @app.get("/api/admin/sla-policies")
 async def get_sla_policies(current_user: dict = Depends(get_current_user)):
     """Get SLA policy settings"""
@@ -6678,15 +6370,6 @@ async def get_related_tickets(
 # ==================== SLA Management ====================
 
 sla_policies_collection = db.sla_policies
-
-class SLAPolicy(BaseModel):
-    name: str
-    description: Optional[str] = None
-    priority: str  # urgent, high, medium, low, or "all"
-    first_response_hours: float  # Target hours for first response
-    resolution_hours: float  # Target hours for resolution
-    business_hours_only: bool = True
-    is_active: bool = True
 
 @app.get("/api/sla-policies")
 async def list_sla_policies(current_user: dict = Depends(get_current_user)):
@@ -7018,18 +6701,6 @@ async def get_agent_analytics(
 
 canned_responses_collection = db.canned_responses
 
-class CannedResponseCreate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=100)
-    shortcode: str = Field(..., min_length=1, max_length=50, pattern=r'^[a-zA-Z0-9_-]+$')
-    content: str = Field(..., min_length=1, max_length=5000)
-    scope: str = Field(default="global", pattern=r'^(global|personal)$')
-
-class CannedResponseUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=1, max_length=100)
-    shortcode: Optional[str] = Field(None, min_length=1, max_length=50, pattern=r'^[a-zA-Z0-9_-]+$')
-    content: Optional[str] = Field(None, min_length=1, max_length=5000)
-    scope: Optional[str] = Field(None, pattern=r'^(global|personal)$')
-
 @app.get("/api/canned-responses")
 async def get_canned_responses(
     scope: Optional[str] = None,
@@ -7218,10 +6889,6 @@ async def delete_canned_response(
 
 # ==================== Bulk Operations ====================
 
-class BulkUpdateRequest(BaseModel):
-    ticket_ids: List[str]
-    updates: dict  # Fields to update: status, priority, assignee_id, tags, etc.
-
 @app.post("/api/tickets/bulk-update")
 async def bulk_update_tickets(
     request: BulkUpdateRequest,
@@ -7270,11 +6937,6 @@ async def bulk_update_tickets(
         "matched": result.matched_count,
         "modified": result.modified_count
     }
-
-class BulkTagRequest(BaseModel):
-    ticket_ids: List[str]
-    tags_to_add: List[str] = []
-    tags_to_remove: List[str] = []
 
 @app.post("/api/tickets/bulk-tag")
 async def bulk_tag_tickets(
@@ -7348,36 +7010,6 @@ async def bulk_close_tickets(
 
 
 # ==================== Customer Management System ====================
-
-class CustomerCreate(BaseModel):
-    name: str
-    primary_email: EmailStr
-    company_name: Optional[str] = None
-    company_domain: Optional[str] = None
-    priority_level: Optional[str] = "standard"
-    net_payments: Optional[float] = 0.0
-    assigned_agents: Optional[List[str]] = []
-    tags: Optional[List[str]] = []
-    notes: Optional[str] = ""
-    custom_fields: Optional[Dict[str, Any]] = {}
-
-class CustomerUpdate(BaseModel):
-    name: Optional[str] = None
-    company_name: Optional[str] = None
-    company_domain: Optional[str] = None
-    priority_level: Optional[str] = None
-    net_payments: Optional[float] = None
-    assigned_agents: Optional[List[str]] = None
-    tags: Optional[List[str]] = None
-    notes: Optional[str] = None
-    custom_fields: Optional[Dict[str, Any]] = None
-
-class LinkEmailRequest(BaseModel):
-    email: EmailStr
-
-class MergeCustomersRequest(BaseModel):
-    source_customer_id: str  # Will be merged into target
-    target_customer_id: str  # Will keep this customer
 
 @app.get("/api/customers")
 async def list_customers(
@@ -7884,15 +7516,6 @@ async def merge_consecutive_tickets(
 
 # ==================== CSAT (Customer Satisfaction) System ====================
 
-class CSATRequest(BaseModel):
-    ticket_id: str
-    customer_email: str
-    customer_name: Optional[str] = None
-
-class CSATFeedbackRequest(BaseModel):
-    feedback: Optional[str] = None
-    was_resolved: Optional[bool] = None
-
 # Generate secure token for CSAT email links
 def generate_csat_token(ticket_id: str, customer_email: str) -> str:
     """Generate a secure, unique token for CSAT rating links"""
@@ -8149,10 +7772,6 @@ async def check_csat_status(token: str):
         "customer_name": token_doc.get("customer_name"),
         "ticket_title": token_doc.get("ticket_title")
     }
-
-
-class CSATRatingRequest(BaseModel):
-    rating: int = Field(..., ge=1, le=5)
 
 
 @app.post("/api/csat/rate/{token}")
@@ -8448,11 +8067,6 @@ async def mark_notification_read(
 
 
 # ==================== Search API ====================
-
-class SearchQuery(BaseModel):
-    query: str = Field(..., min_length=1, max_length=500)
-    limit_per_category: int = Field(default=10, ge=1, le=50)
-    type_filter: Optional[str] = None
 
 @app.get("/api/search")
 async def search(
@@ -9208,20 +8822,6 @@ async def split_ticket(
 
 # ==================== Feature Requests APIs ====================
 
-class FeatureRequestCreate(BaseModel):
-    title: str
-    description: Optional[str] = None
-    request_type: str = "feature"  # feature, bug_fix, enhancement
-    priority: Optional[str] = "medium"  # low, medium, high, critical
-    linked_ticket_id: Optional[str] = None
-
-class FeatureRequestUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    request_type: Optional[str] = None  # feature, bug_fix, enhancement
-    priority: Optional[str] = None
-    status: Optional[str] = None  # new, planned, in_progress, completed, archived
-
 @app.get("/api/feature-requests")
 async def get_feature_requests(
     status: Optional[str] = None,
@@ -9418,15 +9018,6 @@ async def get_ticket_feature_requests(
 # ==================== Data Export System ====================
 
 from fastapi.responses import StreamingResponse
-
-class ExportRequest(BaseModel):
-    format: str = "json"  # json or csv
-    include_notes: bool = True
-    include_changelog: bool = True
-    include_csat: bool = True
-    date_from: Optional[str] = None
-    date_to: Optional[str] = None
-    status_filter: Optional[List[str]] = None
 
 def serialize_for_export(doc):
     """Convert MongoDB document to JSON-serializable format"""
@@ -10339,40 +9930,6 @@ def filter_tree_to_mongo(filter_tree: dict) -> dict:
 
 
 # --- Pydantic models ---
-
-class FilterCondition(BaseModel):
-    field: str
-    op: str
-    value: Any = None
-
-class FilterGroup(BaseModel):
-    logic: str = "and"  # "and" or "or"
-    conditions: List[FilterCondition] = []
-    groups: List['FilterGroup'] = []
-
-FilterGroup.model_rebuild()
-
-class FilterRequest(BaseModel):
-    filter_tree: FilterGroup
-    page: int = 1
-    limit: int = 50
-    sort_by: str = "created_at"
-    sort_order: str = "desc"
-
-class InboxCreate(BaseModel):
-    name: str
-    filter_tree: FilterGroup
-    color: Optional[str] = None
-    icon: Optional[str] = None
-
-class InboxUpdate(BaseModel):
-    name: Optional[str] = None
-    filter_tree: Optional[FilterGroup] = None
-    color: Optional[str] = None
-    icon: Optional[str] = None
-
-class InboxShare(BaseModel):
-    user_ids: List[str]
 
 
 # --- Filter endpoint ---
