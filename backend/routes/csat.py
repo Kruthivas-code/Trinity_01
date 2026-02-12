@@ -5,15 +5,23 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 import uuid
 import secrets
+import hashlib
+import base64
+import logging
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pymongo import DESCENDING
 from database import (
-    csat_responses_collection, csat_tokens_collection,
+    db, csat_responses_collection, csat_tokens_collection,
     tickets_collection, users_collection, gmail_tokens_collection,
 )
 from dependencies import get_current_user
 from models.schemas import CSATRequest, CSATFeedbackRequest, CSATRatingRequest
 from utils import serialize_doc
+from gmail_integration import get_gmail_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["csat"])
 
