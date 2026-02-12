@@ -66,10 +66,37 @@ def validate_environment():
 validate_environment()
 
 # ==================== App Creation ====================
+tags_metadata = [
+    {"name": "auth", "description": "Authentication, sessions, and API key management"},
+    {"name": "users", "description": "User profiles, preferences, and role management"},
+    {"name": "tickets", "description": "Core ticket CRUD, assignment, escalation, notes, and activity"},
+    {"name": "ticket_ops", "description": "Bulk operations, merge, unmerge, link, split tickets"},
+    {"name": "teams", "description": "Team CRUD and member management"},
+    {"name": "shifts", "description": "Shift scheduling, assignment, and on-shift queries"},
+    {"name": "filters", "description": "Advanced ticket filtering engine and custom inboxes"},
+    {"name": "admin", "description": "Custom fields, settings, routing rules, SLA policies, and escalation rules"},
+    {"name": "sla", "description": "SLA policy listing and per-ticket SLA status"},
+    {"name": "analytics", "description": "Dashboard summaries, overview metrics, and agent performance"},
+    {"name": "email", "description": "IMAP sync, Gmail integration, email replies, and file uploads"},
+    {"name": "customers", "description": "Customer CRUD, B2B prospects, email linking, and merge"},
+    {"name": "csat", "description": "CSAT surveys, ratings, feedback, and analytics"},
+    {"name": "canned_responses", "description": "Reusable response templates for ticket replies"},
+    {"name": "feature_requests", "description": "Feature request tracking, voting, and ticket linking"},
+    {"name": "leaves", "description": "Leave request management and approvals"},
+    {"name": "exports", "description": "Data export for tickets, users, teams, and analytics"},
+    {"name": "webhooks", "description": "Webhook subscription management and delivery logs"},
+    {"name": "search", "description": "Search, suggestions, presence tracking, and notifications"},
+    {"name": "health", "description": "System health checks"},
+]
+
 app = FastAPI(
     title="Trinity API",
-    description="Enterprise ticket management platform with real-time collaboration",
-    version="2.0.0"
+    description="Enterprise ticket management platform with real-time collaboration, SLA tracking, team management, and analytics.",
+    version="2.0.0",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
+    openapi_tags=tags_metadata,
 )
 
 # Rate limiting
