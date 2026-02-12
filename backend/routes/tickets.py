@@ -571,6 +571,7 @@ async def delete_ticket(ticket_id: str, current_user: dict = Depends(get_current
 
 @router.get("/tickets/{ticket_id}/changelog")
 async def get_ticket_changelog(ticket_id: str, current_user: dict = Depends(get_current_user)):
+    """Get the change history for a ticket with user names resolved."""
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -586,6 +587,7 @@ async def get_ticket_changelog(ticket_id: str, current_user: dict = Depends(get_
 
 @router.get("/tickets/{ticket_id}/metadata")
 async def get_ticket_metadata(ticket_id: str, current_user: dict = Depends(get_current_user)):
+    """Get rich metadata for a ticket including timestamps, stats, and custom fields."""
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -611,6 +613,7 @@ async def get_ticket_metadata(ticket_id: str, current_user: dict = Depends(get_c
 
 @router.post("/tickets/reorder")
 async def reorder_tickets(reorder_data: TicketReorder, current_user: dict = Depends(get_current_user)):
+    """Reorder a ticket within a status column (used by Kanban board drag-and-drop)."""
     ticket = tickets_collection.find_one({"ticket_id": reorder_data.ticket_id}, {"_id": 0})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -627,6 +630,7 @@ async def reorder_tickets(reorder_data: TicketReorder, current_user: dict = Depe
 
 @router.get("/tickets/by-email/{email}")
 async def get_tickets_by_email(email: str, current_user: dict = Depends(get_current_user)):
+    """Get all tickets associated with a customer email address."""
     email_lower = email.lower().strip()
     tickets = list(tickets_collection.find({
         "$or": [
@@ -640,6 +644,7 @@ async def get_tickets_by_email(email: str, current_user: dict = Depends(get_curr
 
 @router.get("/tickets/{ticket_id}/related")
 async def get_related_tickets(ticket_id: str, current_user: dict = Depends(get_current_user)):
+    """Find related tickets from the same customer email (up to 20 results)."""
     ticket = tickets_collection.find_one({"$or": [{"id": ticket_id}, {"ticket_id": ticket_id}]})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -670,5 +675,6 @@ async def get_related_tickets(ticket_id: str, current_user: dict = Depends(get_c
 
 @router.get("/tickets/{ticket_id}/replies")
 async def get_ticket_replies(ticket_id: str, current_user: dict = Depends(get_current_user)):
+    """Get all email replies associated with a ticket."""
     replies = list(email_replies_collection.find({"ticket_id": ticket_id}, sort=[("created_at", ASCENDING)]))
     return {"replies": [serialize_doc(r) for r in replies]}
