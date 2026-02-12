@@ -155,17 +155,23 @@ class BulkUpdateRequest(BaseModel):
     ticket_ids: List[str]
     updates: dict
 
+    model_config = {"json_schema_extra": {"examples": [{"ticket_ids": ["TKT-00042", "TKT-00043", "TKT-00044"], "updates": {"status": "in_progress", "assignee_id": "user_abc123"}}]}}
+
 
 class BulkTagRequest(BaseModel):
     ticket_ids: List[str]
     tags_to_add: List[str] = []
     tags_to_remove: List[str] = []
 
+    model_config = {"json_schema_extra": {"examples": [{"ticket_ids": ["TKT-00042", "TKT-00043"], "tags_to_add": ["priority-review", "q1-sprint"], "tags_to_remove": ["backlog"]}]}}
+
 
 # ==================== Users ====================
 
 class UserPreferences(BaseModel):
     theme: Optional[str] = "dark"
+
+    model_config = {"json_schema_extra": {"examples": [{"theme": "dark"}]}}
 
 
 class UserRoleUpdate(BaseModel):
@@ -174,12 +180,16 @@ class UserRoleUpdate(BaseModel):
     skills: Optional[List[str]] = None
     max_tickets: Optional[int] = 10
 
+    model_config = {"json_schema_extra": {"examples": [{"role": "agent", "team_id": "team_support01", "skills": ["billing", "technical"], "max_tickets": 15}]}}
+
 
 # ==================== API Keys ====================
 
 class APIKeyCreate(BaseModel):
     name: str
     description: Optional[str] = ""
+
+    model_config = {"json_schema_extra": {"examples": [{"name": "CI/CD Pipeline Key", "description": "Used by GitHub Actions for automated ticket creation"}]}}
 
 
 class APIKeyResponse(BaseModel):
