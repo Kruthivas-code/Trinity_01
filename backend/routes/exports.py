@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 import logging
 import json
+import io
 
 from pymongo import DESCENDING
 
