@@ -250,6 +250,19 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
             renderContent(content)
           )}
         </div>
+        {/* Save to KB for agent messages */}
+        {isAgent && !isNote && onSaveToKB && content && (
+          <div className="pl-8 mt-1">
+            <button
+              onClick={() => onSaveToKB(content, subject)}
+              className="flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-primary transition-colors"
+              data-testid="save-to-kb-btn"
+            >
+              <BookOpen size={10} />
+              Save to KB
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
