@@ -146,6 +146,7 @@ async def logout(response: Response, session_token: Optional[str] = Cookie(None)
 
 
 @router.post("/auth/api-keys")
+@limiter.limit("10/hour")
 async def create_api_key(
     request: Request,
     key_data: APIKeyCreate,
