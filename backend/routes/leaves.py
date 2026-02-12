@@ -51,7 +51,7 @@ async def get_leave(
 ):
     """Get a specific leave"""
     leave_mgr = get_leave_manager(db)
-    leave = leave_mgr.get_leave(leave_id)
+    leave = await leave_mgr.get_leave(leave_id)
     if not leave:
         raise HTTPException(status_code=404, detail="Leave not found")
     return leave
@@ -65,7 +65,7 @@ async def update_leave(
 ):
     """Update a leave request"""
     leave_mgr = get_leave_manager(db)
-    updated = leave_mgr.update_leave(leave_id, leave_data.dict(exclude_unset=True), current_user["user_id"])
+    updated = await leave_mgr.update_leave(leave_id, leave_data.dict(exclude_unset=True), current_user["user_id"])
     if not updated:
         raise HTTPException(status_code=404, detail="Leave not found")
     asyncio.create_task(broadcast_leave_updated(
@@ -82,7 +82,7 @@ async def delete_leave(
 ):
     """Delete a leave request"""
     leave_mgr = get_leave_manager(db)
-    deleted = leave_mgr.delete_leave(leave_id, current_user["user_id"])
+    deleted = await leave_mgr.delete_leave(leave_id, current_user["user_id"])
     if not deleted:
         raise HTTPException(status_code=404, detail="Leave not found")
     asyncio.create_task(broadcast_leave_deleted(
@@ -99,7 +99,7 @@ async def approve_leave(
 ):
     """Approve a leave request"""
     leave_mgr = get_leave_manager(db)
-    approved = leave_mgr.approve_leave(leave_id, current_user["user_id"])
+    approved = await leave_mgr.approve_leave(leave_id, current_user["user_id"])
     if not approved:
         raise HTTPException(status_code=404, detail="Leave not found or already processed")
     asyncio.create_task(broadcast_leave_updated(
@@ -116,7 +116,7 @@ async def reject_leave(
 ):
     """Reject a leave request"""
     leave_mgr = get_leave_manager(db)
-    rejected = leave_mgr.reject_leave(leave_id, current_user["user_id"])
+    rejected = await leave_mgr.reject_leave(leave_id, current_user["user_id"])
     if not rejected:
         raise HTTPException(status_code=404, detail="Leave not found or already processed")
     asyncio.create_task(broadcast_leave_updated(
