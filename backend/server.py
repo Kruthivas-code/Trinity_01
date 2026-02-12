@@ -28,13 +28,46 @@ import bleach
 import shutil
 from email.utils import parseaddr
 from html import unescape
-from dotenv import load_dotenv
-from functools import wraps
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
-import bcrypt
+# Centralized modules
+from database import (
+    db, client, MONGO_URL,
+    users_collection, tickets_collection, sessions_collection, api_keys_collection,
+    counters_collection, gmail_tokens_collection, email_threads_collection,
+    email_replies_collection, teams_collection, messages_collection,
+    custom_fields_collection, admin_settings_collection, shifts_collection,
+    user_shifts_collection, routing_rules_collection, sla_escalation_rules_collection,
+    ticket_changelog_collection, feature_requests_collection, customers_collection,
+    csat_responses_collection, csat_tokens_collection, canned_responses_collection,
+    sla_policies_collection, webhooks_collection, webhook_logs_collection,
+    custom_inboxes_collection, notifications_collection,
+    WEBHOOK_EVENT_TYPES, B2C_EMAIL_DOMAINS, SYSTEM_TIMEZONE,
+    MAX_TITLE_LENGTH, MAX_DESCRIPTION_LENGTH, MAX_TAGS, MAX_TAG_LENGTH,
+    MAX_CUSTOM_FIELD_VALUE_LENGTH, VALID_STATUSES, VALID_PRIORITIES,
+    VALID_ESCALATION_LEVELS, VALID_SOURCES, VALID_ROLES,
+    GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REDIRECT_URI,
+    GMAIL_WATCH_EMAIL, GMAIL_SYNC_QUERY, GMAIL_SCOPES,
+    EMERGENT_AUTH_URL, ALLOWED_DOMAIN,
+)
+from dependencies import (
+    get_current_user, get_api_key_user, verify_api_key, generate_api_key,
+    require_role, require_admin, require_lead_or_admin,
+    API_KEY_HEADER,
+)
+from models.schemas import (
+    SessionCreate, TicketCreate, TicketUpdate, TicketReorder, UserPreferences,
+    APIKeyCreate, APIKeyResponse, TeamCreate, TeamUpdate, TeamMemberAdd,
+    UserRoleUpdate, InternalNoteCreate, TicketAssign, ShiftCreate, ShiftUpdate,
+    UserShiftAssign, TicketEscalate, RoutingRuleCondition, RoutingRuleAction,
+    RoutingRuleCreate, RoutingRuleUpdate, SLAEscalationRuleCreate,
+    SLAEscalationRuleUpdate, SLAPolicyPriority, SLAPoliciesUpdate, SLAPolicy,
+    EmailReplyRequest, SimulatedEmail, CustomFieldCreate, CustomFieldUpdate,
+    ExportRequest, AtlasImportRequest, WebhookCreate, WebhookUpdate,
+    CustomerCreate, CustomerUpdate, LinkEmailRequest, MergeCustomersRequest,
+    CSATRequest, CSATFeedbackRequest, CSATRatingRequest, CannedResponseCreate,
+    CannedResponseUpdate, SearchQuery, FeatureRequestCreate, FeatureRequestUpdate,
+    BulkUpdateRequest, BulkTagRequest,
+    FilterCondition, FilterGroup, FilterRequest, InboxCreate, InboxUpdate, InboxShare,
+)
 
 # Add filter for request_id - needed BEFORE configuring basicConfig
 class RequestIdFilter(logging.Filter):
