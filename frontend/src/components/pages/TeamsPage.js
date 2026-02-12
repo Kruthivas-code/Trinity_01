@@ -66,7 +66,8 @@ const TeamsPage = ({ user }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        setUsers(data.filter(u => u.user_id));
+        const userList = Array.isArray(data) ? data : (data.items || []);
+        setUsers(userList.filter(u => u.user_id));
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
