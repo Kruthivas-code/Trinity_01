@@ -75,6 +75,13 @@ from models.schemas import (
     BulkUpdateRequest, BulkTagRequest,
     FilterCondition, FilterGroup, FilterRequest, InboxCreate, InboxUpdate, InboxShare,
 )
+from utils import (
+    serialize_doc, log_ticket_change, log_ticket_changes_batch,
+    generate_ticket_id, generate_customer_id,
+    extract_email_address, extract_domain, is_b2c_email,
+    detect_company_from_domain, get_or_create_customer,
+    sanitize_html, deliver_webhook, trigger_webhooks,
+)
 
 # Add filter for request_id - needed BEFORE configuring basicConfig
 class RequestIdFilter(logging.Filter):
