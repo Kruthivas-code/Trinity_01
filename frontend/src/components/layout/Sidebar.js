@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, 
   User, ChevronDown, Menu, X, LogOut, Users, Shield, CalendarDays,
-  Bookmark, BarChart3, UserCircle, Star, MessageSquare,
+  Bookmark, BarChart3, UserCircle, Star, MessageSquare, BookOpen,
   Inbox, AlertTriangle, Zap, ChevronRight, MoreHorizontal, Pencil, Trash2, Share2
 } from 'lucide-react';
 import { clearCachedUser } from '../auth/ProtectedRoute';
@@ -90,6 +90,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
     { id: 'customers', label: 'Customers', icon: UserCircle, path: '/customers' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
     { id: 'canned-responses', label: 'Canned Responses', icon: MessageSquare, path: '/canned-responses' },
+    { id: 'knowledge-base', label: 'Knowledge Base', icon: BookOpen, path: '/knowledge-base' },
     { id: 'teams', label: 'Teams', icon: Users, path: '/teams' },
     { id: 'leaves', label: 'Leaves', icon: CalendarDays, path: '/leaves' },
     { id: 'feature-requests', label: 'Features', icon: Bookmark, path: '/feature-requests' },
