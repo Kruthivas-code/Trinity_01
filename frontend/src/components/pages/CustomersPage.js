@@ -7,9 +7,9 @@ import {
   BadgeCheck, GitMerge
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Badge } from '../ui/badge';
 import {
   Select,
   SelectContent,
