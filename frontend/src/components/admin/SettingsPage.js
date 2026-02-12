@@ -278,6 +278,8 @@ const SettingsPage = ({ user }) => {
       let data = await response.json();
       // Handle paginated response format
       if (data.tickets) data = data.tickets;
+      else if (data.items) data = data.items;
+      else if (data.customers) data = data.customers;
       
       // Create and download file
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -328,6 +330,8 @@ const SettingsPage = ({ user }) => {
       
       let data = await response.json();
       if (data.tickets) data = data.tickets;
+      else if (data.items) data = data.items;
+      else if (data.customers) data = data.customers;
       
       // Convert to CSV
       const csvRows = [headers.join(',')];
