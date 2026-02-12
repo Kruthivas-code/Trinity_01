@@ -406,9 +406,11 @@ class TestAdminAutoClose:
         assert response.status_code == 200
         
         data = response.json()
-        assert "auto_close_hours" in data
-        assert "pending_tickets_count" in data
-        print(f"PASS: Auto-close status returns hours={data['auto_close_hours']}, pending={data['pending_tickets_count']}")
+        # Response structure: {pending_auto_close: int, pending_tickets: [], recently_resolved_count: int, recently_auto_closed: []}
+        assert "pending_auto_close" in data
+        assert "pending_tickets" in data
+        assert "recently_resolved_count" in data
+        print(f"PASS: Auto-close status returns pending={data['pending_auto_close']}, recently_resolved={data['recently_resolved_count']}")
 
 
 # ==================== 13. Bulk Update (server.py - was accidentally moved) ====================
