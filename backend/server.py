@@ -182,7 +182,15 @@ app.mount("/api/socket.io", socket_app)
 
 # Include extracted route modules
 from routes.filters import router as filters_router
+from routes.webhooks import router as webhooks_router
+from routes.customers import router as customers_router
+from routes.csat import router as csat_router
+from routes.canned_responses import router as canned_responses_router
 app.include_router(filters_router)
+app.include_router(webhooks_router)
+app.include_router(customers_router)
+app.include_router(csat_router)
+app.include_router(canned_responses_router)
 
 # ==================== Request ID Middleware ====================
 @app.middleware("http")
