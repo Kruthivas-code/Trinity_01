@@ -21,7 +21,7 @@ import AnalyticsPage from './components/pages/AnalyticsPage';
 import CSATPage from './components/pages/CSATPage';
 import StarredTicketsPage from './components/tickets/StarredTicketsPage';
 import CannedResponsesPage from './components/pages/CannedResponsesPage';
-import { Toaster, toast } from './components/ui/sonner';
+import KnowledgeBasePage from './components/pages/KnowledgeBasePage';
 
 function AppRouter() {
   const location = useLocation();
@@ -247,6 +247,20 @@ function AppRouter() {
         }
       />
       <Route
+        path="/knowledge-base"
+        element={
+          <ProtectedRoute>
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <PageLayout user={user}>
+                  <KnowledgeBasePage user={user} />
+                </PageLayout>
+              </AppWithRealtime>
+            )}
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/analytics"
         element={
           <ProtectedRoute>
@@ -293,20 +307,10 @@ function MentionNotificationHandler() {
     if (!onMentionNotification) return;
 
     const unsubscribe = onMentionNotification((data) => {
-      // Show toast notification for mentions
-      toast.info(`${data.mentioned_by} mentioned you`, {
-        description: data.ticket_title ? `In ticket: ${data.ticket_title}` : data.note_preview,
-        action: {
-          label: 'View',
-          onClick: () => {
-            // Navigate to the ticket
-            if (data.ticket_id) {
-              navigate(`/dashboard?ticket=${data.ticket_id}`);
-            }
-          },
-        },
-        duration: 8000,
-      });
+      // Navigate to the ticket on mention
+      if (data.ticket_id) {
+        navigate(`/dashboard?ticket=${data.ticket_id}`);
+      }
     });
 
     return unsubscribe;
