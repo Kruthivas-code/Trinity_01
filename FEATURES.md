@@ -847,26 +847,28 @@ Returns:
 
 ## Frontend Pages
 
-| Page | Path | Description |
-|------|------|-------------|
-| Login | `/login` | Authentication |
-| Dashboard | `/` | Personal Kanban board |
-| All Tickets | `/all-tickets` | Full ticket list |
-| Open Tickets | `/open` | Active tickets |
-| Waiting | `/waiting` | Awaiting response |
-| Closed | `/closed` | Resolved/closed |
-| Starred | `/starred` | Bookmarked tickets |
-| Search Results | `/search` | Search page |
-| Teams | `/teams` | Team management |
-| Customers | `/customers` | Customer profiles |
-| Feature Requests | `/feature-requests` | Product roadmap |
-| Analytics | `/analytics` | Reporting |
-| CSAT | `/csat` | CSAT analytics |
-| Canned Responses | `/canned-responses` | Response templates |
-| Leave | `/leave` | Leave calendar |
-| Settings | `/settings` | User settings |
-| Admin | `/admin` | Admin panel |
-| Profile | `/profile` | User profile |
+| Page | Path | Description | Test Status |
+|------|------|-------------|-------------|
+| Login | `/login` | Authentication | ✅ Verified |
+| Dashboard | `/dashboard` | Personal Kanban board | ✅ Verified |
+| All Tickets | `/all-tickets` | Full ticket list | ✅ Verified |
+| Open Tickets | `/open-tickets` | Active tickets | ✅ Verified |
+| Waiting | `/waiting-tickets` | Awaiting response | ✅ Verified |
+| Closed | `/closed-tickets` | Resolved/closed | ✅ Verified |
+| Starred | `/starred-tickets` | Bookmarked tickets | ✅ Verified |
+| Custom Inbox | `/inbox/:inboxId` | Filtered ticket views | ✅ Verified |
+| Search Results | `/search` | Search page | ✅ Verified |
+| Teams | `/teams` | Team management | ✅ Verified |
+| Customers | `/customers` | Customer profiles | ✅ Verified |
+| Feature Requests | `/feature-requests` | Product roadmap | ✅ Verified |
+| Analytics | `/analytics` | Reporting dashboard | ✅ Verified |
+| CSAT | `/csat/:token` | CSAT survey (public) | ✅ Verified |
+| Canned Responses | `/canned-responses` | Response templates | ✅ Verified |
+| Leave | `/leaves` | Leave calendar | ✅ Verified |
+| Settings | `/settings` | User settings | ✅ Verified |
+| Admin | `/admin` | Admin panel | ✅ Verified |
+| Profile | `/profile` | User profile | ✅ Verified |
+| Ticket Detail | `/ticket/:ticketId` | Direct ticket URL | ✅ Verified |
 
 ---
 
