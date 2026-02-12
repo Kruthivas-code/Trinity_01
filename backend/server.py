@@ -2075,48 +2075,6 @@ def sanitize_html(html_content: str) -> str:
 
 # Models
 # Phase 2: Team Models
-# Phase 2: Internal Notes Model
-# Phase 4: Shift & Escalation Models
-# Phase 5: Routing Rule Models
-# ==================== SLA Escalation Rules Models ====================
-# ==================== Role-Based Authorization ====================
-VALID_ROLES = ["agent", "lead", "admin"]
-
-def require_role(allowed_roles: List[str]):
-    """
-    Dependency that checks if the current user has one of the allowed roles.
-    Usage: current_user: dict = Depends(require_role(["admin", "lead"]))
-    """
-    async def role_checker(current_user: dict = Depends(get_current_user)):
-        user_role = current_user.get("role", "agent")
-        if user_role not in allowed_roles:
-            raise HTTPException(
-                status_code=403,
-                detail=f"Insufficient permissions. Required role: {', '.join(allowed_roles)}"
-            )
-        return current_user
-    return role_checker
-
-def require_admin(current_user: dict = Depends(get_current_user)):
-    """Dependency that requires admin role"""
-    if current_user.get("role") != "admin":
-        raise HTTPException(
-            status_code=403,
-            detail="Admin privileges required"
-        )
-    return current_user
-
-def require_lead_or_admin(current_user: dict = Depends(get_current_user)):
-    """Dependency that requires lead or admin role"""
-    if current_user.get("role") not in ["admin", "lead"]:
-        raise HTTPException(
-            status_code=403,
-            detail="Lead or admin privileges required"
-        )
-    return current_user
-
-# ==================== Webhook Models ====================
-
 # ==================== Webhook Delivery System ====================
 
 async def deliver_webhook(webhook: dict, event_type: str, payload: dict):
