@@ -4,7 +4,7 @@ import { useRealtime } from '../../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const FilterBuilder = React.lazy(() => import('./FilterBuilder'));
-const SaveInboxModal = React.lazy(() => import('./SaveInboxModal'));
+const SaveInboxModal = React.lazy(() => import('../inbox/SaveInboxModal'));
 const ITEMS_PER_PAGE = 50;
 
 // Get the best preview text for a ticket

@@ -316,7 +316,7 @@ function MentionNotificationHandler() {
 }
 
 // Lazy-loaded component (must be at module level, NOT inside a component)
-const KeyboardShortcutsHelp = React.lazy(() => import('./components/KeyboardShortcutsHelp'));
+const KeyboardShortcutsHelp = React.lazy(() => import('./components/common/KeyboardShortcutsHelp'));
 
 // Wrapper component that provides realtime context to authenticated routes
 function AppWithRealtime({ user, children }) {
