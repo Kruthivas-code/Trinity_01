@@ -306,6 +306,7 @@ async def update_inbox(
 
 @router.delete("/inboxes/{inbox_id}")
 async def delete_inbox(inbox_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a custom inbox (must be owner or shared-with)."""
     user_id = current_user["user_id"]
     result = custom_inboxes_collection.delete_one({
         "inbox_id": inbox_id,
@@ -322,6 +323,7 @@ async def share_inbox(
     data: InboxShare,
     current_user: dict = Depends(get_current_user)
 ):
+    """Share a custom inbox with other users by creating copies for each recipient."""
     inbox = custom_inboxes_collection.find_one({
         "inbox_id": inbox_id,
         "owner_id": current_user["user_id"]
@@ -369,6 +371,7 @@ async def get_inbox_tickets(
     sort_order: str = Query("desc"),
     current_user: dict = Depends(get_current_user)
 ):
+    """Get tickets matching a custom inbox's filter criteria with pagination."""
     user_id = current_user["user_id"]
     inbox = custom_inboxes_collection.find_one({
         "inbox_id": inbox_id,

@@ -76,6 +76,7 @@ async def get_feature_request(
     fr_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Get a feature request by ID with linked ticket details."""
     fr = feature_requests_collection.find_one({"feature_request_id": fr_id}, {"_id": 0})
     if not fr:
         raise HTTPException(status_code=404, detail="Feature request not found")
@@ -94,6 +95,7 @@ async def update_feature_request(
     data: FeatureRequestUpdate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Update a feature request's fields."""
     update_data = {k: v for k, v in data.dict().items() if v is not None}
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
@@ -113,6 +115,7 @@ async def delete_feature_request(
     fr_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Delete a feature request by ID."""
     result = feature_requests_collection.delete_one({"feature_request_id": fr_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Feature request not found")
