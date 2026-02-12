@@ -1,52 +1,96 @@
-# Trinity - Customer Support Ticketing System
+# Trinity / TickFlow - Product Requirements Document
 
 ## Original Problem Statement
-Build a web-based customer support ticketing system ("Trinity") with ticket management, canned responses, data import, email ingestion, and advanced filtering.
+Enterprise ticket management platform with real-time collaboration. Features include ticket CRUD, team management, shift scheduling, SLA policies, email integration (IMAP + Gmail), analytics, and custom inbox filtering.
 
-## Tech Stack
-- **Frontend**: React 19, React Router v7, Shadcn UI, Socket.IO client
-- **Backend**: Python, FastAPI, pymongo
-- **Database**: MongoDB
-- **Email**: IMAP (Gmail App Password), UID-based tracking, IMAP IDLE push
-- **Real-time**: Socket.IO (WebSocket + polling fallback)
+## Architecture
 
-## Architecture (Post-Refactoring)
+### Backend (FastAPI + MongoDB)
 ```
-backend/
-  server.py            ~6,774 lines  (remaining routes + startup/shutdown + background tasks)
-  database.py          ~136 lines    (DB connection, all collections, constants)
-  models/schemas.py    ~544 lines    (all Pydantic request/response models)
-  dependencies.py      ~144 lines    (auth: get_current_user, verify_api_key, require_role)
-  utils.py             ~361 lines    (serialize_doc, log_ticket_change, deliver_webhook, etc.)
-  routes/
-    filters.py         ~398 lines    (filter engine + inbox CRUD/sharing)
-    webhooks.py        ~325 lines    (webhooks API + trigger-auto-close)
-    customers.py       ~426 lines    (customer CRUD)
-    csat.py            ~545 lines    (CSAT system)
-    canned_responses.py ~202 lines   (canned responses CRUD)
-  realtime.py                        (Socket.IO + presence)
-  search.py                          (search engine)
-  imap_sync.py                       (IMAP IDLE + UID sync)
-  adapters/                          (MongoDB adapters for distributed lock, pubsub)
+/app/backend/
+├── server.py              # 473 lines - App init, middleware, startup/shutdown, router includes
+├── database.py            # DB connection + collection references
+├── dependencies.py        # Auth dependencies (get_current_user, require_admin, etc.)
+├── utils.py               # Shared utilities (serialize_doc, log_ticket_change, etc.)
+├── ticket_helpers.py      # Routing rules, assignment, escalation helpers
+├── rate_limiter.py        # Shared rate limiter instance
+├── models/
+│   └── schemas.py         # All Pydantic models
+├── routes/
+│   ├── auth.py            # Auth (session, me, logout, API keys)
+│   ├── users.py           # User profile, preferences, listing, role update
+│   ├── teams.py           # Team CRUD + members
+│   ├── shifts.py          # Shift CRUD + user-shift assignment + on-shift queries
+│   ├── tickets.py         # Core ticket CRUD + notes + activity + tags + metadata
+│   ├── ticket_ops.py      # Bulk ops + merge/unmerge/link/unlink/split
+│   ├── email.py           # IMAP sync + Gmail integration + file upload
+│   ├── admin.py           # Custom fields + settings + routing rules + SLA admin
+│   ├── sla.py             # SLA policies + per-ticket SLA status
+│   ├── analytics.py       # Summary + overview + agent metrics + export
+│   ├── search_presence.py # Search + suggestions + presence + notifications
+│   ├── leaves.py          # Leave management CRUD
+│   ├── feature_requests.py # Feature requests CRUD + ticket linking
+│   ├── exports.py         # Data export system (tickets, users, teams)
+│   ├── filters.py         # Advanced ticket filtering + custom inboxes
+│   ├── webhooks.py        # Webhook management
+│   ├── customers.py       # Customer CRUD + B2B prospects
+│   ├── canned_responses.py # Canned response templates
+│   └── csat.py            # CSAT surveys + analytics
+├── realtime.py            # Socket.IO events + broadcast functions
+├── search.py              # Search engine
+├── leave_management.py    # Leave business logic
+├── email_utils.py         # Email parsing utilities
+├── imap_sync.py           # IMAP IDLE watcher
+└── adapters/              # Distributed adapters (presence, lock, pubsub)
 ```
 
-## What's Been Implemented
-- Full ticket CRUD, Kanban board, canned responses, data import
-- Email ingestion via IMAP (UID-based, IMAP IDLE push)
-- Team management, routing rules, SLA escalation
-- Analytics via MongoDB aggregation pipelines
-- Real-time ticket updates via Socket.IO
-- Advanced filtering with AND/OR logic, nested groups
-- Custom inboxes with sharing (decoupled copies)
-- ShareInboxModal (user picker) and EditInboxModal (rename/color)
-- 10+ MongoDB indexes for scalable filtering (100K+ tickets)
-- Backend refactoring: 10,708 → 6,774 lines (-37%)
-  - Extracted: database.py, models/, dependencies.py, utils.py
-  - Extracted routes: filters, webhooks, customers, csat, canned_responses
-- WebSocket transport order optimized (['websocket', 'polling'])
+### Frontend (React + Material-UI)
+```
+/app/frontend/src/
+├── components/            # 50+ components (flat structure - needs refactoring)
+│   ├── Sidebar.js
+│   ├── FilterBuilder.js
+│   ├── modals/
+│   │   ├── EditInboxModal.js
+│   │   └── ShareInboxModal.js
+│   └── ...
+├── context/
+│   └── SocketContext.js
+├── pages/
+│   └── TicketsListView.js
+└── App.js
+```
 
-## Pending Items
-- P2: Continue extracting remaining routes from server.py (tickets, email, admin, teams ~4K lines)
-- P2: Frontend component organization (51 files flat in components/)
-- P2: End-to-end Atlas import test with real credentials
-- P3: Redis caching for analytics at higher scale
+## Completed Work
+
+### P0 - Bug Fixes & Scalability
+- [x] Fixed user dropdown in filters not populating correctly
+- [x] Added MongoDB indexes for filterable fields
+
+### P1 - Custom Inbox Management
+- [x] Inbox sharing with specific users (ShareInboxModal)
+- [x] Inbox renaming (EditInboxModal)
+- [x] Sidebar integration for inbox actions
+
+### P2 - Code Refactoring
+- [x] **Backend Refactoring COMPLETE** - server.py: 10,708 → 473 lines
+  - 19 route modules extracted to backend/routes/
+  - Supporting modules: database.py, dependencies.py, utils.py, ticket_helpers.py, rate_limiter.py
+  - 137 total API routes verified working
+  - 100% test pass rate (50/50 tests)
+- [x] WebSocket transport optimization (prioritize websocket over polling)
+
+## Remaining Tasks
+
+### P1 - Frontend Component Refactoring
+- [ ] Organize frontend/src/components/ into logical subdirectories (layout/, tickets/, inbox/, modals/, common/)
+- [ ] Update all import paths across the frontend
+
+### P2 - Deferred
+- [ ] Atlas Search Import
+
+## Key Technical Details
+- **Auth**: Google OAuth via Emergent Auth, Cookie-based session tokens
+- **Real-time**: Socket.IO for WebSocket communication
+- **Database**: MongoDB (via pymongo sync + motor async)
+- **Entry point**: `uvicorn server:app` (unchanged)
