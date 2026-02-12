@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 import logging
+import json
 
 from pymongo import DESCENDING
 
