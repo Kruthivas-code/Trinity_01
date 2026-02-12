@@ -39,7 +39,7 @@ import uuid
 from datetime import datetime
 
 # Use the public URL from frontend/.env for testing
-BASE_URL = "https://modular-backend-46.preview.emergentagent.com"
+BASE_URL = "https://api-guide-2.preview.emergentagent.com"
 
 # Test credentials - create new session for each test run
 SESSION_TOKEN = "test_session_regression_1770873791877"
