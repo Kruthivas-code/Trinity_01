@@ -421,11 +421,3 @@ def generate_csv_export(data, filename_prefix):
         }
     )
 
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8001)
-
-
-# Admin endpoint to check auto-close status and manually trigger
-@router.get("/api/admin/auto-close-status")
