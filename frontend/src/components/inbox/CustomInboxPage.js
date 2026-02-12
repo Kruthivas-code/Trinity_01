@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import TicketsListView from './TicketsListView';
+import TicketsListView from '../tickets/TicketsListView';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 

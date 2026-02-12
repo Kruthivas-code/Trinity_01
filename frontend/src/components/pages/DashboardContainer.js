@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Download, Upload, AtSign, User, RefreshCw, Filter, Calendar, Tag, X } from 'lucide-react';
-import KanbanBoard from './KanbanBoard';
-import TicketDrawer from './TicketDrawer';
-import CreateTicketModal from './CreateTicketModal';
-import ImportModal from './ImportModal';
+import KanbanBoard from '../tickets/KanbanBoard';
+import TicketDrawer from '../tickets/TicketDrawer';
+import CreateTicketModal from '../tickets/CreateTicketModal';
+import ImportModal from '../common/ImportModal';
 import { useRealtime } from '../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;

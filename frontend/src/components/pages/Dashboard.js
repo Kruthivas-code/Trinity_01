@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 
-import Header from './Header';
-import KanbanBoard from './KanbanBoard';
-import TicketDrawer from './TicketDrawer';
-import CreateTicketModal from './CreateTicketModal';
-import ImportModal from './ImportModal';
+import Header from '../layout/Header';
+import KanbanBoard from '../tickets/KanbanBoard';
+import TicketDrawer from '../tickets/TicketDrawer';
+import CreateTicketModal from '../tickets/CreateTicketModal';
+import ImportModal from '../common/ImportModal';
 import { useRealtime } from '../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;

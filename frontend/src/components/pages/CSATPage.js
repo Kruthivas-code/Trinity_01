@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Star, CheckCircle2, Loader2, AlertCircle, MessageSquare, Send } from 'lucide-react';
-import { TridentIcon } from './TridentIcon';
+import { TridentIcon } from '../common/TridentIcon';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 

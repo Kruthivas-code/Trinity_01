@@ -1,6 +1,6 @@
 import React from 'react';
 import { LogIn } from 'lucide-react';
-import { TridentIcon } from './TridentIcon';
+import { TridentIcon } from '../common/TridentIcon';
 
 const LoginPage = () => {
   const handleLogin = () => {

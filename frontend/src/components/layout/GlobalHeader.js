@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Search, Command, Plus, X, Bell, ChevronDown } from 'lucide-react';
-import { TridentIcon } from './TridentIcon';
+import { TridentIcon } from '../common/TridentIcon';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 

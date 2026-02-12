@@ -10,11 +10,11 @@ import {
   GitMerge, Filter, Unlink, MessageCircle, Activity, MessageSquare,
   ImagePlus, Paperclip
 } from 'lucide-react';
-import RichTextEditor from './RichTextEditor';
-import MentionInput, { renderTextWithMentions } from './MentionInput';
-import ActivityTimeline from './ActivityTimeline';
-import EmailViewer from './EmailViewer';
-import CannedResponsePicker from './CannedResponsePicker';
+import RichTextEditor from '../common/RichTextEditor';
+import MentionInput, { renderTextWithMentions } from '../common/MentionInput';
+import ActivityTimeline from '../common/ActivityTimeline';
+import EmailViewer from '../common/EmailViewer';
+import CannedResponsePicker from '../common/CannedResponsePicker';
 import { useRealtime } from '../contexts/RealtimeContext';
 import { toast } from 'sonner';
 

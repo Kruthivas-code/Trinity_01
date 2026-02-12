@@ -6,11 +6,11 @@ import {
   Bookmark, BarChart3, UserCircle, Star, MessageSquare,
   Inbox, AlertTriangle, Zap, ChevronRight, MoreHorizontal, Pencil, Trash2, Share2
 } from 'lucide-react';
-import { clearCachedUser } from './ProtectedRoute';
-import ShareInboxModal from './ShareInboxModal';
-import EditInboxModal from './EditInboxModal';
+import { clearCachedUser } from '../auth/ProtectedRoute';
+import ShareInboxModal from '../inbox/ShareInboxModal';
+import EditInboxModal from '../inbox/EditInboxModal';
 
-import { TridentIcon } from './TridentIcon';
+import { TridentIcon } from '../common/TridentIcon';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 

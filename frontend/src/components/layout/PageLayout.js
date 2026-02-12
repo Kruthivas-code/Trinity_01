@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import GlobalHeader from './GlobalHeader';
-import CreateTicketModal from './CreateTicketModal';
+import CreateTicketModal from '../tickets/CreateTicketModal';
 import { CommandPaletteContext } from '../App';
 
 /**
