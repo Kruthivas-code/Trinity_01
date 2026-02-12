@@ -7,7 +7,7 @@ from typing import Optional
 import asyncio
 import logging
 
-from database import users_collection
+from database import db, users_collection
 from dependencies import get_current_user, require_lead_or_admin
 from leave_management import get_leave_manager, LeaveRequest, LeaveUpdate
 from realtime import broadcast_leave_created, broadcast_leave_updated, broadcast_leave_deleted
@@ -25,7 +25,7 @@ async def get_leaves(
     current_user: dict = Depends(get_current_user)
 ):
     """Get leaves with optional filters"""
-    leave_mgr = get_leave_manager()
+    leave_mgr = get_leave_manager(db)
     filters = {}
     if status:
         filters["status"] = status
