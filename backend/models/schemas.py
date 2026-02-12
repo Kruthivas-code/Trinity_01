@@ -207,6 +207,8 @@ class TeamCreate(BaseModel):
     escalation_level: str = "L1"
     description: Optional[str] = ""
 
+    model_config = {"json_schema_extra": {"examples": [{"name": "Tier 1 Support", "escalation_level": "L1", "description": "Frontline support handling initial customer inquiries"}]}}
+
 
 class TeamUpdate(BaseModel):
     name: Optional[str] = None
@@ -214,9 +216,13 @@ class TeamUpdate(BaseModel):
     description: Optional[str] = None
     lead_id: Optional[str] = None
 
+    model_config = {"json_schema_extra": {"examples": [{"name": "Tier 2 Engineering", "escalation_level": "L2", "lead_id": "user_jsmith"}]}}
+
 
 class TeamMemberAdd(BaseModel):
     user_id: str
+
+    model_config = {"json_schema_extra": {"examples": [{"user_id": "user_abc123"}]}}
 
 
 # ==================== Shifts ====================
@@ -228,6 +234,8 @@ class ShiftCreate(BaseModel):
     end_time: str
     days_of_week: List[int] = [1, 2, 3, 4, 5]
 
+    model_config = {"json_schema_extra": {"examples": [{"team_id": "team_support01", "name": "Morning Shift", "start_time": "09:00", "end_time": "17:00", "days_of_week": [1, 2, 3, 4, 5]}]}}
+
 
 class ShiftUpdate(BaseModel):
     name: Optional[str] = None
@@ -236,11 +244,15 @@ class ShiftUpdate(BaseModel):
     days_of_week: Optional[List[int]] = None
     is_active: Optional[bool] = None
 
+    model_config = {"json_schema_extra": {"examples": [{"name": "Evening Shift", "start_time": "17:00", "end_time": "01:00", "days_of_week": [1, 2, 3, 4, 5, 6]}]}}
+
 
 class UserShiftAssign(BaseModel):
     shift_id: str
     is_primary: bool = True
     effective_from: Optional[str] = None
+
+    model_config = {"json_schema_extra": {"examples": [{"shift_id": "shift_morning01", "is_primary": True, "effective_from": "2026-02-15"}]}}
 
 
 # ==================== Routing Rules ====================
