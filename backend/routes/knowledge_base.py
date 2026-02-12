@@ -245,7 +245,13 @@ async def export_snippets(
     if format == "csv":
         output = io.StringIO()
         if snippets:
-            writer = csv.DictWriter(output, fieldnames=snippets[0].keys())
+            # Collect all unique keys from all snippets for consistent CSV columns
+            all_keys = set()
+            for s in snippets:
+                all_keys.update(s.keys())
+            # Sort keys for consistent column order
+            fieldnames = sorted(all_keys)
+            writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
             writer.writeheader()
             writer.writerows(snippets)
         return StreamingResponse(
