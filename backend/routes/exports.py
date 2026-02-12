@@ -46,7 +46,7 @@ def serialize_for_export(doc):
             result[key] = value
     return result
 
-@router.post("/api/admin/export/tickets")
+@router.post("/admin/export/tickets")
 async def admin_export_tickets(
     request: ExportRequest,
     current_user: dict = Depends(get_current_user)
@@ -117,7 +117,7 @@ async def admin_export_tickets(
         return generate_json_export(export_data, "tickets")
 
 
-@router.post("/api/admin/export/full")
+@router.post("/admin/export/full")
 async def export_full_data(
     request: ExportRequest,
     current_user: dict = Depends(get_current_user)
@@ -225,7 +225,7 @@ async def export_full_data(
         return generate_json_export(export_data, "full_export")
 
 
-@router.get("/api/admin/export/customers")
+@router.get("/admin/export/customers")
 async def export_customers(
     format: str = "json",
     current_user: dict = Depends(get_current_user)
@@ -289,7 +289,7 @@ async def export_customers(
         return generate_json_export(export_data, "customers")
 
 
-@router.get("/api/admin/export/analytics")
+@router.get("/admin/export/analytics")
 async def export_analytics(
     days: int = 30,
     format: str = "json",

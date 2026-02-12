@@ -212,7 +212,7 @@ def add_email_as_reply_to_ticket(ticket, gmail_message_id, gmail_thread_id, head
 
 
 # IMAP Email Sync endpoint
-@router.post("/api/email/sync")
+@router.post("/email/sync")
 async def trigger_email_sync(
     fetch_all: bool = Query(False, description="If true, resets UID state and re-fetches all emails"),
     current_user: dict = Depends(get_current_user)
@@ -366,7 +366,7 @@ async def trigger_email_sync(
         "last_uid": new_max_uid
     }
 
-@router.get("/api/email/status")
+@router.get("/email/status")
 async def email_sync_status(current_user: dict = Depends(get_current_user)):
     """Check IMAP connection and sync status."""
     from imap_sync import get_imap_config
@@ -410,7 +410,7 @@ async def email_sync_status(current_user: dict = Depends(get_current_user)):
         return {"connected": False, "email": config["email"], "error": str(e), "sync": sync_info, "mode": "idle"}
 
 # Import endpoint
-@router.post("/api/import")
+@router.post("/import")
 async def import_tickets(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
@@ -457,7 +457,7 @@ async def import_tickets(
 
 from atlas_import import run_atlas_import
 
-@router.post("/api/import/atlas")
+@router.post("/import/atlas")
 async def import_from_atlas(
     req: AtlasImportRequest,
     current_user: dict = Depends(get_current_user)
@@ -528,7 +528,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
-@router.post("/api/upload/image")
+@router.post("/upload/image")
 async def upload_image(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
@@ -571,7 +571,7 @@ async def upload_image(
         "content_type": file.content_type
     }
 
-@router.get("/api/uploads/{filename}")
+@router.get("/uploads/{filename}")
 async def get_uploaded_file(filename: str):
     """Serve uploaded files"""
     # Sanitize filename to prevent directory traversal
@@ -665,7 +665,7 @@ def extract_email_metadata(headers):
             metadata['to'] = value
     return metadata
 
-@router.get("/api/gmail/status")
+@router.get("/gmail/status")
 async def gmail_status(current_user: dict = Depends(get_current_user)):
     """Check if Gmail is connected"""
     token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
@@ -676,7 +676,7 @@ async def gmail_status(current_user: dict = Depends(get_current_user)):
         "configured": bool(GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET)
     }
 
-@router.get("/api/gmail/connect")
+@router.get("/gmail/connect")
 async def gmail_connect(current_user: dict = Depends(get_current_user)):
     """Initiate Gmail OAuth flow"""
     if not GMAIL_CLIENT_ID or not GMAIL_CLIENT_SECRET:
@@ -698,7 +698,7 @@ async def gmail_connect(current_user: dict = Depends(get_current_user)):
     
     return {"authorization_url": authorization_url}
 
-@router.get("/api/auth/gmail/callback")
+@router.get("/auth/gmail/callback")
 async def gmail_callback(code: str = None, state: str = None, error: str = None):
     """Handle Gmail OAuth callback"""
     frontend_url = "https://modular-backend-46.preview.emergentagent.com"
@@ -736,13 +736,13 @@ async def gmail_callback(code: str = None, state: str = None, error: str = None)
         logger.info(f"[GMAIL] OAuth error: {str(e)}")
         return RedirectResponse(url=f"{frontend_url}/settings?gmail_error={str(e)}")
 
-@router.post("/api/gmail/disconnect")
+@router.post("/gmail/disconnect")
 async def gmail_disconnect(current_user: dict = Depends(get_current_user)):
     """Disconnect Gmail integration"""
     gmail_tokens_collection.delete_one({"type": "gmail_oauth"})
     return {"message": "Gmail disconnected successfully"}
 
-@router.get("/api/gmail/emails")
+@router.get("/gmail/emails")
 async def get_gmail_emails(
     max_results: int = 20,
     current_user: dict = Depends(get_current_user)
@@ -795,7 +795,7 @@ async def get_gmail_emails(
         logger.info(f"[GMAIL] Error fetching emails: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch emails: {str(e)}")
 
-@router.get("/api/gmail/email/{message_id}")
+@router.get("/gmail/email/{message_id}")
 async def get_gmail_email_detail(
     message_id: str,
     current_user: dict = Depends(get_current_user)
@@ -832,7 +832,7 @@ async def get_gmail_email_detail(
         logger.info(f"[GMAIL] Error fetching email detail: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch email: {str(e)}")
 
-@router.post("/api/gmail/create-ticket/{message_id}")
+@router.post("/gmail/create-ticket/{message_id}")
 async def create_ticket_from_email(
     message_id: str,
     current_user: dict = Depends(get_current_user)
@@ -899,7 +899,7 @@ async def create_ticket_from_email(
         logger.info(f"[GMAIL] Error creating ticket from email: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create ticket: {str(e)}")
 
-@router.post("/api/gmail/sync")
+@router.post("/gmail/sync")
 async def sync_emails_to_tickets(
     max_emails: int = 100,
     query: str = None,
@@ -1032,7 +1032,7 @@ async def sync_emails_to_tickets(
         logger.info(f"[GMAIL] Error syncing emails: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to sync emails: {str(e)}")
 
-@router.get("/api/settings/email")
+@router.get("/settings/email")
 async def get_email_settings(current_user: dict = Depends(get_current_user)):
     """Get email integration settings"""
     token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
@@ -1045,7 +1045,7 @@ async def get_email_settings(current_user: dict = Depends(get_current_user)):
         "sync_query": GMAIL_SYNC_QUERY
     }
 
-@router.put("/api/settings/email")
+@router.put("/settings/email")
 async def update_email_settings(
     request: Request,
     current_user: dict = Depends(get_current_user)
@@ -1055,7 +1055,7 @@ async def update_email_settings(
     # For now, just return success as the email is set via env var
     return {"message": "Email settings updated"}
 
-@router.post("/api/gmail/backfill-email-content")
+@router.post("/gmail/backfill-email-content")
 async def backfill_email_content(
     current_user: dict = Depends(get_current_user),
     limit: int = 50
@@ -1145,7 +1145,7 @@ async def backfill_email_content(
 
 # ==================== Email Reply ====================
 
-@router.post("/api/tickets/{ticket_id}/reply")
+@router.post("/tickets/{ticket_id}/reply")
 async def reply_to_ticket(
     ticket_id: str,
     reply: EmailReplyRequest,
@@ -1311,7 +1311,7 @@ async def reply_to_ticket(
         email_replies_collection.insert_one(reply_doc)
         raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
 
-@router.get("/api/tickets/{ticket_id}/replies")
+@router.get("/tickets/{ticket_id}/replies")
 async def get_ticket_replies(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
@@ -1325,7 +1325,7 @@ async def get_ticket_replies(
 
 # ==================== Email Simulator (For Testing) ====================
 
-@router.post("/api/email/simulate")
+@router.post("/email/simulate")
 async def simulate_incoming_email(
     email: SimulatedEmail,
     current_user: dict = Depends(get_current_user)
@@ -1381,7 +1381,7 @@ async def simulate_incoming_email(
 
 # ==================== Gmail Push Notifications (Webhooks) ====================
 
-@router.post("/api/gmail/webhook")
+@router.post("/gmail/webhook")
 async def gmail_webhook(request: Request):
     """
     Receive Gmail push notifications via Google Cloud Pub/Sub.
@@ -1543,7 +1543,7 @@ async def process_gmail_notification(history_id: str, email_address: str):
     except Exception as e:
         logger.info(f"[GMAIL WEBHOOK] Error processing: {str(e)}")
 
-@router.post("/api/gmail/watch/start")
+@router.post("/gmail/watch/start")
 async def start_gmail_watch(current_user: dict = Depends(get_current_user)):
     """
     Start watching Gmail inbox for new messages.
@@ -1598,7 +1598,7 @@ async def start_gmail_watch(current_user: dict = Depends(get_current_user)):
         logger.info(f"[GMAIL] Error starting watch: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to start watch: {str(e)}")
 
-@router.post("/api/gmail/watch/stop")
+@router.post("/gmail/watch/stop")
 async def stop_gmail_watch(current_user: dict = Depends(get_current_user)):
     """Stop watching Gmail inbox"""
     token_doc = gmail_tokens_collection.find_one({"type": "gmail_oauth"})

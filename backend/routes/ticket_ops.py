@@ -29,7 +29,7 @@ router = APIRouter(prefix="/api", tags=["ticket_ops"])
 
 # ==================== Bulk Operations ====================
 
-@router.post("/api/tickets/bulk-update")
+@router.post("/tickets/bulk-update")
 async def bulk_update_tickets(
     request: BulkUpdateRequest,
     current_user: dict = Depends(get_current_user)
@@ -78,7 +78,7 @@ async def bulk_update_tickets(
         "modified": result.modified_count
     }
 
-@router.post("/api/tickets/bulk-tag")
+@router.post("/tickets/bulk-tag")
 async def bulk_tag_tickets(
     request: BulkTagRequest,
     current_user: dict = Depends(get_current_user)
@@ -121,7 +121,7 @@ async def bulk_tag_tickets(
         "tags_removed": request.tags_to_remove
     }
 
-@router.post("/api/tickets/bulk-close")
+@router.post("/tickets/bulk-close")
 async def bulk_close_tickets(
     ticket_ids: List[str],
     current_user: dict = Depends(get_current_user)
@@ -153,7 +153,7 @@ async def bulk_close_tickets(
 
 # customers routes extracted to routes/customers.py
 
-@router.post("/api/tickets/{ticket_id}/merge-consecutive")
+@router.post("/tickets/{ticket_id}/merge-consecutive")
 async def merge_consecutive_tickets(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
@@ -254,12 +254,12 @@ async def merge_consecutive_tickets(
 
 # csat routes extracted to routes/csat.py
 
-@router.get("/api/notifications")
+@router.get("/notifications")
 
 
 # ==================== Ticket Merge/Link/Split APIs ====================
 
-@router.post("/api/tickets/{ticket_id}/merge")
+@router.post("/tickets/{ticket_id}/merge")
 async def merge_tickets(
     ticket_id: str,
     merge_data: dict,
@@ -413,7 +413,7 @@ async def merge_tickets(
     }
 
 
-@router.post("/api/tickets/{ticket_id}/unmerge/{source_ticket_id}")
+@router.post("/tickets/{ticket_id}/unmerge/{source_ticket_id}")
 async def unmerge_ticket(
     ticket_id: str,
     source_ticket_id: str,
@@ -536,7 +536,7 @@ async def unmerge_ticket(
     }
 
 
-@router.get("/api/tickets/{ticket_id}/merge-suggestions")
+@router.get("/tickets/{ticket_id}/merge-suggestions")
 async def get_merge_suggestions(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
@@ -574,7 +574,7 @@ async def get_merge_suggestions(
     }
 
 
-@router.post("/api/tickets/{ticket_id}/link")
+@router.post("/tickets/{ticket_id}/link")
 async def link_tickets(
     ticket_id: str,
     link_data: dict,
@@ -633,7 +633,7 @@ async def link_tickets(
     return serialize_doc(updated_ticket)
 
 
-@router.delete("/api/tickets/{ticket_id}/unlink/{target_ticket_id}")
+@router.delete("/tickets/{ticket_id}/unlink/{target_ticket_id}")
 async def unlink_tickets(
     ticket_id: str,
     target_ticket_id: str,
@@ -655,7 +655,7 @@ async def unlink_tickets(
     return {"message": "Tickets unlinked"}
 
 
-@router.post("/api/tickets/{ticket_id}/split")
+@router.post("/tickets/{ticket_id}/split")
 async def split_ticket(
     ticket_id: str,
     split_data: dict,
