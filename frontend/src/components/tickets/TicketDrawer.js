@@ -8,7 +8,7 @@ import {
   BellOff, Merge, ExternalLink, Split, Link, FileText, 
   Tag, Bookmark, Download, UserPlus, Scissors, MessageSquareHeart,
   GitMerge, Filter, Unlink, MessageCircle, Activity, MessageSquare,
-  ImagePlus, Paperclip
+  ImagePlus, Paperclip, BookOpen
 } from 'lucide-react';
 import RichTextEditor from '../common/RichTextEditor';
 import MentionInput, { renderTextWithMentions } from '../common/MentionInput';
