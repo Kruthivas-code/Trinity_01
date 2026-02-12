@@ -99,7 +99,9 @@ async def approve_leave(
 ):
     """Approve a leave request"""
     leave_mgr = get_leave_manager(db)
-    approved = await leave_mgr.approve_leave(leave_id, current_user["user_id"])
+    # Update the leave status to approved
+    from models.schemas import LeaveUpdate
+    approved = await leave_mgr.update_leave(leave_id, LeaveUpdate(status="approved"))
     if not approved:
         raise HTTPException(status_code=404, detail="Leave not found or already processed")
     asyncio.create_task(broadcast_leave_updated(
@@ -116,7 +118,9 @@ async def reject_leave(
 ):
     """Reject a leave request"""
     leave_mgr = get_leave_manager(db)
-    rejected = await leave_mgr.reject_leave(leave_id, current_user["user_id"])
+    # Update the leave status to rejected
+    from models.schemas import LeaveUpdate
+    rejected = await leave_mgr.update_leave(leave_id, LeaveUpdate(status="rejected"))
     if not rejected:
         raise HTTPException(status_code=404, detail="Leave not found or already processed")
     asyncio.create_task(broadcast_leave_updated(
