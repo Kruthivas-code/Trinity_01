@@ -120,7 +120,8 @@ const CustomerDetailDrawer = ({ customerId, onClose, onUpdate }) => {
       const response = await fetch(`${BACKEND_URL}/api/users`, { credentials: 'include' });
       if (response.ok) {
         const data = await response.json();
-        setAgents(data.filter(u => u.role !== 'customer'));
+        const userList = Array.isArray(data) ? data : (data.items || []);
+        setAgents(userList.filter(u => u.role !== 'customer'));
       }
     } catch (error) {
       console.error('Failed to fetch agents:', error);

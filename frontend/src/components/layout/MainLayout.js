@@ -105,7 +105,7 @@ const MainLayout = ({ user, view }) => {
         });
         if (response.ok) {
           const data = await response.json();
-          setUsers(data);
+          setUsers(Array.isArray(data) ? data : (data.items || []));
         }
       } catch (error) {
         console.error('Failed to fetch users:', error);

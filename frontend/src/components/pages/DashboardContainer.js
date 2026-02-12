@@ -96,7 +96,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       });
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
-      setUsers(data);
+      setUsers(Array.isArray(data) ? data : (data.items || []));
     } catch (error) {
       console.error('Failed to fetch users:', error);
     }

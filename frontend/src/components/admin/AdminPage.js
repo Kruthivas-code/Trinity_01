@@ -483,7 +483,7 @@ const AdminPage = ({ user }) => {
       });
       if (response.ok) {
         const data = await response.json();
-        setAllUsers(data);
+        setAllUsers(Array.isArray(data) ? data : (data.items || []));
       }
     } catch (error) {
       console.error('Failed to fetch users:', error);
