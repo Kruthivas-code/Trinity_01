@@ -49,6 +49,7 @@ async def escalate_ticket(
     escalation: TicketEscalate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Escalate a ticket to a higher level (L1/L2/L3) and auto-assign to the appropriate team."""
     ticket = tickets_collection.find_one({"ticket_id": ticket_id})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -77,6 +78,7 @@ async def get_ticket_assignment_options(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Get available assignment options (team members and other teams) for a ticket."""
     from routes.shifts import is_user_on_shift, get_on_shift_members
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not ticket:
@@ -116,6 +118,7 @@ async def assign_ticket(
     assignment: TicketAssign,
     current_user: dict = Depends(get_current_user)
 ):
+    """Assign a ticket to a specific user and/or team. Uses round-robin if no assignee specified."""
     ticket = tickets_collection.find_one({"ticket_id": ticket_id})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -148,6 +151,7 @@ async def auto_assign_ticket(
     team_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Auto-assign a ticket to the next available agent in a team via round-robin."""
     ticket = tickets_collection.find_one({"ticket_id": ticket_id})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -172,6 +176,7 @@ async def get_team_tickets(
     limit: int = 50,
     current_user: dict = Depends(get_current_user)
 ):
+    """List tickets assigned to a team with optional status and assignment filters."""
     team = teams_collection.find_one({"team_id": team_id})
     if not team:
         raise HTTPException(status_code=404, detail="Team not found")
@@ -194,6 +199,7 @@ async def add_internal_note(
     background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user)
 ):
+    """Add an internal note or reply to a ticket. Supports @mentions with notifications."""
     ticket = tickets_collection.find_one({"ticket_id": ticket_id})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
