@@ -14,8 +14,6 @@ router = APIRouter(prefix="/api", tags=["canned_responses"])
 
 # ==================== Canned Responses ====================
 
-canned_responses_collection = db.canned_responses
-
 @router.get("/canned-responses")
 async def get_canned_responses(
     scope: Optional[str] = None,
