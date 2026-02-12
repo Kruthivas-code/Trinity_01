@@ -56,10 +56,10 @@ async def search_tickets(
 ):
     """Search tickets using text search"""
     search_engine = get_search_engine(db)
-    results = search_engine.search(
+    results = search_engine.search_all(
         query=query.query,
-        filters=query.filters if hasattr(query, 'filters') else None,
-        limit=query.limit if hasattr(query, 'limit') else 20
+        limit=query.limit if hasattr(query, 'limit') else 20,
+        current_user_id=current_user.get("user_id")
     )
     return results
 
