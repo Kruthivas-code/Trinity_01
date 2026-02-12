@@ -161,6 +161,7 @@ async def filter_tickets(
     req: FilterRequest,
     current_user: dict = Depends(get_current_user)
 ):
+    """Filter tickets using a complex filter tree (AND/OR conditions). Supports pagination and sorting."""
     mongo_query = filter_tree_to_mongo(req.filter_tree.dict())
     if mongo_query:
         mongo_query = {"$and": [mongo_query, {"status": {"$ne": "merged"}}]}
@@ -189,6 +190,7 @@ async def filter_tickets(
 
 @router.get("/filter/fields")
 async def get_filter_fields(current_user: dict = Depends(get_current_user)):
+    """Get all available filter fields including built-in and custom fields with their types and options."""
     base_fields = [
         {"field": "status", "label": "Status", "type": "select",
          "options": ["todo", "in_progress", "waiting", "waiting_on_customer", "review", "resolved", "closed"]},
@@ -226,6 +228,7 @@ async def get_filter_fields(current_user: dict = Depends(get_current_user)):
 
 @router.get("/inboxes")
 async def get_inboxes(current_user: dict = Depends(get_current_user)):
+    """List all custom inboxes owned by or shared with the current user."""
     user_id = current_user["user_id"]
     inboxes = list(custom_inboxes_collection.find({
         "$or": [
@@ -241,6 +244,7 @@ async def create_inbox(
     data: InboxCreate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Create a new custom inbox with a filter tree, color, and icon."""
     inbox_id = f"inbox_{uuid.uuid4().hex[:12]}"
     inbox_doc = {
         "inbox_id": inbox_id,
@@ -259,6 +263,7 @@ async def create_inbox(
 
 @router.get("/inboxes/{inbox_id}")
 async def get_inbox(inbox_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific custom inbox by ID (must be owner or shared-with)."""
     user_id = current_user["user_id"]
     inbox = custom_inboxes_collection.find_one({
         "inbox_id": inbox_id,
@@ -275,6 +280,7 @@ async def update_inbox(
     data: InboxUpdate,
     current_user: dict = Depends(get_current_user)
 ):
+    """Update a custom inbox's name, filter tree, color, or icon."""
     user_id = current_user["user_id"]
     inbox = custom_inboxes_collection.find_one({
         "inbox_id": inbox_id,
