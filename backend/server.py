@@ -750,124 +750,19 @@ async def shutdown_event():
     
     logger.info(f"[SHUTDOWN] Instance {_instance_id} shutdown complete")
 
-# MongoDB
-MONGO_URL = os.environ.get("MONGO_URL")
-client = MongoClient(MONGO_URL)
-db = client[os.environ.get('DB_NAME', 'tickflow')]
-users_collection = db.users
-tickets_collection = db.tickets
-sessions_collection = db.user_sessions
-api_keys_collection = db.api_keys
-counters_collection = db.counters
-# Initialize MongoDB-based rate limiting for multi-server support
-# The limits library uses the rate_limit_counters and rate_limit_windows collections
+# MongoDB rate limiter (now that db is imported from database.py)
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["1000/hour", "100/minute"],
     strategy="fixed-window",
-    storage_uri=MONGO_URL,  # MONGO_URL already contains mongodb:// prefix
-    storage_options={"database_name": os.environ.get("DB_NAME", "tickflow")}
+    storage_uri=MONGO_URL,
+    storage_options={"database_name": os.environ.get("DB_NAME")}
 )
-# Update the app's limiter reference to use MongoDB storage
 app.state.limiter = limiter
-logger.info("[STARTUP] Rate limiting initialized with MongoDB backend for multi-server support")
-
-# Emergent Auth Configuration
-EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
-ALLOWED_DOMAIN = None  # Allow any email domain for testing
-
-# Gmail OAuth Configuration
-GMAIL_CLIENT_ID = os.environ.get("GMAIL_CLIENT_ID", "")
-GMAIL_CLIENT_SECRET = os.environ.get("GMAIL_CLIENT_SECRET", "")
-GMAIL_REDIRECT_URI = os.environ.get("GMAIL_REDIRECT_URI", "")
-GMAIL_WATCH_EMAIL = os.environ.get("GMAIL_WATCH_EMAIL", "")
-# Query filter for email sync - default syncs ALL inbox emails
-GMAIL_SYNC_QUERY = os.environ.get("GMAIL_SYNC_QUERY", "in:inbox")
-
-GMAIL_SCOPES = [
-    'https://www.googleapis.com/auth/gmail.readonly',
-    'https://www.googleapis.com/auth/gmail.send',
-    'https://www.googleapis.com/auth/gmail.modify'
-]
-
-# Gmail tokens collection
-gmail_tokens_collection = db.gmail_tokens
-email_threads_collection = db.email_threads
-
-# Phase 2: Team & Notes collections
-teams_collection = db.teams
-messages_collection = db.messages  # For internal notes and replies
-
-# Phase 3: Admin settings collections
-custom_fields_collection = db.custom_fields  # Custom fields for tickets/users
-admin_settings_collection = db.admin_settings  # General admin settings
-
-# Phase 4: Shifts & Scheduling collections
-shifts_collection = db.shifts  # Shift definitions per team
-user_shifts_collection = db.user_shifts  # User-to-shift assignments
-
-# Phase 5: Routing Rules
-routing_rules_collection = db.routing_rules  # Ticket routing rules
-sla_escalation_rules_collection = db.sla_escalation_rules  # SLA-based escalation rules
+logger.info("[STARTUP] Rate limiting initialized with MongoDB backend")
 
 # Phase 6: Initialize Search Engine
 search_engine = get_search_engine(db)
-
-# Phase 7: Ticket Changelog (audit log)
-ticket_changelog_collection = db.ticket_changelog  # All metadata changes for tickets
-
-# Phase 8: Feature Requests
-feature_requests_collection = db.feature_requests  # Product feature requests linked to tickets
-
-# Phase 9: Customers
-customers_collection = db.customers  # Customer profiles with linked emails
-
-# Common B2C email domains (for B2B prospect detection)
-B2C_EMAIL_DOMAINS = {
-    'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.co.uk', 'yahoo.co.in',
-    'hotmail.com', 'hotmail.co.uk', 'outlook.com', 'outlook.co.uk', 'live.com',
-    'msn.com', 'aol.com', 'icloud.com', 'me.com', 'mac.com', 'protonmail.com',
-    'proton.me', 'zoho.com', 'yandex.com', 'mail.com', 'gmx.com', 'gmx.net',
-    'fastmail.com', 'tutanota.com', 'hey.com', 'pm.me', 'inbox.com',
-    'rediffmail.com', 'qq.com', '163.com', '126.com', 'sina.com', 'sohu.com'
-}
-
-# Phase 13: CSAT (Customer Satisfaction)
-csat_responses_collection = db.csat_responses  # CSAT ratings and feedback
-csat_tokens_collection = db.csat_tokens  # Secure tokens for email rating links
-
-# Email replies - for both outgoing and incoming email replies
-email_replies_collection = db.email_replies
-
-# Canned responses - pre-written message templates
-canned_responses_collection = db.canned_responses
-
-# Webhooks - Outbound event notifications
-webhooks_collection = db.webhooks  # Webhook subscriptions
-webhook_logs_collection = db.webhook_logs  # Delivery logs
-
-# Webhook event types
-WEBHOOK_EVENT_TYPES = [
-    "ticket.created",
-    "ticket.updated", 
-    "ticket.assigned",
-    "ticket.status_changed",
-    "ticket.resolved",
-    "ticket.closed",
-    "ticket.deleted",
-    "ticket.reply_added",
-    "ticket.note_added",
-    "customer.created",
-    "customer.updated",
-    "sla.breach",
-    "sla.warning",
-]
-
-# System timezone - IST
-SYSTEM_TIMEZONE = "Asia/Kolkata"
-
-# API Key Security
-API_KEY_HEADER = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 # ==================== Utility Functions ====================
 
