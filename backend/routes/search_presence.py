@@ -7,7 +7,7 @@ from typing import Optional
 import logging
 
 from database import (
-    tickets_collection, users_collection, customers_collection,
+    db, tickets_collection, users_collection, customers_collection,
     notifications_collection,
 )
 from dependencies import get_current_user
