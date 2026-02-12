@@ -450,7 +450,7 @@ async def create_ticket(
         "domain": domain, "is_starred": False, "snoozed": False
     }
     tickets_collection.insert_one(ticket_doc)
-    log_ticket_change(ticket_id=ticket_id, uuid=ticket_uuid, field="ticket", old_value=None, new_value=ticket_doc.get("title"), changed_by=current_user["user_id"], change_type="create")
+    log_ticket_change(ticket_id=ticket_id, uuid_str=ticket_uuid, field="ticket", old_value=None, new_value=ticket_doc.get("title"), changed_by=current_user["user_id"], change_type="create")
     routing_result = run_routing_rules(ticket_doc)
     final_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     result = serialize_doc(final_ticket)
@@ -517,7 +517,7 @@ async def update_ticket(
                 messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "text": f"Priority set to {new_val.title()}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
     if reassignment_info and reassignment_info.get("reassigned"):
         reason_text = "Original assignee not on shift" if reassignment_info.get("reason") == "original_assignee_off_shift" else "No agents on shift - ticket unassigned"
-        log_ticket_change(ticket_id=ticket_id, uuid=current_ticket.get("uuid", ""), field="auto_reassignment", old_value=reassignment_info.get("old_assignee_name"), new_value=reassignment_info.get("new_assignee_name") or "Unassigned", changed_by="system", change_type="auto_reassign", metadata={"reason": reason_text})
+        log_ticket_change(ticket_id=ticket_id, uuid_str=current_ticket.get("uuid", ""), field="auto_reassignment", old_value=reassignment_info.get("old_assignee_name"), new_value=reassignment_info.get("new_assignee_name") or "Unassigned", changed_by="system", change_type="auto_reassign", metadata={"reason": reason_text})
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     serialized = serialize_doc(ticket)
     if reassignment_info:
@@ -542,7 +542,7 @@ async def delete_ticket(ticket_id: str, current_user: dict = Depends(get_current
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
-    log_ticket_change(ticket_id=ticket_id, uuid=ticket.get("uuid", ""), field="ticket", old_value=ticket.get("title"), new_value=None, changed_by=current_user["user_id"], change_type="delete")
+    log_ticket_change(ticket_id=ticket_id, uuid_str=ticket.get("uuid", ""), field="ticket", old_value=ticket.get("title"), new_value=None, changed_by=current_user["user_id"], change_type="delete")
     result = tickets_collection.delete_one({"ticket_id": ticket_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Ticket not found")
