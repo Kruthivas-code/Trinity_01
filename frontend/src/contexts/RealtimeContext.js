@@ -37,7 +37,7 @@ export const RealtimeProvider = ({ children, user }) => {
     
     const newSocket = io(socketUrl, {
       path: '/api/socket.io/',
-      transports: ['polling', 'websocket'],
+      transports: ['websocket', 'polling'],
       upgrade: true,
       reconnection: true,
       reconnectionDelay: 2000,
