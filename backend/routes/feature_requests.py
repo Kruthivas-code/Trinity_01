@@ -127,6 +127,7 @@ async def vote_feature_request(
     fr_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Toggle vote on a feature request. Removes vote if already voted."""
     fr = feature_requests_collection.find_one({"feature_request_id": fr_id})
     if not fr:
         raise HTTPException(status_code=404, detail="Feature request not found")
@@ -151,6 +152,7 @@ async def link_ticket_to_feature_request(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Link a ticket to a feature request for tracking related customer feedback."""
     fr = feature_requests_collection.find_one({"feature_request_id": fr_id})
     if not fr:
         raise HTTPException(status_code=404, detail="Feature request not found")
@@ -174,6 +176,7 @@ async def unlink_ticket_from_feature_request(
     ticket_id: str,
     current_user: dict = Depends(get_current_user)
 ):
+    """Remove the link between a ticket and a feature request."""
     feature_requests_collection.update_one(
         {"feature_request_id": fr_id},
         {"$pull": {"linked_ticket_ids": ticket_id}, "$set": {"updated_at": datetime.now(timezone.utc)}}

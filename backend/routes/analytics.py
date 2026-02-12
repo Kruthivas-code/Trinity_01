@@ -24,6 +24,7 @@ router = APIRouter(prefix="/api", tags=["analytics"])
 
 @router.get("/analytics/summary")
 async def get_analytics_summary(current_user: dict = Depends(get_current_user)):
+    """Get a summary of ticket counts by status, assignee, and current user's tickets."""
     pipeline = [
         {"$facet": {
             "by_status": [
@@ -69,6 +70,7 @@ async def export_tickets(
     format: str = "json",
     current_user: dict = Depends(get_current_user)
 ):
+    """Export all tickets as JSON or CSV stream."""
     from starlette.responses import StreamingResponse
 
     fieldnames = ["ticket_id", "title", "description", "status", "assignee_id", "priority", "order", "created_at", "updated_at"]

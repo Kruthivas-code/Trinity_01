@@ -18,6 +18,7 @@ router = APIRouter(prefix="/api", tags=["users"])
 
 @router.get("/users/me")
 async def get_current_user_profile(current_user: dict = Depends(get_current_user)):
+    """Get the authenticated user's full profile."""
     return current_user
 
 
