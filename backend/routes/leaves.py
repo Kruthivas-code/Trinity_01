@@ -36,7 +36,7 @@ async def create_leave(
 ):
     """Create a new leave request"""
     leave_mgr = get_leave_manager(db)
-    leave = leave_mgr.create_leave(leave_data.dict(), current_user["user_id"])
+    leave = await leave_mgr.create_leave(leave_data)
     asyncio.create_task(broadcast_leave_created(
         leave,
         {"user_id": current_user["user_id"], "name": current_user.get("name", "")}
