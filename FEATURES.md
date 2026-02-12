@@ -904,3 +904,50 @@ Returns:
 ---
 
 *This document is auto-generated from the codebase and reflects the current implementation status.*
+
+---
+
+## 21. Testing & Quality Assurance
+
+### 21.1 Test Coverage Summary (Feb 12, 2026)
+
+| Phase | Scope | Tests | Status |
+|-------|-------|-------|--------|
+| Phase 1 | Navigation & Dashboard | 7 | ✅ All pages render |
+| Phase 2 | Ticket CRUD & Views | 12 | ✅ Create, edit, Kanban |
+| Phase 3 | Ticket Ops (Merge/Split/Link) | 6 | ✅ All operations |
+| Phase 4 | Team Management | 9 | ✅ CRUD + members |
+| Phase 5 | Customer Management | 8 | ✅ CRUD + B2B |
+| Phase 6 | Canned Responses & Feature Requests | 8 | ✅ CRUD + linking |
+| Phase 7 | Leave Management & Analytics | 7 | ✅ Calendar + charts |
+| Phase 8 | Admin, Settings & SLA | 9 | ✅ All tabs + export |
+| Phase 9 | Search, Custom Inboxes & CSAT | 11 | ✅ Search + filters |
+| Phase 10 | End-to-End Workflows | 6 | ✅ Full lifecycle |
+
+**Total: 83 test cases across 10 phases**
+
+### 21.2 Bugs Found & Fixed During Testing
+
+| # | Severity | Component | Description |
+|---|----------|-----------|-------------|
+| 1 | CRITICAL | FeatureRequestsPage.js | `featureRequests.filter is not a function` — API returns `{items:[]}` not array |
+| 2 | CRITICAL | routes/leaves.py | `LeaveManager.create_leave()` called with wrong arguments |
+| 3 | CRITICAL | routes/search_presence.py | `get_search_engine()` missing db argument + wrong method name |
+| 4 | HIGH | CustomersPage.js | `data.filter is not a function` on agent list |
+| 5 | HIGH | ProfilePage.js | User list not extracted from `{items:[...]}` response |
+| 6 | MEDIUM | Dashboard.js | Users list not extracted from `{items:[...]}` |
+| 7 | MEDIUM | DashboardContainer.js | Users list not extracted from `{items:[...]}` |
+| 8 | MEDIUM | MainLayout.js | Users list not extracted from `{items:[...]}` |
+| 9 | MEDIUM | StarredTicketsPage.js | Users list not extracted from `{items:[...]}` |
+| 10 | MEDIUM | LeavePage.js | Users list not extracted from `{items:[...]}` |
+| 11 | MEDIUM | AdminPage.js | Users list not extracted from `{items:[...]}` |
+| 12 | MEDIUM | feature_requests.py | Default status `"proposed"` mismatches frontend `"new"` |
+| 13 | MEDIUM | FeatureRequestsPage.js | Backend returns `category` but frontend reads `request_type` |
+| 14 | MEDIUM | MongoDB index | Legacy `feature_id` index conflicting with `feature_request_id` |
+| 15 | LOW | SettingsPage.js | Export functions didn't handle `{items:[...]}` response |
+
+### 21.3 Test Artifacts
+- **Test Plan:** `/app/TEST_PLAN_PHASES.md`
+- **Test Reports:** `/app/test_reports/iteration_19.json` (Phase 1-6), `iteration_20.json` (Phase 7-10)
+- **Backend Tests:** `/app/backend/tests/test_phase7_10_trinity.py`
+- **API Docs:** `/api/docs` (Swagger UI), `/api/redoc` (ReDoc)
