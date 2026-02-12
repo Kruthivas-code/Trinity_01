@@ -483,7 +483,7 @@ class TestFeatureRequestRoutes:
         fr_data = {
             "title": f"TEST_FR_{uuid.uuid4().hex[:8]}",
             "description": "Test feature request",
-            "category": "enhancement"
+            "request_type": "feature"
         }
         
         response = api_client.post(f"{BASE_URL}/api/feature-requests", json=fr_data)
