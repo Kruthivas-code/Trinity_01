@@ -418,9 +418,10 @@ class TestBulkUpdate:
     def test_bulk_update_endpoint_exists(self, api_client):
         """POST /api/tickets/bulk-update endpoint exists"""
         # Test with empty array to verify endpoint exists
+        # BulkUpdateRequest expects: {ticket_ids: [], updates: {}}
         bulk_data = {
             "ticket_ids": [],
-            "status": "todo"
+            "updates": {"status": "todo"}
         }
         
         response = api_client.post(f"{BASE_URL}/api/tickets/bulk-update", json=bulk_data)
