@@ -30,8 +30,8 @@ from database import (
     shifts_collection,
     AUTO_CLOSE_HOURS,
 )
-from realtime import sio, socket_app, initialize_realtime
-from adapters import set_database, get_lock_adapter, start_pubsub, stop_pubsub
+from realtime import sio, socket_app, initialize_realtime, start_pubsub, stop_pubsub
+from adapters import set_database, get_lock_adapter
 from search import get_search_engine
 from rate_limiter import limiter
 from utils import serialize_doc, generate_ticket_id, sanitize_html
