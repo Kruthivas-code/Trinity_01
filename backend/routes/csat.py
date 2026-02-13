@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from pymongo import DESCENDING
 from database import (
     db, csat_responses_collection, csat_tokens_collection,
-    tickets_collection, users_collection, gmail_tokens_collection,
+    tickets_collection, users_collection,
 )
 from dependencies import get_current_user
 from models.schemas import CSATRequest, CSATFeedbackRequest, CSATRatingRequest
@@ -23,12 +23,6 @@ from utils import serialize_doc
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["csat"])
-
-# Import get_gmail_service lazily to avoid circular imports
-def get_gmail_service(credentials_dict: dict):
-    """Lazy import to avoid circular dependency with email.py"""
-    from routes.email import get_gmail_service as _get_gmail_service
-    return _get_gmail_service(credentials_dict)
 
 # ==================== CSAT (Customer Satisfaction) System ====================
 
