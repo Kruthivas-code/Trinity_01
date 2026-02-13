@@ -225,7 +225,6 @@ async def health():
 
 # ==================== Background Tasks ====================
 auto_close_task = None
-email_sync_task = None
 _instance_id = os.environ.get('INSTANCE_ID', os.environ.get('HOSTNAME', f'instance_{secrets.token_hex(4)}'))
 
 
