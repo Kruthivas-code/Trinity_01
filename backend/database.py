@@ -116,21 +116,5 @@ VALID_SOURCES = ["manual", "email", "api", "simulator", "atlas"]
 # Role-based auth
 VALID_ROLES = ["agent", "lead", "admin"]
 
-# Gmail OAuth
-GMAIL_CLIENT_ID = os.environ.get("GMAIL_CLIENT_ID", "")
-GMAIL_CLIENT_SECRET = os.environ.get("GMAIL_CLIENT_SECRET", "")
-GMAIL_REDIRECT_URI = os.environ.get("GMAIL_REDIRECT_URI", "")
-GMAIL_WATCH_EMAIL = os.environ.get("GMAIL_WATCH_EMAIL", "")
-GMAIL_SYNC_QUERY = os.environ.get("GMAIL_SYNC_QUERY", "in:inbox")
-GMAIL_SCOPES = [
-    'https://www.googleapis.com/auth/gmail.readonly',
-    'https://www.googleapis.com/auth/gmail.send',
-    'https://www.googleapis.com/auth/gmail.modify'
-]
-
-# Emergent Auth
-EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
-ALLOWED_DOMAIN = None
-
 # Auto-close configuration
 AUTO_CLOSE_HOURS = 24
