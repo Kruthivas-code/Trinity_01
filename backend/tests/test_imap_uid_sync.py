@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 # BASE_URL from environment
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://qa-finished.preview.emergentagent.com"
+    BASE_URL = "https://kb-email-refresh.preview.emergentagent.com"
 
 # Test session token - will be set via fixture
 TEST_SESSION_TOKEN = os.environ.get('TEST_SESSION_TOKEN', 'test_session_1770837946709')

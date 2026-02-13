@@ -90,7 +90,7 @@ async def send_csat_survey(
     csat_tokens_collection.insert_one(token_doc)
     
     # Generate email content (MOCKED - not actually sent)
-    base_url = "https://qa-finished.preview.emergentagent.com"
+    base_url = "https://kb-email-refresh.preview.emergentagent.com"
     
     email_content = {
         "to": customer_email,

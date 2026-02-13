@@ -705,7 +705,7 @@ async def gmail_connect(current_user: dict = Depends(get_current_user)):
 @router.get("/auth/gmail/callback")
 async def gmail_callback(code: str = None, state: str = None, error: str = None):
     """Handle Gmail OAuth callback"""
-    frontend_url = "https://qa-finished.preview.emergentagent.com"
+    frontend_url = "https://kb-email-refresh.preview.emergentagent.com"
     
     if error:
         return RedirectResponse(url=f"{frontend_url}/settings?gmail_error={error}")
