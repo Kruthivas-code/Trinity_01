@@ -23,9 +23,7 @@ sessions_collection = db.user_sessions
 api_keys_collection = db.api_keys
 counters_collection = db.counters
 
-# Gmail / Email
-gmail_tokens_collection = db.gmail_tokens
-email_threads_collection = db.email_threads
+# Email
 email_replies_collection = db.email_replies
 
 # Teams & Shifts
