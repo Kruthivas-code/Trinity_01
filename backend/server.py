@@ -77,7 +77,7 @@ tags_metadata = [
     {"name": "admin", "description": "Custom fields, settings, routing rules, SLA policies, and escalation rules"},
     {"name": "sla", "description": "SLA policy listing and per-ticket SLA status"},
     {"name": "analytics", "description": "Dashboard summaries, overview metrics, and agent performance"},
-    {"name": "email", "description": "IMAP sync, Gmail integration, email replies, and file uploads"},
+    {"name": "email", "description": "File uploads, imports, and email replies"},
     {"name": "customers", "description": "Customer CRUD, B2B prospects, email linking, and merge"},
     {"name": "csat", "description": "CSAT surveys, ratings, feedback, and analytics"},
     {"name": "canned_responses", "description": "Reusable response templates for ticket replies"},
