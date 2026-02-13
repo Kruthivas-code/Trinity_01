@@ -349,27 +349,6 @@ class SLAPolicy(BaseModel):
     is_active: bool = True
 
 
-# ==================== Email ====================
-
-class EmailReplyRequest(BaseModel):
-    ticket_id: str
-    to_email: str
-    subject: str
-    body: str
-
-    model_config = {"json_schema_extra": {"examples": [{"ticket_id": "TKT-00042", "to_email": "jane@acme.com", "subject": "Re: Login page returns 500 error", "body": "Hi Jane, we've identified the issue and deployed a fix. Could you try again?"}]}}
-
-
-class SimulatedEmail(BaseModel):
-    from_email: str
-    from_name: Optional[str] = None
-    to_email: str = "support@emergent.sh"
-    subject: str
-    body: str
-
-    model_config = {"json_schema_extra": {"examples": [{"from_email": "jane@acme.com", "from_name": "Jane Doe", "to_email": "support@emergent.sh", "subject": "Cannot access my dashboard", "body": "Hi, I've been unable to access my dashboard since this morning. Getting a blank white screen."}]}}
-
-
 # ==================== Admin ====================
 
 class CustomFieldCreate(BaseModel):
