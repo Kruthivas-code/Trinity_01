@@ -181,70 +181,16 @@ This survey expires in 7 days.
         """
     }
     
-    # Send email via Gmail API
-    token_doc_gmail = gmail_tokens_collection.find_one({"type": "gmail_oauth"})
-    if not token_doc_gmail or "access_token" not in token_doc_gmail:
-        # Delete the token since we can't send the email
-        csat_tokens_collection.delete_one({"token": token})
-        raise HTTPException(
-            status_code=503,
-            detail="Gmail not connected. Please connect Gmail in Settings before sending emails."
-        )
+    # Email sending is pending provider configuration
+    # For now, return the survey link that can be shared manually
+    logger.info(f"[CSAT] Survey created for ticket {ticket_id}, token: {token}")
     
-    try:
-        from email.mime.text import MIMEText
-        from email.mime.multipart import MIMEMultipart
-        
-        service = get_gmail_service(token_doc_gmail)
-        
-        # Build multipart email with HTML and plain text
-        message = MIMEMultipart('alternative')
-        message['to'] = customer_email
-        message['subject'] = email_content['subject']
-        
-        # Attach both plain text and HTML versions
-        part1 = MIMEText(email_content['text'], 'plain')
-        part2 = MIMEText(email_content['html'], 'html')
-        message.attach(part1)
-        message.attach(part2)
-        
-        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode('utf-8')
-        
-        send_result = service.users().messages().send(
-            userId='me',
-            body={'raw': raw_message}
-        ).execute()
-        
-        logger.info(f"[EMAIL] CSAT survey sent for ticket {ticket_id} to {customer_email}, Gmail ID: {send_result.get('id')}")
-        
-        # Update token doc with sent status
-        csat_tokens_collection.update_one(
-            {"token": token},
-            {"$set": {
-                "email_sent": True,
-                "email_sent_at": datetime.now(timezone.utc),
-                "gmail_message_id": send_result.get('id')
-            }}
-        )
-        
-        return {
-            "message": "CSAT survey email sent successfully",
-            "token": token,
-            "rating_url_template": f"{base_url}/csat/{token}?rating={{rating}}",
-            "expires_at": token_doc["expires_at"],
-            "gmail_message_id": send_result.get('id')
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"[EMAIL] Failed to send CSAT survey: {str(e)}")
-        # Delete the token since we couldn't send
-        csat_tokens_collection.delete_one({"token": token})
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to send email: {str(e)}"
-        )
+    return {
+        "message": "CSAT survey created. Email delivery pending provider configuration.",
+        "token": token,
+        "rating_url_template": f"{base_url}/csat/{token}?rating={{rating}}",
+        "expires_at": token_doc["expires_at"],
+    }
 
 
 @router.get("/csat/check/{token}")
