@@ -6,10 +6,7 @@ from typing import Optional
 import uuid
 import secrets
 import hashlib
-import base64
 import logging
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pymongo import DESCENDING
 from database import (
