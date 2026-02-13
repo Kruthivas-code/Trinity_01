@@ -7,18 +7,8 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const SettingsPage = ({ user }) => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { theme, setThemeMode } = useTheme();
   
-  // Gmail state
-  const [gmailStatus, setGmailStatus] = useState({
-    connected: false,
-    watch_email: null,
-    configured: true,
-    loading: true
-  });
-  const [connecting, setConnecting] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   
   // API Keys state
@@ -33,23 +23,9 @@ const SettingsPage = ({ user }) => {
 
   useEffect(() => {
     if (user) {
-      fetchGmailStatus();
       fetchApiKeys();
     }
-    
-    // Check URL params for OAuth callback result
-    const gmailConnected = searchParams.get('gmail_connected');
-    const gmailError = searchParams.get('gmail_error');
-    
-    if (gmailConnected === 'true') {
-      // Success
-      navigate('/settings', { replace: true });
-      fetchGmailStatus();
-    } else if (gmailError) {
-      // Error
-      navigate('/settings', { replace: true });
-    }
-  }, [searchParams, user]);
+  }, [user]);
 
   const fetchGmailStatus = async () => {
     try {
