@@ -116,5 +116,9 @@ VALID_SOURCES = ["manual", "email", "api", "simulator", "atlas"]
 # Role-based auth
 VALID_ROLES = ["agent", "lead", "admin"]
 
+# Emergent Auth
+EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+ALLOWED_DOMAIN = None
+
 # Auto-close configuration
 AUTO_CLOSE_HOURS = 24
