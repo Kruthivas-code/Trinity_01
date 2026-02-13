@@ -269,7 +269,7 @@ async def auto_close_resolved_tickets():
 # ==================== Startup / Shutdown ====================
 @app.on_event("startup")
 async def startup_event():
-    global auto_close_task, email_sync_task
+    global auto_close_task
     from motor.motor_asyncio import AsyncIOMotorClient
     motor_client = AsyncIOMotorClient(MONGO_URL)
     motor_db = motor_client[os.environ.get('DB_NAME', 'tickflow')]
@@ -278,7 +278,6 @@ async def startup_event():
     await start_pubsub()
     await create_mongodb_indexes()
     auto_close_task = asyncio.create_task(auto_close_resolved_tickets())
-    email_sync_task = asyncio.create_task(auto_sync_emails())
     logger.info(f"[STARTUP] Instance {_instance_id} started")
 
 
@@ -361,15 +360,14 @@ async def create_mongodb_indexes():
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    global auto_close_task, email_sync_task
+    global auto_close_task
     await stop_pubsub()
-    for task_ref, name in [(auto_close_task, "auto_close"), (email_sync_task, "email_sync")]:
-        if task_ref:
-            task_ref.cancel()
-            try:
-                await task_ref
-            except asyncio.CancelledError:
-                pass
+    if auto_close_task:
+        auto_close_task.cancel()
+        try:
+            await auto_close_task
+        except asyncio.CancelledError:
+            pass
     logger.info(f"[SHUTDOWN] Instance {_instance_id} shutdown complete")
 
 
