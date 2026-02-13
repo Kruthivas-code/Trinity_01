@@ -119,7 +119,6 @@ from routes.teams import router as teams_router
 from routes.shifts import router as shifts_router
 from routes.tickets import router as tickets_router
 from routes.ticket_ops import router as ticket_ops_router
-from routes.email import router as email_router
 from routes.admin import router as admin_router
 from routes.sla import router as sla_router
 from routes.analytics import router as analytics_router
@@ -140,7 +139,6 @@ app.include_router(teams_router)
 app.include_router(shifts_router)
 app.include_router(tickets_router)
 app.include_router(ticket_ops_router)
-app.include_router(email_router)
 app.include_router(admin_router)
 app.include_router(sla_router)
 app.include_router(analytics_router)
