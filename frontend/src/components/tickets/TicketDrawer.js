@@ -16,6 +16,7 @@ import ActivityTimeline from '../common/ActivityTimeline';
 import EmailViewer from '../common/EmailViewer';
 import CannedResponsePicker from '../common/CannedResponsePicker';
 import KnowledgeBasePicker from '../common/KnowledgeBasePicker';
+import AISummaryBadge from './AISummaryBadge';
 import { useRealtime } from '../../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
