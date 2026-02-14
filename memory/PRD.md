@@ -30,6 +30,7 @@ Build an enterprise ticket management platform with email-first support manageme
 - SLA policies and tracking
 - CSAT surveys (email delivery pending)
 - Knowledge Base with AI refinement
+- **AI Ticket Summarization** — auto-summarizes tickets with 5+ customer messages and shows past issue history
 - Data import/export
 - API key management
 - Custom inboxes and filters
