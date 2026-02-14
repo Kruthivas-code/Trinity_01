@@ -2182,6 +2182,15 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
               )}
             </div>
 
+            {/* Divider */}
+            <div className="h-px bg-border/30" />
+
+            {/* AI Summary */}
+            <AISummaryBadge ticketId={ticket.ticket_id || ticket.id} />
+
+            {/* Divider */}
+            <div className="h-px bg-border/30" />
+
             {/* Assignee - Enhanced with team members and other teams */}
             <div className="relative">
               <label className="text-[11px] text-foreground/60 font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
