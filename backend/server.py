@@ -128,6 +128,7 @@ from routes.leaves import router as leaves_router
 from routes.feature_requests import router as feature_requests_router
 from routes.exports import router as exports_router
 from routes.knowledge_base import router as knowledge_base_router
+from routes.summaries import router as summaries_router
 
 app.include_router(filters_router)
 app.include_router(webhooks_router)
@@ -149,6 +150,7 @@ app.include_router(leaves_router)
 app.include_router(feature_requests_router)
 app.include_router(exports_router)
 app.include_router(knowledge_base_router)
+app.include_router(summaries_router)
 
 # ==================== Middleware ====================
 MAX_REQUEST_BODY_SIZE = 50 * 1024 * 1024  # 50MB
