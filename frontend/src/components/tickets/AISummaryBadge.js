@@ -49,21 +49,21 @@ const AISummaryBadge = ({ ticketId }) => {
 
   return (
     <div data-testid="ai-summary-section">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between py-1.5 group"
-        data-testid="ai-summary-toggle"
-      >
-        <div className="flex items-center gap-2">
+      <div className="w-full flex items-center justify-between py-1.5 group">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-2"
+          data-testid="ai-summary-toggle"
+        >
           <div className="h-5 w-5 rounded flex items-center justify-center bg-violet-500/20">
             <Sparkles size={11} className="text-violet-400" />
           </div>
           <span className="text-[11px] font-semibold text-violet-400 uppercase tracking-wider">AI Summary</span>
-        </div>
+        </button>
         <div className="flex items-center gap-1">
           {summary.cached && (
             <button
-              onClick={(e) => { e.stopPropagation(); fetchSummary(true); }}
+              onClick={() => fetchSummary(true)}
               disabled={refreshing}
               className="p-0.5 rounded hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
               title="Refresh summary"
@@ -76,13 +76,18 @@ const AISummaryBadge = ({ ticketId }) => {
               )}
             </button>
           )}
-          {expanded ? (
-            <ChevronDown size={12} className="text-muted-foreground" />
-          ) : (
-            <ChevronRight size={12} className="text-muted-foreground" />
-          )}
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="p-0.5 text-muted-foreground"
+          >
+            {expanded ? (
+              <ChevronDown size={12} />
+            ) : (
+              <ChevronRight size={12} />
+            )}
+          </button>
         </div>
-      </button>
+      </div>
 
       {expanded && (
         <div className="mt-1 space-y-2.5 animate-in fade-in duration-200" data-testid="ai-summary-content">
