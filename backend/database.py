@@ -47,6 +47,11 @@ feature_requests_collection = db.feature_requests
 # Customers
 customers_collection = db.customers
 
+# Portal
+portal_categories_collection = db.portal_categories
+portal_customers_collection = db.portal_customers
+portal_sessions_collection = db.portal_sessions
+
 # CSAT
 csat_responses_collection = db.csat_responses
 csat_tokens_collection = db.csat_tokens
