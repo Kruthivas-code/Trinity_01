@@ -129,6 +129,7 @@ from routes.feature_requests import router as feature_requests_router
 from routes.exports import router as exports_router
 from routes.knowledge_base import router as knowledge_base_router
 from routes.summaries import router as summaries_router
+from routes.portal import router as portal_router, seed_default_categories
 
 app.include_router(filters_router)
 app.include_router(webhooks_router)
@@ -151,6 +152,7 @@ app.include_router(feature_requests_router)
 app.include_router(exports_router)
 app.include_router(knowledge_base_router)
 app.include_router(summaries_router)
+app.include_router(portal_router)
 
 # ==================== Middleware ====================
 MAX_REQUEST_BODY_SIZE = 50 * 1024 * 1024  # 50MB
@@ -280,6 +282,7 @@ async def startup_event():
     await start_pubsub()
     await create_mongodb_indexes()
     auto_close_task = asyncio.create_task(auto_close_resolved_tickets())
+    seed_default_categories()
     logger.info(f"[STARTUP] Instance {_instance_id} started")
 
 
