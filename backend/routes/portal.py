@@ -92,7 +92,12 @@ async def get_portal_customer(request: Request, portal_token: Optional[str] = Co
     session = portal_sessions_collection.find_one({"token": token}, {"_id": 0})
     if not session:
         raise HTTPException(status_code=401, detail="Invalid session")
-    if datetime.now(timezone.utc) > session["expires_at"]:
+    expires = session["expires_at"]
+    if isinstance(expires, str):
+        expires = datetime.fromisoformat(expires)
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires:
         portal_sessions_collection.delete_one({"token": token})
         raise HTTPException(status_code=401, detail="Session expired")
     customer = portal_customers_collection.find_one(
