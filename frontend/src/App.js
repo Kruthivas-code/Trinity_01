@@ -23,6 +23,16 @@ import StarredTicketsPage from './components/tickets/StarredTicketsPage';
 import CannedResponsesPage from './components/pages/CannedResponsesPage';
 import KnowledgeBasePage from './components/pages/KnowledgeBasePage';
 
+// Portal imports
+import { PortalAuthProvider } from './portal/PortalAuthContext';
+import PortalLayout from './portal/PortalLayout';
+import PortalHome from './portal/PortalHome';
+import PortalCategory from './portal/PortalCategory';
+import PortalSubmit from './portal/PortalSubmit';
+import PortalLogin from './portal/PortalLogin';
+import PortalTickets from './portal/PortalTickets';
+import PortalTicketDetail from './portal/PortalTicketDetail';
+
 function AppRouter() {
   const location = useLocation();
   
@@ -33,6 +43,17 @@ function AppRouter() {
 
   return (
     <Routes>
+      {/* ==================== Public Portal Routes ==================== */}
+      <Route element={<PortalAuthProvider><PortalLayout /></PortalAuthProvider>}>
+        <Route path="/" element={<PortalHome />} />
+        <Route path="/portal/category/:slug" element={<PortalCategory />} />
+        <Route path="/portal/submit" element={<PortalSubmit />} />
+        <Route path="/portal/login" element={<PortalLogin />} />
+        <Route path="/portal/my-tickets" element={<PortalTickets />} />
+        <Route path="/portal/my-tickets/:ticketId" element={<PortalTicketDetail />} />
+      </Route>
+
+      {/* ==================== Trinity Admin Routes ==================== */}
       <Route path="/login" element={<LoginPage />} />
       {/* CSAT Page - Public route (no auth required) */}
       <Route path="/csat/:token" element={<CSATPage />} />
@@ -287,7 +308,6 @@ function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }
