@@ -33,6 +33,9 @@ import PortalLogin from './portal/PortalLogin';
 import PortalTickets from './portal/PortalTickets';
 import PortalTicketDetail from './portal/PortalTicketDetail';
 
+// KB Docs imports
+import KBDocs from './pages/kb/KBDocs';
+
 function AppRouter() {
   const location = useLocation();
   
