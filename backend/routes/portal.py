@@ -206,6 +206,7 @@ async def create_category(body: CategoryCreate, current_user: dict = Depends(get
         "description": body.description or "",
         "icon": body.icon or "HelpCircle",
         "subtopics": body.subtopics or [],
+        "help_articles": body.help_articles or [],
         "order": body.order or 0,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
