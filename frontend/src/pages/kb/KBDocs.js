@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Search, ChevronRight, ChevronLeft, Moon, Sun, ExternalLink, Menu, X, BookOpen } from 'lucide-react';
+import './KBDocs.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
