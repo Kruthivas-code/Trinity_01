@@ -154,6 +154,7 @@ app.include_router(exports_router)
 app.include_router(knowledge_base_router)
 app.include_router(summaries_router)
 app.include_router(portal_router)
+app.include_router(kb_router)
 
 # ==================== Middleware ====================
 MAX_REQUEST_BODY_SIZE = 50 * 1024 * 1024  # 50MB
