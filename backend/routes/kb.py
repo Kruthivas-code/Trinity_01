@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
 
-router = APIRouter()
+router = APIRouter(prefix="/api/kb", tags=["knowledge_base_public"])
 
 kb_articles = db["kb_articles"]
 kb_navigation = db["kb_navigation"]
