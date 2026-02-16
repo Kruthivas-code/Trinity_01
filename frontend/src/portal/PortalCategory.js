@@ -65,6 +65,32 @@ const PortalCategory = () => {
         </div>
       </div>
 
+      {/* Help Articles */}
+      {category.help_articles?.length > 0 && (
+        <div className="mt-8 mb-2">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50 mb-3">
+            Related Docs
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {category.help_articles.map((article, i) => (
+              <a
+                key={i}
+                href={article.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border border-border/30 bg-card hover:border-foreground/20 hover:shadow-sm transition-all group"
+                data-testid={`help-article-${i}`}
+              >
+                <ExternalLink size={13} className="text-muted-foreground/40 group-hover:text-foreground/60 shrink-0 transition-colors" />
+                <span className="text-xs font-medium text-foreground/70 group-hover:text-foreground truncate transition-colors">
+                  {article.title || article.url}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Subtopics */}
       <div className="space-y-2">
         {(category.subtopics || []).map((sub, i) => (
