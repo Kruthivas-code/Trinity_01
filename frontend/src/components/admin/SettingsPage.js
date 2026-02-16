@@ -471,6 +471,22 @@ const SettingsPage = ({ user }) => {
             <PortalCategoryManager />
           </div>
 
+          {/* KB Articles Section */}
+          <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
+                <BookOpen size={20} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-medium">KB Articles</h3>
+                <p className="text-sm text-muted-foreground">
+                  Manage documentation articles shown at /docs
+                </p>
+              </div>
+            </div>
+            <KBArticleManager />
+          </div>
+
           {/* Data Export Section */}
           <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
             <div className="flex items-center gap-3 mb-4">
