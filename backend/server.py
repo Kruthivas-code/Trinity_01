@@ -130,6 +130,7 @@ from routes.exports import router as exports_router
 from routes.knowledge_base import router as knowledge_base_router
 from routes.summaries import router as summaries_router
 from routes.portal import router as portal_router, seed_default_categories
+from routes.kb import router as kb_router
 
 app.include_router(filters_router)
 app.include_router(webhooks_router)
