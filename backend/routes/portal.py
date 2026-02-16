@@ -46,19 +46,26 @@ class TicketSubmit(BaseModel):
 class TicketReply(BaseModel):
     body: str
 
+class HelpArticle(BaseModel):
+    title: str
+    url: str
+
 class CategoryCreate(BaseModel):
     title: str
     slug: str
     description: Optional[str] = ""
     icon: Optional[str] = "HelpCircle"
     subtopics: Optional[list] = []
+    help_articles: Optional[list] = []
     order: Optional[int] = 0
 
 class CategoryUpdate(BaseModel):
     title: Optional[str] = None
+    slug: Optional[str] = None
     description: Optional[str] = None
     icon: Optional[str] = None
     subtopics: Optional[list] = None
+    help_articles: Optional[list] = None
     order: Optional[int] = None
 
 
