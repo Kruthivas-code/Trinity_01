@@ -1,0 +1,1054 @@
+[
+  {
+    "slug": "welcome",
+    "title": "Welcome To Emergent",
+    "section": "Introduction",
+    "nav_group": "The Beginner's Guide",
+    "url": "https://help.emergent.sh/welcome",
+    "content_markdown": "# Welcome To Emergent\n\n> Learn about Emergent and how to get started\nLearn about Emergent and how to get started\nEmergent is the world's first truly agentic vibe coding platform. Go from prompt to production-ready full-stack apps in an hour, on both web and mobile!\nEmergent lets you build full-stack, production-ready applications using just natural language prompts. From frontend to backend, authentication to deployment, Emergent automates the heavy lifting so you can focus on building your product. Just describe your vision to Emergent and watch it come alive!\nTraditionally, app development requires setting up environments, frameworks, and infrastructure. Emergent removes that barrier. No boilerplate, no DevOps hassle. Just describe what you want to build, and Emergent creates it.\nWith built-in GitHub integration, live preview, testing, and deployment, Emergent helps non-coders, PMs, developers, and solo founders ship software faster than ever.\n\n## Start exploring Emergent\n\nChoose a path below to learn the platform, explore key features, and connect integrations.\n\n#### Getting Started\n\nStart from zero and learn how Emergent works end-to-end.\n\n#### Features\n\nExplore core platform features like MCP, deployments, testing etc\n\n#### Integrations\n\nConnect GitHub, Stripe, Supabase, and external APIs in minutes.\n\n#### Prompt Engineering\n\nLearn effective prompting, debugging, and integration techniques.\n\n#### Troubleshooting\n\nImprove your builds with insider tips, design ideas, and advanced tricks.\n\n#### Custom Agents\n\nBuild and manage specialized AI agents for complex workflows.\n\n#### Credits in Emergent\n\nUnderstand how credits work and optimize your plan for efficiency.\n\n#### Community & Support\n\nJoin our Discord community and get help from our team.\n\n## Watch some of our video tutorials",
+    "toc": [
+      {
+        "text": "Start exploring Emergent",
+        "anchor": "start-exploring-emergent"
+      },
+      {
+        "text": "Watch some of our video tutorials",
+        "anchor": "watch-some-of-our-video-tutorials"
+      }
+    ],
+    "content_length": 1812
+  },
+  {
+    "slug": "first-app",
+    "title": "Your First App",
+    "section": "Introduction",
+    "nav_group": "The Beginner's Guide",
+    "url": "https://help.emergent.sh/first-app",
+    "content_markdown": "# Your First App\n\n> Build your first full stack app\nBuild your first full stack app\n\n### How to Start Vibecoding as a Complete Beginner\n\nWelcome to the world of Vibecoding - a new way to build applications using natural language instead of traditional code.\nInstead of learning frameworks, syntax, or programming languages, you simply talk to an AI agent about what you want to build - and Emergent turns that vision into a working app.\nBy the end of this guide, you’ll be able to:\n- Go from a business idea to a live app without writing code\n- Communicate effectively with AI agents\n- Build, test, and iterate naturally\n- Handle errors and refine your application\n- Add features like payments, user accounts, and more\n\n## What Is Vibecoding?\n\nVibecoding flips traditional programming on its head.\nInstead of learning how to code, you focus on what you want to build - and Emergent’s AI agents handle the how.\nTraditional CodingVibecodingLearn syntax, frameworks, and toolsDescribe your idea in plain EnglishSpend hours debuggingWatch the AI build in minutesYou write every lineYou direct the outcome\nExample:\nYou: “Add a user authentication system with email and password.”\nEmergent: Builds it in 5 minutes - ready to test and iterate.\nTip\nThe better you describe what you want, the better the result.\nVibecoding is 80% communication, 20% refinement.\n\n## The Vibecoding Mindset\n\nVibecoding isn’t about syntax - it’s about vision and clarity.\nYou focus on:\n- The problem you’re solving\n- Who your users are\n- What the experience should feel like\nEmergent focuses on:\n- Clean code structure\n- Framework selection\n- Debugging, optimization, and deployment\nInfo\nYou’re no longer a coder - you’re a product designer and creative director.\nEmergent handles the engineering.\n\n## Understanding Emergent\n\nEmergent is your vibecoding platform - an AI-powered development environment where you build full-stack apps through conversation.\nYou don’t need a code editor, terminal, or hosting setup.\nJust describe your idea, and Emergent builds, tests, and deploys it for you.\n\n### Example\n\nThis Spider-Man landing page was built entirely using AI — from prompt to production.\n\n## How Emergent Works\n\nWith Emergent, you describe what you want → Emergent writes the code → your app goes live.\nIt’s a true conversation-to-deployment flow.\nEmergent handles:\n- AI agents (E1, E1.1, E1.5, Mobile, Prototype)\n- React frontends + Node.js backends + MongoDB databases\n- Automatic testing and GitHub version control\n- One-click deployment with custom domains\n- Integrations like Stripe, OAuth, and external APIs\nSuccess\nYou focus on ideas. Emergent handles infrastructure.\n\n## Choosing the Right Agent\n\n<u>Agent</u>Best ForSpeedQualityUse WhenE-1Complex, production appsSlowerHighestBuilding real products for customersE-1.1Balanced buildsModerateHighEveryday projectsE-1.5Careful, detailed buildsModerateVery HighMission-critical appsE-2Thorough and Hyper-FocusedModerateVery highDetailed apps that need complex thinkingPrototypeQuick UI mockupsFastestBasicDesign validationMobileiOS + Android appsModerateHighMobile-first builds\n\n## The Universal LLM Key\n\nYou don’t need to manage multiple AI API keys.\nEmergent provides a Universal LLM Key that gives you access to GPT-5, Claude, Gemini, and more - through one billing system powered by Emergent Credits.\nInfo\nNo API setup. No billing headaches. Just start building instantly.\n\n## Your First Vibecoding Project\n\nLet’s build your first app: a Personal Book Tracker.\nIt’s simple, useful, and a perfect way to learn the flow.\n\n#### Define Your Business Goal\n\nSpend 5 minutes thinking about your idea.\nAsk yourself:\n- What problem am I solving?\n- Who is this for?\n- What are the 3–5 essential features?\nExample:\n- Problem: Forget which books I’ve read\n- Core Features: Add books, track progress, rate books, view stats\n\n#### Write Your Initial Prompt\n\nUse this prompt framework:\n```\nCreate an app for [PURPOSE] that includes:\n- [FEATURE 1]\n- [FEATURE 2]\n- [FEATURE 3]\n- [DESIGN STYLE]\n```\nOur Actual Prompt:\n```\nCreate a personal book tracking app where users can:\n- Add books with title, author, and cover image URL\n- Mark books as \"Want to Read\", \"Currently Reading\", or \"Finished\"\n- Rate finished books (1-5 stars) and add personal notes\n- View their reading statistics (total books, books finished this year, etc.)\n- Search through their book collection by title or author\n\nMake it look modern and clean with a book-themed design -  think library aesthetics with warm colors and good typography. Use a grid layout to display books like a bookshelf.\n```\n\n#### The Planning Session\n\nThe agent will start by asking clarifying questions. \n\n\"Should I use the Universal LLM Key or your own API key?\" → Choose Universal LLM Key (simpler, no setup needed)\n\"Do you want user authentication (login system)?\" → For a first project, say \"Not needed for now\" (you can add it later)\n\"Any specific design framework or color preferences?\" → You can say: \"Use Tailwind CSS with warm brown and cream colors, like a cozy library\"\n\"Should I start building or do you want to discuss more?\" → Say: \"Start building based on what we discussed\"\nPro tip: If you're not sure about something, ask the agent to explain before building:Unsure about a term? Ask the agent to explain before building.\nEvery build is a learning opportunity.\nThe agent is smart and helpful, use it to learn as you build.\n```\n\"Can you explain what user authentication means and whether I need it for this app? Don't start building yet, let's discuss first.\"\n```\n\n#### Watch It Build\n\nOnce you give the go-ahead, the agent starts building. You'll see real-time updates:\n```\n✓ Created project structure\n✓ Set up MongoDB database\n✓ Building frontend components\n✓ Implementing book management features\n✓ Adding search functionality\n✓ Styling with Tailwind CSS\n✓ Creating reading statistics dashboard\n→ Running tests...\n```\nInfo\nBuilds usually take 5–15 minutes.\nRead the agent’s explanations - they teach you how the app works.\n\n#### Test Your First Version\n\nWhen building completes, you'll get a preview link.\n```\nClick it to see your app live.\n\nYour app is now running and accessible. Time to test it!\n```\n```\n<Step>\n```\n```\n**How to request improvements:**\n\n**Good approach:**\n\n```\nI tested the app and it works great! A few improvements:\n\n1. Make the book covers 20% larger so they're easier to see\n2. Add a delete button (maybe a small X in the corner of each book)\n3. Add a prominent \"Currently Reading\" section at the top showing those books separately\n\nCan you implement these changes?\n```\n\n**Bad approach:**\n\n```\nmake it better and add more stuff\n```\n\nRemember: **Be specific and detailed.** The agent rewards clarity. \n\nLook at the improvement after the feedback :\n```\n```\n> [!SUCCESS]\nBe clear and specific. The agent rewards detail and direction.\n```\n\n#### Handling Your First Error\n\nAt some point, you'll encounter an error. Don't panic, this is part of vibecoding!\nCommon scenario: You try to add a book, but nothing happens. You check the browser console (F12) and see:\n```\nError: Failed to POST /api/books\nStatus: 500 Internal Server Error\n```\nHow to report it to the agent:\n```\nI found a bug. When I click \"Add Book\" and fill in the details, nothing happens. The book doesn't get added.\n\nI checked the browser console and found this error:\n[paste the error message]\n\nCan you fix this?\n```\nImportant rules for error reporting:\n- Test it yourself first, Don't immediately run to the agent\n- Get the actual error message, Use F12 console\n- Describe what you expected vs. what happened\n- Share screenshots if helpful\n- Report one error at a time -  Don't mix bugs with feature requests\nThe agent will analyze the error, fix it, and often explain what went wrong so you learn.\n\n## Wrapping Up\n\nYou don’t need to learn to code - you need to learn to communicate with AI.\nThat’s the essence of vibecoding.\nYou describe what you want, the agent builds it, and you refine through feedback.\nInfo\nStart small (like the Book Tracker), focus on clarity, and iterate one step at a time.\n\n## Your Next Steps\n\n- Pick a simple idea you actually want to use\n- Write one clear prompt with 3–5 features and a vibe note\n- Let Emergent build it\n- Test, refine, and repeat\nAs you grow comfortable, add auth, payments, and integrations when they serve your product - not before.\nTip\nVibecoding is more like directing than programming.\nYou set the vision; Emergent handles the execution.\nSuccess\nYour first working app is closer than you think —\nopen Emergent, drop your first prompt, and watch your idea come alive.",
+    "content_length": 8582
+  },
+  {
+    "slug": "plans-and-credits",
+    "title": "Plans and Credits",
+    "section": "Introduction",
+    "nav_group": "The Beginner's Guide",
+    "url": "https://help.emergent.sh/plans-and-credits",
+    "content_markdown": "# Plans and Credits\n\n> Learn how credits work, how plans are structured, and how to get the most value from Emergent.\nLearn how credits work, how plans are structured, and how to get the most value from Emergent.\n\n## What Are Credits?\n\nCredits are the core unit of work on Emergent - everything runs on them.\nEach plan comes with a monthly credit allowance used for:\n- Natural language app generation\n- Code generation and modifications\n- Frontend & backend development\n- Testing and debugging\n- Cloud deployments (50 credits/month per app)\n- Integrations and troubleshooting\nTip\nEverything - from chat prompts to full app generation - consumes credits.\nIf your balance hits zero, development pauses until renewal or a top-up.\n\n## Types of Credits\n\nTypeDescriptionSubscription CreditsIncluded in your monthly plan. Reset every billing cycle.Top-up CreditsPurchased separately. Never expire.\nInfo\nPer-task limit: 1000 credits\nDefault allocation: 5 credits per run (adjustable up to 1000)\n\n## Credit Rollover Policy\n\n- Monthly Plans: Unused subscription credits reset every billing cycle.\n- Top-up Credits: Never expire.\n- Usage Priority: Monthly credits are used first, then top-ups.\n\n## Explore Our Plans\n\n\n### Standard Plan - $20/month\n\nPerfect for solo developers or small projects who want reliable performance and essential AI-powered tools.\nIncludes:\n- 100 credits/month\n- Mobile App Development\n- Private Apps\n- 10 free monthly credits\n- Ability to buy additional credits anytime\nBest for: Independent developers, MVPs, and early-stage projects.\nTip\nGreat balance between power and affordability - ideal for builders getting started with production-grade AI apps.\n\n### Pro Plan - $200/month\n\nThe best choice for serious developers, power users, and startups scaling AI workflows.\nIncludes:\n- Everything in Standard, plus:\n\n1M context window for extended reasoning\nUltra Thinking Mode for complex builds\nSystem Prompt Editing\nCustom Agent Creation\nMobile App Development (Expo / React Native)\n2× Bigger Machine Performance\n750 Monthly Credits\n10 free additional monthly credits\nPriority Support\n- 1M context window for extended reasoning\n- Ultra Thinking Mode for complex builds\n- System Prompt Editing\n- Custom Agent Creation\n- Mobile App Development (Expo / React Native)\n- 2× Bigger Machine Performance\n- 750 Monthly Credits\n- 10 free additional monthly credits\n- Priority Support\nBest for: Builders creating full SaaS products, custom AI agents, and mobile apps.\nInfo\nPro gives you full control over agent behavior and large-scale context handling — perfect for advanced projects.\n\n### Team Plan - $300/month\n\nFor teams and organizations that build collaboratively, share resources, and manage multiple projects.\nIncludes:\n- Everything in Pro, plus:\n\nShared Team Pool: 1250 credits/month\nCentral Billing & Administration\nCollaborative Workspace\nUp to 5 members per team\nAdd more members via support\n- Shared Team Pool: 1250 credits/month\n- Central Billing & Administration\n- Collaborative Workspace\n- Up to 5 members per team\n- Add more members via support\nBest for: Teams, agencies, and collaborative development groups.\nNote\nDesigned for teams building multiple apps - with shared credits, streamlined billing, and workspace control.\nSuccess\nNeed help choosing a plan? Start with Standard - you can upgrade instantly to Pro or Team anytime.\n\n## Plan Comparison Table\n\nFeatureFreeStandardProTeamPrice$0$20$200$300Monthly Credits101007501,250Team Members1115Top-Up CreditsNoYesYesYesGitHub IntegrationNoYesYesYesDeploymentsNoYesYesYesMobile AgentNoYesYesYesPro ModeNoYesYesYesCustom DomainsNoYesYesYesAnnual BillingNoYesYesYes\nSuccess\nReady to upgrade? Unlock more power instantly by upgrading your plan.\n\n## Credit Accounting & Calculations\n\n\n### Monthly Credit Behavior\n\n- Subscription Credits: Allocated monthly, reset each billing cycle.\n- Top-up Credits: $10 for 50 credits, never expire.\n- Usage Order: Subscription → Top-up.\nNote\nMonthly subscription credits do not roll over.\n\n### Prorated Upgrade Logic\n\nIf you upgrade from Standard (200/month) mid-cycle, your billing and credits are automatically adjusted so you only pay for the remaining days in your current billing cycle.\nExample Scenario:\nDetailValueCurrent PlanStandard ($20/month)New PlanPro ($200/month)Billing Cycle30 daysDay of UpgradeDay 15Unused Days15\n\n#### Billing Calculation\n\nFormulaExampleResultCredit from current plan$20 ÷ 30 × 15$10Cost of new plan$200 ÷ 30 × 15$100Final charge$100 − $10$90 due immediately\nInfo\nYou’ll be charged only for the unused portion of the month at the new plan’s rate.\nYour billing cycle remains the same - it doesn’t restart.\n\n#### Credit Adjustment\n\nPlanMonthly CreditsCredits UsedCredits RemainingCredit AdjustmentStandard1004060—Pro750——+690 credits instantly\nOn upgrade, you immediately receive the remaining difference between your current and new plan credits.\nIn this example:\n750 (Pro) − 60 used = 690 new credits added instantly.\nTip\nProrated upgrades ensure a seamless transition — you never lose existing credits, and your available balance updates immediately to match your new plan.\n\n### Downgrade Logic\n\n- Takes effect next billing cycle.\n- Current credits stay active until cycle end.\n- New plan credits begin next renewal.\nTip\nUse remaining credits before a downgrade to avoid expiration.\n\n## Top-Ups (Credit Refills)\n\nRunning low on credits? You can easily purchase additional credits anytime — directly from the subscription modal.\n\n### Current Top-Up Options\n\nCreditsPriceNotes5 credits$1Special introductory offer100 credits$20Standard purchase250 credits$50Ideal for small builds500 credits$100Most popular choice3000 credits$500Best value - includes 20% bonus6000 credits$1,000Enterprise-scale bundle (20% OFF)\nInfo\nAll top-up credits are one-time purchases that never expire.\nYou can buy as many as you need, anytime.\n\n### How Top-Up Credits Work\n\n- Instant Activation: Credits are added to your balance immediately after purchase.\n- No Expiry: Top-up credits remain available until used.\n- Usage Priority: Subscription credits are used first, followed by top-up credits.\n- Flexibility: Ideal for short-term projects, high-load months, or team bursts.\nTip\nTop-up credits don’t reset with your monthly plan - they’re a flexible, permanent backup pool.\n\n### When to Top-Up vs. Upgrade\n\nScenarioBest OptionShort-term project or one-time spikeTop-Up CreditsHitting credit limits every monthUpgrade your planNeed more compute or context windowUpgrade to ProBuilding collaboratively or scaling team usageUpgrade to TeamBuying 2+ top-ups monthlyUpgrade - better $/credit ratio\nNote\nPro Tip: Top-ups give flexibility, but upgrading usually provides better long-term value if you’re using large credit volumes.\n\n### How to Purchase\n\n- Click on Credit Balance, click on buy more credits.\n- Choose a bundle or enter a custom credit amount\n- Complete payment securely - credits will appear in your balance instantly\nSuccess\nTop-up credits never expire, can be stacked, and are usable across all plans — the perfect way to stay productive when your monthly credits run out.\n\n## What Happens if You Run Out of Credits?\n\nWhen credits hit zero:\nYou can still:\n- Access projects & code\n- Edit files manually in VS Code\n- View deployments\n- Access documentation\nYou can’t:\n- Generate new code\n- Run tests\n- Deploy new builds\n- Use AI debugging\nInfo\nTo continue building, wait for your next credit refresh or purchase a top-up.\n\n## Deployment Costs\n\n50 credits/month per deployed app\nIncludes:\n- Managed production infrastructure\n- Uptime monitoring\n- SSL & custom domains\n- Environment variables & secrets\n\n## Canceling a Plan\n\nIf you cancel your plan:\n- Unused monthly credits expire at cycle end\n- Top up credits never expire.\n- Projects remain accessible\n- Deployments will stay active as long as the user has 50 credits in their account even if they cancel the subscription.\nBefore canceling:\n- Use remaining credits\n- Save code to GitHub (Standard or Pro)\n- Download key files\nTo cancel:\nProfile → Account Settings → Manage Plan → Cancel Plan\n\n## Ready to Build?\n\nLaunch your first AI-powered project in minutes.\nStart building now →\nHave questions?\nJoin our Discord or email support@emergent.sh",
+    "toc": [
+      {
+        "text": "What Are Credits?",
+        "anchor": "what-are-credits"
+      },
+      {
+        "text": "Types of Credits",
+        "anchor": "types-of-credits"
+      },
+      {
+        "text": "Credit Rollover Policy",
+        "anchor": "credit-rollover-policy"
+      },
+      {
+        "text": "Explore Our Plans",
+        "anchor": "explore-our-plans"
+      },
+      {
+        "text": "Plan Comparison Table",
+        "anchor": "plan-comparison-table"
+      },
+      {
+        "text": "Credit Accounting & Calculations",
+        "anchor": "credit-accounting-calculations"
+      },
+      {
+        "text": "Monthly Credit Behavior",
+        "anchor": "monthly-credit-behavior"
+      },
+      {
+        "text": "Prorated Upgrade Logic",
+        "anchor": "prorated-upgrade-logic"
+      },
+      {
+        "text": "Downgrade Logic",
+        "anchor": "downgrade-logic"
+      },
+      {
+        "text": "Top-Ups (Credit Refills)",
+        "anchor": "top-ups-credit-refills"
+      },
+      {
+        "text": "Current Top-Up Options",
+        "anchor": "current-top-up-options"
+      },
+      {
+        "text": "How Top-Up Credits Work",
+        "anchor": "how-top-up-credits-work"
+      },
+      {
+        "text": "When to Top-Up vs. Upgrade",
+        "anchor": "when-to-top-up-vs-upgrade"
+      },
+      {
+        "text": "How to Purchase",
+        "anchor": "how-to-purchase"
+      },
+      {
+        "text": "What Happens if You Run Out of Credits?",
+        "anchor": "what-happens-if-you-run-out-of-credits"
+      },
+      {
+        "text": "Deployment Costs",
+        "anchor": "deployment-costs"
+      },
+      {
+        "text": "Canceling a Plan",
+        "anchor": "canceling-a-plan"
+      },
+      {
+        "text": "Ready to Build?",
+        "anchor": "ready-to-build"
+      }
+    ],
+    "content_length": 8223
+  },
+  {
+    "slug": "faqs",
+    "title": "FAQs (Frequently Asked Questions)",
+    "section": "Introduction",
+    "nav_group": "The Beginner's Guide",
+    "url": "https://help.emergent.sh/faqs",
+    "content_markdown": "# FAQs (Frequently Asked Questions)\n\nSection: Introduction\nGet quick answers to common questions about using Emergent — from credits and agents to GitHub integration, deployment, and troubleshooting.\nQ: What is Emergent?\nEmergent is an AI-powered coding platform that lets you build complete web and mobile applications by describing what you want — no coding required.\nQ: Who is Emergent for?\n- Developers who want to build faster\n- PMs and operators creating internal tools\n- Solo founders building MVPs\n- Non-coders launching their first product\nQ: How is Emergent different?\n✅ Conversational interface, not form-based\n✅ Handles deployment, backend, and infrastructure\n✅ First truly agentic coding platform with full-stack capability\n✅ Automates both setup and deployment\nQ: How do credits work?\nCredits are used for AI-driven work like code generation, testing, cloud deployments, and integrations.\nQ: What are the pricing tiers?\n- Free: 5 credits/month\n- Starter: $10/month (50 credits)\n- Standard: $20/month (100 credits)\n- Top-ups: $10 for 50 credits (never expire)\nQ: What happens if I run out of credits?\nYou can top up credits anytime. Monthly credits reset automatically each billing cycle.\nQ: How can I optimize credit usage?\n- Use rollback to delete extra messages\n- Break large projects into smaller tasks\n- Save to GitHub between milestones\n- Be specific with your prompts\nQ: What are the available agents?\n- E1: Stable, production-ready builds with full testing\n- E1.1: Faster, modular builds for backend-heavy projects\n- E1.5: Advanced, structured builds for Pro users\n- Mobile Agent: Builds mobile apps using Expo (React Native)\nQ: Which agent should I use?\n- Use E1 for complete production apps\n- Use E1.1 for flexible, backend-focused projects\n- Use E1.5 for complex structured builds\n- Use Mobile Agent for iOS/Android apps\nSupported Technologies\n- Web: React + FastAPI + MongoDB + Next.js\n- Mobile: Expo (React Native) + FastAPI + MongoDB\n- Backend: Python (FastAPI), Node.js\n- Database: MongoDB\nNot Supported: Flutter, Kotlin, Swift (for now)\nWhat can you build?\nFull-stack web or mobile apps\nMVPs and SaaS tools\nAPIs, dashboards, and internal tools\nE-commerce or social platforms\nQ: How do I connect GitHub?\n- Click your profile icon → “Connect GitHub”\n- Authorize Emergent on GitHub\n- Grant repository permissions\nQ: How to save to GitHub?\nClick Save to GitHub, select repo and branch, then push.\nEmergent commits your code automatically.\nQ: How to pull from GitHub?\nClick the GitHub icon → Select repository → Choose branch → Import.\nQ: GitHub connection not working?\nGo to GitHub → Settings → Applications → Remove “Emergent” → Reconnect.\nQ: How does deployment work?\n- Test with Preview\n- Click Deploy → “Deploy Now”\n- Wait 5–10 minutes for live URL\nDeployment Cost: 50 credits/month per deployed app\nSupports:\n✅ Custom domains\n✅ Automatic SSL\n✅ Continuous deployment\nMobile Deployment: Available through Expo integration in Mobile Agent.\nQ: What is the Universal Key?\nOne secure API key that gives you access to GPT, Claude, and Gemini through Emergent — no separate credentials needed.\nSupported Capabilities:\n- Text generation (GPT, Claude, Gemini)\n- Image generation (OpenAI GPT-Image-1, Gemini Nano Banana)\n- Vision support\nHow to access it:\nProfile → Universal Key → Copy or manage your key\nAll usage is billed via Emergent credits.\nCommon Issues:\n- Agent asleep: Click “Wake Up Agent” and wait 2–3 minutes\n- GitHub push conflict: Create a new branch before pushing\n- Preview not updating: Hard refresh or restart preview\n- Deployment failed: Check logs, verify environment variables\n- Expo app not loading: Ensure devices share the same Wi-Fi network\nSuccess\nSave your project to GitHub regularly — it’s the safest way to recover from errors or context resets.\nQ: How do I cancel my plan?\nCredits → Manage Subscription → Cancel Billing (via Stripe).\nQ: What happens to my credits?\n- Monthly credits expire at end of cycle\n- Top-up credits never expire\nQ: How to upgrade plan?\nGo to Billing → Select plan → Confirm upgrade\nChanges apply instantly.\nQ: Supported payment methods?\nStripe (supports all major credit/debit cards).\nQ: Is my code secure?\nYes — your code is private, encrypted, and not used for AI training.\nQ: Can I collaborate with others?\nYes, push your work to GitHub and share access.\nQ: Where is data stored?\nAll data is securely hosted on Emergent’s cloud infrastructure.\nNeed Help?\n- Discord: Join the Community\n- Email: support@emergent.sh\nInclude your Job ID and error screenshots for faster help.\nResponse Times:\n- Discord: Within a few hours\n- Email: 24–48 hours\nQ: How do I start my first project?\n- Sign up or log in\n- Select your agent (E1, E1.1, E1.5, or Mobile)\n- Describe your idea in plain English\n- Let the agent build, preview, and deploy your app\nQ: Can non-coders use Emergent?\nAbsolutely! You just describe what you want — no technical setup required.\nQ: Typical build time for MVPs?\n- Simple apps: 30 min – 2 hours\n- Medium apps: 2–5 hours\n- Complex apps: Multiple sessions\nInfo\nStill have questions?\nAsk in our Discord Community or email support@emergent.sh.\nWe’re here to help you build faster with Emergent.",
+    "toc": [],
+    "content_length": 5178
+  },
+  {
+    "slug": "how-apps-work",
+    "title": "How Do Apps Work?",
+    "section": "Understanding How Apps Work",
+    "nav_group": "The Beginner's Guide",
+    "url": "https://help.emergent.sh/how-apps-work",
+    "content_markdown": "# How Do Apps Work?\n\n> The essential concepts every vibecoder needs to know\nThe essential concepts every vibecoder needs to know\n\n## The Big Picture\n\nWhen you build an app, you're really building two things that talk to each other: a frontend (what users see) and a backend (where data lives and logic happens). Think of it like a restaurant: the frontend is the dining room where customers interact, and the backend is the kitchen where the real work gets done.\n\n## Where Does Your Data Live?\n\nThis is the #1 source of confusion. Your data exists in three different places, and understanding this is critical:\n\n#### Browser Memory\n\nTemporary data while the page is open. Disappears on refresh.\n\n#### Session Storage\n\nTemporary data for your browsing session. Gone when you close the tab.\n\n#### Database\n\nPermanent storage. Data persists forever (until you delete it).\n\n### The Todo List Example\n\nImagine you're building a todo list app:\n```\nJavaScriptCopy// This only lives in browser memory\nlet todos = [\"Buy milk\", \"Walk dog\"];\n\n// When you refresh the page... POOF! It's gone.\n```\n```\n// This only lives in browser memory\nlet todos = [\"Buy milk\", \"Walk dog\"];\n\n// When you refresh the page... POOF! It's gone.\n```\nTo make it permanent, you need to save it to a database. That's what databases do - they remember things even after you close your app.\nWarning\nIf you're building something and refreshing the page loses your data, you haven't connected to a database yet. Your data is only living in browser memory.\n\n## Frontend vs Backend: The Restaurant Analogy\n\nFrontend (Dining Room)Backend (Kitchen)What users see and interact withWhere data is stored and processedRuns in the browserRuns on a serverHTML, CSS, JavaScriptNode.js, Python, databasesMakes requests for dataResponds with dataCannot directly access databasesHas full database access\n\n### Why They're Separate\n\nYour frontend code runs on the user's computer (in their browser). Your backend runs on your server. This means:\n- The frontend has to ask the backend for data\n- The backend decides if the request is allowed\n- The frontend waits for the response\n- The backend sends data back\nThis is called the request/response cycle, and it's fundamental to how the web works.\n\n## The Request/Response Cycle\n\nHere's what actually happens when you click a button in an app:\n\n#### User Action\n\nYou click \"Show my todos\"\n\n#### Frontend Sends Request\n\nBrowser sends: GET /api/todos\n\n#### Backend Processes\n\nServer receives request, queries database\n\n#### Database Returns Data\n\nDatabase sends todos back to backend\n\n#### Backend Sends Response\n\nBackend sends JSON data to frontend\n\n#### Frontend Displays\n\nBrowser renders the todos on screen\nThis happens in milliseconds, but it's not instant. That's why you see loading spinners - the frontend is waiting for the backend to respond.\n\n### Code Example\n\n```\nJavaScriptCopy// Frontend code\nasync function getTodos() {\n  // This ASKS the backend for data\n  const response = await fetch('/api/todos');\n  const todos = await response.json();\n  \n  // Now we can display them\n  displayTodos(todos);\n}\n```\n```\n// Frontend code\nasync function getTodos() {\n  // This ASKS the backend for data\n  const response = await fetch('/api/todos');\n  const todos = await response.json();\n  \n  // Now we can display them\n  displayTodos(todos);\n}\n```\n```\nJavaScriptCopy// Backend code (Node.js/Express)\napp.get('/api/todos', async (req, res) => {\n  // Backend queries the database\n  const todos = await database.collection('todos').find();\n  \n  // Backend sends data back to frontend\n  res.json(todos);\n});\n```\n```\n// Backend code (Node.js/Express)\napp.get('/api/todos', async (req, res) => {\n  // Backend queries the database\n  const todos = await database.collection('todos').find();\n  \n  // Backend sends data back to frontend\n  res.json(todos);\n});\n```\nInfo\nNotice how the frontend cannot directly access the database. It must go through the backend. This is a security feature - you don't want users able to access your database directly from their browser.\n\n## What Is a Database?\n\nA database is permanent storage for your app's data. Think of it like a super-organized filing cabinet that never forgets.\n\n### MongoDB Basics\n\nMongoDB stores data in collections of documents. Think of it like this:\n- Database = The entire filing cabinet\n- Collection = A drawer in the cabinet (e.g., \"users\", \"todos\", \"posts\")\n- Document = An individual file/record in that drawer\n\n### Documents Look Like JavaScript Objects\n\n```\nJavaScriptCopy// This is a document in your \"users\" collection\n{\n  _id: \"507f1f77bcf86cd799439011\",  // MongoDB's auto-generated ID\n  name: \"Sarah\",\n  email: \"sarah@example.com\",\n  age: 28,\n  todos: [\n    { task: \"Buy milk\", done: false },\n    { task: \"Walk dog\", done: true }\n  ]\n}\n```\n```\n// This is a document in your \"users\" collection\n{\n  _id: \"507f1f77bcf86cd799439011\",  // MongoDB's auto-generated ID\n  name: \"Sarah\",\n  email: \"sarah@example.com\",\n  age: 28,\n  todos: [\n    { task: \"Buy milk\", done: false },\n    { task: \"Walk dog\", done: true }\n  ]\n}\n```\nSuccess\nIf you know how to work with JavaScript objects, you already know how to work with MongoDB documents!\n\n### CRUD: The Four Things You Do With Data\n\nEvery app is basically doing these four operations in different combinations:\n\n#### Create\n\nAdd new data (signup, create post, add todo)\n\n#### Read\n\nGet existing data (login, view profile, show todos)\n\n#### Update\n\nChange existing data (edit profile, mark todo done)\n\n#### Delete\n\nRemove data (delete account, remove todo)\nOnce you realize that 90% of your app is just CRUD operations, everything becomes much clearer.\n\n## How Code Actually Runs\n\n\n### Frontend Code (Browser)\n\n```\nJavaScriptCopy// This runs on the USER'S computer\nconsole.log(\"Hello from the browser!\");\n\n// Users can see this code if they open dev tools\nconst apiKey = \"secret123\";  // NEVER DO THIS\n```\n```\n// This runs on the USER'S computer\nconsole.log(\"Hello from the browser!\");\n\n// Users can see this code if they open dev tools\nconst apiKey = \"secret123\";  // NEVER DO THIS\n```\nWarning\nEverything in your frontend code is visible to users. Never put passwords, API keys, or secrets in frontend code. Users can read every line.\n\n### Backend Code (Server)\n\n```\nJavaScriptCopy// This runs on YOUR server\nconsole.log(\"Hello from the server!\");\n\n// Users CANNOT see this code\nconst secretKey = process.env.DATABASE_PASSWORD;  // This is safe\n```\n```\n// This runs on YOUR server\nconsole.log(\"Hello from the server!\");\n\n// Users CANNOT see this code\nconst secretKey = process.env.DATABASE_PASSWORD;  // This is safe\n```\nThe backend is where you:\n- Connect to databases\n- Store secrets and API keys\n- Validate data before saving\n- Control who can access what\n\n## Environment Variables: Keeping Secrets Secret\n\nYour database password, API keys, and other secrets go in a special file called .env:\n```\nBashCopy# .env file (never commit this to GitHub!)\nDATABASE_URL=mongodb://username:password@host:27017\nAPI_SECRET_KEY=your-secret-key-here\n```\n```\n# .env file (never commit this to GitHub!)\nDATABASE_URL=mongodb://username:password@host:27017\nAPI_SECRET_KEY=your-secret-key-here\n```\nIn your code, you access them like this:\n```\nJavaScriptCopyconst dbPassword = process.env.DATABASE_URL;\n```\n```\nconst dbPassword = process.env.DATABASE_URL;\n```\nWarning\nAlways add .env to your .gitignore file so it's never uploaded to GitHub. If you accidentally expose your database password, change it immediately.\n\n## Collections and Relationships\n\n\n### What Is a Collection?\n\nA collection is a group of similar documents. Common collections include:\n- users - All your user accounts\n- posts - All blog posts or content\n- comments - All comments on posts\n- todos - All todo items\n\n### Connecting Related Data\n\nLet's say you have users and posts. How do you know which posts belong to which user?\n```\nJavaScriptCopy// User document\n{\n  _id: \"user123\",\n  name: \"Alex\"\n}\n\n// Post document\n{\n  _id: \"post456\",\n  title: \"My First Post\",\n  authorId: \"user123\",  // This links to the user!\n  content: \"Hello world...\"\n}\n```\n```\n// User document\n{\n  _id: \"user123\",\n  name: \"Alex\"\n}\n\n// Post document\n{\n  _id: \"post456\",\n  title: \"My First Post\",\n  authorId: \"user123\",  // This links to the user!\n  content: \"Hello world...\"\n}\n```\nWhen you want to show a post with the author's name, you:\n- Get the post\n- Look up the user by authorId\n- Display both together\nThis is called referencing or relational data.\n\n## The Schema Question\n\nMongoDB doesn't enforce a schema (structure) by default, which means you can do this:\n```\nJavaScriptCopy// These are both valid in MongoDB\n{ name: \"Alex\", age: 30 }\n{ name: \"Sarah\", age: \"twenty-eight\", favoriteColor: \"blue\" }\n```\n```\n// These are both valid in MongoDB\n{ name: \"Alex\", age: 30 }\n{ name: \"Sarah\", age: \"twenty-eight\", favoriteColor: \"blue\" }\n```\nBut you shouldn't. Your app expects consistent data structures. This is why, in the Emergent environment, you should prompt the agent to maintain consistent schema.\nTip\nEven though MongoDB is \"schema-less\", treat it like it has a schema. Your future self will thank you when debugging.\n\n## Async/Await: Why Things Don't Happen Instantly\n\nWhen you fetch data from a database or API, it takes time. You need to wait for the response:\n```\nJavaScriptCopy// This doesn't work\nconst todos = fetch('/api/todos');\nconsole.log(todos);  // This runs before data arrives!\n\n// This works\nconst todos = await fetch('/api/todos');\nconsole.log(todos);  // Now we have the data\n```\n```\n// This doesn't work\nconst todos = fetch('/api/todos');\nconsole.log(todos);  // This runs before data arrives!\n\n// This works\nconst todos = await fetch('/api/todos');\nconsole.log(todos);  // Now we have the data\n```\nThe await keyword says \"pause here until the data arrives\". Any function using await must be marked async as a best practice.\n```\nJavaScriptCopyasync function getTodos() {\n  const response = await fetch('/api/todos');\n  const data = await response.json();\n  return data;\n}\n```\n```\nasync function getTodos() {\n  const response = await fetch('/api/todos');\n  const data = await response.json();\n  return data;\n}\n```\n\n## Putting It All Together\n\nHere's the complete flow of a typical app feature, using the same example of the to-do app:\n\n#### User Interacts\n\nClicks \"Add Todo\" button in the frontend\n\n#### Frontend Sends Request\n\nPOST request to /api/todos with todo data\n\n#### Backend Validates\n\nChecks if the request is valid and allowed\n\n#### Backend Saves to Database\n\nInserts the new todo into the todos collection\n\n#### Database Confirms\n\nReturns the saved document with its new _id\n\n#### Backend Responds\n\nSends success response back to frontend\n\n#### Frontend Updates\n\nDisplays the new todo on screen\n\n## Key Takeaways\n\n\n#### Frontend = Display\n\nShows data and collects input. Runs in the browser.\n\n#### Backend = Logic\n\nProcesses requests and stores data. Runs on your server.\n\n#### Database = Memory\n\nPermanent storage. Survives refreshes and restarts.\n\n#### API = Middleman\n\nConnects frontend and backend through endpoints.\nNote\nThe hardest part about learning to code isn't the syntax - it's understanding where code runs, where data lives, and how it all connects. Master these concepts and everything else falls into place.",
+    "content_length": 11284
+  },
+  {
+    "slug": "voice-mode",
+    "title": "Voice Mode",
+    "section": "Core Features",
+    "nav_group": "Features",
+    "url": "https://help.emergent.sh/voice-mode",
+    "content_markdown": "# Voice Mode\n\n> Build apps by simply talking - Voice Mode lets you describe your ideas out loud and watch Emergent turn them into real, working applications instantly.\nBuild apps by simply talking - Voice Mode lets you describe your ideas out loud and watch Emergent turn them into real, working applications instantly.\nEmergent has always been built on a simple belief - the best interface is the one that gets out of your way.\nWe started by removing the need to write code.\nNow, we’re removing the need to even type.\nIntroducing Voice Mode - the most natural way to build apps with Emergent.\nSpeak your ideas out loud, and Emergent will turn your words into production-ready applications in real time.\nInfo\nVoice Mode lets you talk to Emergent as naturally as you’d explain your idea to a teammate.\nYou describe it - Emergent builds it.\n\n## What Is Voice Mode?\n\nVoice Mode is the next step in natural development - enabling you to:\n- Describe your app in plain English\n- Iterate hands-free, anywhere\n- Build faster while staying in your creative flow\nYou can brainstorm ideas while walking your dog, tweak your UI over coffee, or launch an entire MVP without touching your keyboard.\nIt’s fast. It’s intuitive.\nIt feels like talking your idea into existence.\nSuccess\nVoice Mode is available on both Web and Mobile - so you can build anytime inspiration strikes.\n\n## How to Use Voice Mode\n\n- Open Emergent (on web or mobile)\n- Tap the microphone icon in the bottom toolbar\n- Start speaking - describe what you want to build\n- Watch as Emergent translates your words into live code and UI\nSuccess\nYou can switch seamlessly between voice and typing at any time - Emergent keeps up with your flow.\n\n## Example Scenarios\n\nSituationWhat You SayWhat Emergent DoesWalking your dog“Make me a simple to-do list app with a dark theme.”Creates a functional to-do list UI + state managementMorning coffee“Add a calendar section below the list and connect it to Google Calendar.”Integrates Google Calendar API and UI componentLate-night idea“Summarize today’s user feedback and display it on a dashboard.”Builds a sentiment-driven analytics dashboard\n\n## See It in Action",
+    "toc": [
+      {
+        "text": "See It in Action",
+        "anchor": "see-it-in-action"
+      }
+    ],
+    "content_length": 2158
+  },
+  {
+    "slug": "github-integration",
+    "title": "GitHub Integration",
+    "section": "Core Features",
+    "nav_group": "Features",
+    "url": "https://help.emergent.sh/github-integration",
+    "content_markdown": "# GitHub Integration\n\n> Connect Emergent with GitHub to seamlessly save, version, and collaborate on your projects - all without leaving your workspace.\nConnect Emergent with GitHub to seamlessly save, version, and collaborate on your projects - all without leaving your workspace.\nEmergent’s GitHub integration lets you manage your projects with version control, collaborate with teams, and back up your work automatically - all from within the Emergent interface.\nYou can connect your GitHub account, push and pull code, manage branches, and collaborate across multiple environments seamlessly.\n\n## Use Case 1: Starting a New Project and Saving to GitHub\n\nInfo\nUse this workflow when you’re starting a brand new app and want to save it to GitHub for version control.\n\n#### Start Your Project\n\n- Begin a new task in Emergent with a project description, e.g. “Build a task management app.”\n- Let the agent build your application.\n- Test it using the Preview feature.\n\n#### Connect GitHub (First Time Only)\n\n- Click your profile icon in Emergent.\n- Select Connect GitHub.\n- Authorize Emergent via the GitHub login screen.\n- Grant access permissions to repositories.\n\n#### Save to GitHub\n\n- Click Save to GitHub in the chat interface.\n- Choose to create a new repository or select an existing one.\n- Select the branch (typically main for new projects).\n- Click PUSH TO GITHUB.\nYour project is now saved with automatic commit messages.\nSuccess\nSave after completing major features, and before big changes, to keep your progress safe and versioned.\n\n## Use Case 2: Continuing Work on an Existing GitHub Repository\n\nInfo\nUse this workflow to continue developing a project that already exists on GitHub.\n\n#### Start a New Task\n\n- Begin a new task in Emergent.\n- Click the GitHub button on the chat screen.\n\n#### Pull from GitHub\n\n- Choose Pull from GitHub.\n- Select your repository from the connected GitHub account.\n- Pick the branch you want to import.\n- Emergent will bring your existing code into your workspace.\n\n#### Continue Development\n\n- Explore files using the file viewer.\n- Add features, fix bugs, and preview updates.\n- Use the chat to guide changes via natural language.\n\n#### Save Progress\n\n- Click Save to GitHub regularly to push updates.\n- Select the same repository and branch.\n- Emergent automatically commits the new changes.\nSuccess\nAlways pull the latest version before starting a new session, especially when working with collaborators.\n\n## Use Case 3: Team Collaboration Workflow\n\nInfo\nEmergent integrates seamlessly with GitHub’s collaboration tools, making it easy for multiple teammates to work on the same project.\n\n#### Project Owner Setup\n\n- Create the initial project in Emergent.\n- Save it to a shared GitHub repository.\n- Add team members as collaborators on GitHub.\n\n#### Team Member Workflow\n\n- Each member connects their GitHub account to Emergent.\n- Pull the shared repository into their workspace.\n- Work on assigned features independently.\n\n#### Using Feature Branches\n\n- When saving, create a new branch (e.g. feature-user-auth, feature-payments).\n- Push changes to this feature branch.\n- Keep main branch stable for production-ready code.\n\n#### Code Integration\n\n- Use pull requests on GitHub to review and merge branches.\n- Merge approved changes into main.\n- Pull the latest version into Emergent to stay up to date.\nSuccess\nUse descriptive branch names and coordinate tasks with your team to avoid conflicts.\nAlways test before merging into main.\n\n## Use Case 4: Managing Multiple Project Versions\n\nInfo\nIf you’re experimenting with different features or want to maintain multiple versions of your app, use branches to manage them effectively.\n\n#### Create an Experimental Branch\n\n- Open your main project in Emergent.\n- Save to GitHub with a new branch name (e.g. experimental-ui).\n- Build and test your experimental features separately.\n\n#### Switch Between Versions\n\n- Main version → Pull from main branch.\n- Experimental version → Pull from experimental-ui branch.\n- Each branch represents a distinct version of your project.\n\n#### Merge Successful Experiments\n\n- Use GitHub’s pull request system to merge successful experiments into the main branch.\n- Delete unneeded branches once merged.\nSuccess\nKeep experimental branches isolated until features are stable and reviewed.\n\n## Use Case 5: Backup and Recovery Workflow\n\nInfo\nEmergent automatically syncs your work to GitHub, ensuring you always have a backup — but you can also manage manual backups for extra safety.\n\n#### Regular Backup Schedule\n\n- Save after completing each major feature.\n- Save before attempting significant refactors or changes.\n- Save at the end of every session.\n\n#### Recovery Process\n\n- If something breaks, start a new task in Emergent.\n- Pull your last saved version from GitHub.\n- Continue development from the last stable commit.\n\n#### Version History\n\n- Use GitHub’s commit history to review or revert changes.\n- Restore any previous state directly from GitHub.\n- Track progress and changes over time.\nSuccess\nSaving regularly to GitHub ensures you can always recover previous versions without losing progress.\n\n## Troubleshooting Common GitHub Issues\n\n\n### Connection Problems\n\nIssue: GitHub connection isn’t working.\nSolution:\n- Go to GitHub → Settings → Applications → Installed GitHub Apps.\n- Find Emergent and uninstall it.\n- Reconnect your GitHub account in Emergent.\n\n### Push Conflicts\n\nIssue: Getting conflict errors when pushing.\nSolution:\nCreate a new branch instead of pushing to main.\nResolve conflicts later through GitHub’s web interface.\nThis preserves your latest work while avoiding overwriting existing code.\n\n### Missing Repositories\n\nIssue: Your repositories aren’t visible in Emergent.\nSolution:\n- Ensure your GitHub account is connected correctly.\n- Verify that Emergent has repository access permissions.\n- Try disconnecting and reconnecting GitHub.\nInfo\nEmergent’s GitHub integration provides full version control, team collaboration, and safe recovery — all through simple prompts and clicks, no setup required.\nSuccess\nYou now have everything you need to manage your code with GitHub inside Emergent — from solo projects to team workflows.",
+    "toc": [
+      {
+        "text": "Use Case 1: Starting a New Project and Saving to GitHub",
+        "anchor": "use-case-1-starting-a-new-project-and-saving-to-github"
+      },
+      {
+        "text": "Connection Problems",
+        "anchor": "connection-problems"
+      },
+      {
+        "text": "Push Conflicts",
+        "anchor": "push-conflicts"
+      },
+      {
+        "text": "Missing Repositories",
+        "anchor": "missing-repositories"
+      }
+    ],
+    "content_length": 6192
+  },
+  {
+    "slug": "universal-key",
+    "title": "Universal Key",
+    "section": "Core Features",
+    "nav_group": "Features",
+    "url": "https://help.emergent.sh/universal-key",
+    "content_markdown": "# Universal Key\n\nSection: Introduction\n> Access GPT, Claude, Gemini, and more through a single Universal Key - one credential, unified billing, and seamless AI integration within Emergent.\nAccess GPT, Claude, Gemini, and more through a single Universal Key - one credential, unified billing, and seamless AI integration within Emergent.\nUniversal Key simplifies LLM integration for Emergent users by providing a single unified API credential that works across multiple AI platforms - GPT, Claude, Gemini, and more - all managed directly within your Emergent account.\n\n## The Problem It Solves\n\nPreviously, users building AI-integrated apps with Emergent had to:\n- Create separate accounts on OpenAI, Anthropic, and Google\n- Manage multiple API keys for GPT, Claude, and Gemini\n- Track different usage limits and billing systems\n- Regenerate or replace credentials across apps\nInfo\nUniversal Key eliminates all of this.\nUse one secure key managed by Emergent to access every supported model.\n\n## Key Benefits\n\nBenefitDescriptionSimplified SetupConnect in minutes - no external API setup required.Unified BillingAll usage is deducted from your Emergent credits. One transparent billing system.Model FlexibilitySwitch between GPT, Claude, and Gemini instantly without reconfiguration.Ease of UsePerfect for non-technical users who want to focus on building, not setup.\nSuccess\nYou can use any supported LLM in your project — all through a single configuration handled by Emergent.\n\n## Technical Capabilities\n\nCapabilityDetailsText Generation ModelsGPT (OpenAI), Claude (Anthropic), Gemini (Google)Image Generation ModelsNano Banana, OpenAI GPT-Image-1Vision SupportFull visual input support - upload images and have models analyze themUnified AccessAll accessible via one Universal Key credential\nInfo\nUniversal Key supports both text and multimodal (image + vision) workflows — no additional credentials or configuration required.\n\n## What You Can Build\n\nUsing the Universal Key, you can build:\n- Chatbots and assistants with vision capabilities\n- Document summarization or content analysis tools\n- Image generation workflows for creative assets\n- Sentiment analysis or classification pipelines\n- Search and Q&A tools for internal knowledge bases\n- Automated agentic workflows powered by Emergent’s multi-agent architecture\nSuccess\nAll powered by a single API credential and unified billing inside Emergent.\n\n## How to Access and Use the Universal Key\n\nYou can access and manage your Universal Key in two ways:\n\n#### Method 1: Use the Agent (Recommended)\n\nThe easiest way to use Universal Key is to simply ask your Emergent agent.\nExample prompt:\n> “Use my Universal API Key for this project.”\nThe agent automatically integrates and configures everything for you.\n“Use my Universal API Key for this project.”\nThe agent automatically integrates and configures everything for you.\n\n#### Method 2: Manual Access\n\nIf you prefer to manage it manually:\n- Click your account icon in Emergent\n- Go to Account Settings\n- Select Universal Key in the sidebar\n- View, disable, or regenerate credentials\n- Open LLM Providers to toggle which models (GPT, Claude, Gemini) are active\n\n## Credit Management and Billing\n\nAll usage through the Universal Key draws from your Emergent Credits balance.\n- Top-Up Anytime: Add more credits via your account dashboard\n- Auto-Recharge: Set automatic reload thresholds (e.g., recharge 500 credits when balance hits 0)\n- Unified Tracking: View and manage model usage across GPT, Claude, and Gemini in one place\nSuccess\nNo separate invoices or billing from OpenAI, Anthropic, or Google — everything is handled inside Emergent.\n\n## Example Use Case\n\nGoal: Build a chatbot that can see, talk, and create.\n- Use Claude for advanced reasoning and responses\n- Use GPT-Image-1 for generating visuals\n- Use Gemini for analyzing uploaded images\nAll three run under a single Universal Key configuration - no extra setup or API juggling required.\nSuccess\nOne credential. Multiple models. Fully managed by Emergent.\n\n## Summary\n\nUniversal Key lets you access multiple AI models - GPT, Claude, Gemini, and others - using a single, secure credential.\nIt simplifies setup, unifies billing, and removes the complexity of managing multiple APIs or keys.\nInfo\nBuild faster with one key that powers every model on Emergent.",
+    "toc": [
+      {
+        "text": "The Problem It Solves",
+        "anchor": "the-problem-it-solves"
+      },
+      {
+        "text": "Key Benefits",
+        "anchor": "key-benefits"
+      },
+      {
+        "text": "Technical Capabilities",
+        "anchor": "technical-capabilities"
+      },
+      {
+        "text": "Credit Management and Billing",
+        "anchor": "credit-management-and-billing"
+      },
+      {
+        "text": "Summary",
+        "anchor": "summary"
+      }
+    ],
+    "content_length": 4324
+  },
+  {
+    "slug": "deployment-on-emergent",
+    "title": "Deployment on Emergent",
+    "section": "Core Features",
+    "nav_group": "Features",
+    "url": "https://help.emergent.sh/deployment-on-emergent",
+    "content_markdown": "# Deployment on Emergent\n\n> The end goal of any app being built on Emergent is to launch it and share it with the world - Here's how you can do that, along with how to solve any hurdles you may face along the way.\nThe end goal of any app being built on Emergent is to launch it and share it with the world - Here's how you can do that, along with how to solve any hurdles you may face along the way.\n\n## The steps in brief\n\nHere's the basics we'll cover:\n\n#### Pre-Deployment Health Check\n\nTesting the readiness of your app for deployment before taking the plunge and committing your credits\n\n#### Deployment\n\nWhere your app comes to life and becomes your shareable creation. (And how to add a custom domain)\n\n## Previewing Your App\n\nThe preview that Emergent provides is a shareable link to your app, but it does expire in 30 minutes. Deploying the app commits resources to ensure your app is ready for 24 x 7 viewing and use by customers, teams and more.\nPreviewing your application is designed to allow you to view the look and feel of the application and iterate on features or allow for troubleshooting - should anything go wrong - before deploying it.\n\n### To Preview Your Live App\n\n- Click the Preview button in the Emergent interface.\n- A preview window will open showing your application's current state.\n- Interact with your application to test functionality.\n- The preview automatically updates when you make changes to your code.\nHere's a simple video to have a look at how that works:\nSuccess\nPreviewing your app is useful to test the end to end functionality of your creations. Verify that all components work as intended and test your app in real-time.\nAt this point, you might identify some inconsistencies between your vision and the look and feel of the app. Here's where the troubleshooting section comes into play.\n\n### Preview Mode Vs. Deployment Mode\n\nThere's a big difference between the Preview and Deployment Modes in Emergent.\nAspectPreview ModeDeployed ModePurposeTesting environmentProduction environmentAccessibilityOnly you can accessPublic URL - anyone can accessPersistenceTemporaryPermanent (until you update)When to useDuring development & testingWhen app is ready for usersChangesLive updates as you developRequires redeploymentURLTemporary preview linkPermanent public URLCostFreePart of your plan\n\n## The Key Differences Explained\n\n\n### 1. Accessibility\n\nPreview:\n- You get a temporary URL like: https://preview-xyz123.emergent.app\n- Only works while the preview session is active\n- Private - requires your session to access\n- Perfect for showing team members: \"Check this preview link for 10 minutes\"\nDeployed:\n- You get a permanent URL like: https://yourapp.emergent.app or custom domain\n- Works 24/7 indefinitely\n- Public - anyone can visit\n- Perfect for: \"Here's my app - go check it out!\"\n\n### 2. Updates & Changes\n\nPreview:\n```\nYou: \"Change the button color to blue\"\nAgent: *makes change*\nYou: *refresh preview - see blue button immediately*\n```\n- Changes appear in real-time (hot reload)\n- Perfect for rapid iteration\n- See updates instantly\nDeployed:\n```\nYou: \"Change the button color to blue\"\nAgent: *makes change*\nYou: Need to redeploy for users to see it\nAgent: *deploys new version*\nYou: *now public site shows blue button*\n```\n- Requires redeployment to update\n- Ensures stability (no surprise changes for users)\n- Controlled release process\n\n### 3. Purpose & Intent\n\nPreview = \"Does it work?\"\n- Testing environment\n- Catch bugs before users see them\n- Verify features function correctly\n- Safe space to experiment\n- No consequences if something breaks\nDeployed = \"It's live!\"\n- Production environment\n- Real users are using it\n- Should be stable and tested\n- Represents your business/product\n- Issues affect real users\n\n## Troubleshooting and Debugging\n\nHere are the different methods of troubleshooting the preview version of your app so that it's ready to go live and shared with the world.\n\n#### For Missing Functionalities\n\nIn case of hurdles in implementing app functionalities.\n\n#### For Design Tweaking\n\nIn case of inconsistencies in design while creating your app.\n\n#### Deployment Errors\n\nSome common errors you may face during app deployment.\n\n#### Pre-Deployment Health Check\n\nAn easy way to ensure a successful deployment.",
+    "toc": [
+      {
+        "text": "The steps in brief",
+        "anchor": "the-steps-in-brief"
+      },
+      {
+        "text": "Previewing Your App",
+        "anchor": "previewing-your-app"
+      },
+      {
+        "text": "To Preview Your Live App",
+        "anchor": "to-preview-your-live-app"
+      },
+      {
+        "text": "Preview Mode Vs. Deployment Mode",
+        "anchor": "preview-mode-vs-deployment-mode"
+      },
+      {
+        "text": "Troubleshooting and Debugging",
+        "anchor": "troubleshooting-and-debugging"
+      }
+    ],
+    "content_length": 4285
+  },
+  {
+    "slug": "context-limits",
+    "title": "Context Limits",
+    "section": "Core Features",
+    "nav_group": "Features",
+    "url": "https://help.emergent.sh/context-limits",
+    "content_markdown": "# Context Limits\n\nInfo\nTLDR: \nContext = Everything the AI remembers about your project and conversation. More context = Better understanding = Better results!\nContext in Emergent refers to the conversation memory and project knowledge that the AI agent maintains throughout your development session. Think of it as the agent's \"working memory\" - it includes everything from your conversation history, the code that's been written, architectural decisions made, bugs fixed, features added, and your project requirements.\nEmergent uses a structured memory architecture that allows agents to maintain long sessions, preserve technical decisions, and coordinate work across sub-agents. This guide explains how that memory is stored, prioritized, and passed through the system.\n\n### Standard Context Window\n\nAll Emergent agents operate with a 200,000 token context limit as the primary context window.\nWhat This Means:\n- Sufficient for most full-stack MVP development\n- Handles complex conversations with multiple features\n- Supports extensive debugging and iteration\nTip\nEmergent may reach limits on very complex, long-running projects - which is where Forking comes into play. Read about it here.\n\n## Main Agent Context Architecture\n\nEmergent provides three types of main agents. Each one manages memory differently based on its purpose and workload.\nAgentSpecializationBest ForE1Stable, comprehensive testing (production-ready)Standard full-stack development with thorough testingE1.5Focused, complex long-running tasksExtended development sessions requiring sustained focusE2Thorough and relentless problem-solvingComplex architectural challenges and difficult bugsMobileExpo/React Native developmentMobile app development (paid users only)Pro ModeCustom agent creationSpecialized workflows and custom configurations\n\n### E1 Agent (Standard)\n\nContext Window: About 200,000 tokens\nMemory Management: Keeps the complete conversation history until the context limit is near\nContext Retention: Holds all code changes, architectural decisions, and requirements throughout the session\nInfo\nThis agent is best for standard full-stack development with thorough testing\n\n### E1.5 Agent (Focused)\n\nSpecialized Context: Tuned for complex sessions that run for long periods\nEnhanced Memory: Better at maintaining continuity across extended development cycles\nContext Prioritization: Organizes memory to support deep problem solving\nInfo\nBest agent for extended development sessions requiring sustained focus\n\n### E2 Agent (Comprehensive - Currently in Beta)\n\nProduction Readiness: Thorough and relentless problem-solving\nMemory Allocation: Balances historical data with the need for ongoing quality checks\nBest Suited For: Complex architectural challenges and difficult bugs\nTip\nFor starting out, E1 is the standard agent - it should be comfortably able to handle most starter to intermediate projects.\n\n## Sub-Agent Context Handling\n\nSub-agents receive a filtered snapshot of the main agent’s memory so they can operate with a narrow focus.\n\n### Testing Sub-Agents (Backend and Frontend)\n\nContext Inheritance: Receive structured summaries from the main agent\nFocused Memory: Store only testing criteria and conditions\nLimited Scope: Ignore unrelated parts of the project\n\n### Integration Agent\n\nAPI Context: Holds details about third-party services and configuration\nService Memory: Remembers authentication flows and integration patterns\nSpecialized Knowledge: Uses domain-specific context for external systems\n\n### Image Sub-Agent\n\nVisual Context: Tracks image requirements and generation parameters\nAsset Memory: Holds style preferences, sizing rules, and usage patterns\n\n## Context Window Management\n\nEmergent organizes memory to support long sessions while protecting key project details.\n\n#### Token Limits\n\nMain agents have about 200,000 tokens available. Sub-agents work within smaller windows that fit their responsibilities.\nTip\nA warning appears when sessions approach their limit. You can periodically push data to GitHub, or fork the session and continue. More on that later!\n\n#### Memory Retention Strategies\n\nFull conversation history is maintained until space runs low. When memory must be compressed, only the essential information is preserved. The current codebase is always retained.\n\n## Context Passing Between Agents\n\nAgents cooperate by sharing memory in a structured and predictable way.\n\n### For Main to Sub-Agents:\n\n- Summarized project context\n- Task-specific details\n- The current project state when required\n\n### From Sub-Agents to Main\n\n- Test results, generated assets, or integration output\n- Memory updates that become part of the main context\n- Full synchronization so the project remains aligned\n\n## Chat Forking for Context Management\n\nEmergent creates new forks when the context approaches its maximum size. Forking preserves essential information and compresses older details. Here's an overview of the parts of your project this feature touches:\nInfo\nFor more details about Forking, including when to fork and when to start fresh instead, visit the Forking Section.",
+    "toc": [
+      {
+        "text": "Main Agent Context Architecture",
+        "anchor": "main-agent-context-architecture"
+      },
+      {
+        "text": "E1 Agent (Standard)",
+        "anchor": "e1-agent-standard"
+      },
+      {
+        "text": "E1.5 Agent (Focused)",
+        "anchor": "e1-5-agent-focused"
+      },
+      {
+        "text": "E2 Agent (Comprehensive - Currently in Beta)",
+        "anchor": "e2-agent-comprehensive-currently-in-beta"
+      },
+      {
+        "text": "Sub-Agent Context Handling",
+        "anchor": "sub-agent-context-handling"
+      },
+      {
+        "text": "Testing Sub-Agents (Backend and Frontend)",
+        "anchor": "testing-sub-agents-backend-and-frontend"
+      },
+      {
+        "text": "Integration Agent",
+        "anchor": "integration-agent"
+      },
+      {
+        "text": "Image Sub-Agent",
+        "anchor": "image-sub-agent"
+      },
+      {
+        "text": "Context Window Management",
+        "anchor": "context-window-management"
+      },
+      {
+        "text": "From Sub-Agents to Main",
+        "anchor": "from-sub-agents-to-main"
+      },
+      {
+        "text": "Chat Forking for Context Management",
+        "anchor": "chat-forking-for-context-management"
+      }
+    ],
+    "content_length": 5092
+  },
+  {
+    "slug": "mobile-app-development",
+    "title": "Mobile App Development",
+    "section": "Core Features",
+    "nav_group": "Features",
+    "url": "https://help.emergent.sh/mobile-app-development",
+    "content_markdown": "# Mobile App Development\n\n> Build and deploy mobile apps with Expo/React Native\nBuild and deploy mobile apps with Expo/React Native\n\n## Mobile App Development on Emergent\n\nEmergent supports cross-platform mobile app development using Expo (React Native framework). Build apps for both iOS and Android from a single codebase!\nWhat you can build:\n- iOS apps\n- Android apps\n- Cross-platform apps\n- Production-ready mobile applications\n\n## Requirements\n\n\n#### Paid Subscription\n\nRequired!\n```\nMobile Agent only available on paid plans (\\$20+/month)\n\nNot available on Free Tier\n```\n\n#### Tech Stack\n\nFixed Stack:\n```\n* Frontend: Expo (React Native)\n* Backend: FastAPI\n* Database: MongoDB\n```\nInfo\nSupported: Expo/React Native only\nNot Supported: Flutter, native Kotlin, native Swift\n\n## How to Access Mobile Agent\n\n\n#### Have Paid Subscription\n\nUpgrade to any paid plan ($20+/month)\n\n#### Go to Home Screen\n\nReturn to Emergent home screen\n\n#### Select Mobile Agent\n\nClick agent dropdown (shows \"E1\", \"E1.5\", etc.)\nChoose \"Mobile\"\n\n#### Describe Your App\n\nEnter what you want to build:\n```\nI want to build a mobile app for [purpose].\n\nFeatures:\n- [Feature 1]\n- [Feature 2]\n- [Feature 3]\n\nPlease create an Expo/React Native app.\n```\n\n#### Start Building\n\nClick \"Start Task\"\nMobile Agent starts building your app!\n\n## What is Expo?\n\nExpo is a framework built on top of React Native that makes mobile development easier.\nKey Benefits:\n- Write once, run on iOS and Android\n- Hot reload during development\n- Access to native device features\n- Easy deployment with EAS\n- Over-the-air updates\nWhat you can access:\n- Camera and photos\n- Location services\n- Push notifications\n- File system\n- Sensors (accelerometer, gyroscope)\n- And much more!\n\n## Development Workflow\n\n\n### 1. Build with Mobile Agent\n\nTell the agent what you need:\n```\nI need a mobile app for tracking workouts.\n\nFeatures:\n- User authentication\n- Log workouts (exercise, sets, reps)\n- View workout history\n- Charts showing progress\n- Dark mode\n\nBackend:\n- FastAPI REST API\n- MongoDB for data storage\n- User accounts\n\nPlease build this mobile app with Expo.\n```\nThe agent will:\n- Create Expo project structure\n- Set up React Native components\n- Build FastAPI backend\n- Configure MongoDB\n- Implement all features\n\n### 2. Test in Preview\n\nDuring development:\n- Preview functionality available\n- Test on development build\n- Frontend testing subagent for UI tests\n- Debug and iterate\nBest practices:\n```\nAfter each major feature, tell agent:\n\"Test the [feature name] thoroughly with the testing subagent\"\n```\n\n### 3. Download Your Code\n\nWhen ready to deploy:\n- Use Emergent's file management tools\n- Download your complete project\n- Get all mobile app files locally\nYour project includes:\n- Expo app code\n- FastAPI backend\n- Configuration files\n- Assets and resources\n\n## Deploying to App Stores\n\n\n### Overview: Using Expo EAS\n\nEAS (Expo Application Services) handles building and submitting your app to stores.\nWhat EAS does:\n- Builds native app binaries (APK/AAB for Android, IPA for iOS)\n- Submits apps to Google Play Store and Apple App Store\n- Provides over-the-air updates\n- All builds happen in the cloud (no Xcode or Android Studio needed!)\n\n## Step-by-Step Deployment Guide\n\n\n### Prerequisites\n\nWhat you'll need:\n\n#### Expo Account\n\nSign up at expo.dev\n```\nFree tier: 30 builds/month\n\nPaid: More builds (\\$29/month)\n```\n\n#### Developer Accounts\n\nGoogle Play: $25 one-time\n```\n**Apple App Store:** \\$99/year\n\n(Only need the stores you're targeting)\n```\n\n### Step 1: Set Up EAS Locally\n\nAfter downloading your code from Emergent:\n```\nBashCopy# Navigate to your mobile app folder\ncd your-mobile-app\n\n# Install EAS CLI globally\nnpm install -g eas-cli\n\n# Login to your Expo account\neas login\n\n# Configure EAS for your project\neas build:configure\n```\n```\n# Navigate to your mobile app folder\ncd your-mobile-app\n\n# Install EAS CLI globally\nnpm install -g eas-cli\n\n# Login to your Expo account\neas login\n\n# Configure EAS for your project\neas build:configure\n```\nThis creates eas.json:\n```\nJSONCopy{\n  \"build\": {\n    \"development\": {\n      \"developmentClient\": true,\n      \"distribution\": \"internal\"\n    },\n    \"preview\": {\n      \"distribution\": \"internal\"\n    },\n    \"production\": {\n      \"android\": {\n        \"buildType\": \"apk\"\n      }\n    }\n  }\n}\n```\n```\n{\n  \"build\": {\n    \"development\": {\n      \"developmentClient\": true,\n      \"distribution\": \"internal\"\n    },\n    \"preview\": {\n      \"distribution\": \"internal\"\n    },\n    \"production\": {\n      \"android\": {\n        \"buildType\": \"apk\"\n      }\n    }\n  }\n}\n```\n\n### Step 2: Build for Android\n\nBuild APK/AAB file:\n```\nBashCopy# Build production Android app\neas build --platform android --profile production\n\n# EAS will ask:\n# - Generate a new keystore? → Yes (first time)\n# - App identifier? → com.yourname.appname\n\n# Build starts on Expo's servers\n# Takes 15-30 minutes\n```\n```\n# Build production Android app\neas build --platform android --profile production\n\n# EAS will ask:\n# - Generate a new keystore? → Yes (first time)\n# - App identifier? → com.yourname.appname\n\n# Build starts on Expo's servers\n# Takes 15-30 minutes\n```\nWhat happens:\n- Code uploaded to Expo servers\n- Native Android app compiled\n- Signed with your keystore\n- AAB file generated\nYou'll get:\n- Download link for AAB file\n- Build available in Expo dashboard\n\n### Step 3: Build for iOS\n\nBuild IPA file:\n```\nBashCopy# Build production iOS app\neas build --platform ios --profile production\n\n# EAS will ask:\n# - Bundle identifier? → com.yourname.appname\n# - Use Apple credentials? → Yes\n\n# Build starts on Expo's servers\n# Takes 20-40 minutes\n```\n```\n# Build production iOS app\neas build --platform ios --profile production\n\n# EAS will ask:\n# - Bundle identifier? → com.yourname.appname\n# - Use Apple credentials? → Yes\n\n# Build starts on Expo's servers\n# Takes 20-40 minutes\n```\nRequirements:\n- Apple Developer account\n- Agree to terms in App Store Connect\nYou'll get:\n- Download link for IPA file\n- Build available in Expo dashboard\nInfo\nNo Mac needed - EAS builds iOS apps in the cloud. You don't need a Mac or Xcode.\n\n### Step 4: Submit to Google Play Store\n\n\n#### Create App in Google Play Console\n\n- Go to play.google.com/console\n- Click Create app\n- Fill in details:\n\nApp name\nDefault language\nApp type (app or game)\nFree or paid\n- App name\n- Default language\n- App type (app or game)\n- Free or paid\n\n#### Prepare Store Listing\n\nRequired information:\n- App description (short and full)\n- Screenshots (phone, tablet)\n- Feature graphic\n- App icon\n- Privacy policy URL\n- Content rating questionnaire\n\n#### Submit with EAS\n\n```\nBashCopy# Submit to Google Play Store\neas submit --platform android\n\n# Provide when prompted:\n# - Google Service Account JSON key\n# - Track to submit to (internal, alpha, beta, production)\n```\n```\n# Submit to Google Play Store\neas submit --platform android\n\n# Provide when prompted:\n# - Google Service Account JSON key\n# - Track to submit to (internal, alpha, beta, production)\n```\nGetting Service Account Key:\n- Google Cloud Console → IAM & Admin → Service Accounts\n- Create service account\n- Grant \"Service Account User\" role\n- Download JSON key file\nReview process:\n- Usually 1-7 days\n- May require changes\n- Check Play Console for status\n\n### Step 5: Submit to Apple App Store\n\n\n#### Create App in App Store Connect\n\n- Go to appstoreconnect.apple.com\n- Click My Apps → + → New App\n- Fill in details:\n\nPlatform (iOS)\nApp name\nPrimary language\nBundle ID\nSKU (unique identifier)\n- Platform (iOS)\n- App name\n- Primary language\n- Bundle ID\n- SKU (unique identifier)\n\n#### Prepare App Store Listing\n\nRequired information:\n- App description\n- Keywords\n- Screenshots (various iPhone sizes)\n- App preview videos (optional)\n- Privacy policy URL\n- Age rating\n\n#### Submit with EAS\n\n```\nBashCopy# Submit to Apple App Store\neas submit --platform ios\n\n# Provide when prompted:\n# - Apple App Store Connect API Key\n# - App Apple ID\n```\n```\n# Submit to Apple App Store\neas submit --platform ios\n\n# Provide when prompted:\n# - Apple App Store Connect API Key\n# - App Apple ID\n```\nGetting API Key:\n- App Store Connect → Users and Access → Keys\n- Generate new key with \"App Manager\" access\n- Download key file\nReview process:\n- Usually 1-3 days\n- May be rejected (follow guidelines)\n- Check App Store Connect for status\n\n## App Store Requirements\n\n\n## App Store Requirements\n\n\n### Google Play Store\n\n- App name and description\n- Screenshots (at least 2)\n- Feature graphic (1024x500)\n- High-res icon (512x512)\n- Privacy policy URL\n- Content rating\n- Target age group\n- Target API level 33+ (Android 13)\n- AAB format (not APK for production)\n- 64-bit support\n- Proper permissions declared\n- Size limits (varies, generally under 150MB)\n- Data safety form completed\n- Privacy policy posted\n- Permissions justified\n- COPPA compliance (if targeting children)\n\n### Apple App Store\n\n- App name and subtitle\n- Description (up to 4000 characters)\n- Keywords\n- Screenshots for all device sizes\n- App icon (1024x1024)\n- Privacy policy URL\n- Age rating\n- Copyright info\n- iOS 13.0+ minimum\n- Valid provisioning profile\n- Proper app signing\n- Size limits (4GB max)\n- No crashes or bugs\n- Follow Apple's guidelines\n- No private APIs\n- Proper content rating\n- Clear app purpose\n- Functional app (no placeholders)\nUpdate your app without resubmitting to stores!\n\n### What Can Be Updated\n\nCan Update:\n- JavaScript code\n- React components\n- Assets (images, fonts)\n- App logic and UI\nCannot Update:\n- Native modules\n- app.json configuration\n- Permissions\n- Native code (Java/Kotlin/Swift)\n\n### How to Push Updates\n\nAfter making changes:\n```\nBashCopy# Make your code changes\n# Then push update:\n\neas update --branch production --message \"Bug fixes and improvements\"\n\n# Or for specific platforms:\neas update --platform android --branch production\neas update --platform ios --branch production\n```\n```\n# Make your code changes\n# Then push update:\n\neas update --branch production --message \"Bug fixes and improvements\"\n\n# Or for specific platforms:\neas update --platform android --branch production\neas update --platform ios --branch production\n```\nUsers get updates:\n- Next time they open the app\n- Automatically in the background\n- No app store download needed\nPerfect for:\n- Bug fixes\n- UI tweaks\n- Feature updates\n- Content changes\n\n## Testing Your Mobile App\n\n\n### During Development (On Emergent)\n\nUse preview and testing tools:\n```\nTell the agent:\n\"Test the mobile app thoroughly:\n- All screens and navigation\n- User authentication flow\n- Data fetching and display\n- Error handling\n- Forms and validation\n\nUse the frontend testing subagent.\"\n```\nYou can also preview on mobile via the Expo Go app.\n\n### After Download (Local Testing)\n\nExpo Go App (Quick Testing):\n```\nBashCopy# Start development server\nnpx expo start\n\n# Scan QR code with:\n# - Expo Go app (iOS/Android)\n# - Camera app (iOS)\n```\n```\n# Start development server\nnpx expo start\n\n# Scan QR code with:\n# - Expo Go app (iOS/Android)\n# - Camera app (iOS)\n```\nBenefits:\n- Instant testing on real device\n- No build needed\n- Fast iteration\nLimitations:\n- Some native modules won't work\n- Not identical to production\nDevelopment Build (Full Testing):\n```\nBashCopy# Build development version\neas build --platform android --profile development\neas build --platform ios --profile development\n\n# Install on device\n# Test exactly like production\n```\n```\n# Build development version\neas build --platform android --profile development\neas build --platform ios --profile development\n\n# Install on device\n# Test exactly like production\n```\nBenefits:\n- Full native module support\n- Identical to production\n- Test everything\n\n## Common Scenarios\n\n\n### Scenario 1: Building First Mobile App\n\n```\nTell Mobile Agent:\n\n\"I want to build a note-taking mobile app.\n\nFeatures:\n- User signup/login\n- Create, edit, delete notes\n- Organize notes with folders\n- Search functionality\n- Dark mode\n- Offline support\n\nBackend:\n- FastAPI REST API\n- MongoDB database\n- JWT authentication\n\nPlease create this as an Expo app.\"\n```\n\n### Scenario 2: App with Camera Access\n\n```\nTell Mobile Agent:\n\n\"Build a photo sharing mobile app.\n\nFeatures:\n- Take photos with camera\n- Choose from gallery\n- Add filters/effects\n- Upload to server\n- View feed of photos\n- Like and comment\n\nInclude proper permissions for camera and photo library.\n\nPlease build with Expo.\"\n```\n\n### Scenario 3: Location-Based App\n\n```\nTell Mobile Agent:\n\n\"Create a location tracking mobile app.\n\nFeatures:\n- Track user's current location\n- Show on map\n- Save favorite locations\n- Get directions\n- Location history\n- Share location\n\nInclude location permissions.\n\nPlease build with Expo.\"\n```\n\n## Troubleshooting\n\n\n### Build Failures\n\nIssue: EAS build fails\nSolutions:\n```\nBashCopy# Check build logs\neas build:list\n\n# View specific build\neas build:view [build-id]\n\n# Common fixes:\n# 1. Check app.json configuration\n# 2. Verify dependencies are compatible\n# 3. Check for native module issues\n# 4. Review error messages carefully\n```\n```\n# Check build logs\neas build:list\n\n# View specific build\neas build:view [build-id]\n\n# Common fixes:\n# 1. Check app.json configuration\n# 2. Verify dependencies are compatible\n# 3. Check for native module issues\n# 4. Review error messages carefully\n```\n\n### Submission Rejected\n\nGoogle Play:\n- Follow rejection reasons exactly\n- Update app accordingly\n- Resubmit\nApple App Store:\n- Review rejection details\n- Fix issues mentioned\n- Reply to reviewer if needed\n- Resubmit\n\n### Updates Not Appearing\n\nCheck:\n```\nBashCopy# View published updates\neas update:list --branch production\n\n# Check specific update\neas update:view [update-id]\n\n# Republish if needed\neas update --branch production --message \"Republish\"\n```\n```\n# View published updates\neas update:list --branch production\n\n# Check specific update\neas update:view [update-id]\n\n# Republish if needed\neas update --branch production --message \"Republish\"\n```\n\n## EAS Pricing\n\n\n### Free Tier\n\n- 30 builds per month\n- Unlimited EAS Updates\n- Community support\nGood for:\n- Development and testing\n- Small projects\n- Learning\n\n### Production Plan\n\n- $29/month\n- More builds\n- Priority build queue\n- Better for active development\nGood for:\n- Professional apps\n- Multiple apps\n- Frequent updates\n\n### Enterprise\n\n- Custom pricing\n- Unlimited builds\n- Dedicated support\n- SLA guarantees\nGood for:\n- Large teams\n- Mission-critical apps\n- Many apps\n\n## Best Practices\n\n\n### Development\n\nStart simple:\n```\nBuild core features first\nTest thoroughly\nAdd advanced features later\n```\nTest on real devices:\n```\nUse Expo Go during development\nBuild development builds for full testing\nTest on both iOS and Android\n```\nUse version control:\n```\nCommit changes regularly\nUse Git for version management\nTag releases\n```\n\n### Deployment\n\nBefore submitting:\n- Tested all features thoroughly\n- No console errors or warnings\n- Proper app icons and splash screens\n- Privacy policy in place\n- Store listing prepared\n- Screenshots captured\n- Tested on multiple devices\nBuild strategy:\n```\nDevelopment → Internal Testing → Beta → Production\n```\nUpdate strategy:\n```\nUse OTA updates for JavaScript changes\nRebuild for native changes\nTest updates before pushing\n```\n\n### Maintenance\n\nMonitor your app:\n- Check crash reports\n- Review user feedback\n- Monitor performance\n- Track analytics\nUpdate regularly:\n```\nBug fixes via OTA updates\nFeature updates with app versions\nSecurity patches promptly\n```\n\n## Resources\n\n\n### Expo Documentation\n\n- Expo Docs\n- EAS Build\n- EAS Submit\n- EAS Update\n\n### App Store Guidelines\n\n- Google Play Policies\n- Apple App Store Guidelines\n\n### Emergent Support\n\n- Discord: discord.gg/VzKfwCXC4A\n- Email: support@emergent.sh\n\n## Getting Help\n\n\n### From Emergent\n\nFor Mobile Agent issues:\n```\nContact Emergent support:\n- Discord community\n- Email support\n- Describe your mobile app requirements\n```\nFor code/feature help:\n```\nTell the Mobile Agent:\n\"I need help with [specific issue in mobile app].\nCurrent behavior: [describe]\nExpected behavior: [describe]\nPlease debug and fix.\"\n```\n\n### From Expo\n\nFor EAS issues:\n- Check Expo Status\n- Review Expo Forums\n- Join Expo Discord\nFor build issues:\n- Review build logs carefully\n- Check Expo documentation\n- Search existing issues\n- Ask in Expo community\n\n## Quick Reference\n\n\n### Essential Commands\n\n```\nBashCopy# Setup\nnpm install -g eas-cli\neas login\neas build:configure\n\n# Building\neas build --platform android --profile production\neas build --platform ios --profile production\neas build --platform all --profile production\n\n# Submitting\neas submit --platform android\neas submit --platform ios\n\n# Updating\neas update --branch production --message \"Description\"\n\n# Checking\neas build:list\neas update:list\n```\n```\n# Setup\nnpm install -g eas-cli\neas login\neas build:configure\n\n# Building\neas build --platform android --profile production\neas build --platform ios --profile production\neas build --platform all --profile production\n\n# Submitting\neas submit --platform android\neas submit --platform ios\n\n# Updating\neas update --branch production --message \"Description\"\n\n# Checking\neas build:list\neas update:list\n```\n\n### Development Workflow\n\n```\n1. Build with Mobile Agent on Emergent\n   ↓\n2. Test in Preview\n   ↓\n3. Download code locally\n   ↓\n4. Set up EAS\n   ↓\n5. Build with EAS\n   ↓\n6. Test builds on devices\n   ↓\n7. Submit to stores\n   ↓\n8. Wait for approval\n   ↓\n9. App goes live!\n   ↓\n10. Push updates with EAS Update\n```\n\n## Remember\n\nMobile Agent requires paid subscription\n\n## Remember\n\nMobile Agent requires paid subscription\nOnly Expo/React Native supported\nEAS handles building and deployment\nNo Mac needed for iOS builds\nOTA updates for JavaScript changes\nTest thoroughly before submitting\nBoth stores require developer accounts\nReview processes take 1-7 days\nInfo\nGetting started: Build your app with Mobile Agent, download the code, then use EAS to deploy to app stores. The Mobile Agent handles the complex Expo setup for you!\nHave questions? Contact Emergent support for help with mobile development!",
+    "toc": [
+      {
+        "text": "Mobile App Development on Emergent",
+        "anchor": "mobile-app-development-on-emergent"
+      },
+      {
+        "text": "Requirements",
+        "anchor": "requirements"
+      },
+      {
+        "text": "How to Access Mobile Agent",
+        "anchor": "how-to-access-mobile-agent"
+      },
+      {
+        "text": "What is Expo?",
+        "anchor": "what-is-expo"
+      },
+      {
+        "text": "Development Workflow",
+        "anchor": "development-workflow"
+      },
+      {
+        "text": "1. Build with Mobile Agent",
+        "anchor": "1-build-with-mobile-agent"
+      },
+      {
+        "text": "2. Test in Preview",
+        "anchor": "2-test-in-preview"
+      },
+      {
+        "text": "3. Download Your Code",
+        "anchor": "3-download-your-code"
+      },
+      {
+        "text": "Deploying to App Stores",
+        "anchor": "deploying-to-app-stores"
+      },
+      {
+        "text": "Overview: Using Expo EAS",
+        "anchor": "overview-using-expo-eas"
+      },
+      {
+        "text": "Step-by-Step Deployment Guide",
+        "anchor": "step-by-step-deployment-guide"
+      },
+      {
+        "text": "Prerequisites",
+        "anchor": "prerequisites"
+      },
+      {
+        "text": "Step 1: Set Up EAS Locally",
+        "anchor": "step-1-set-up-eas-locally"
+      },
+      {
+        "text": "Step 2: Build for Android",
+        "anchor": "step-2-build-for-android"
+      },
+      {
+        "text": "Step 3: Build for iOS",
+        "anchor": "step-3-build-for-ios"
+      },
+      {
+        "text": "Step 4: Submit to Google Play Store",
+        "anchor": "step-4-submit-to-google-play-store"
+      },
+      {
+        "text": "Step 5: Submit to Apple App Store",
+        "anchor": "step-5-submit-to-apple-app-store"
+      },
+      {
+        "text": "App Store Requirements",
+        "anchor": "app-store-requirements"
+      },
+      {
+        "text": "Google Play Store",
+        "anchor": "google-play-store"
+      },
+      {
+        "text": "Apple App Store",
+        "anchor": "apple-app-store"
+      },
+      {
+        "text": "What Can Be Updated",
+        "anchor": "what-can-be-updated"
+      },
+      {
+        "text": "How to Push Updates",
+        "anchor": "how-to-push-updates"
+      },
+      {
+        "text": "Testing Your Mobile App",
+        "anchor": "testing-your-mobile-app"
+      },
+      {
+        "text": "During Development (On Emergent)",
+        "anchor": "during-development-on-emergent"
+      },
+      {
+        "text": "After Download (Local Testing)",
+        "anchor": "after-download-local-testing"
+      },
+      {
+        "text": "Common Scenarios",
+        "anchor": "common-scenarios"
+      },
+      {
+        "text": "Scenario 1: Building First Mobile App",
+        "anchor": "scenario-1-building-first-mobile-app"
+      },
+      {
+        "text": "Scenario 2: App with Camera Access",
+        "anchor": "scenario-2-app-with-camera-access"
+      },
+      {
+        "text": "Scenario 3: Location-Based App",
+        "anchor": "scenario-3-location-based-app"
+      },
+      {
+        "text": "Troubleshooting",
+        "anchor": "troubleshooting"
+      },
+      {
+        "text": "Build Failures",
+        "anchor": "build-failures"
+      },
+      {
+        "text": "Submission Rejected",
+        "anchor": "submission-rejected"
+      },
+      {
+        "text": "Updates Not Appearing",
+        "anchor": "updates-not-appearing"
+      },
+      {
+        "text": "EAS Pricing",
+        "anchor": "eas-pricing"
+      },
+      {
+        "text": "Free Tier",
+        "anchor": "free-tier"
+      },
+      {
+        "text": "Production Plan",
+        "anchor": "production-plan"
+      },
+      {
+        "text": "Enterprise",
+        "anchor": "enterprise"
+      },
+      {
+        "text": "Best Practices",
+        "anchor": "best-practices"
+      },
+      {
+        "text": "Development",
+        "anchor": "development"
+      },
+      {
+        "text": "Deployment",
+        "anchor": "deployment"
+      },
+      {
+        "text": "Maintenance",
+        "anchor": "maintenance"
+      },
+      {
+        "text": "Resources",
+        "anchor": "resources"
+      },
+      {
+        "text": "Expo Documentation",
+        "anchor": "expo-documentation"
+      },
+      {
+        "text": "App Store Guidelines",
+        "anchor": "app-store-guidelines"
+      },
+      {
+        "text": "Emergent Support",
+        "anchor": "emergent-support"
+      },
+      {
+        "text": "Getting Help",
+        "anchor": "getting-help"
+      },
+      {
+        "text": "From Emergent",
+        "anchor": "from-emergent"
+      },
+      {
+        "text": "From Expo",
+        "anchor": "from-expo"
+      },
+      {
+        "text": "Quick Reference",
+        "anchor": "quick-reference"
+      },
+      {
+        "text": "Essential Commands",
+        "anchor": "essential-commands"
+      },
+      {
+        "text": "Remember",
+        "anchor": "remember"
+      }
+    ],
+    "content_length": 18001
+  },
+  {
+    "slug": "teams-plan-collaboration",
+    "title": "Teams Plan & Collaboration",
+    "section": "Core Features",
+    "nav_group": "Features",
+    "url": "https://help.emergent.sh/teams-plan-collaboration",
+    "content_markdown": "# Teams Plan & Collaboration\n\nCollaborate seamlessly with your team using shared workspaces, pooled credits, and unified project management.\nEmergent Teams transforms how your organization builds AI applications — giving you shared workspaces, pooled credits, and real-time collaboration without compromising individual productivity.\nEvery team member maintains their personal workspace for independent projects while accessing a collaborative team environment for shared work.\n\n## What's Included\n\nFeatureDescriptionShared WorkspaceCollaborate on projects with full visibility across all team members1,250 Shared CreditsPooled credit balance accessible to all team members (resets monthly)All Pro FeaturesFull access to advanced models, custom agents, and premium capabilitiesUp to 5 MembersInclude yourself plus 4 team members (contact support for larger teams)Multiple AdminsDesignate multiple team administrators for flexible managementUsage & Billing DashboardTrack credit consumption and manage payments (admin only)\nInfo\nPrice: $300/month\nTeams Plan gives you everything in Pro Mode, plus collaboration features designed for team productivity.\n\n## Personal vs. Team Workspaces\n\nYour personal workspace and team workspace are completely separate environments:\nElementPersonal WorkspaceTeam WorkspaceProjectsOnly you can see and accessAll team members can view and collaborateCreditsYour individual credit balanceShared pool of 1,250 credits/monthCustom AgentsPrivate to your accountAccessible to all team membersUniversal KeysYour personal API integrationsShared API integrations for the team\nTip\nSwitch between workspaces instantly using the switcher at the top of your chat interface.\n\n## Creating Your Team Workspace\n\nYou can create a team workspace from two entry points:\n\n### Option 1: From the Workspace Switcher\n\n\n#### Open the Switcher\n\nClick the workspace switcher at the top of your chat interface.\n\n#### Create New Workspace\n\nSelect \"Create New Workspace\" and enter your organization name.\n\n#### Complete Payment\n\nProcess the $300/month payment to activate your workspace.\n\n#### Invite Team Members\n\nAdd up to 4 additional members via email invitation.\n\n### Option 2: From Pricing/Upgrade Menu\n\n\n#### Access Pricing\n\nClick the hamburger menu (top right) and select \"Upgrade\" or \"Pricing\".\n\n#### Choose Teams Plan\n\nSelect the \"Teams Plan\" from the available options.\n\n#### Complete Payment\n\nProcess payment — your workspace will be created automatically using your account name.\n\n#### Invite Team Members\n\nAdd team members through the collaboration modal.\nWarning\nImportant: You can only create one team workspace per account. If you need multiple teams, contact support.\n\n## Managing Team Members\n\n\n### Admin Capabilities\n\nTeam admins have full control over workspace management:\n- Invite new members (up to 5 total including admins)\n- Modify member roles (promote/demote admins)\n- Remove team members\n- Top up shared credits\n- Access usage and billing dashboard\nInfo\nYou can designate multiple admins — they'll all have the same management capabilities.\n\n### Member Capabilities\n\nMembers (non-admin) have full access to:\n- All Pro Mode features\n- Shared workspace projects\n- Custom agents and universal keys (within team workspace)\n- Collaborative project editing\nMembers cannot:\n- Access usage and billing information\n- Purchase additional credits\n- Invite or remove team members\n\n## Inviting Team Members\n\n\n#### Access Team Settings\n\nNavigate to \"Settings\" → \"Team\" (visible only after creating a workspace).\n\n#### Send Invitations\n\nEnter team member email addresses and click \"Send Invite\".\n\n#### Track Invitation Status\n\nInvited members will receive:\n- Email notification with invitation link\n- In-app modal when they next log into Emergent\n\n### Invitation Responses\n\nActionResultAcceptImmediately joins the team workspaceDeclineInvitation is rejectedDecide LaterInvitation remains pending until action is taken\nTip\nTeam members can accept invitations at their convenience — pending invites persist until action is taken.\n\n## Switching Between Workspaces\n\nToggle instantly between your personal and team workspaces:\n- Click the workspace switcher at the top of your chat\n- Select your desired workspace from the dropdown\n- All projects, credits, and settings automatically switch to that context\nInfo\nYour personal workspace remains fully independent — projects and resources never mix between personal and team environments.\n\n## Settings & Management\n\nAccess workspace settings through Settings in the top-right menu:\n\n### Personal Settings Tab\n\n- Your account details\n- Personal API keys and integrations\n- Individual credit balance\n- Pro Mode features\n\n### Team Settings Tab (Only visible if you're part of a team)\n\n- Team member list and roles\n- Shared credit balance\n- Usage dashboard (admins only)\n- Billing management (admins only)\n- Workspace name and details\n\n## Credits & Billing\n\n\n### Shared Credit Pool\n\n- Your team receives 1,250 credits per month\n- All team members draw from the same pool\n- Credits reset monthly\n- Only admins can purchase additional credits\nWarning\nPersonal and team credits are separate — your personal credit balance does not affect team credits and vice versa.\n\n### Usage Dashboard (Admins Only)\n\nTrack how your team uses credits:\n- Credit consumption by project\n- Credit consumption by team member\n- Historical usage trends\n- Remaining balance alerts\n\n## Important Limitations\n\nWarning\nOne Team Per User\nEach account can only create one team workspace.\nWarning\nMaximum 5 Members\nTeams are limited to 5 total members. For larger teams, contact support.\nWarning\nCannot Delete Teams\nOnce payment is completed, you cannot delete your team workspace yourself.\n\n## Pending Workspaces\n\nIf you create a team but don't complete payment:\n- Workspace appears as \"Pending\"\n- You can complete payment later\n- Team members cannot join until payment is processed\n- No access to team features until payment\nTip\nComplete payment to unlock full collaboration — you can process payment anytime from the workspace switcher.\n\n## Common Questions",
+    "toc": [
+      {
+        "text": "What's Included",
+        "anchor": "what-s-included"
+      },
+      {
+        "text": "Personal vs. Team Workspaces",
+        "anchor": "personal-vs-team-workspaces"
+      },
+      {
+        "text": "Creating Your Team Workspace",
+        "anchor": "creating-your-team-workspace"
+      },
+      {
+        "text": "Option 1: From the Workspace Switcher",
+        "anchor": "option-1-from-the-workspace-switcher"
+      },
+      {
+        "text": "Option 2: From Pricing/Upgrade Menu",
+        "anchor": "option-2-from-pricing-upgrade-menu"
+      },
+      {
+        "text": "Managing Team Members",
+        "anchor": "managing-team-members"
+      },
+      {
+        "text": "Admin Capabilities",
+        "anchor": "admin-capabilities"
+      },
+      {
+        "text": "Member Capabilities",
+        "anchor": "member-capabilities"
+      },
+      {
+        "text": "Inviting Team Members",
+        "anchor": "inviting-team-members"
+      },
+      {
+        "text": "Invitation Responses",
+        "anchor": "invitation-responses"
+      },
+      {
+        "text": "Switching Between Workspaces",
+        "anchor": "switching-between-workspaces"
+      },
+      {
+        "text": "Settings & Management",
+        "anchor": "settings-management"
+      },
+      {
+        "text": "Personal Settings Tab",
+        "anchor": "personal-settings-tab"
+      },
+      {
+        "text": "Team Settings Tab (Only visible if you're part of a team)",
+        "anchor": "team-settings-tab-only-visible-if-you-re-part-of-a-team"
+      },
+      {
+        "text": "Credits & Billing",
+        "anchor": "credits-billing"
+      },
+      {
+        "text": "Shared Credit Pool",
+        "anchor": "shared-credit-pool"
+      },
+      {
+        "text": "Usage Dashboard (Admins Only)",
+        "anchor": "usage-dashboard-admins-only"
+      },
+      {
+        "text": "Important Limitations",
+        "anchor": "important-limitations"
+      },
+      {
+        "text": "Pending Workspaces",
+        "anchor": "pending-workspaces"
+      },
+      {
+        "text": "Common Questions",
+        "anchor": "common-questions"
+      }
+    ],
+    "content_length": 6083
+  },
+  {
+    "slug": "deployment-types",
+    "title": "Deployment Types",
+    "section": "Advanced Features",
+    "nav_group": "Features",
+    "url": "https://help.emergent.sh/deployment-types",
+    "content_markdown": "# Deployment Types\n\n> Understanding Deploy, Redeploy, and Replace Deployment\nUnderstanding Deploy, Redeploy, and Replace Deployment\n\n## Overview\n\nEmergent has three types of deployments, each handling your code and data differently. Understanding these is crucial to avoid data loss.\n\n#### First Deploy\n\nBrand new app\n```\n**Fresh database**\n```\n\n#### Redeploy\n\nUpdate existing app\n```\n**Data preserved**\n```\n\n#### Replace Deployment\n\nSwap apps\n```\n**Optional data transfer**\n```\n\n## 1. First Deploy (New App)\n\n\n### When It Happens\n\nYou click \"Deploy\" for the very first time on a project that has never been deployed.\n\n### What Gets Created\n\n\n#### New App Identity\n\nA unique app record is created\n\n#### Empty Database\n\nA brand new, empty MongoDB database is provisioned\n\n#### Production Secrets\n\nValues from your development .env file are saved as production secrets\n\n#### Live URL\n\nA unique URL is generated (like https://your-app.emergentworks.app)\n\n#### Container Image\n\nYour code is built and stored in Google Container Registry\n\n### Data State\n\nEverything is NEW:\n- Fresh database (empty apart from preview data)\n- New secrets from .env\n- New URL\nNote\nPerfect for: Launching a brand new app for the first time.\n\n## 2. Redeploy (Update Existing)\n\n\n### When It Happens\n\nYou click \"Deploy\" on an app that's already live.\n\n### What Gets Updated\n\nCode Changes:\n- Latest code from development pod -not data (images, files, data do not show up)\n- Updated application\nWhat Stays the SAME:\n- Database (with ALL data preserved!)\n- Existing secrets (not overwritten!)\n- Same URL\n- Same app identity\n\n### How Data is Handled\n\n\n#### MongoDB Data\n\n100% PRESERVED\n```\n* Same database connection\n* All existing data intact\n* No data loss\n* Users unchanged\n* Records preserved\n```\n\n#### Secrets\n\nPRESERVED + MERGED\n```\n* Existing secrets preserved\n* Not overwritten\n* Only new keys added\n* Old values kept\n```\n\n### Important Secret Behavior\n\nExisting secrets are NEVER overwritten!\nExample: [to be revisited]\n```\nFirst Deploy (.env):\nSTRIPE_KEY=sk_test_123\nAPI_KEY=old_value\n\n(Secrets saved to production)\n\nLater, you change .env:\nSTRIPE_KEY=sk_test_456  ❌ Won't update!\nAPI_KEY=old_value\nNEW_KEY=new_value       ✅ Will be added\n\nAfter Redeploy:\nSTRIPE_KEY=sk_test_123  (still old value!)\nAPI_KEY=old_value\nNEW_KEY=new_value       (newly added)\n```\nTo update existing secrets: You must change them in the platform's secret management, NOT just in .env\nWarning\nImportant: Changing .env values won't update existing production secrets. Only new keys are added.\n\n## 3. Replace Existing Deployment\n\n\n### When It Happens\n\nYou fork a project and choose to replace an existing deployed app when deploying the fork.\n**Use Cases: *Replacing app 1 with app 2 or app 1 with app 1.2\n_Why does a user need to replace deployment? _\n- auto forking\n- manual forked therefore new job ID and separate application on backend.\n- or a completely new app that you want deployed instead of a discarded app.\n\n### What It Does\n\nThis deploys a completely NEW app and removes the previously deployed app.\nFlow:\n- Build new app from forked code or a completely new app\n- (Optional) Transfer data from old app (Refer to the two options for data handling)\n- Switch traffic to new app and the old app is deleted.\n- New app is live for users.\n- The new app uses the deployment fees from the next cycle onwards.\n\n### Two Options for Data Handling\n\n\n#### Without Data Persistence\n\nFresh Start\n```\n* New empty database\n* Old data NOT transferred\n* Preview data from the new app is copied to the new deployment\n* New app's secret values are added to the existing app's .env file - old keys are not auto-updated.\n\n**Use when:** Starting completely fresh\n```\n\n#### With Data Persistence\n\nKeep Your Data\n```\n* Database connection copied\n* All data preserved\n* Same database used\n* New app's secret values are added to the existing app's .env file - old keys are not auto-updated.\n\n**Use when:** Keeping existing data\n```\n\n### What Gets Created (New App)\n\nAlways NEW:\n- New app identity\n- New deployment\nDepends on Choice:\n- Database: New (no persist) or Same (with persist)\n- Secrets: Copied from old app + appended with new .env\nWhat Gets DELETED (Old App):\n- Old app identity\n- Old deployment\n- Old service and resources\n- Old app record\n\n### When to Replace\n\nReplace deployment when:\n- Forked to fix issues, want to swap\n- Want to upgrade with major changes\nDon't replace if:\n- Just updating code in the same job→ Use Redeploy instead!\n- Want to keep both versions → Deploy as separate app\nWarning\nBe careful - If you replace without keeping old database, your old database becomes orphaned and you lose access to that data!\n\n## Data Survival Guide\n\nHere's what survives in each scenario:\nWhatFirst DeployRedeployReplace (Fresh Database)Replace (Keeping Old Database)Source CodeNewUpdatedNew from forkNew from forkMongoDB DataEmptyPRESERVEDLostPRESERVEDDatabase URLNewSameNewCopied from oldSecretsFrom .envPRESERVEDCopied from oldCopied from oldApp URLNewSameNew/TransferredNew/TransferredContainer ImageNewNew versionNewNew\n\n## Preview vs Production\n\n\n### Development Pod (Preview)\n\nWhat it is:\n- Your testing environment\n- Where you build and preview\n- Temporary workspace\nDatabase:\n- Separate test database\n- NOT connected to production\n- Data here is NOT production data\n- Can be deleted anytime\nPurpose:\n- Writing code\n- Testing features\n- Seeing changes\nAccess:\n- Only you (developer)\n\n### Production Deployment (Live)\n\nWhat it is:\n- Your live, public app\n- What customers use\n- Real production environment\nDatabase:\n- Production MongoDB - Managed via Cloud\n- Real user data\n- Persistent across redeploys\n- Connected to always live URL\nPurpose:\n- Serving real users\n- Storing real data\n- Running your business\nAccess:\n- Your customers\nNote\nKey Point: Preview and Production use completely different databases. They never share data!\n\n## How Secrets Work\n\n\n### First Deploy\n\n```\n1. Read .env from development pod\n2. Save all values as production secrets\n3. Use these secrets in production\n```\n\n### Redeploy\n\n```\n1. Read .env from development pod\n2. Check existing production secrets\n3. Keep all existing secrets (don't overwrite!)\n4. Only add NEW keys from .env\n5. Use merged secrets in production\n```\n\n### Replace Deployment\n\n```\n1. Copy secrets from OLD app\n2. Read .env from forked project\n3. Merge: old secrets + new .env\n4. Existing secrets retained (not overwritten)\n5. Use merged secrets in NEW app\n```\nTo Update Existing Secret:\n```\nCan't do it via .env on redeploy!\n\nMust update directly in platform:\n1. Go to deployment settings\n2. Find secret management in the Deployment Pane.\n3. Update secret value there\n4. Or contact support\n```\n\n## Common Scenarios\n\n\n### Scenario 1: Fixing a Bug\n\n```\nSituation: Your live app has a bug\n\n1. Fix bug in development\n2. Test in preview\n3. Click \"Deploy\"\n4. Redeploy updates code\n5. All data preserved\n\nWhat to do: Redeploy\n\nResult: Bug fixed, data safe!\n```\n\n### Scenario 2: Adding Major Features after Forking\n\n```\nSituation: Forked to rebuild, want to replace old app\n\n1. Build in forked project\n2. Test thoroughly\n3. Deploy and choose \"Replace existing\"\n4. Check \"Preserve data\"\n5. Old app removed, new one live\n\nWhat to do: Replace while keeping old database\n\nResult: New code, old data preserved!\n```\n\n### Scenario 3: Starting Completely Fresh\n\n```\nSituation: Want to wipe everything and start over\n\n1. Fork or create new\n2. Deploy and choose \"Replace existing\"\n3. Don't check \"Preserve data\"\n4. Old data becomes inaccessible\n\nWhat to do: Replace without Persistence\n\nResult: Brand new app, empty database!\n```\nWarning\nWarning: Without keeping old database, old data is NOT deleted but becomes orphaned (can't access it from new app).\n\n### Scenario 4: First Time Going Live\n\n```\nSituation: Built app, ready to launch\n\nWhat to do: First Deploy\n1. Build your app\n2. Test in preview\n3. Click \"Deploy\" for first time\n4. App goes live with new URL\n\nResult: Live app with empty database!\n```\n\n## Decision Tree\n\nShould I Deploy, Redeploy, or Replace?\n```\nIs this your first time deploying?\n→ YES → Use \"Deploy\" (First Deploy)\n→ NO → ↓\n\nDo you just have code changes to push?\n→ YES → Use \"Redeploy\"\n→ NO → ↓\n\nDid you fork to rebuild/fix major issues?\n→ YES → ↓\n  Do you need to keep your data?\n  → YES → Replace with \"Preserve data\" ✅\n  → NO → Replace without \"Preserve data\" ❌\n```\n\n## Best Practices\n\n\n### Do This\n\nFor Regular Updates:\n```\n1. Make changes in development\n2. Test in preview\n3. Redeploy\n4. Data automatically preserved\n```\nFor Major Changes:\n```\n1. Fork if needed\n2. Test thoroughly in preview\n3. Decide: keep data or start fresh?\n4. Deploy accordingly\n```\nFor Secrets:\n```\n1. Set initial secrets in .env before first deploy\n2. Update secrets via platform, not .env\n3. New secrets can be added via .env on redeploy\n```\n\n### Avoid This\n\nDon't:\n- Forget to check \"preserve data\" if you need it\n- Expect .env changes to update existing secrets\n- Delete production app without backing up data\n\n## Data Safety Checklist\n\nBefore deploying:\n- Know which deployment method you're using\n- Understand if data will be preserved\n- If replacing, decided on whether to keep data or not\n- Backed up important data (if starting fresh)\n- Tested thoroughly in preview\n- Checked secrets are correct\n- Ready for production traffic\n\n## Common Questions\n\n```\nTo update an existing secret:\n\n1. Access deployment settings\n2. Find secret management section\n3. Update the secret value directly\n\nOr contact support for help.\n```\n```\n**With \"Preserve data\" checked:**\n\n* Data is transferred to new app\n* All data accessible\n\n**Without \"Preserve data\" checked:**\n\n* Old database becomes orphaned\n* New app gets empty database\n* Old data still exists but inaccessible\n```\n```\nThis creates a completely separate app with:\n\n* New URL\n* New database\n* Independent from original\n```\n```\n**Preview:** Test database (local to development pod) **Production:** Real database (MongoDB Atlas)\n\nChanges in preview don't affect production data.\n```\n```\nFor manual backup:\n\n* Export data via your app's admin interface\n* Use database export tools\n* Contact support for database snapshot\n```\n\n### First Deploy\n\n- When: First time deploying\n- Creates: Everything new\n- Data: Empty database\n- Use for: Initial launch\n\n### Redeploy\n\n- When: Updating live app\n- Updates: Code only\n- Data: ✅ Preserved\n- Use for: Regular updates\n\n### Replace (with persist)\n\n- When: Swapping apps, keep data\n- Creates: New app\n- Data: ✅ Transferred\n- Use for: Major refactor with data\n\n### Replace (without persist)\n\n- When: Fresh start\n- Creates: New app\n- Data: ❌ Not transferred\n- Use for: Complete reset\n\n## Remember\n\n✅ Redeploy is safe - Data always preserved\n✅ Preview ≠ Production - Different databases\n✅ Secrets persist - Existing ones not overwritten\n✅ Choose carefully - Replacement with/without data\n✅ Test in preview first - Before production deploy\n❌ Can't update secrets via .env - Use platform settings\nWarning\nMost important: Redeploy for updates (data safe), Replace only when necessary (check data option!).\n\n## Need Help?\n\n\n### Unsure Which to Use?\n\nAsk yourself:\n- Is this my first deploy? → First Deploy\n- Just updating code? → Redeploy\n- Major changes via fork? → Replace (decide on data)\n\n### Lost Data After Deployment?\n\nIf you replaced without \"preserve data\":\n- Old database still exists (orphaned)\n- Contact support to recover\n- They may be able to restore connection\n\n### Secret Not Updating?\n\nRemember:\n- Redeploying doesn't update existing secrets\n- Must update via platform settings\n- Only NEW secrets get added from .env\nInfo\nBest practice: For 99% of updates, just use Redeploy. It's safe, preserves all data, and updates your code. Only use Replace when you have a specific reason!",
+    "toc": [
+      {
+        "text": "Overview",
+        "anchor": "overview"
+      },
+      {
+        "text": "1. First Deploy (New App)",
+        "anchor": "1-first-deploy-new-app"
+      },
+      {
+        "text": "When It Happens",
+        "anchor": "when-it-happens"
+      },
+      {
+        "text": "What Gets Created",
+        "anchor": "what-gets-created"
+      },
+      {
+        "text": "Data State",
+        "anchor": "data-state"
+      },
+      {
+        "text": "2. Redeploy (Update Existing)",
+        "anchor": "2-redeploy-update-existing"
+      },
+      {
+        "text": "What Gets Updated",
+        "anchor": "what-gets-updated"
+      },
+      {
+        "text": "How Data is Handled",
+        "anchor": "how-data-is-handled"
+      },
+      {
+        "text": "Important Secret Behavior",
+        "anchor": "important-secret-behavior"
+      },
+      {
+        "text": "3. Replace Existing Deployment",
+        "anchor": "3-replace-existing-deployment"
+      },
+      {
+        "text": "What It Does",
+        "anchor": "what-it-does"
+      },
+      {
+        "text": "Two Options for Data Handling",
+        "anchor": "two-options-for-data-handling"
+      },
+      {
+        "text": "What Gets Created (New App)",
+        "anchor": "what-gets-created-new-app"
+      },
+      {
+        "text": "When to Replace",
+        "anchor": "when-to-replace"
+      },
+      {
+        "text": "Data Survival Guide",
+        "anchor": "data-survival-guide"
+      },
+      {
+        "text": "Preview vs Production",
+        "anchor": "preview-vs-production"
+      },
+      {
+        "text": "Development Pod (Preview)",
+        "anchor": "development-pod-preview"
+      },
+      {
+        "text": "Production Deployment (Live)",
+        "anchor": "production-deployment-live"
+      },
+      {
+        "text": "How Secrets Work",
+        "anchor": "how-secrets-work"
+      },
+      {
+        "text": "First Deploy",
+        "anchor": "first-deploy"
+      },
+      {
+        "text": "Redeploy",
+        "anchor": "redeploy"
+      },
+      {
+        "text": "Replace Deployment",
+        "anchor": "replace-deployment"
+      },
+      {
+        "text": "Common Scenarios",
+        "anchor": "common-scenarios"
+      },
+      {
+        "text": "Scenario 1: Fixing a Bug",
+        "anchor": "scenario-1-fixing-a-bug"
+      },
+      {
+        "text": "Scenario 2: Adding Major Features after Forking",
+        "anchor": "scenario-2-adding-major-features-after-forking"
+      },
+      {
+        "text": "Scenario 3: Starting Completely Fresh",
+        "anchor": "scenario-3-starting-completely-fresh"
+      },
+      {
+        "text": "Scenario 4: First Time Going Live",
+        "anchor": "scenario-4-first-time-going-live"
+      },
+      {
+        "text": "Decision Tree",
+        "anchor": "decision-tree"
+      },
+      {
+        "text": "Best Practices",
+        "anchor": "best-practices"
+      },
+      {
+        "text": "Do This",
+        "anchor": "do-this"
+      },
+      {
+        "text": "Avoid This",
+        "anchor": "avoid-this"
+      },
+      {
+        "text": "Data Safety Checklist",
+        "anchor": "data-safety-checklist"
+      },
+      {
+        "text": "Common Questions",
+        "anchor": "common-questions"
+      },
+      {
+        "text": "Replace (with persist)",
+        "anchor": "replace-with-persist"
+      },
+      {
+        "text": "Replace (without persist)",
+        "anchor": "replace-without-persist"
+      },
+      {
+        "text": "Remember",
+        "anchor": "remember"
+      },
+      {
+        "text": "Need Help?",
+        "anchor": "need-help"
+      },
+      {
+        "text": "Unsure Which to Use?",
+        "anchor": "unsure-which-to-use"
+      },
+      {
+        "text": "Lost Data After Deployment?",
+        "anchor": "lost-data-after-deployment"
+      },
+      {
+        "text": "Secret Not Updating?",
+        "anchor": "secret-not-updating"
+      }
+    ],
+    "content_length": 11765
+  },
+  {
+    "slug": "rollback-feature",
+    "title": "Rollback Feature",
+    "section": "Advanced Features",
+    "nav_group": "Features",
+    "url": "https://help.emergent.sh/rollback-feature",
+    "content_markdown": "# Rollback Feature\n\n> Undo changes and return to a previous working version\nUndo changes and return to a previous working version\n\n## What is Rollback?\n\nRollback lets you turn back time on your project. If something breaks or the agent goes in the wrong direction, you can go back to any earlier point in your conversation and start fresh from there.\nThink of it like:\n- A save point in a video game\n- The undo button, but for your entire project\n- A checkpoint you can return to\nHere's how it looks in Emergent:\n\n## When Should You Use Rollback?\n\n\n### Perfect Situations for Rollback\n\n\n#### Something Broke\n\nThe app was working, then the agent made changes and now it's broken.\n```\n**Solution:** Roll back to when it worked!\n```\n\n#### Wrong Direction\n\nThe agent misunderstood and built something different than what you wanted.\n```\n**Solution:** Roll back and explain better!\n```\n\n#### Stuck in Loop\n\nThe agent keeps trying the same fixes that don't work.\n```\n**Solution:** Roll back to last stable point!\n```\n\n#### Want Different Approach\n\nYou realized there's a better way to build this feature.\n```\n**Solution:** Roll back and try new approach!\n```\n\n## How to Use Rollback\n\n\n#### Find the Rollback Button\n\nDesktop: Look for the rollback button in the chat interface\nMobile: Tap the clock icon\n\n#### Choose Your Checkpoint\n\nScroll through your conversation history\nClick on the message where everything was still working\nTip: Look for messages like:\n- \"Everything works!\"\n- \"Feature complete\"\n- Before problems started\n\n#### Pick Rollback Type\n\nYou'll see two options:\nOption 1: \"Erase all messages and generated code\"\n- Goes back completely\n- Code returns to that point\n- Conversation resets\n- Choose this if: Code is broken\nOption 2: \"Erase messages only\"\n- Keeps the current code\n- Only removes conversation history\n- Choose this if: Just want to restart chat\n\n#### Confirm\n\nClick Confirm\n\n#### Start Fresh\n\nYou're now back at that point\nContinue from here with a clearer prompt\n\n## Example: When to Roll Back\n\n\n### Scenario: Broken Payment Feature\n\n```\nYou: \"Add a checkout page with Stripe\"\nAgent: Builds checkout page - works great!\n\nYou: \"Add a discount code field\"\nAgent: Adds discount field - still works!\n\nYou: \"Make the button bigger and add animations\"\nAgent: Now checkout is completely broken!\n\nYou: \"Why isn't it working?\"\nAgent: Tries fix #1... doesn't work\nAgent: Tries fix #2... still broken\nAgent: Tries fix #3... making it worse\n```\nTime to roll back!\n- Click rollback button\n- Go back to: \"Add a discount code field\" (when it worked)\n- Choose \"Erase all messages and generated code\"\n- Now try again with better instructions:\n```\nYou: \"Make the checkout button bigger - but test it carefully \nand make sure payments still work before finishing.\"\n```\n\n## Two Types of Rollback\n\n\n### Complete Rollback (Recommended)\n\n\"Erase all messages and generated code\"\nInfo\nWhat happens:\n- Code goes back to that point\n- Conversation resets to that point\n- Everything returns to that state\nBest for: When code is broken or you want a clean restart\nExample:\n```\nWorking app at message #15\n↓\nMade changes, now broken at message #23\n↓\nRoll back to message #15\n↓\nBack to working app!\n```\n\n### Message-Only Rollback\n\n\"Erase messages only\"\nInfo\nWhat happens:\n- Conversation history is cleared\n- Code stays as-is (current version)\nBest for: When code is fine but conversation is cluttered\nExample:\n```\nLong conversation with many back-and-forth messages\nCode is actually working fine\nJust want to clean up chat and start fresh\nRoll back messages only\nCode unchanged, conversation clean\n## Important Things to Know\n\n### You Cannot Undo Rollback\n```\nWarning\nOnce you roll back, you cannot undo it!\nYou'll lose all work done after that point.\nBefore rolling back:\n- Are you sure you want to go back?\n- Could the agent fix it with better instructions instead?\n- Is there valuable work you'll lose?\n\n### Send a Better Prompt After Rollback\n\nAfter rolling back, don't just repeat the same request!\nGive the agent more context:\nDon't do this:\n```\n(After rollback)\nYou: \"Add a checkout page\"\n(Same request that caused problems)\n```\nDo this instead:\n```\n(After rollback)\nYou: \"Add a checkout page with Stripe integration.\n\nMake sure to:\n- Test the payment flow\n- Handle errors gracefully\n- Keep the existing discount code working\n- Test everything before finishing\"\n```\nMore details = Better results!\n\n### Does Rollback Cost Credits?\n\nGood news: Rollback itself is free.\nHowever:\n- You'll need to spend credits again to rebuild features you lost\n- If you rolled back 30 minutes of work, you'll need credits to redo it\nExample:\n```\nBuilt feature A: 500 credits\nBuilt feature B: 300 credits\nBuilt feature C: 400 credits (broke everything)\n\nRoll back to before feature C\n↓\nFeature C work lost, but you get features A & B working\n\nTo rebuild C better: ~400 credits again\n## Rollback vs Forking\n\n<CardGroup cols={2}>\n```\n\n#### Rollback\n\nWhen to use:\n```\n* Something broke recently\n* Want to undo last few changes\n* Quick fix needed\n\n**What you get:**\n\n* Same project, earlier state\n* Same conversation history up to that point\n\n**Cost:** Free (but need credits to rebuild)\n```\n\n#### Forking\n\nWhen to use:\n```\n* Project became too complex\n* Running out of context\n* Want to try different direction\n\n**What you get:**\n\n* New project with fresh start\n* Keeps all current code\n* New conversation\n\n**Cost:** Uses credits\n```\n\n## Real Examples\n\n\n### Example 1: Broken After Styling Changes\n\n```\nMessage 20: \"App works perfectly!\"\n\nMessage 25: \"Changed colors, now buttons don't work\"\n\nAction: Roll back to Message 20\nResult: App working again, can try styling more carefully\n```\n\n### Example 2: Agent Misunderstood\n\n```\nMessage 15: \"Build a simple blog\"\n\nMessage 22: Agent built a complex social network instead\n\nAction: Roll back to Message 15\nNew prompt: \"Build a SIMPLE blog - just posts and comments, \nnothing else. Keep it minimal.\"\nResult: Got what you wanted!\n```\n\n### Example 3: Repeated Failed Fixes\n\n```\nMessage 30: \"Database queries working\"\n\nMessage 32: Database breaks\nMessage 33: Agent tries fix 1 - doesn't work\nMessage 34: Agent tries fix 2 - still broken\nMessage 35: Agent tries fix 3 - worse!\n\nAction: Roll back to Message 30\nNew prompt: \"The database queries were working. \nI just want to add pagination - please be very \ncareful not to break existing queries.\"\nResult: Pagination added without breaking things!\n```\n\n## Tips for Using Rollback Effectively\n\n\n### Good Practices\n\n- Roll back early - If you see problems, don't wait\n- Choose the right checkpoint - Go back to last stable state\n- Improve your prompt - Add more detail when you restart\n- Test after changes - Ask agent to test before moving on\n\n### Avoid These Mistakes\n\n- Rolling back too far - Don't go back further than needed\n- Repeating same prompt - If it failed once, explain better\n- Not confirming it worked - Test the feature before continuing\n- Forgetting to save info - Copy any important notes before rolling back\n\n## Quick Decision Guide\n\nShould I roll back?\n```\nIs something broken? → YES → Roll back!\nDid agent misunderstand? → YES → Roll back!\nStuck in error loop? → YES → Roll back!\n\nIs it just a small bug? → NO → Ask agent to fix it\nDo I want to try something else? → MAYBE → Consider forking instead\n```\n\n## How to Access Rollback\n\n\n### On Desktop\n\n- Look at the chat interface\n- Find the rollback button (usually top or side)\n- Click it\n- Select checkpoint\n- Confirm\n\n### On Mobile\n\n- Look for the clock icon\n- Tap it\n- Browse conversation history\n- Select where to roll back to\n- Confirm\nSuccess\nCan't find it?  Check out the reference video at the beginning of this article!\n\n## Remember\n\nRollback is FREE - No extra credits charged\nCannot be undone - Choose carefully!\nLose work after that point - Make sure that's okay\nGive better prompts after - More detail helps\nUse early if stuck - Don't wait too long\nTest after rolling back - Make sure it's actually working\n\n## Common Questions\n\nYou'll lose work done after the point you roll back to.\nEverything before that point is kept!\nExample:\n- Messages 1-20: ✅ Kept\n- Messages 21-30: ❌ Lost (if you roll back to 20)\nRollback affects your Preview/development version.\nYour deployed app stays as-is until you deploy again.\nSafe to experiment in Preview!\nYou can roll back to any point in your conversation history!\nEven back to the very beginning if needed.\nUnfortunately, you cannot undo a rollback.\nThe work is gone - you'll need to rebuild it.\nTip: Always double-check before confirming!\nRollback: Keep some work, lose recent changes\nStarting over: Lose everything, completely fresh start\nRollback is better - You keep the good work!\n\n## Still Stuck?\n\nIf rolling back didn't help:\n- Try the troubleshoot agent - It can find deeper issues\n- Fork the project - Start fresh with current code\n- Ask for help - Describe the problem clearly\nAlso, check out the troubleshooting tips we have.\n```\nI rolled back but still having issues.\n\nWhat was working: [describe]\nWhat's broken: [describe]\nWhat I tried: [describe]\n\nCan you help?\n```\nPro tip: Think of rollback as your \"safety net\" - don't be afraid to use it! It's better to roll back early than to let the agent struggle with a broken state.",
+    "toc": [
+      {
+        "text": "What is Rollback?",
+        "anchor": "what-is-rollback"
+      },
+      {
+        "text": "When Should You Use Rollback?",
+        "anchor": "when-should-you-use-rollback"
+      },
+      {
+        "text": "Perfect Situations for Rollback",
+        "anchor": "perfect-situations-for-rollback"
+      },
+      {
+        "text": "How to Use Rollback",
+        "anchor": "how-to-use-rollback"
+      },
+      {
+        "text": "Example: When to Roll Back",
+        "anchor": "example-when-to-roll-back"
+      },
+      {
+        "text": "Scenario: Broken Payment Feature",
+        "anchor": "scenario-broken-payment-feature"
+      },
+      {
+        "text": "Two Types of Rollback",
+        "anchor": "two-types-of-rollback"
+      },
+      {
+        "text": "Complete Rollback (Recommended)",
+        "anchor": "complete-rollback-recommended"
+      },
+      {
+        "text": "Message-Only Rollback",
+        "anchor": "message-only-rollback"
+      },
+      {
+        "text": "Real Examples",
+        "anchor": "real-examples"
+      },
+      {
+        "text": "Example 1: Broken After Styling Changes",
+        "anchor": "example-1-broken-after-styling-changes"
+      },
+      {
+        "text": "Example 2: Agent Misunderstood",
+        "anchor": "example-2-agent-misunderstood"
+      },
+      {
+        "text": "Example 3: Repeated Failed Fixes",
+        "anchor": "example-3-repeated-failed-fixes"
+      },
+      {
+        "text": "Tips for Using Rollback Effectively",
+        "anchor": "tips-for-using-rollback-effectively"
+      },
+      {
+        "text": "Good Practices",
+        "anchor": "good-practices"
+      },
+      {
+        "text": "Avoid These Mistakes",
+        "anchor": "avoid-these-mistakes"
+      },
+      {
+        "text": "Quick Decision Guide",
+        "anchor": "quick-decision-guide"
+      },
+      {
+        "text": "How to Access Rollback",
+        "anchor": "how-to-access-rollback"
+      },
+      {
+        "text": "On Desktop",
+        "anchor": "on-desktop"
+      },
+      {
+        "text": "On Mobile",
+        "anchor": "on-mobile"
+      },
+      {
+        "text": "Common Questions",
+        "anchor": "common-questions"
+      }
+    ],
+    "content_length": 9223
+  },
+  {
+    "slug": "forking-in-emergent",
+    "title": "Forking In Emergent",
+    "section": "Advanced Features",
+    "nav_group": "Features",
+    "url": "https://help.emergent.sh/forking-in-emergent",
+    "content_markdown": "# Forking In Emergent\n\nChat forking is Emergent's intelligent solution to context limit challenges. It allows seamless project continuation in a fresh chat while preserving all essential context when your conversation approaches the 200,000 token limit.\n\n## How Forking Manages Memory Context\n\n\n### The Core Problem\n\nAll AI agents have limited token context windows (like limited memory). Complex development sessions consume this through:\n- Detailed code discussions\n- Multiple iterations and refinements\n- Extensive debugging sessions\n- Feature additions and modifications\n\n### Intelligent Context Preservation Strategy\n\nWhat Gets Preserved:\n- Project goals and requirements\n- Architectural decisions and reasoning\n- Current codebase and file structure\n- Key implementation details\n- Recent changes and their context\n- Outstanding tasks and planned features\n- Important constraints and considerations\nWhat Gets Compressed/Removed:\n- Exact conversation history (replaced with intelligent summary)\n- Detailed debugging logs (unless currently relevant)\n- Exploratory discussions that didn't impact final code\n- Redundant or superseded information\n\n## Triggers for Forking\n\n\n### Automatic Forking Scenarios\n\n- Context Limit Warning: System displays warnings as you approach the token limit\n- Performance Degradation: Slower response times indicate context strain\nSuccess\nForking becomes necessary near the 200,000 token limit - Emergent has built-in warnings to fork as well as a seamless transition built into the system.\n\n### Manual Forking Options (Strategic)\n\n- Major Transitions: Fork when moving between major features or phases\n- Experimentation: Fork to try different approaches while preserving main thread\n- Organization: Fork to keep different development aspects separate\nInfo\nPro Tip: Save your project to GitHub before you fork manually too!\nFor a detailed walkthrough on where to fork and how the steps look, please refer to this video.",
+    "toc": [
+      {
+        "text": "Triggers for Forking",
+        "anchor": "triggers-for-forking"
+      }
+    ],
+    "content_length": 1949
+  },
+  {
+    "slug": "mcp-model-context-protocol",
+    "title": "MCP (Model Context Protocol)",
+    "section": "Advanced Features",
+    "nav_group": "Features",
+    "url": "https://help.emergent.sh/mcp-model-context-protocol",
+    "content_markdown": "# MCP (Model Context Protocol)\n\n> Connect any data source to Emergent using MCP - a universal protocol that lets AI agents integrate with any API, database, or system through simple configuration.\nConnect any data source to Emergent using MCP - a universal protocol that lets AI agents integrate with any API, database, or system through simple configuration.\nEmergent has always made API integration straightforward.\nWe’ve built reliable integration playbooks for common APIs - when you say “Integrate Stripe payments” or “Add Google authentication,” our agents know exactly what to do.\nNow, with MCP (Model Context Protocol) support, you can connect any data source, even those Emergent hasn’t seen before.\n\n## What Is an MCP Server?\n\nAn MCP server acts as a smart adapter that lets Emergent’s AI agents communicate directly with any external service, tool, or database.\nInstead of writing code or managing complex API credentials, MCP servers translate your data source into a format Emergent can understand - instantly.\nAnalogyDescriptionAPI PlaybooksPredefined recipes for popular integrations - fast, reliable, but limited to known services.MCP ServersFlexible translators that work with any system, even custom or proprietary ones.\nInfo\nWith MCP, you’re no longer limited to pre-built integrations.\nIf a service has an MCP server, Emergent can connect to it immediately - no middleware, no coding.\n\n## Why MCP Matters\n\nEmergent’s existing playbooks already support popular integrations like:\n- Payments: Stripe, PayPal\n- Authentication: Google, GitHub\n- Databases: Supabase, Airtable\nWith MCP support, you can now connect to:\n- Proprietary or internal systems unique to your organization\n- Specialized or industry-specific tools\n- Custom databases or data warehouses\n- Legacy systems with unique protocols\n- New tools as soon as they release MCP servers\nSuccess\nMCP brings unlimited integration flexibility - you can connect any data source, structured or not.\n\n## Connecting an MCP Server\n\nMCP configuration is project-specific, giving you full control over which data sources each app can access.\n\n#### Access Advanced Controls\n\nBefore starting your project, click Advanced Controls in the project setup screen.\n\n#### Open MCP Tools\n\nInside Advanced Controls, click Select MCP Tools to open your MCP configuration panel.\n\n#### Choose Your Configuration Method\n\n- Option A: Configure a New MCP Server\n\nClick Configure New MCP\nName your server (e.g., company-database, weather-api)\nAdd an optional description\nPaste your JSON configuration\nClick Verify and Save\n- Click Configure New MCP\n- Name your server (e.g., company-database, weather-api)\n- Add an optional description\n- Paste your JSON configuration\n- Click Verify and Save\n- Option B: Enable Existing MCPs Toggle on previously configured MCP servers to reuse them without re-entering credentials.\n\n#### Start Building\n\nOnce configured, start your project.\nEmergent’s agents will have access to these connected data sources throughout the build process.\n\n### Watch How you can Configure MCP\n\n\n## Example Configuration - Firecrawl MCP\n\n```\nJSONCopy{\n  \"mcpServers\": {\n    \"firecrawl-mcp\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"firecrawl-mcp\"],\n      \"env\": {\n        \"FIRECRAWL_API_KEY\": \"YOUR-API-KEY\"\n      }\n    }\n  }\n}\n```\n```\n{\n  \"mcpServers\": {\n    \"firecrawl-mcp\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"firecrawl-mcp\"],\n      \"env\": {\n        \"FIRECRAWL_API_KEY\": \"YOUR-API-KEY\"\n      }\n    }\n  }\n}\n```",
+    "content_length": 3492
+  },
+  {
+    "slug": "prompting-basics",
+    "title": "Prompting - Basics",
+    "section": "Building Your App",
+    "nav_group": "Building Your App",
+    "url": "https://help.emergent.sh/prompting-basics",
+    "content_markdown": "# Prompting - Basics\n\n> Here's the ABCs of working with Emergent and how you should prompt the agent to get the best and most efficient results.\nHere's the ABCs of working with Emergent and how you should prompt the agent to get the best and most efficient results.\n\n### Why This Matters\n\nThe foundation of every app in Emergent is a good initial prompt - and perhaps more importantly, good etiquette when it comes to continuously prompting the agent and iterating.\nIf this bit is crystal-clear, you'll be building production level apps in no time flat. Get it wrong, and you might waste hours of your time.\nInfo\nThis tutorial is for general use: We'll break every concept down into easy to understand chunks, with examples of what to do and what to avoid.\n\n### Prompting Cheat-Sheet\n\nDo ThisDon't Do This- Begin with clear business context and user needs- Overwhelm the agent with massive requirement lists- Focus on 2-3 essential features initially- Combine bug/UI fixes with new feature development- Resolve issues before expanding functionality- Skip testing or ignore errors- Provide specific examples and clear guidelines- Use vague descriptions like \"it's not working\"- Read what the agent tells you - it contains crucial information- Stop the agent mid-process to give new instructions\n\n### The Basics - Prompting Mindset\n\nThe most basic first step while working with Emergent is the two-brain approach.\nYour Brain: The vision of the finished product, understanding user needs, business logic, priorities for development cycles.\nEmergent's Brain: Technical depth, code patterns, end-to-end testing and optimization of code.\nThe moment you understand this separation (and start prompting the agent keeping it in mind), the app building process becomes streamlined.\nSuccess\nYou: Handle the product vision, list of features, customer needs\nAgent: Handles code implementation, integrations, and testing.\n\n## Part 1: The Initial Prompt\n\nGeneral Rule of Thumb: Start with the \"Why\" and \"Who\"\nBefore writing the features you want in detail, explain the basic idea, why you're building it and for whom to Emergent.\nFor example:\n```\nI'm building a productivity app for busy entrepreneurs who struggle \nto track their daily tasks, mood, and expenses in one place. \nThe goal is to help founders stay organized and maintain \nwork-life balance while building their companies.\n\nCore features needed:\n1. Task management with drag-and-drop kanban board\n2. Daily mood/energy journaling\n3. Simple expense tracking\n\nLet's start with the task management feature first.\n```\nTip\nThis works because the more context Emergent has, the better decisions it will make when it comes to code implementation and technical decisions. \nThe goal is to keep the agent aware of the core problem statement.\n\n## Part 2: Iterating with the agent\n\nOnce the first prompt yields decent results, you might feel the app can be developed fully in the next prompt. It's important you do not list every feature you have thought of at this point.\nBest Practices for Iterations:\n- Identify the most important features - what's the one feature your clients need the most?\n- List out 2-3 features that deliver the most value once your MVP and core feature is working flawlessly. (For help with troubleshooting your app, refer to the troubleshooting section.)\n- Always build in steps or iterations - let the agent build out one core pillar of the app before moving to the next!\nSuccess\nGood Example:\nBuild a founder's productivity app with these core features:\n1. Task board with To Do, In Progress, Done columns\n2. Simple note-taking for ideas and thoughts\n3. Basic expense logging with categories\n\nFocus on clean, intuitive design that works well on both desktop and mobile.\nWarning\nAvoid This:\nBuild a complete productivity platform with task management, \ncalendar integration, team collaboration, \nadvanced analytics, custom reporting, \nemail notifications, mobile apps, dark mode, \nuser authentication, payment processing, \nAI recommendations, social features, and \nexport functionality.\n\n## Part 3: The Importance of Testing\n\nThe most important part of building an app is iterating. Once you implement a set of features, test the whole app thoroughly before adding any more features.\nHere's the testing checklist:\n\n#### View Live Preview\n\nClick on the preview button and view the temporary, live preview link for your app. For details, visit this section.\n\n#### Click All Buttons\n\nTry to click every link, button and CTA in your app or website. Try to find broken elements (so your users don't find them later.)\n\n#### Test on Different Screens\n\nView your website on multiple screen sizes - how does it look on PC? Does it need to be mobile optimized?\n\n#### Check Data Persistence\n\nDo check that data is getting saved and is loading correctly when refreshing the website.\nInfo\nIn case you need help with troubleshooting your app, check out our troubleshooting guide!\n\n## Part 4: Thinking Mode with the agent\n\nThere are cases where you do not need to start building the app instantly, but rather want to discuss and brainstorm app ideas with the agent.\nHere is the one prompt you need if you want your agent to be your thinking buddy instead of the code architect for a little while-\n```\nI'm considering adding team collaboration features, but I'm not sure about the approach. \nLet's discuss the options and trade-offs before writing any code.\n\nDon't start coding yet - just help me think through this.\n```\nWith that, we have covered the basics of how to talk to the agent effectively to see the best results in the shortest possible time. Here's a snapshot:\n\n#### Prompting Mindset\n\nGive clear direction to the agent in manageable chunks\n\n#### Build Incrementally\n\nYour follow-up prompts should be iterative - avoid overloading the agent with information and directions while it builds out your idea and adds features\n\n#### Test Extensively\n\nEnsure you test each new feature and the entire app flow end-to-end before moving onto the next\n\n#### Separate Fixes\n\nDo not mix major feature updates and minor UI fixes in the same prompt - maintain the division of steps in your prompts\n\n#### Save Regularly\n\nEnsure you push your changes to GitHub regularly for optimal workflow - you should also embrace rolling back to a stable state if something major breaks",
+    "toc": [
+      {
+        "text": "Why This Matters",
+        "anchor": "why-this-matters"
+      },
+      {
+        "text": "Prompting Cheat-Sheet",
+        "anchor": "prompting-cheat-sheet"
+      },
+      {
+        "text": "The Basics - Prompting Mindset",
+        "anchor": "the-basics-prompting-mindset"
+      },
+      {
+        "text": "Part 1: The Initial Prompt",
+        "anchor": "part-1-the-initial-prompt"
+      },
+      {
+        "text": "Part 2: Iterating with the agent",
+        "anchor": "part-2-iterating-with-the-agent"
+      },
+      {
+        "text": "Part 3: The Importance of Testing",
+        "anchor": "part-3-the-importance-of-testing"
+      },
+      {
+        "text": "Part 4: Thinking Mode with the agent",
+        "anchor": "part-4-thinking-mode-with-the-agent"
+      }
+    ],
+    "content_length": 6316
+  },
+  {
+    "slug": "pre-deployment-health-check",
+    "title": "Pre-Deployment Health Check",
+    "section": "Deploy and Manage",
+    "nav_group": "Deploy and Manage",
+    "url": "https://help.emergent.sh/pre-deployment-health-check",
+    "content_markdown": "# Pre-Deployment Health Check\n\nThis is a handy feature built specifically to effectively use your credits and ensure your deployment goes smoothly.\nThe Pre-Deployment Health Check is an automated code review system built directly into Emergent's deployment interface. It's a checkbox feature that runs before your app deploys to catch potential problems.\n\n## What It Does\n\nHere's the brief rundown of what this feature actually does:\nAutomated Code Review:\nKey Features:\n- Automated: Runs without manual intervention\n- Pre-emptive: Catches issues BEFORE deployment\n- Comprehensive: Reviews code for deployment blockers\n- Cost-effective: Only costs 2-3 credits\nHere's a video that shows you what the expected flow of steps and events looks like for this feature.\n\n## How to Interpret Results\n\n\n### All Green = Passed\n\nStatus: READY TO DEPLOY\nWhat this means:\n- No deployment blockers found\n- Configuration looks good - Dependencies are properly set up\n- Safe to proceed with deployment\nNext Steps:\n- Optionally run Preview to test functionality\n- Click Deploy with confidence!\n\n### Warnings = Proceed With Caution\n\nStatus: WARNINGS FOUND\nWhat this means:\n- No critical blockers - only recommended improvements\n- Deployment is likely to succeed - may have edge cases where production issues crop up\nNext Steps:\n- Review warnings\n- Decide if you wish to deploy now (Ask the agent if the errors are potential blockers)\n\n### Critical Issues Found = Do Not Deploy\n\nStatus: DEPLOYMENT BLOCKERS FOUND\nWhat this means:\n- Issues that will cause deployment to fail\n- Must be fixed before deploying\nNext Steps:\n- Fix each critical issue listed\n- Run health check again\n- Only deploy after all critical issues are resolved\nTip\nOnce you use the tool a few times, you will learn what issues are likely to crop up for what kind of apps - and solve for them way ahead of them occuring.",
+    "toc": [
+      {
+        "text": "How to Interpret Results",
+        "anchor": "how-to-interpret-results"
+      },
+      {
+        "text": "All Green = Passed",
+        "anchor": "all-green-passed"
+      },
+      {
+        "text": "Warnings = Proceed With Caution",
+        "anchor": "warnings-proceed-with-caution"
+      },
+      {
+        "text": "Critical Issues Found = Do Not Deploy",
+        "anchor": "critical-issues-found-do-not-deploy"
+      }
+    ],
+    "content_length": 1868
+  },
+  {
+    "slug": "fixing-design-inconsistencies",
+    "title": "Fixing Design Inconsistencies",
+    "section": "Troubleshooting",
+    "nav_group": "Troubleshooting",
+    "url": "https://help.emergent.sh/fixing-design-inconsistencies",
+    "content_markdown": "# Fixing Design Inconsistencies\n\nSometimes, your app output may not match your imagination or vision. In these cases, it's important to know the steps to elevate the design output to match your envisioned look and feel as closely as possible - because your app deserves to look sharp!\n\n## Overview\n\nFirst off, the style of writing your prompts is a big determinant in the kind of aesthetic Emergent will deliver. Let's have a look at the right (and wrong) way to prompt your agent to get the best design out of it.\nWarning\nAverage Prompt:\nLooking plain, make it look amazing.\n\nWhy this prompt does not work:\n\nToo vague: What does looking plain mean? What needs to improve?\nNo direction: How does the agent improve the design? What color palette's would you like to see?\nNo examples or references: Attach some color options you want to see, or an app reference that resembles your vision\nSuccess\nA great prompt:\nMake the font sizes consistent across the app, use #CDA991 throughout.\n\nThis prompt works because it follows the Effective Prompting Rules:\n\nIt's specific - what needs to change\nIt's descriptive - providing replicatable pointers to the app (a color hexcode, for example.)\n\n## Design - Specific Prompts\n\nWhen it comes to designing your vibe-coded app, there's a few ways to make your creation stand out from the rest:\n\n### The initial prompt\n\nYou must ensure that the basic design style for the app is conveyed to the agent from the very beginning. For example, if you want your design to be elegant, minimalist in the monochrome color palette that suits a modern tech landing page, your prompt should resemble:\n```\nBuild a monochrome minimal tech landing page with:\n- Black/white/gray color scheme only\n- Smooth scroll animations and hover effects\n- White line icons (minimal style)\n- 4px rounded corners everywhere\n- Sections: Hero, Features (4), How It Works (3 steps), Testimonials, CTA, Footer\n- Use Tailwind CSS and keep it lightweight\n\nDesign should feel like modern SaaS products (think Vercel, Linear, Stripe style but monochrome).\n```\nThis prompt ticks off the key rules for an effective design prompt:\n- It's specific: It mentions the colors we want, the desired look (4px rounded corners), and the icon style.\n- It's descriptive: It mentions the kind of animations we want and the CSS library to use (although this is not strictly needed, Emergent auto-selects modern libraries to ensure light, robust applications.)\n- It has references: It clearly mentions reference websites that our agent can use to establish your expected design style.\nTip\nIf you want to take this to the next level, attach a screenshot of a website which has the design style and vibe you want to emulate!\n\n### Optimizing the design mid-build\n\nThere are times when you're halfway through a build and you either\n- Want to pivot to another design style\n- See inconsistencies in the style in the app vs. your vision\nIn these cases, it is understandably frustrating to further prompt the agent and troubleshoot. However, here is the basic prompt structure that gives you a better chance of getting where you wanted:\n```\nChange [SPECIFIC ELEMENT] in [SPECIFIC LOCATION]:\n\nCurrent: [What it is now]\nChange to: [What you want instead]\nReason (optional): [Why you want this change]\n\nKeep everything else as-is.\n```\nInfo\nEnsure that you take screenshots of the sections you want to improve and share it with the agent for quick iterations!\n\n## Some Use Cases\n\n\n### 1. Specific UI Changes\n\nHere's an example of a mid-build change where we want to alter a button:\nSuccess\nThe Best Prompt:\nChange the primary CTA buttons:\n\nCurrent: Black background with white text\nChange to: White background with black text and 2px black border\n\nApply this to all CTA buttons (hero, final CTA section).\nKeep hover effects the same.\nWarning\nA Bad Prompt:\n\"The buttons don't look good. Can you make them better?\"\n\n### 2. Spacing Issues\n\nSometimes, there are too many elements for the layout to render well. Here's what we do in these cases:\nSuccess\nThe Best Prompt:\nIncrease spacing in the Features section:\n\nChange: Gap between feature cards from 24px to 48px\nChange: Padding inside each card from 24px to 32px\n\nDesktop only - keep mobile spacing as-is.\nWarning\nA Bad Prompt:\n\"Make the features section more spacious.\"\n\n### 3. Animation Issues\n\nIn case your app has those sleek animations and you want to finetune them, here's how you go about that:\nSuccess\nA Good Prompt:\nAdjust the scroll animations:\n\nCurrent: Elements fade in quickly (0.3s duration)\nChange to: Slower, more dramatic fade-in (0.8s duration with 0.2s stagger)\n\nApply to: Features section and testimonials only\nKeep hero animations as-is.\nWarning\nA Bad Prompt:\n\"The animations feel too fast.\"\nPro Tip: If you do not know the animation styles Emergent has used in your apps, you can ask the agent for the current duration and animation styles it is using on specific pages.\n\n## The Holy Grail of Design Tweaking Prompts\n\nWhen it comes to Emergent, here is the category of tweaks and the corresponding 'best practice' prompt style your requirement may full under:\nTip\nAs always, attaching a screenshot of the UI issue in chat and describing what you want to see instead will be the cherry on top for all of these prompts.\n\n### Type A: Visual Style Tweaks\n\nUse this format:\n```\nElement: [What element]\nProperty: [What CSS property]\nCurrent value: [Current state]\nNew value: [Desired state]\nScope: [Where to apply]\n```\nExample:\n```\nElement: All section headings\nProperty: Font weight\nCurrent value: 600 (semi-bold)\nNew value: 700 (bold)\nScope: All sections except footer\n```\n\n### Type B: Component Replacement\n\nUse this format:\n```\nReplace: [Component name/description]\nLocation: [Where it is]\nWith: [What you want instead]\nRequirements: [Any specific needs]\n```\nExample:\n```\nReplace: The testimonial cards\nLocation: Social proof section\nWith: Simple text quotes with author names (no cards, no borders)\nRequirements: Keep the 3-column layout, center-align text, use italic font for quotes\n```\n\n### Type C: Add New Element\n\nUse this format:\n```\nAdd: [What to add]\nLocation: [Where to add it]\nStyle: [How it should look]\nBehavior: [How it should work]\n```\nExample:\n```\nAdd: A subtle gradient overlay\nLocation: Hero section background (over the current solid color)\nStyle: Linear gradient from transparent to rgba(0,0,0,0.05) top to bottom\nBehavior: Should be static, not animated\n```\n\n### Type D: Remove Element\n\nUse this format:\n```\nRemove: [What to remove]\nLocation: [Where it is]\nReplace with: [Nothing / Something else]\n```\nExample:\n```\nRemove: The subheadline text\nLocation: Hero section (below main headline, above CTA button)\nReplace with: Nothing - just remove it and adjust spacing\n```\n\n## Key Considerations to Always Remember\n\nWhen it comes to tweaking designs, specificity and visual feedback to the agent is the golden standard. Here's the quick and easy checklist to consider whenever refining your app design:\n- Use Visual Language:\n\n\"Move X above Y\"\n\"Make X twice as large\"\n\"Add 16px space between X and Y\"\n- \"Move X above Y\"\n- \"Make X twice as large\"\n- \"Add 16px space between X and Y\"\n- Reference Existing Elements:\n\n\"Make it match the hero button style\"\n\"Use the same animation as the feature cards\"\n\"Apply the footer color scheme here\"\n- \"Make it match the hero button style\"\n- \"Use the same animation as the feature cards\"\n- \"Apply the footer color scheme here\"\n- Specify Breakpoints:\n\n\"Desktop only (above 768px)\"\n\"Mobile only (below 640px)\"\n\"All screen sizes\"\n- \"Desktop only (above 768px)\"\n- \"Mobile only (below 640px)\"\n- \"All screen sizes\"\n- Be Explicit About Scope:\n\n\"Only the hero section\"\n\"All buttons except the footer links\"\n\"Every card in the features section\"\n- \"Only the hero section\"\n- \"All buttons except the footer links\"\n- \"Every card in the features section\"\n- Use Exact Values When Possible:\n\n\"32px padding\" not \"more padding\"\n\"#F5F5F5\" not \"light gray\"\n\"0.5s duration\" not \"slower\"\n- \"32px padding\" not \"more padding\"\n- \"#F5F5F5\" not \"light gray\"\n- \"0.5s duration\" not \"slower\"\nTip\nIf you're unsure about what spacing, color hexcode or animation duration your app is currently using, you can always ask the agent for that information and tweak it accordingly.\n\n## A Quick Recap\n\nAs we have seen, the general build of your prompt should show a reference, the element you want to change, and what change you wish to see.\nChange TypeFormatExampleStyle PropertyChange [element] [property]: [old] → [new]Change hero button color: black → whiteSpacing[Add/Remove] [amount] [type] [location]Add 24px margin below each feature cardAnimationAdjust [element] animation: [what to change]Adjust card hover: scale 1.05 → 1.02LayoutChange [section] layout: [old] → [new]Change features: 2x2 grid → 1x4 rowAdd ElementAdd [element] to [location]: [specs]Add gradient to hero: top to bottom fadeRemove ElementRemove [element] from [location]Remove subheadline from hero section",
+    "toc": [
+      {
+        "text": "Overview",
+        "anchor": "overview"
+      },
+      {
+        "text": "Design - Specific Prompts",
+        "anchor": "design-specific-prompts"
+      },
+      {
+        "text": "The initial prompt",
+        "anchor": "the-initial-prompt"
+      },
+      {
+        "text": "Some Use Cases",
+        "anchor": "some-use-cases"
+      },
+      {
+        "text": "1. Specific UI Changes",
+        "anchor": "1-specific-ui-changes"
+      },
+      {
+        "text": "2. Spacing Issues",
+        "anchor": "2-spacing-issues"
+      },
+      {
+        "text": "3. Animation Issues",
+        "anchor": "3-animation-issues"
+      },
+      {
+        "text": "The Holy Grail of Design Tweaking Prompts",
+        "anchor": "the-holy-grail-of-design-tweaking-prompts"
+      },
+      {
+        "text": "Key Considerations to Always Remember",
+        "anchor": "key-considerations-to-always-remember"
+      },
+      {
+        "text": "A Quick Recap",
+        "anchor": "a-quick-recap"
+      }
+    ],
+    "content_length": 8930
+  },
+  {
+    "slug": "missing-app-functionality",
+    "title": "Missing App Functionality",
+    "section": "Troubleshooting",
+    "nav_group": "Troubleshooting",
+    "url": "https://help.emergent.sh/missing-app-functionality",
+    "content_markdown": "# Missing App Functionality\n\nYou may encounter some cases where an app functionality you requested does not work the way you intended. In this situation, you have a variety of ways to rectify the issue and bring parity between the app and what you want to build.\nLet's have a look at some of these ways to troubleshoot missing app functionalities:\n- Be Descriptive and Technical: When it comes to such issues, some technical details go a long way to solving your issues efficiently.\nInfo\nWhile Emergent can self-diagnose and solve 99% of common errors independently, some issues may need your intervention to avoid wastage of credits. This is the guide that enables you.\n- Utilize Console Debugging Tools: Every browser comes with debugging tools integrated - using this option will increase your chances at a quick issue resolution by a lot. (More on this later.)\n- Take Screenshots, Copy Errors: For errors where a toast notification (In-App Notification in your app preview) pops up with an error message, or a red \"Uncaught Runtime Error\" shows up, copy the error text and share it with the agent in chat. \n\nThis allows the agent to understanding your issues and provide solutions more effectively.\n\n## Category A - Missing Functionalities\n\nIn some cases, you may observe that a requested functionality has been partially implemented or implemented in a way you wish to change. Let's look at the most effective prompt template you can use in your own builds:\nSuccess\nEffective Prompt Template:\nI need to add [FEATURE NAME] functionality:\n\nCurrent state: [What exists now / What's missing]\nRequired functionality: [What should happen]\nIntegration details: [API keys, services, libraries needed]\nExpected user flow: [Step by step what user does]\n\nDependencies: [Any API keys, accounts, or setup I need]\n\nDo note, many of these details will be asked by the agent itself as clarifying questions. All you have to do is refer to your chat and consult the prior messages.\n\n## Category B - Unexpected Errors or Bugs\n\nBugs and Unexpected Errors are a part of coding and may come up from time to time. (Although the frequency of this on Emergent is lesser than when manual coding.) \n\nHere is the right way to approach fixing these errors:\nTip\nEffective Prompt Template:\ntestIssue: [Brief description of what's broken]\nLocation: [Where the issue occurs - file, component, API endpoint]\n\nExpected behavior: [What should happen]\nCurrent behavior: [What actually happens]\n\nError message: [Exact error from console/logs, bring that up by clicking\nfn + F12]\nBrowser console errors: [Any frontend errors]\nBackend logs: [Any backend errors]\n\nSteps to reproduce:\n1. [First step]\n2. [Second step]\n3. [Error occurs]\n\nWhat I've tried: [If anything - optional; mention the previous step \nbefore it breaks if possible too!]\nOkay, this one's a loaded prompt. Let's break this up into simple to understand sections.\n- Test Issue and Location: What functionality is broken? Which part of your app is breaking?\n- Expected/Current Behaviour: What did you think would happen - and what actually happens?\n- Error Messages: This information is visible in the browser debug tool. You can open this pane by right-clicking the screen and clicking Inspect; or just press Fn + F12. \n\nOnce you've opened that, you'll see the code that makes the frontend tick. What we need to see is the Console tab and the Network Tab. (Here's a video to help you locate these)\n- Steps to Reproduce: This explains the steps you took before reaching the error in question. What buttons did you click? What active links did you click? This will help Emergent zero in on the issue.\n\n## Category C - Third - Party Integrations\n\nAs you get more comfortable building on Emergent, you will likely take on more ambitious projects that use third party APIs or other integrations that need careful setups.\nEmergent guides you while setting up these integrations, but If you run into any issues mid - build or otherwise, here's a good troubleshooting prompt you can use:\nTip\nEffective Prompt Template:\nI need to integrate [SERVICE NAME]:\n\nPurpose: [What this integration does]\nDocumentation: [Link to docs if you have it - optional]\nAPI Keys: [Do you have them or need guidance?]\n\nSpecific requirements:\n- [Requirement 1]\n- [Requirement 2]\n- [Requirement 3]\nLet's clarify this prompt with a handy example: Setting up an email service\nHere's the prompt as you'd share it with the agent:\n```\nI need to integrate email sending with SendGrid:\n\nPurpose: Send transactional emails (welcome, password reset, notifications)\nAPI Keys: I don't have SendGrid keys yet - need guidance on setup\n\nSpecific requirements:\n- Welcome email when user signs up\n- Password reset emails\n- Email templates with HTML styling\n- Test mode for development\n\nPlease call integration_playbook_expert for SendGrid setup guidance.\n```",
+    "toc": [
+      {
+        "text": "Category A - Missing Functionalities",
+        "anchor": "category-a-missing-functionalities"
+      },
+      {
+        "text": "Category B - Unexpected Errors or Bugs",
+        "anchor": "category-b-unexpected-errors-or-bugs"
+      },
+      {
+        "text": "Category C - Third - Party Integrations",
+        "anchor": "category-c-third-party-integrations"
+      }
+    ],
+    "content_length": 4841
+  },
+  {
+    "slug": "deployment-related-issues",
+    "title": "Deployment Related Issues",
+    "section": "Troubleshooting",
+    "nav_group": "Troubleshooting",
+    "url": "https://help.emergent.sh/deployment-related-issues",
+    "content_markdown": "# Deployment Related Issues\n\nHere's an easy-to-follow guide to some common hurdles you may face while deploying your apps on Emergent.\nInfo\nThe list is not exhaustive, and you may face issues that are not listed here. For the general format to follow when troubleshooting, do refer to the other articles in the Troubleshooting tab.\n\n## Overview\n\nDeployment is how your app goes from a live preview URL that is only active for 30 minutes at a time to an always accessible, permanent live link that you can share with friends, colleagues, clients and the world at large.\nDeployment is essentially moving the code from one \"workspace\" to another. Here are some common issues you may face, and how to solve them:\n\n### Issue 1: Missing API Configurations\n\nImagine you built an app that needs to:\n- Send emails\n- Process payments with Stripe\n- Use AI from OpenAI\n- Connect to a database\nEach of these services needs a \"key\" (like a password) to work. During development, these keys might be stored locally on your computer. But when deploying, you need to give those keys to the deployment system.\nTip\nYou'll know this is the problem if your app deploys but you see errors such as features that stop working, error codes like \"undefined\" or \"missing API key\"\nHere's what you can ask the agent:\n```\nThe app is missing the following functionalities:\n1. [Feature 1] is not working right. It should do [ABC] but currently stops at [A]\n2. [Feature 2] fails with [Error Code XYZ] in the console\n\nAre there any missing API keys or Environment Variables that need to be fixed?\n```\nTo avoid this situation, we advise you to ask the agent if the project is missing any external configurations before attempting to deploy your app. Here's a quick prompt you can use:\n```\nBefore I deploy, can you check if there are any API keys or \nenvironment variables I need to configure? \nPlease list everything I'll need to provide.\n```\n\n### Issue 2: Database Connection Errors\n\nFollowing the same example from the last issue, you may notice that the data you filled in during the preview stage does not carry over in the deployed app.\nThe reason can be traced back to one key fact: The preview environment and the deployed environment on Emergent are two separate \"spaces\" - different environment, different databases. When you deploy an app, the settings from one space is summarised and moved to the final deployed space.\nTip\nYou'll know the issue is database related if you see:\n\nApp starts but database related features are not loading (incomplete data points, features that save or load data don't work)\nErrors mentioning \"MongoDB\" or \"Invalid Database Connection\"\nUser logins, posting, or loading of items fail\nError messages about \"connection timeouts\" or \"authentication failed\"\nIn this situation, it is vital that we avoid prompting the agent with vague prompts that do not explain the gaps in functionality clearly. Here's the kind of prompts that will actually help:\nScenario 1: Database won't connect\n```\nMy app deployed but the database isn't connecting. I'm seeing these errors:\n[Paste error message]\n\nFeatures that aren't working:\n- [e.g., \"User login\"]\n- [e.g., \"Saving posts\"]\n- [e.g., \"Loading data\"]\n\nCan you:\n1. Check the database connection configuration\n2. Make sure the database is set up correctly for deployment\n3. Fix any connection issues\n```\nScenario 2: Features worked locally but not after deployment\n```\nEverything worked fine in development, but after deployment, anything involving saving or loading data fails.\n\nSpecifically:\n- [Describe what's not working]\n\nI think the database connection isn't set up right for deployment. Can you diagnose and fix this?\n```\nTo avoid this situation, we advise you to ask the agent if the project has any database connection errors before attempting to deploy your app. Here's a quick prompt you can use:\n```\nPlease make sure the database connection will work in deployment.\nAdd initialization code if needed, and make sure all required \ncollections/tables are created automatically.\n```\n\n### Issue 3: Missing Libraries or Dependancy Issues\n\nYour app is built using various libraries or packages. Each of these libraries are called a \"dependancy\".\nSometimes when deploying:\n- The wrong versions of such libraries are used\n- The library that is used in the preview environment is different from the library used in the deployed environment\n- A library is not installed or incorrectly installed\nThis is an avoidable error by either asking the agent to verify that such issues do not exist, or by running a Pre-Deployment Health Check.\nTip\nHere's how you know your error falls into this category:\n\nDeployment failed during the 'Building' phase.\nErrors saying 'Module Not Found'\nErrors mentioning specific library names\nHere are some examples to better illustrate the kind of prompts that help with these issues:\nScenario 1: Deployment fails with \"module not found\"\n```\nMy deployment is failing with this error:\n[Paste the error message - especially ones mentioning \"module not found\" or \"cannot find\"]\n\nCan you fix the missing dependencies and make sure everything is installed correctly?\n```\nScenario 2: App crashes after building\n```\nThe app builds successfully but then crashes when starting. The error says:\n[Paste error message]\n\nI think some dependencies are missing or not configured correctly. Can you:\n1. Check what's missing\n2. Install/fix the dependencies\n3. Make sure the app will start correctly in deployment\n```\nScenario 3: Added new features with new libraries\n```\nI just asked you to add [feature name] which uses [library name - e.g., \"Stripe\" or \"Framer Motion\"].\n\nBefore I deploy, can you make sure:\n1. All new dependencies are properly installed\n2. They're added to the requirements/package files\n3. Everything will work in deployment\n```\nScenario 4: General dependency check\n```\nBefore I deploy, can you:\n1. Check that all dependencies are properly listed\n2. Make sure there are no missing packages\n3. Verify everything is installed correctly\n4. Fix any version conflicts\n\nI want to make sure deployment won't fail due to missing dependencies.\n```\nAs always, here is a simple prompt you should share with the agent before deploying the app, to prevent such errors from occuring:\n```\nCan you make sure all the dependencies for this new feature are properly installed and will work in deployment?\n```",
+    "toc": [
+      {
+        "text": "Overview",
+        "anchor": "overview"
+      },
+      {
+        "text": "Issue 1: Missing API Configurations",
+        "anchor": "issue-1-missing-api-configurations"
+      },
+      {
+        "text": "Issue 2: Database Connection Errors",
+        "anchor": "issue-2-database-connection-errors"
+      },
+      {
+        "text": "Issue 3: Missing Libraries or Dependancy Issues",
+        "anchor": "issue-3-missing-libraries-or-dependancy-issues"
+      }
+    ],
+    "content_length": 6358
+  }
+]
