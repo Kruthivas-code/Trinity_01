@@ -75,6 +75,20 @@ async def search_articles(q: str = ""):
 
 # ── Admin endpoints ───────────────────────────────────────────
 
+@router.get("/admin/articles")
+async def admin_list_articles(current_user: dict = Depends(get_current_user)):
+    articles = list(kb_articles.find({}, {"_id": 0}).sort("order", 1))
+    nav = kb_navigation.find_one({}, {"_id": 0})
+    return {"articles": articles, "nav_groups": (nav or {}).get("nav_groups", [])}
+
+
+@router.put("/admin/navigation")
+async def update_navigation(body: dict, current_user: dict = Depends(get_current_user)):
+    nav_groups = body.get("nav_groups", [])
+    kb_navigation.update_one({}, {"$set": {"nav_groups": nav_groups, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    return {"nav_groups": nav_groups}
+
+
 class ArticleUpdate(BaseModel):
     title: Optional[str] = None
     slug: Optional[str] = None
