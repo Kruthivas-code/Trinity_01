@@ -454,6 +454,22 @@ const SettingsPage = ({ user }) => {
             </div>
           </div>
 
+          {/* Portal Categories Section */}
+          <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
+                <LayoutGrid size={20} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-medium">Portal Categories</h3>
+                <p className="text-sm text-muted-foreground">
+                  Manage issue categories shown on the customer portal
+                </p>
+              </div>
+            </div>
+            <PortalCategoryManager />
+          </div>
+
           {/* Data Export Section */}
           <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
             <div className="flex items-center gap-3 mb-4">
