@@ -222,10 +222,15 @@ async def update_category(slug: str, body: CategoryUpdate, current_user: dict = 
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
     updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
+    if "slug" in updates and updates["slug"] != slug:
+        existing = portal_categories_collection.find_one({"slug": updates["slug"]})
+        if existing:
+            raise HTTPException(status_code=409, detail="Slug already in use")
     if updates:
         updates["updated_at"] = datetime.now(timezone.utc)
         portal_categories_collection.update_one({"slug": slug}, {"$set": updates})
-    return portal_categories_collection.find_one({"slug": slug}, {"_id": 0})
+    final_slug = updates.get("slug", slug)
+    return portal_categories_collection.find_one({"slug": final_slug}, {"_id": 0})
 
 
 @router.delete("/admin/categories/{slug}")
