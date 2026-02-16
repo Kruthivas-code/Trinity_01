@@ -47,15 +47,13 @@ const PortalLayout = () => {
             >
               Submit Ticket
             </Link>
-            <a
-              href="https://help.emergent.sh"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/docs"
               className="px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               data-testid="nav-docs"
             >
               Docs
-            </a>
+            </Link>
 
             <div className="w-px h-5 bg-border/50 mx-1" />
 
