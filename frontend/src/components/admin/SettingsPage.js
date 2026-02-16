@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Sun, Moon, Mail, CheckCircle, XCircle, Loader2, RefreshCw, ExternalLink, LogOut, Key, Copy, Trash2, Plus, Download, FileText, Users, Ticket, LayoutGrid } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Mail, CheckCircle, XCircle, Loader2, RefreshCw, ExternalLink, LogOut, Key, Copy, Trash2, Plus, Download, FileText, Users, Ticket, LayoutGrid, BookOpen } from 'lucide-react';
 import PortalCategoryManager from './PortalCategoryManager';
+import KBArticleManager from './KBArticleManager';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTheme } from '../../contexts/ThemeContext';
 
