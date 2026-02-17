@@ -781,7 +781,7 @@ const KBEditor = () => {
       </div>
 
       {/* Navigation Manager Modal */}
-      {navManagerOpen && <NavManager navGroups={navGroups} onSave={saveNavigation} onClose={() => setNavManagerOpen(false)} />}
+      {navManagerOpen && <NavManager navGroups={navGroups} onSave={saveNavigation} onBulkMove={bulkMoveArticles} onClose={() => setNavManagerOpen(false)} />}
     </div>
   );
 };
