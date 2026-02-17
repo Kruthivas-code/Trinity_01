@@ -76,6 +76,19 @@ export const DOC_ICONS = {
   'list': LucideIcons.List,
   'stairs': LucideIcons.TrendingUp,
   'wand-magic-sparkles': LucideIcons.Wand2,
+  'hand': LucideIcons.Hand,
+  'mic': LucideIcons.Mic,
+  'github': LucideIcons.Github,
+  'history': LucideIcons.History,
+  'grid': LucideIcons.Grid3x3,
+  'credit-card': LucideIcons.CreditCard,
+  'indian-rupee': LucideIcons.IndianRupee,
+  'link-2': LucideIcons.Link2,
+  'message-circle': LucideIcons.MessageCircle,
+  'slack': LucideIcons.Slack,
+  'smartphone': LucideIcons.Smartphone,
+  'type': LucideIcons.Type,
+  'shield-check': LucideIcons.ShieldCheck,
 };
 
 export const getIcon = (iconName) => {
