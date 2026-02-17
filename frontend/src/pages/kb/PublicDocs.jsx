@@ -460,6 +460,19 @@ const PublicDocs = () => {
       </main>
 
       <RightSidebar headings={toc} theme={theme} />
+
+      {/* Made with Emergent badge */}
+      <a
+        href="https://app.emergent.sh/?utm_source=emergent-badge"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-5 right-5 z-[9999] flex items-center gap-2.5 px-3.5 py-2 rounded-[10px] no-underline shadow-lg transition-all hover:scale-105"
+        style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', border: '1px solid rgba(255,255,255,0.1)' }}
+        data-testid="made-with-emergent-badge"
+      >
+        <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" alt="" className="w-[22px] h-[22px] rounded" />
+        <span className="text-slate-200 text-sm font-medium tracking-[0.01em]">Made with Emergent</span>
+      </a>
     </div>
   );
 };
