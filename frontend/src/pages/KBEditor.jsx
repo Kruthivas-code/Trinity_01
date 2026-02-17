@@ -13,8 +13,8 @@ import {
   SplitSquareVertical, ExternalLink, Search, MoreHorizontal,
   Youtube
 } from 'lucide-react';
-import { DocContent } from '../../components/docs/DocContent';
-import { getIcon } from '../../components/docs/IconPicker';
+import { DocContent } from '../components/docs/DocContent';
+import { getIcon } from '../components/docs/IconPicker';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
