@@ -41,7 +41,7 @@ const TopNavigation = ({ config, tabs, activeTab, onTabChange, theme, mobileMenu
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 ${theme.navBg} border-b ${theme.border}`} data-testid="kb-header">
       <div className="h-14 px-4 sm:px-6 flex items-center">
-        <Link to="/docs" className="flex items-center gap-2 flex-shrink-0 mr-4 lg:mr-8" data-testid="logo-link">
+        <Link to="/" className="flex items-center gap-2 flex-shrink-0 mr-4 lg:mr-8" data-testid="logo-link">
           <span className={`font-semibold text-lg ${theme.text}`}>{config?.site_title || 'Emergent Docs'}</span>
         </Link>
 
@@ -62,9 +62,9 @@ const TopNavigation = ({ config, tabs, activeTab, onTabChange, theme, mobileMenu
 
         <div className="flex items-center gap-3 sm:gap-4 ml-auto">
           {links.map((link, i) => (
-            <Link key={i} to={link.href || '#'} className={`hidden sm:block text-sm font-medium ${theme.textMuted} hover:text-white transition-colors`}>
+            <a key={i} href={link.href || '#'} className={`hidden sm:block text-sm font-medium ${theme.textMuted} hover:text-white transition-colors`}>
               {link.label}
-            </Link>
+            </a>
           ))}
           <a href={primaryCta.href} target="_blank" rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#188455] hover:bg-[#157149] text-white text-sm font-medium rounded-lg transition-colors"
