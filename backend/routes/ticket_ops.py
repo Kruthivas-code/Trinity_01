@@ -56,11 +56,13 @@ async def bulk_update_tickets(
         {"$set": update_fields}
     )
     
-    # Log to changelog for each ticket
+    # Batch insert changelog entries
+    changelog_entries = []
+    now = datetime.now(timezone.utc)
     for ticket_id in request.ticket_ids:
         for field, new_value in update_fields.items():
             if field != "updated_at":
-                ticket_changelog_collection.insert_one({
+                changelog_entries.append({
                     "changelog_id": f"cl_{uuid.uuid4().hex[:12]}",
                     "ticket_id": ticket_id,
                     "field": field,
@@ -68,9 +70,11 @@ async def bulk_update_tickets(
                     "new_value": new_value,
                     "changed_by": current_user.get("user_id"),
                     "changed_by_name": current_user.get("name"),
-                    "timestamp": datetime.now(timezone.utc),
+                    "timestamp": now,
                     "bulk_operation": True
                 })
+    if changelog_entries:
+        ticket_changelog_collection.insert_many(changelog_entries)
     
     return {
         "message": f"Updated {result.modified_count} tickets",
@@ -90,33 +94,23 @@ async def bulk_tag_tickets(
     if len(request.ticket_ids) > 100:
         raise HTTPException(status_code=400, detail="Maximum 100 tickets per bulk operation")
     
-    modified_count = 0
+    query = {"ticket_id": {"$in": request.ticket_ids}}
     
-    for ticket_id in request.ticket_ids:
-        update_ops = {}
-        
-        if request.tags_to_add:
-            update_ops["$addToSet"] = {"tags": {"$each": request.tags_to_add}}
-        
-        if request.tags_to_remove:
-            update_ops["$pull"] = {"tags": {"$in": request.tags_to_remove}}
-        
-        if update_ops:
-            # MongoDB doesn't allow $addToSet and $pull in same operation
-            if request.tags_to_add:
-                tickets_collection.update_one(
-                    {"ticket_id": ticket_id},
-                    {"$addToSet": {"tags": {"$each": request.tags_to_add}}}
-                )
-            if request.tags_to_remove:
-                tickets_collection.update_one(
-                    {"ticket_id": ticket_id},
-                    {"$pull": {"tags": {"$in": request.tags_to_remove}}}
-                )
-            modified_count += 1
+    # MongoDB doesn't allow $addToSet and $pull in the same operation,
+    # so we run two update_many calls instead of per-ticket loops
+    if request.tags_to_add:
+        tickets_collection.update_many(
+            query,
+            {"$addToSet": {"tags": {"$each": request.tags_to_add}}}
+        )
+    if request.tags_to_remove:
+        tickets_collection.update_many(
+            query,
+            {"$pull": {"tags": {"$in": request.tags_to_remove}}}
+        )
     
     return {
-        "message": f"Updated tags for {modified_count} tickets",
+        "message": f"Updated tags for {len(request.ticket_ids)} tickets",
         "tags_added": request.tags_to_add,
         "tags_removed": request.tags_to_remove
     }

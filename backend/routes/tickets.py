@@ -374,11 +374,17 @@ async def remove_tag(ticket_id: str, tag: str, current_user: dict = Depends(get_
 # ==================== Starred & Escalation Counts ====================
 
 @router.get("/tickets/starred")
-async def get_starred_tickets(current_user: dict = Depends(get_current_user)):
-    """Get all starred tickets, sorted by last update."""
+async def get_starred_tickets(
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get starred tickets with pagination, sorted by last update."""
     query = {"is_starred": True}
-    tickets = list(tickets_collection.find(query).sort("updated_at", DESCENDING))
-    return [serialize_doc(ticket) for ticket in tickets]
+    total = tickets_collection.count_documents(query)
+    skip = (page - 1) * limit
+    tickets = list(tickets_collection.find(query).sort("updated_at", DESCENDING).skip(skip).limit(limit))
+    return {"tickets": [serialize_doc(ticket) for ticket in tickets], "total": total, "page": page, "has_more": skip + limit < total}
 
 
 @router.get("/tickets/escalation-counts")
