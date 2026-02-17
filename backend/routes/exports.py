@@ -346,9 +346,14 @@ async def export_analytics(
     
     agent_metrics = list(tickets_collection.aggregate(agent_pipeline))
     
-    # Enrich with user names
+    # Batch lookup user names
+    agent_user_ids = [a["_id"] for a in agent_metrics if a.get("_id")]
+    users_map = {}
+    if agent_user_ids:
+        for user in users_collection.find({"user_id": {"$in": agent_user_ids}}, {"_id": 0, "user_id": 1, "name": 1, "email": 1}):
+            users_map[user["user_id"]] = user
     for agent in agent_metrics:
-        user = users_collection.find_one({"user_id": agent["_id"]}, {"_id": 0, "name": 1, "email": 1})
+        user = users_map.get(agent["_id"])
         agent["name"] = user.get("name") if user else "Unknown"
         agent["email"] = user.get("email") if user else None
     
