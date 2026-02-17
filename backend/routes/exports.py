@@ -85,32 +85,38 @@ async def admin_export_tickets(
     
     # Fetch tickets
     tickets = list(tickets_collection.find(query, {"_id": 0}))
+    ticket_ids = [t.get("ticket_id") for t in tickets]
     
-    # Enrich with related data
+    # Batch load related data for all tickets at once
+    notes_by_ticket = {}
+    if request.include_notes and ticket_ids:
+        for note in messages_collection.find({"ticket_id": {"$in": ticket_ids}}, {"_id": 0}):
+            notes_by_ticket.setdefault(note["ticket_id"], []).append(note)
+    
+    changelog_by_ticket = {}
+    if request.include_changelog and ticket_ids:
+        for entry in ticket_changelog_collection.find({"ticket_id": {"$in": ticket_ids}}, {"_id": 0}).sort("timestamp", -1):
+            changelog_by_ticket.setdefault(entry["ticket_id"], []).append(entry)
+    
+    csat_by_ticket = {}
+    if request.include_csat and ticket_ids:
+        for csat in csat_responses_collection.find({"ticket_id": {"$in": ticket_ids}}, {"_id": 0}):
+            csat_by_ticket[csat["ticket_id"]] = csat
+    
+    # Enrich with batch-loaded data
     export_data = []
     for ticket in tickets:
         ticket_export = serialize_for_export(ticket)
         ticket_id = ticket.get("ticket_id")
         
-        # Add notes/replies
         if request.include_notes:
-            notes = list(messages_collection.find(
-                {"ticket_id": ticket_id}, {"_id": 0}
-            ))
-            ticket_export["notes"] = [serialize_for_export(n) for n in notes]
+            ticket_export["notes"] = [serialize_for_export(n) for n in notes_by_ticket.get(ticket_id, [])]
         
-        # Add changelog
         if request.include_changelog:
-            changelog = list(ticket_changelog_collection.find(
-                {"ticket_id": ticket_id}, {"_id": 0}
-            ).sort("timestamp", -1))
-            ticket_export["changelog"] = [serialize_for_export(c) for c in changelog]
+            ticket_export["changelog"] = [serialize_for_export(c) for c in changelog_by_ticket.get(ticket_id, [])]
         
-        # Add CSAT
         if request.include_csat:
-            csat = csat_responses_collection.find_one(
-                {"ticket_id": ticket_id}, {"_id": 0}
-            )
+            csat = csat_by_ticket.get(ticket_id)
             ticket_export["csat"] = serialize_for_export(csat) if csat else None
         
         export_data.append(ticket_export)
@@ -148,19 +154,29 @@ async def export_full_data(
         "leaves": []
     }
     
-    # Tickets with all metadata
+    # Tickets with all metadata — batch load related data
     tickets = list(tickets_collection.find({}, {"_id": 0}))
+    ticket_ids = [t.get("ticket_id") for t in tickets]
+    
+    notes_by_ticket = {}
+    if request.include_notes and ticket_ids:
+        for note in messages_collection.find({"ticket_id": {"$in": ticket_ids}}, {"_id": 0}):
+            notes_by_ticket.setdefault(note["ticket_id"], []).append(note)
+    
+    changelog_by_ticket = {}
+    if request.include_changelog and ticket_ids:
+        for entry in ticket_changelog_collection.find({"ticket_id": {"$in": ticket_ids}}, {"_id": 0}):
+            changelog_by_ticket.setdefault(entry["ticket_id"], []).append(entry)
+    
     for ticket in tickets:
         ticket_export = serialize_for_export(ticket)
         ticket_id = ticket.get("ticket_id")
         
         if request.include_notes:
-            notes = list(messages_collection.find({"ticket_id": ticket_id}, {"_id": 0}))
-            ticket_export["notes"] = [serialize_for_export(n) for n in notes]
+            ticket_export["notes"] = [serialize_for_export(n) for n in notes_by_ticket.get(ticket_id, [])]
         
         if request.include_changelog:
-            changelog = list(ticket_changelog_collection.find({"ticket_id": ticket_id}, {"_id": 0}))
-            ticket_export["changelog"] = [serialize_for_export(c) for c in changelog]
+            ticket_export["changelog"] = [serialize_for_export(c) for c in changelog_by_ticket.get(ticket_id, [])]
         
         export_data["tickets"].append(ticket_export)
     
