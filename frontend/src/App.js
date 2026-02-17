@@ -66,6 +66,9 @@ function AppRouter() {
       <Route path="/login" element={<LoginPage />} />
       {/* CSAT Page - Public route (no auth required) */}
       <Route path="/csat/:token" element={<CSATPage />} />
+      {/* KB Editor - Full-page editor (protected) */}
+      <Route path="/dashboard/kb-editor" element={<ProtectedRoute>{() => <KBEditor />}</ProtectedRoute>} />
+      <Route path="/dashboard/kb-editor/:slug" element={<ProtectedRoute>{() => <KBEditor />}</ProtectedRoute>} />
       <Route
         path="/dashboard"
         element={
