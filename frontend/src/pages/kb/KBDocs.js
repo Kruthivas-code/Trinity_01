@@ -379,37 +379,7 @@ const KBDocs = () => {
         {/* Main Content */}
         <main className="kb-content" data-testid="kb-content">
           {article ? (
-            <>
-              <div className="kb-breadcrumb" data-testid="kb-breadcrumb">
-                <span>{article.nav_group_label}</span>
-              </div>
-              <h1 className="kb-page-title" data-testid="kb-page-title">{article.title}</h1>
-              <div className="kb-article-body" data-testid="kb-article-body">
-                {renderMarkdown(article.content_markdown)}
-              </div>
-
-              {/* Prev/Next Navigation */}
-              <div className="kb-prev-next" data-testid="kb-prev-next">
-                {prevNext.prev ? (
-                  <Link to={`/docs/${prevNext.prev.slug}`} className="kb-prev-next-link prev">
-                    <ChevronLeft size={16} />
-                    <div>
-                      <span className="kb-prev-next-label">Previous</span>
-                      <span className="kb-prev-next-title">{prevNext.prev.title}</span>
-                    </div>
-                  </Link>
-                ) : <div />}
-                {prevNext.next ? (
-                  <Link to={`/docs/${prevNext.next.slug}`} className="kb-prev-next-link next">
-                    <div>
-                      <span className="kb-prev-next-label">Next</span>
-                      <span className="kb-prev-next-title">{prevNext.next.title}</span>
-                    </div>
-                    <ChevronRight size={16} />
-                  </Link>
-                ) : <div />}
-              </div>
-            </>
+            <CopyPageArticle article={article} prevNext={prevNext} />
           ) : (
             <div className="kb-empty">
               <BookOpen size={48} strokeWidth={1} />
