@@ -25,6 +25,69 @@ async def get_navigation():
     return {"nav_groups": nav.get("nav_groups", [])}
 
 
+# Icon mapping for nav groups
+NAV_GROUP_ICONS = {
+    "beginners-guide": "book-open",
+    "features": "zap",
+    "building-your-app": "code",
+    "deploy-and-manage": "rocket",
+    "troubleshooting": "wrench",
+}
+
+
+@router.get("/public-data")
+async def get_public_data():
+    """Serve KB data in the format expected by the PublicDocs frontend (mirrors help.emergent.sh API)."""
+    nav_doc = kb_navigation.find_one({}, {"_id": 0})
+    nav_groups = (nav_doc or {}).get("nav_groups", [])
+
+    all_articles = list(kb_articles.find({"published": True}, {"_id": 0}).sort("order", 1))
+
+    # Build navigation tabs from nav_groups
+    tabs = []
+    for group in nav_groups:
+        tab_groups = []
+        for section in group.get("sections", []):
+            section_articles = [
+                a for a in all_articles
+                if a.get("nav_group_key") == group["key"] and a.get("section_key") == section["key"]
+            ]
+            pages = [{"page": a["slug"], "title": a["title"]} for a in section_articles]
+            if pages:
+                tab_groups.append({"group": section.get("label", section["key"]), "pages": pages})
+        tabs.append({
+            "id": group["key"],
+            "label": group.get("label", group["key"]),
+            "icon": NAV_GROUP_ICONS.get(group["key"], "file-text"),
+            "groups": tab_groups,
+        })
+
+    # Build documents list
+    documents = []
+    for a in all_articles:
+        documents.append({
+            "id": a["slug"],
+            "slug": a["slug"],
+            "title": a["title"],
+            "content": a.get("content_markdown", ""),
+            "order": a.get("order", 0),
+            "icon": None,
+        })
+
+    project = {"id": "trinity-kb", "name": "Emergent", "slug": "emergent"}
+    config = {
+        "site_title": "Emergent Docs",
+        "site_description": "Documentation and guides for building with Emergent",
+        "navbar": {
+            "links": [{"label": "Support", "href": "/portal/categories"}],
+            "primary": {"label": "Try Emergent", "href": "https://app.emergent.sh"},
+        },
+        "navigation": {"tabs": tabs},
+    }
+
+    return {"project": project, "config": config, "documents": documents}
+
+
 @router.get("/articles")
 async def list_articles(nav_group: Optional[str] = None, section: Optional[str] = None):
     query = {"published": True}
