@@ -379,7 +379,7 @@ const SearchResultsPage = ({ user }) => {
                 <p className="font-medium text-foreground">Search operators</p>
                 <p><code className="bg-secondary/50 px-1 rounded">status:open</code></p>
                 <p><code className="bg-secondary/50 px-1 rounded">priority:urgent</code></p>
-                <p><code className="bg-secondary/50 px-1 rounded">team:support</code></p>
+                <p><code className="bg-secondary/50 px-1 rounded">team:engineering</code></p>
                 <p><code className="bg-secondary/50 px-1 rounded">customer:@email</code></p>
                 <p><code className="bg-secondary/50 px-1 rounded">created:last-week</code></p>
               </div>
