@@ -58,37 +58,68 @@ async def list_customers(
     customers = list(customers_collection.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit))
     total = customers_collection.count_documents(query)
     
-    # Add stats for each customer
-    result = []
+    # Batch: collect all emails for all customers in this page
+    all_emails = []
+    customer_email_map = {}  # primary_email -> list of all emails for that customer
     for customer in customers:
         customer_emails = [customer["primary_email"]] + customer.get("linked_emails", [])
-        
-        # Get ticket stats
-        ticket_stats = tickets_collection.aggregate([
-            {"$match": {"customer_email": {"$in": customer_emails}}},
+        customer_email_map[customer["primary_email"]] = customer_emails
+        all_emails.extend(customer_emails)
+    
+    # Single aggregation for ticket stats grouped by customer_email
+    ticket_stats_map = {}
+    if all_emails:
+        ticket_stats_pipeline = [
+            {"$match": {"customer_email": {"$in": all_emails}}},
             {"$group": {
-                "_id": None,
+                "_id": "$customer_email",
                 "total_tickets": {"$sum": 1},
                 "open_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["todo", "in_progress", "waiting", "review"]]}, 1, 0]}},
                 "resolved_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["resolved", "closed"]]}, 1, 0]}}
             }}
-        ])
-        stats = list(ticket_stats)
+        ]
+        for stat in tickets_collection.aggregate(ticket_stats_pipeline):
+            ticket_stats_map[stat["_id"]] = stat
+    
+    # Single aggregation for CSAT stats grouped by customer_email
+    csat_stats_map = {}
+    if all_emails:
+        csat_stats_pipeline = [
+            {"$match": {"customer_email": {"$in": all_emails}, "rating": {"$ne": None}}},
+            {"$group": {"_id": "$customer_email", "avg_rating": {"$avg": "$rating"}, "count": {"$sum": 1}}}
+        ]
+        for stat in csat_responses_collection.aggregate(csat_stats_pipeline):
+            csat_stats_map[stat["_id"]] = stat
+    
+    # Assemble results using the batch lookups
+    result = []
+    for customer in customers:
+        customer_emails = customer_email_map[customer["primary_email"]]
         
-        # Get CSAT average
-        csat_stats = csat_responses_collection.aggregate([
-            {"$match": {"customer_email": {"$in": customer_emails}, "rating": {"$ne": None}}},
-            {"$group": {"_id": None, "avg_rating": {"$avg": "$rating"}, "count": {"$sum": 1}}}
-        ])
-        csat = list(csat_stats)
+        # Sum stats across all emails for this customer
+        total_tickets = 0
+        open_tickets = 0
+        resolved_tickets = 0
+        total_csat_sum = 0.0
+        total_csat_count = 0
+        for email in customer_emails:
+            ts = ticket_stats_map.get(email)
+            if ts:
+                total_tickets += ts["total_tickets"]
+                open_tickets += ts["open_tickets"]
+                resolved_tickets += ts["resolved_tickets"]
+            cs = csat_stats_map.get(email)
+            if cs:
+                total_csat_sum += cs["avg_rating"] * cs["count"]
+                total_csat_count += cs["count"]
         
         customer_data = serialize_doc(customer)
         customer_data["stats"] = {
-            "total_tickets": stats[0]["total_tickets"] if stats else 0,
-            "open_tickets": stats[0]["open_tickets"] if stats else 0,
-            "resolved_tickets": stats[0]["resolved_tickets"] if stats else 0,
-            "avg_csat": round(csat[0]["avg_rating"], 1) if csat else None,
-            "csat_count": csat[0]["count"] if csat else 0
+            "total_tickets": total_tickets,
+            "open_tickets": open_tickets,
+            "resolved_tickets": resolved_tickets,
+            "avg_csat": round(total_csat_sum / total_csat_count, 1) if total_csat_count > 0 else None,
+            "csat_count": total_csat_count
         }
         result.append(customer_data)
     
