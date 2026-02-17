@@ -122,7 +122,7 @@ async def admin_export_tickets(
 @router.post("/admin/export/full")
 async def export_full_data(
     request: ExportRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Export complete system data"""
     
@@ -230,7 +230,7 @@ async def export_full_data(
 @router.get("/admin/export/customers")
 async def export_customers(
     format: str = "json",
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Export customer data with ticket history summary"""
     
@@ -295,7 +295,7 @@ async def export_customers(
 async def export_analytics(
     days: int = 30,
     format: str = "json",
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Export analytics data"""
     from_date = datetime.now(timezone.utc) - timedelta(days=days)

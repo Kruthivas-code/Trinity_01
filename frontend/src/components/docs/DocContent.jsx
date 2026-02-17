@@ -202,23 +202,19 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
         // Strip the [!TYPE] marker from the first text node, preserve all rich children
         const calloutType = m[1].toUpperCase();
         let markerStripped = false;
+        const markerRegex = /\s*\[!(NOTE|INFO|TIP|WARNING|CAUTION|ERROR|DANGER|SUCCESS)\]\s*/i;
         const stripMarker = (nodes) => {
           return Children.map(nodes, (child) => {
             if (markerStripped) return child;
             if (typeof child === 'string') {
-              if (!markerStripped) {
-                const stripped = child.replace(/\s*\[!(NOTE|INFO|TIP|WARNING|CAUTION|ERROR|DANGER|SUCCESS)\]\s*/i, '');
-                markerStripped = true;
-                return stripped || null;
-              }
-              return child;
+              const stripped = child.replace(markerRegex, '');
+              markerStripped = true;
+              return stripped || null;
             }
             if (isValidElement(child) && child.props?.children) {
               const newChildren = stripMarker(child.props.children);
-              // If after stripping, all children are empty, skip the element
-              const hasContent = Children.toArray(newChildren).some(c => c !== null && c !== '' && c !== undefined);
-              if (!hasContent) { markerStripped = true; return null; }
-              return { ...child, props: { ...child.props, children: newChildren } };
+              markerStripped = true;
+              return cloneElement(child, {}, newChildren);
             }
             return child;
           });
