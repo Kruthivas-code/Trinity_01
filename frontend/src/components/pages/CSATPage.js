@@ -302,7 +302,7 @@ const CSATPage = () => {
               <TridentIcon className="w-6 h-6 text-primary/60" />
             </div>
             <p className="text-white/40 text-xs">
-              Powered by Trinity Support
+              Powered by Trinity
             </p>
             {ticketId && (
               <p className="text-white/30 text-xs mt-1">
@@ -329,7 +329,7 @@ const CSATPage = () => {
           </p>
         )}
         <p className="text-white/70 mb-8">
-          {customerName ? `Hi ${customerName}, h` : 'H'}ow satisfied were you with our support?
+          {customerName ? `Hi ${customerName}, h` : 'H'}ow satisfied were you with the help you received?
         </p>
         
         <div className="flex justify-center mb-6">
