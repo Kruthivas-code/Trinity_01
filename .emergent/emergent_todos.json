@@ -1,38 +1,38 @@
 [
   {
     "content": "Fix N+1 in customers.py list_customers — batch ticket stats + CSAT stats",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Fix N+1 in analytics.py get_agent_analytics — single aggregation pipeline",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Fix N+1 in exports.py admin_export_tickets & export_full — batch notes/changelog/CSAT",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Fix N+1 in exports.py export_analytics — batch agent name lookup",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Fix bulk-tag and trigger-auto-close to use batch writes",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Fix bulk-update changelog to use insert_many",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Add pagination to starred, by-email, activity-feed, changelog endpoints",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Fix search suggestions regex injection (re.escape)",
-    "status": "pending"
+    "status": "completed"
   },
   {
     "content": "Lint and verify all Phase 2 changes",
-    "status": "pending"
+    "status": "completed"
   }
 ]
