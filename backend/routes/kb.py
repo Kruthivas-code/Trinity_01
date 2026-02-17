@@ -303,3 +303,31 @@ async def delete_kb_image(filename: str, current_user: dict = Depends(get_curren
     if result.deleted_count == 0:
         raise HTTPException(404, detail="Image not found")
     return {"message": "Deleted"}
+
+
+
+# ── Bulk move articles between nav groups/sections ────────────
+
+class BulkMoveRequest(BaseModel):
+    source_group_key: str
+    source_section_key: str
+    target_group_key: str
+    target_group_label: str
+    target_section_key: str
+    target_section_label: str
+
+
+@router.post("/admin/articles/bulk-move")
+async def bulk_move_articles(body: BulkMoveRequest, current_user: dict = Depends(get_current_user)):
+    """Move all articles from one section to another group/section."""
+    result = kb_articles.update_many(
+        {"nav_group_key": body.source_group_key, "section_key": body.source_section_key},
+        {"$set": {
+            "nav_group_key": body.target_group_key,
+            "nav_group_label": body.target_group_label,
+            "section_key": body.target_section_key,
+            "section_label": body.target_section_label,
+            "updated_at": datetime.now(timezone.utc),
+        }}
+    )
+    return {"moved": result.modified_count}
