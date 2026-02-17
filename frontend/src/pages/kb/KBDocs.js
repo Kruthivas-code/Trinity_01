@@ -247,14 +247,13 @@ const KBDocs = () => {
     localStorage.setItem('kb-theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
-  // Build sidebar tree: nav_group > section > articles
-  const sidebarTree = nav.map(group => ({
-    ...group,
-    sections: group.sections.map(sec => ({
-      ...sec,
-      articles: articles.filter(a => a.section_key === sec.key),
-    })),
-  }));
+  // Build sidebar tree: only current nav group's sections
+  const activeGroupKey = article?.nav_group_key || (articles[0]?.nav_group_key) || '';
+  const activeGroup = nav.find(g => g.key === activeGroupKey);
+  const sidebarSections = activeGroup ? activeGroup.sections.map(sec => ({
+    ...sec,
+    articles: articles.filter(a => a.section_key === sec.key && a.nav_group_key === activeGroupKey),
+  })) : [];
 
   const toc = article ? extractTOC(article.content_markdown) : [];
 
