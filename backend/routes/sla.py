@@ -59,6 +59,8 @@ async def get_ticket_sla_status(
     now = datetime.now(timezone.utc)
     elapsed_minutes = 0
     if isinstance(created_at, datetime):
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
         elapsed_minutes = (now - created_at).total_seconds() / 60
 
     first_response_status = "breached" if elapsed_minutes > first_response_mins else "on_track"
@@ -67,6 +69,8 @@ async def get_ticket_sla_status(
     if ticket.get("status") in ("resolved", "closed"):
         resolved_at = ticket.get("resolved_at") or ticket.get("closed_at") or ticket.get("updated_at")
         if resolved_at and isinstance(resolved_at, datetime):
+            if resolved_at.tzinfo is None:
+                resolved_at = resolved_at.replace(tzinfo=timezone.utc)
             resolve_elapsed = (resolved_at - created_at).total_seconds() / 60
             resolution_status = "breached" if resolve_elapsed > resolution_mins else "met"
         first_response_status = "met"

@@ -207,14 +207,17 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
             if (markerStripped) return child;
             if (typeof child === 'string') {
               if (!markerStripped) {
-                const stripped = child.replace(/^\s*\[!(NOTE|INFO|TIP|WARNING|CAUTION|ERROR|DANGER|SUCCESS)\]\s*/i, '');
+                const stripped = child.replace(/\s*\[!(NOTE|INFO|TIP|WARNING|CAUTION|ERROR|DANGER|SUCCESS)\]\s*/i, '');
                 markerStripped = true;
-                return stripped;
+                return stripped || null;
               }
               return child;
             }
             if (isValidElement(child) && child.props?.children) {
               const newChildren = stripMarker(child.props.children);
+              // If after stripping, all children are empty, skip the element
+              const hasContent = Children.toArray(newChildren).some(c => c !== null && c !== '' && c !== undefined);
+              if (!hasContent) { markerStripped = true; return null; }
               return { ...child, props: { ...child.props, children: newChildren } };
             }
             return child;
