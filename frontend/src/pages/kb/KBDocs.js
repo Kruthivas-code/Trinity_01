@@ -309,6 +309,9 @@ const KBDocs = () => {
             <button onClick={() => setDarkMode(!darkMode)} className="kb-theme-btn" data-testid="kb-theme-toggle">
               {darkMode ? <Sun size={16} /> : <Moon size={16} />}
             </button>
+            <a href="https://app.emergent.sh" target="_blank" rel="noopener noreferrer" className="kb-try-btn" data-testid="kb-try-btn">
+              Try Emergent <ArrowRight size={14} />
+            </a>
           </div>
         </div>
       </header>
