@@ -355,24 +355,21 @@ const KBDocs = () => {
             </div>
           )}
 
-          {/* Nav Tree */}
+          {/* Nav Tree - shows only active nav group's sections */}
           <nav className="kb-nav-tree" data-testid="kb-nav-tree">
-            {sidebarTree.map(group => (
-              <div key={group.key} className="kb-nav-group">
-                {group.sections.map(sec => (
-                  <div key={sec.key} className="kb-nav-section">
-                    <div className="kb-nav-section-label">{sec.label}</div>
-                    {sec.articles.map(a => (
-                      <Link
-                        key={a.slug}
-                        to={`/docs/${a.slug}`}
-                        className={`kb-nav-item ${article?.slug === a.slug ? 'active' : ''}`}
-                        data-testid={`kb-sidebar-${a.slug}`}
-                      >
-                        {a.title}
-                      </Link>
-                    ))}
-                  </div>
+            {sidebarSections.map(sec => (
+              <div key={sec.key} className="kb-nav-section">
+                <div className="kb-nav-section-label">{sec.label}</div>
+                {sec.articles.map(a => (
+                  <Link
+                    key={a.slug}
+                    to={`/docs/${a.slug}`}
+                    className={`kb-nav-item ${article?.slug === a.slug ? 'active' : ''}`}
+                    data-testid={`kb-sidebar-${a.slug}`}
+                  >
+                    <span className="kb-nav-item-icon">{ARTICLE_ICONS[a.slug] || defaultArticleIcon}</span>
+                    {a.title}
+                  </Link>
                 ))}
               </div>
             ))}
