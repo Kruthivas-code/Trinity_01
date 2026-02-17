@@ -9,7 +9,7 @@
 - [x] Add rate limiting to portal register (5/min) and login (10/min)
 - [x] Strengthen portal password policy (8 chars, uppercase, digit)
 
-## Phase 2: Performance & Scalability [IN PROGRESS]
+## Phase 2: Performance & Scalability [COMPLETED]
 
 ### 2A. Fix N+1 Query Patterns (Critical)
 **Problem:** Several endpoints run individual DB queries per item in a loop, causing O(N) database round-trips.
