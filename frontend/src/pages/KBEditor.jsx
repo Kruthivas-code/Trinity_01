@@ -251,6 +251,8 @@ const KBEditor = () => {
   const [configOpen, setConfigOpen] = useState(false);
   const [expanded, setExpanded] = useState({});
   const [previewDevice, setPreviewDevice] = useState('desktop');
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   const slugify = (t) => t.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-');
 
