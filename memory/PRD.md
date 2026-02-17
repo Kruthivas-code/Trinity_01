@@ -43,7 +43,8 @@ Build an enterprise ticket management platform with email-first support manageme
 - Header Navigation: "Get more help" CTA to portal, logo to app.emergent.sh
 - KB Editor Enhancements: Navigation Manager (CRUD for tabs/sections), Icon Picker, auto-increment ordering, tab-scoped prev/next
 - Bulk section move feature
-- **KB Previous/Next Navigation Verification** -- All 5 tabs verified: first article has no Previous, last article has no Next, middle articles have both, button clicks navigate correctly within same tab (12/12 tests passed Feb 2026)
+- **KB Previous/Next Navigation Verification** -- All 5 tabs verified (12/12 tests passed Feb 2026)
+- **Article Feedback Widget** -- "Was this article helpful?" thumbs up/down on every KB article, anonymous, confirmation messages, resets on navigation. Admin sidebar shows color-coded helpfulness % badges per article (green >=70%, amber >=40%, red <40%). Backend: kb_feedback collection, POST/GET endpoints. (Feb 2026, all tests passed)
 
 ## P1 - Next Priority
 - New Email System (transactional emails for ticket notifications)
