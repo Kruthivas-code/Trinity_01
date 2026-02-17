@@ -124,7 +124,6 @@ async def get_article(slug: str):
         raise HTTPException(status_code=404, detail="Article not found")
     # Get prev/next for navigation
     order = article.get("order", 0)
-    section_key = article.get("section_key")
     prev_art = kb_articles.find_one(
         {"published": True, "order": {"$lt": order}},
         {"_id": 0, "slug": 1, "title": 1},
