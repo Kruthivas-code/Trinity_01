@@ -10,6 +10,17 @@ const PLACEHOLDERS = {
   emergency: 'Describe the issue with your deployed app. Include: app URL, when it started, error messages, and impact.',
 };
 
+// Categories where job ID is mandatory
+const JOB_ID_REQUIRED = new Set(['agent-ai', 'deployments', 'database', 'mobile-builds', 'features', 'custom-domain']);
+// For credits-pricing, only certain subtopics need it
+const JOB_ID_SUBTOPICS = { 'credits-pricing': ['Credit Usage'] };
+
+const needsJobId = (categorySlug, subtopic) => {
+  if (JOB_ID_REQUIRED.has(categorySlug)) return true;
+  const subs = JOB_ID_SUBTOPICS[categorySlug];
+  return subs ? subs.some(s => subtopic?.includes(s)) : false;
+};
+
 const PortalSubmit = () => {
   const { customer, token } = usePortalAuth();
   const navigate = useNavigate();
