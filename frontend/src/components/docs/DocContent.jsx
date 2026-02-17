@@ -193,11 +193,42 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
     h3: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h3 id={id} className="scroll-mt-20 !text-white text-xl font-semibold mt-8 mb-3">{children}</h3>; },
     h4: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h4 id={id} className="scroll-mt-20 !text-white text-lg font-semibold mt-6 mb-2">{children}</h4>; },
     blockquote: ({ children }) => {
+      // Extract text to detect GitHub-style callout markers [!WARNING], [!SUCCESS], etc.
       let text = '';
       const extract = (n) => { if (typeof n === 'string') text += n; else if (isValidElement(n)) Children.forEach(n.props.children, extract); else if (Array.isArray(n)) n.forEach(extract); };
       Children.forEach(children, extract);
       const m = text.match(/^\s*\[!(NOTE|INFO|TIP|WARNING|CAUTION|ERROR|DANGER|SUCCESS)\]\s*/i);
-      if (m) { const clean = text.replace(/^\s*\[!(NOTE|INFO|TIP|WARNING|CAUTION|ERROR|DANGER|SUCCESS)\]\s*/i, '').trim(); return <Callout type={m[1].toUpperCase()}><p>{clean}</p></Callout>; }
+      if (m) {
+        // Strip the [!TYPE] marker from the first text node, preserve all rich children
+        const calloutType = m[1].toUpperCase();
+        let markerStripped = false;
+        const stripMarker = (nodes) => {
+          return Children.map(nodes, (child) => {
+            if (markerStripped) return child;
+            if (typeof child === 'string') {
+              if (!markerStripped) {
+                const stripped = child.replace(/^\s*\[!(NOTE|INFO|TIP|WARNING|CAUTION|ERROR|DANGER|SUCCESS)\]\s*/i, '');
+                markerStripped = true;
+                return stripped;
+              }
+              return child;
+            }
+            if (isValidElement(child) && child.props?.children) {
+              const newChildren = stripMarker(child.props.children);
+              return { ...child, props: { ...child.props, children: newChildren } };
+            }
+            return child;
+          });
+        };
+        const cleanChildren = stripMarker(children);
+        return (
+          <Callout type={calloutType}>
+            <div className="[&>p]:!text-slate-200 [&>ul]:!text-slate-200 [&>ol]:!text-slate-200 [&>li]:!text-slate-200 [&_code]:!text-pink-300 [&>p]:my-2 [&>p:first-child]:mt-0 [&>p:last-child]:mb-0">
+              {cleanChildren}
+            </div>
+          </Callout>
+        );
+      }
       return <blockquote className="my-6 pl-4 border-l-4 border-[#188455] italic [&>*]:!text-slate-300">{children}</blockquote>;
     },
     table: ({ children }) => <div className="overflow-x-auto my-6 rounded-lg border border-slate-800"><table className="w-full">{children}</table></div>,
