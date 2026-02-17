@@ -7,7 +7,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Search, Menu, X, ChevronDown,
   ExternalLink, Copy, Check,
-  ArrowLeft, ArrowRight, Sparkles
+  ArrowLeft, ArrowRight, Sparkles,
+  ThumbsUp, ThumbsDown
 } from 'lucide-react';
 import { DocContent } from '../../components/docs/DocContent';
 import { getIcon } from '../../components/docs/IconPicker';
