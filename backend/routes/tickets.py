@@ -338,7 +338,14 @@ async def get_ticket_activity_feed(
         for activity in activities:
             if activity.get("user_id") and not activity.get("user_name"):
                 activity["user_name"] = users.get(activity["user_id"], activity["user_id"])
-    activities.sort(key=lambda x: x.get("timestamp") or datetime.min.replace(tzinfo=timezone.utc))
+    def _sort_key(x):
+        ts = x.get("timestamp")
+        if ts is None:
+            return datetime.min.replace(tzinfo=timezone.utc)
+        if isinstance(ts, datetime) and ts.tzinfo is None:
+            return ts.replace(tzinfo=timezone.utc)
+        return ts
+    activities.sort(key=_sort_key)
     return [serialize_doc(a) for a in activities]
 
 

@@ -15,7 +15,7 @@ from database import (
     customers_collection, messages_collection, ticket_changelog_collection,
     admin_settings_collection, csat_responses_collection,
 )
-from dependencies import get_current_user
+from dependencies import get_current_user, require_admin
 from models.schemas import ExportRequest
 from utils import (
     serialize_doc, serialize_for_export,
@@ -51,7 +51,7 @@ def serialize_for_export(doc):
 @router.post("/admin/export/tickets")
 async def admin_export_tickets(
     request: ExportRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Export all tickets with metadata"""
     

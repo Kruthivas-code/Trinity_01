@@ -15,7 +15,7 @@ from database import (
     routing_rules_collection, sla_escalation_rules_collection,
     AUTO_CLOSE_HOURS,
 )
-from dependencies import get_current_user
+from dependencies import get_current_user, require_admin
 from models.schemas import (
     CustomFieldCreate, CustomFieldUpdate,
     RoutingRuleCreate, RoutingRuleUpdate,
@@ -108,7 +108,7 @@ async def delete_custom_field(
 # ==================== Admin Settings ====================
 
 @router.get("/admin/settings")
-async def get_admin_settings(current_user: dict = Depends(get_current_user)):
+async def get_admin_settings(current_user: dict = Depends(require_admin)):
     """Get global admin settings (company name, auto-assignment, defaults)."""
     settings = admin_settings_collection.find_one({"type": "global"})
     if not settings:
@@ -130,7 +130,7 @@ async def get_admin_settings(current_user: dict = Depends(get_current_user)):
 @router.put("/admin/settings")
 async def update_admin_settings(
     settings: Dict[str, Any],
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Update global admin settings."""
     settings["type"] = "global"
