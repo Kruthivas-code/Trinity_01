@@ -173,6 +173,60 @@
   border-color: var(--kb-text-dim);
 }
 
+.kb-try-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: var(--kb-accent);
+  color: var(--kb-bg);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.kb-try-btn:hover {
+  opacity: 0.85;
+}
+
+/* ── Title row with copy ── */
+.kb-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.kb-title-row .kb-page-title {
+  margin-bottom: 0;
+}
+
+.kb-copy-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--kb-border);
+  border-radius: 6px;
+  background: var(--kb-bg);
+  color: var(--kb-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+
+.kb-copy-btn:hover {
+  border-color: var(--kb-text-dim);
+  color: var(--kb-text);
+}
+
 .kb-mobile-menu {
   display: none;
   border: none;
