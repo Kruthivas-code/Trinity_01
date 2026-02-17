@@ -33,15 +33,18 @@ Build an enterprise ticket management platform with email-first support manageme
 - portal_categories, portal_customers, portal_sessions
 - **kb_articles** (slug, title, section/nav keys, content_markdown, order, published)
 - **kb_navigation** (sidebar nav structure: 5 groups with sections)
+- **kb_image_files** (filename, original_name, content_type, data [binary], size, uploaded_at, uploaded_by)
+
+## P0 - Completed
+- Admin Image Upload in KB Editor (toolbar button, drag-and-drop, paste support, stored in MongoDB)
 
 ## P1 - Next Priority
-- New Email System (Mailgun outbound/inbound)
-- Customer replies in portal
+- New Email System (transactional emails for ticket notifications)
 
 ## P2 - Backlog
 - Real-time notification center
-- KB Image Handling (download/store images from scraped articles)
 - Advanced analytics
+- KBEditor.js refactoring (break into smaller sub-components)
 
 ## Key Files (KB v2)
 - `frontend/src/pages/kb/PublicDocs.jsx` — Main KB page (ported from help.emergent.sh)
@@ -49,7 +52,8 @@ Build an enterprise ticket management platform with email-first support manageme
 - `frontend/src/components/docs/{Steps,Cards,Tabs,Accordion,IconPicker}.jsx` — Custom MDX components
 - `frontend/src/lib/mdx/parser.js` — MDX component extraction
 - `frontend/src/lib/search/index.js` — FlexSearch client-side search
-- `frontend/src/pages/KBEditor.jsx` — Full-page KB article editor (split markdown/preview)
+- `frontend/src/pages/KBEditor.jsx` — Full-page KB article editor with image upload support
+- `backend/routes/kb.py` — KB API routes including image upload/serve/list/delete
 
 ## 3rd Party Integrations
 - Gemini 3 Flash (via emergentintegrations + EMERGENT_LLM_KEY)
