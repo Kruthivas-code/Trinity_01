@@ -221,9 +221,10 @@ const IconPicker = ({ value, onChange }) => {
 };
 
 // ===== Navigation Manager Modal =====
-const NavManager = ({ navGroups, onSave, onClose }) => {
+const NavManager = ({ navGroups, onSave, onClose, onBulkMove }) => {
   const [groups, setGroups] = useState(JSON.parse(JSON.stringify(navGroups)));
   const [saving, setSaving] = useState(false);
+  const [moveTarget, setMoveTarget] = useState(null); // { gIdx, sIdx }
 
   const addGroup = () => {
     const key = `group-${Date.now()}`;
@@ -241,6 +242,26 @@ const NavManager = ({ navGroups, onSave, onClose }) => {
     setSaving(true);
     await onSave(groups);
     setSaving(false);
+  };
+
+  // Build move targets (all group+section combos except current)
+  const getMoveTargets = (gIdx, sIdx) => {
+    const targets = [];
+    groups.forEach((g, gi) => {
+      (g.sections || []).forEach((s, si) => {
+        if (gi !== gIdx || si !== sIdx) targets.push({ gIdx: gi, sIdx: si, groupKey: g.key, groupLabel: g.label, sectionKey: s.key, sectionLabel: s.label });
+      });
+    });
+    return targets;
+  };
+
+  const handleBulkMove = async (sourceGIdx, sourceSIdx, target) => {
+    const srcGroup = navGroups[sourceGIdx] || groups[sourceGIdx];
+    const srcSection = (srcGroup?.sections || [])[sourceSIdx] || groups[sourceGIdx]?.sections?.[sourceSIdx];
+    if (!srcGroup || !srcSection) return;
+    const count = await onBulkMove(srcGroup.key, srcSection.key, target.groupKey, target.groupLabel, target.sectionKey, target.sectionLabel);
+    setMoveTarget(null);
+    if (count > 0) alert(`Moved ${count} article(s) successfully.`);
   };
 
   return (
@@ -271,17 +292,41 @@ const NavManager = ({ navGroups, onSave, onClose }) => {
               </div>
               <div className="p-3 space-y-2">
                 {(group.sections || []).map((sec, sIdx) => (
-                  <div key={sec.key} className="flex items-center gap-2 pl-4" data-testid={`nav-section-${gIdx}-${sIdx}`}>
-                    <div className="flex flex-col gap-0.5">
-                      <button disabled={sIdx === 0} onClick={() => moveSection(gIdx, sIdx, -1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▲</button>
-                      <button disabled={sIdx === (group.sections || []).length - 1} onClick={() => moveSection(gIdx, sIdx, 1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▼</button>
+                  <div key={sec.key} data-testid={`nav-section-${gIdx}-${sIdx}`}>
+                    <div className="flex items-center gap-2 pl-4">
+                      <div className="flex flex-col gap-0.5">
+                        <button disabled={sIdx === 0} onClick={() => moveSection(gIdx, sIdx, -1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▲</button>
+                        <button disabled={sIdx === (group.sections || []).length - 1} onClick={() => moveSection(gIdx, sIdx, 1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▼</button>
+                      </div>
+                      <FolderOpen className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
+                      <input value={sec.label} onChange={e => updateSection(gIdx, sIdx, 'label', e.target.value)} placeholder="Section name"
+                        className="flex-1 bg-transparent text-sm text-slate-300 placeholder:text-slate-600 outline-none border-b border-transparent focus:border-emerald-500 px-1 py-0.5" />
+                      <input value={sec.key} onChange={e => updateSection(gIdx, sIdx, 'key', e.target.value)} placeholder="key"
+                        className="w-28 bg-slate-800 text-xs font-mono text-slate-400 rounded px-2 py-1 border border-slate-700" />
+                      <button onClick={() => setMoveTarget(moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx ? null : { gIdx, sIdx })}
+                        className={`p-1 rounded transition-colors ${moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx ? 'text-blue-400 bg-blue-400/10' : 'text-slate-600 hover:text-blue-400'}`}
+                        title="Move articles to another section" data-testid={`move-section-${gIdx}-${sIdx}`}>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => removeSection(gIdx, sIdx)} className="p-1 text-slate-600 hover:text-red-400 rounded"><Trash2 className="w-3 h-3" /></button>
                     </div>
-                    <FolderOpen className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
-                    <input value={sec.label} onChange={e => updateSection(gIdx, sIdx, 'label', e.target.value)} placeholder="Section name"
-                      className="flex-1 bg-transparent text-sm text-slate-300 placeholder:text-slate-600 outline-none border-b border-transparent focus:border-emerald-500 px-1 py-0.5" />
-                    <input value={sec.key} onChange={e => updateSection(gIdx, sIdx, 'key', e.target.value)} placeholder="key"
-                      className="w-36 bg-slate-800 text-xs font-mono text-slate-400 rounded px-2 py-1 border border-slate-700" />
-                    <button onClick={() => removeSection(gIdx, sIdx)} className="p-1 text-slate-600 hover:text-red-400 rounded"><Trash2 className="w-3 h-3" /></button>
+                    {moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx && (
+                      <div className="ml-10 mt-2 p-2.5 bg-slate-800/50 border border-slate-700 rounded-lg" data-testid="move-target-picker">
+                        <p className="text-xs text-slate-400 mb-2">Move all articles in <strong className="text-white">{sec.label}</strong> to:</p>
+                        <div className="space-y-1 max-h-32 overflow-y-auto">
+                          {getMoveTargets(gIdx, sIdx).map((t, i) => (
+                            <button key={i} onClick={() => handleBulkMove(gIdx, sIdx, t)}
+                              className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex items-center gap-2"
+                              data-testid={`move-target-${i}`}>
+                              <ArrowRight className="w-3 h-3 text-blue-400" />
+                              <span className="text-slate-500">{t.groupLabel}</span>
+                              <span className="text-slate-600">/</span>
+                              <span>{t.sectionLabel}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 <button onClick={() => addSection(gIdx)} className="flex items-center gap-1.5 ml-4 px-2 py-1 text-xs text-slate-500 hover:text-emerald-400 rounded hover:bg-slate-800/50 transition-colors" data-testid={`add-section-${gIdx}`}>
