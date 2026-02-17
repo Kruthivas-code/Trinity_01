@@ -605,6 +605,20 @@ const KBEditor = () => {
     } catch (e) { console.error(e); alert('Failed to save navigation: ' + e.message); }
   };
 
+  // Bulk move articles between sections
+  const bulkMoveArticles = async (srcGroupKey, srcSectionKey, tgtGroupKey, tgtGroupLabel, tgtSectionKey, tgtSectionLabel) => {
+    try {
+      const res = await fetch(`${API}/api/kb/admin/articles/bulk-move`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_group_key: srcGroupKey, source_section_key: srcSectionKey, target_group_key: tgtGroupKey, target_group_label: tgtGroupLabel, target_section_key: tgtSectionKey, target_section_label: tgtSectionLabel })
+      });
+      if (!res.ok) throw new Error('Failed to move');
+      const data = await res.json();
+      await fetchAll();
+      return data.moved;
+    } catch (e) { console.error(e); alert('Failed to move articles: ' + e.message); return 0; }
+  };
+
   // Build sidebar tree
   const tree = useMemo(() => navGroups.map(group => ({
     ...group,
