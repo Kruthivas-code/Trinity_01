@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from datetime import datetime, timezone
 from typing import Optional
 import logging
+import re
 
 from database import (
     db, tickets_collection, users_collection, customers_collection,
@@ -73,23 +74,25 @@ async def get_search_suggestions(
     if len(q) < 2:
         return {"suggestions": []}
 
+    escaped_q = re.escape(q)
+
     ticket_suggestions = list(tickets_collection.find(
-        {"title": {"$regex": q, "$options": "i"}},
+        {"title": {"$regex": escaped_q, "$options": "i"}},
         {"_id": 0, "ticket_id": 1, "title": 1, "status": 1}
     ).limit(5))
 
     customer_suggestions = list(customers_collection.find(
         {"$or": [
-            {"name": {"$regex": q, "$options": "i"}},
-            {"email": {"$regex": q, "$options": "i"}}
+            {"name": {"$regex": escaped_q, "$options": "i"}},
+            {"email": {"$regex": escaped_q, "$options": "i"}}
         ]},
         {"_id": 0, "customer_id": 1, "name": 1, "email": 1}
     ).limit(3))
 
     user_suggestions = list(users_collection.find(
         {"$or": [
-            {"name": {"$regex": q, "$options": "i"}},
-            {"email": {"$regex": q, "$options": "i"}}
+            {"name": {"$regex": escaped_q, "$options": "i"}},
+            {"email": {"$regex": escaped_q, "$options": "i"}}
         ]},
         {"_id": 0, "user_id": 1, "name": 1, "email": 1}
     ).limit(3))
