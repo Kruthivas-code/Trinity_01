@@ -207,7 +207,7 @@ class TeamCreate(BaseModel):
     escalation_level: str = "L1"
     description: Optional[str] = ""
 
-    model_config = {"json_schema_extra": {"examples": [{"name": "Tier 1 Support", "escalation_level": "L1", "description": "Frontline support handling initial customer inquiries"}]}}
+    model_config = {"json_schema_extra": {"examples": [{"name": "Tier 1", "escalation_level": "L1", "description": "Frontline handling initial customer inquiries"}]}}
 
 
 class TeamUpdate(BaseModel):

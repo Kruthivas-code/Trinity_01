@@ -112,7 +112,7 @@ async def send_csat_survey(
                 </p>
                 <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
                     <p style="color: #6b7280; font-size: 14px; margin: 0 0 5px;">Ticket #{ticket_id}</p>
-                    <p style="color: #111827; font-size: 18px; font-weight: 600; margin: 0;">{ticket.get('title', 'Support Request')}</p>
+                    <p style="color: #111827; font-size: 18px; font-weight: 600; margin: 0;">{ticket.get('title', 'Request')}</p>
                     {f'<p style="color: #6b7280; font-size: 14px; margin: 10px 0 0;">Resolved by: {token_doc["resolved_by_name"]}</p>' if token_doc.get("resolved_by_name") else ''}
                 </div>
                 <div style="text-align: center; margin: 30px 0;">

@@ -98,7 +98,7 @@ async def get_public_data():
         "site_title": "Emergent Docs",
         "site_description": "Documentation and guides for building with Emergent",
         "navbar": {
-            "links": [{"label": "Support", "href": "/portal"}],
+            "links": [{"label": "Help", "href": "/portal"}],
             "primary": {"label": "Try Emergent", "href": "https://app.emergent.sh"},
         },
         "navigation": {"tabs": tabs},
