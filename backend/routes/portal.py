@@ -379,6 +379,7 @@ async def submit_ticket(body: TicketSubmit, customer: dict = Depends(get_portal_
         "source": "portal",
         "portal_category": body.category_slug,
         "portal_subcategory": body.subcategory,
+        "job_id": body.job_id.strip() if body.job_id else None,
         "customer_email": customer["email"],
         "customer_name": customer["name"],
         "customer_id": customer["customer_id"],
