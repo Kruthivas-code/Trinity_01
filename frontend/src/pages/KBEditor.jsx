@@ -528,11 +528,25 @@ const KBEditor = () => {
           <div className="flex-1 flex overflow-hidden">
             {/* Markdown Editor */}
             {(viewMode === 'markdown' || viewMode === 'split') && (
-              <div className={`${viewMode === 'split' ? 'w-1/2 border-r border-slate-800' : 'w-full'} flex flex-col overflow-hidden`}>
+              <div className={`${viewMode === 'split' ? 'w-1/2 border-r border-slate-800' : 'w-full'} flex flex-col overflow-hidden relative`}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}>
+                {dragOver && (
+                  <div className="absolute inset-0 z-20 bg-emerald-500/10 border-2 border-dashed border-emerald-500 rounded-lg flex items-center justify-center pointer-events-none" data-testid="drag-overlay">
+                    <div className="text-emerald-400 text-sm font-medium flex items-center gap-2"><ImageIcon className="w-5 h-5" /> Drop image to upload</div>
+                  </div>
+                )}
+                {uploading && (
+                  <div className="absolute inset-0 z-20 bg-black/40 flex items-center justify-center" data-testid="upload-spinner">
+                    <div className="flex items-center gap-2 text-emerald-400 text-sm bg-slate-900 px-4 py-2 rounded-lg border border-slate-700"><Loader2 className="w-4 h-4 animate-spin" /> Uploading image...</div>
+                  </div>
+                )}
                 {form ? (
                   <textarea ref={textareaRef} value={form.content_markdown || ''} onChange={e => setForm(f => ({ ...f, content_markdown: e.target.value }))}
+                    onPaste={handlePaste}
                     className="flex-1 w-full px-6 py-6 bg-transparent text-slate-200 text-sm font-mono leading-relaxed resize-none outline-none"
-                    style={{ tabSize: 2 }} placeholder="Start writing markdown..." spellCheck={false} data-testid="markdown-editor" />
+                    style={{ tabSize: 2 }} placeholder="Start writing markdown... (Drag, drop or paste images here)" spellCheck={false} data-testid="markdown-editor" />
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-slate-500">
                     <div className="text-center"><FileText className="w-8 h-8 mx-auto mb-3 opacity-50" /><p>Select an article or create new</p></div>
