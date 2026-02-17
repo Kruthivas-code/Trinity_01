@@ -131,6 +131,20 @@ const LoomEmbed = ({ id, title }) => {
   );
 };
 
+const Figure = ({ src, alt, caption }) => {
+  if (!src) return null;
+  return (
+    <figure className="my-6 relative z-10" data-testid="figure">
+      <div className="rounded-xl overflow-hidden border border-slate-800 shadow-lg bg-slate-900">
+        <img src={src} alt={alt || caption || 'Image'} className="w-full h-auto" loading="lazy" />
+      </div>
+      {caption && caption.trim() && (
+        <figcaption className="mt-2 text-sm text-slate-400 text-center">{caption}</figcaption>
+      )}
+    </figure>
+  );
+};
+
 const NestedContent = ({ content, mdComponents }) => {
   if (!content) return null;
   const hasCustom = /<(Steps|CardGroup|Columns|Card|Tabs|Accordion|Callout|YouTube|Loom|Video|Figure)/i.test(content) || />\s*\[!(NOTE|TIP|WARNING|CAUTION|ERROR|INFO|SUCCESS)\]/i.test(content);
