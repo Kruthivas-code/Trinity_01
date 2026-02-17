@@ -14,7 +14,7 @@ const PortalLayout = () => {
       {/* Header */}
       <header className="border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 group" data-testid="portal-logo">
+          <Link to="/portal" className="flex items-center gap-2.5 group" data-testid="portal-logo">
             <div className="h-7 w-7 rounded bg-foreground flex items-center justify-center">
               <span className="text-background text-xs font-bold tracking-tight">E</span>
             </div>
@@ -25,8 +25,8 @@ const PortalLayout = () => {
 
           <nav className="flex items-center gap-1">
             <Link
-              to="/"
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${location.pathname === '/' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              to="/portal"
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${location.pathname === '/portal' || location.pathname === '/portal/categories' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               data-testid="nav-home"
             >
               Home
