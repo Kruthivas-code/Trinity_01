@@ -3,6 +3,7 @@ Public Knowledge Base API routes.
 Serves articles for the help.emergent.sh-style KB frontend.
 """
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import Response
 from database import db
 from dependencies import get_current_user
 from pydantic import BaseModel
@@ -13,6 +14,22 @@ router = APIRouter(prefix="/api/kb", tags=["knowledge_base_public"])
 
 kb_articles = db["kb_articles"]
 kb_navigation = db["kb_navigation"]
+kb_image_files = db["kb_image_files"]
+
+
+# ── Image serving ─────────────────────────────────────────────
+
+@router.get("/images/{filename}")
+async def get_kb_image(filename: str):
+    """Serve KB images from MongoDB."""
+    doc = kb_image_files.find_one({"filename": filename}, {"_id": 0})
+    if not doc or "data" not in doc:
+        raise HTTPException(404, detail="Image not found")
+    return Response(
+        content=doc["data"],
+        media_type=doc.get("content_type", "application/octet-stream"),
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
 
 
 # ── Public endpoints ──────────────────────────────────────────
