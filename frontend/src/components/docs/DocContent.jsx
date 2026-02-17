@@ -172,12 +172,25 @@ const RenderComponent = ({ type, items, props, content, mdComponents }) => {
 };
 
 export const DocContent = ({ content, className = '', onHeadings }) => {
+  // Preprocess content: convert GitHub-style blockquote callouts to <Callout> components
+  const preprocessed = useMemo(() => {
+    if (!content) return content;
+    // Match blockquotes that start with > [!TYPE]
+    return content.replace(
+      /^(>\s*\[!(NOTE|INFO|TIP|WARNING|CAUTION|ERROR|DANGER|SUCCESS)\])\s*\n((?:>.*\n?)*)/gim,
+      (match, marker, type, body) => {
+        const cleanBody = body.replace(/^>\s?/gm, '').trim();
+        return `<Callout type="${type}">\n${cleanBody}\n</Callout>\n`;
+      }
+    );
+  }, [content]);
+
   const { sections, headings } = useMemo(() => {
-    const parsed = parseContent(content);
-    const sections = extractComponents(content);
+    const parsed = parseContent(preprocessed);
+    const sections = extractComponents(preprocessed);
     const toc = generateTOC(parsed.headings);
     return { sections, headings: toc };
-  }, [content]);
+  }, [preprocessed]);
 
   useEffect(() => {
     if (onHeadings && headings.length > 0) onHeadings(headings);
