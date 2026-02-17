@@ -240,49 +240,56 @@ async def get_agent_analytics(
         {"_id": 0, "user_id": 1, "name": 1, "email": 1, "role": 1}
     ))
 
+    agent_ids = [a["user_id"] for a in agents]
+
+    # Single aggregation for all agents at once
+    pipeline = [
+        {"$match": {"assignee_id": {"$in": agent_ids}}},
+        {"$group": {
+            "_id": "$assignee_id",
+            "total_tickets": {"$sum": 1},
+            "open_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["todo", "in_progress", "waiting", "review", "queued", "assigned"]]}, 1, 0]}},
+            "resolved_in_period": {"$sum": {"$cond": [
+                {"$and": [
+                    {"$in": ["$status", ["resolved", "closed"]]},
+                    {"$gte": ["$updated_at", cutoff]}
+                ]}, 1, 0
+            ]}},
+            "resolution_times": {"$push": {
+                "$cond": [
+                    {"$and": [{"$ifNull": ["$resolved_at", False]}, {"$gt": ["$resolved_at", None]}]},
+                    {"$subtract": ["$resolved_at", "$created_at"]},
+                    "$$REMOVE"
+                ]
+            }}
+        }}
+    ]
+    stats_by_agent = {}
+    for stat in tickets_collection.aggregate(pipeline):
+        res_times = [t for t in stat.get("resolution_times", []) if isinstance(t, (int, float)) and t > 0]
+        avg_hours = None
+        if res_times:
+            avg_hours = round(sum(res_times) / len(res_times) / (1000 * 60 * 60), 1)
+        stats_by_agent[stat["_id"]] = {
+            "total_tickets": stat["total_tickets"],
+            "open_tickets": stat["open_tickets"],
+            "resolved_in_period": stat["resolved_in_period"],
+            "avg_resolution_hours": avg_hours
+        }
+
     agent_stats = []
     for agent in agents:
         uid = agent["user_id"]
-        pipeline = [
-            {"$match": {"assignee_id": uid}},
-            {"$facet": {
-                "total": [{"$count": "count"}],
-                "open": [
-                    {"$match": {"status": {"$nin": ["resolved", "closed", "merged"]}}},
-                    {"$count": "count"}
-                ],
-                "resolved_period": [
-                    {"$match": {"status": {"$in": ["resolved", "closed"]}, "updated_at": {"$gte": cutoff}}},
-                    {"$count": "count"}
-                ],
-                "avg_resolution": [
-                    {"$match": {"resolved_at": {"$exists": True}}},
-                    {"$project": {"resolution_time": {"$subtract": ["$resolved_at", "$created_at"]}}},
-                    {"$group": {"_id": None, "avg_time": {"$avg": "$resolution_time"}}}
-                ]
-            }}
-        ]
-        result = list(tickets_collection.aggregate(pipeline))
-        facets = result[0] if result else {}
-
-        total = facets.get("total", [{}])
-        open_count = facets.get("open", [{}])
-        resolved = facets.get("resolved_period", [{}])
-        avg_res = facets.get("avg_resolution", [{}])
-
-        avg_hours = None
-        if avg_res and avg_res[0].get("avg_time"):
-            avg_hours = round(avg_res[0]["avg_time"] / (1000 * 60 * 60), 1)
-
+        stats = stats_by_agent.get(uid, {})
         agent_stats.append({
             "user_id": uid,
             "name": agent.get("name", ""),
             "email": agent.get("email", ""),
             "role": agent.get("role", ""),
-            "total_tickets": total[0].get("count", 0) if total else 0,
-            "open_tickets": open_count[0].get("count", 0) if open_count else 0,
-            "resolved_in_period": resolved[0].get("count", 0) if resolved else 0,
-            "avg_resolution_hours": avg_hours
+            "total_tickets": stats.get("total_tickets", 0),
+            "open_tickets": stats.get("open_tickets", 0),
+            "resolved_in_period": stats.get("resolved_in_period", 0),
+            "avg_resolution_hours": stats.get("avg_resolution_hours")
         })
 
     agent_stats.sort(key=lambda x: x["resolved_in_period"], reverse=True)
