@@ -1072,13 +1072,13 @@ const AdminPage = ({ user }) => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Support Email</label>
+                    <label className="block text-sm font-medium mb-2">Help Email</label>
                     <input
                       type="email"
                       value={settings.support_email || ''}
                       onChange={(e) => setSettings({ ...settings, support_email: e.target.value })}
                       className="w-full h-10 px-3 rounded-lg bg-background border border-border focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
-                      placeholder="support@company.com"
+                      placeholder="help@company.com"
                     />
                   </div>
 

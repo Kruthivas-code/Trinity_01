@@ -358,7 +358,7 @@ const KBDocs = () => {
           </nav>
 
           <div className="kb-header-right">
-            <Link to="/portal/categories" className="kb-nav-link" data-testid="kb-support-link">Support</Link>
+            <Link to="/portal/categories" className="kb-nav-link" data-testid="kb-support-link">Help</Link>
             <button onClick={() => setDarkMode(!darkMode)} className="kb-theme-btn" data-testid="kb-theme-toggle">
               {darkMode ? <Sun size={16} /> : <Moon size={16} />}
             </button>

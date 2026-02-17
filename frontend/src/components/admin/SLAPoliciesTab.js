@@ -25,7 +25,7 @@ const PRIORITIES = [
     color: 'text-blue-400',
     bgColor: 'bg-blue-400/10',
     borderColor: 'border-blue-400/30',
-    description: 'Standard support requests'
+    description: 'Standard requests'
   },
   { 
     value: 'high', 
@@ -419,7 +419,7 @@ const SLAPoliciesTab = () => {
               </div>
               <div>
                 <h4 className={`font-medium ${!policies.business_hours_only ? 'text-primary' : ''}`}>
-                  24x7 Support
+                  24x7 Help
                 </h4>
                 <p className="text-xs text-muted-foreground">Always counting</p>
               </div>
@@ -429,7 +429,7 @@ const SLAPoliciesTab = () => {
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               SLA timer runs continuously, including nights, weekends, and holidays. 
-              Ideal for round-the-clock support operations.
+              Ideal for round-the-clock operations.
             </p>
           </button>
           
