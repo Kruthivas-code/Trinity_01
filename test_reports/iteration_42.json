@@ -1,0 +1,72 @@
+{
+  "summary": "Job ID (always visible) + Video Link feature - ALL TESTS PASSED. Job ID field now shows for ALL categories with correct mandatory/optional labels. Video recording link field visible for all categories with (optional) label. Backend correctly stores and returns both fields. Dashboard metadata code verified.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "features_tested": {
+    "job_id_visibility_all_categories": {
+      "deployments": "PASS - Job ID visible with * (required)",
+      "agent-ai": "PASS - Job ID visible with * (required)",
+      "subscription-management": "PASS - Job ID visible with (optional)",
+      "account-management": "PASS - Job ID visible with (optional)"
+    },
+    "video_link_visibility": {
+      "all_categories": "PASS - Video recording link field visible with (optional) label"
+    },
+    "backend_storage": {
+      "job_id_stored": "PASS - job_id field correctly stored on ticket (TKT-000968 = job_meta_test123)",
+      "video_link_stored": "PASS - video_link field correctly stored on ticket (TKT-000968 = https://www.loom.com/share/abc123)",
+      "optional_job_id_accepted": "PASS - Backend accepts optional job_id for any category (TKT-000973)",
+      "only_video_link": "PASS - Ticket with only video_link, no job_id works (TKT-000971)",
+      "only_job_id": "PASS - Ticket with only job_id, no video_link works (TKT-000972)"
+    },
+    "dashboard_metadata_code_review": {
+      "conditional_render": "PASS - Code checks ticket.source === 'portal'",
+      "job_id_display": "PASS - data-testid='metadata-job-id' present",
+      "video_link_display": "PASS - data-testid='metadata-video-link' present",
+      "video_link_external": "PASS - Uses target='_blank' rel='noopener noreferrer' for external link",
+      "category_display": "PASS - Shows portal_category",
+      "subcategory_display": "PASS - Shows portal_subcategory",
+      "tags_display": "PASS - Shows tags array"
+    }
+  },
+  "bug_fixed": {
+    "activity_feed_iteration": "Fixed TypeError in ActivityTimeline - changed setActivityFeed(data || []) to setActivityFeed(data.activities || data || []) to handle API response format"
+  },
+  "test_report_links": [
+    "/app/test_reports/iteration_42.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Good: Job ID field always visible with conditional required/optional label based on category",
+    "Good: Video link field always visible with (optional) label",
+    "Good: Backend TicketSubmit model has both job_id and video_link as Optional[str]",
+    "Good: TicketDrawer.js portal metadata section correctly checks ticket.source === 'portal'",
+    "Good: Video link renders as clickable external link with proper security attributes",
+    "Good: All data-testid attributes present for automated testing"
+  ],
+  "updated_files": [
+    "/app/frontend/src/components/tickets/TicketDrawer.js (fixed activity feed iteration bug)"
+  ],
+  "success_rate": {
+    "backend": "100% (API tests all passed)",
+    "frontend": "100% (portal submit form tests all passed)"
+  },
+  "test_credentials": {
+    "portal": {
+      "email": "jobtest@test.com",
+      "password": "Test123!"
+    }
+  },
+  "seed_data_creation": "Created test tickets: TKT-000970 (both fields), TKT-000971 (video_link only), TKT-000972 (job_id only), TKT-000973 (optional job_id)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Job ID field now visible for ALL categories - mandatory (*) for agent-ai, deployments, database, mobile-builds, features, custom-domain; optional for all others. Video link field always optional. Both stored as ticket metadata. Dashboard metadata section (ticket.source === 'portal') shows Job ID, Video Link (clickable external), Category, Subtopic, Tags. Admin dashboard requires Google OAuth so metadata display code was verified by code review only.",
+  "notes": "Admin dashboard uses Google OAuth which cannot be automated - metadata display verified via code review instead. Fixed unrelated ActivityTimeline bug discovered during testing."
+}
