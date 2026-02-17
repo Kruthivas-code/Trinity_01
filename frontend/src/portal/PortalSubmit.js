@@ -78,10 +78,16 @@ const PortalSubmit = () => {
   const selectedCategory = categories.find(c => c.slug === form.category_slug);
   const subtopics = selectedCategory?.subtopics || [];
 
+  const jobIdRequired = needsJobId(form.category_slug, form.subcategory);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.category_slug || !form.subject.trim() || !form.description.trim()) {
       setError('Please fill all required fields');
+      return;
+    }
+    if (jobIdRequired && !form.job_id.trim()) {
+      setError('Job ID is required for this category');
       return;
     }
     setSubmitting(true);
