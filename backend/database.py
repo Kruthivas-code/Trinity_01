@@ -51,6 +51,7 @@ customers_collection = db.customers
 portal_categories_collection = db.portal_categories
 portal_customers_collection = db.portal_customers
 portal_sessions_collection = db.portal_sessions
+engineer_plans_collection = db.engineer_plans
 
 # CSAT
 csat_responses_collection = db.csat_responses
