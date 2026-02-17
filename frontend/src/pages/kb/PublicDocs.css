@@ -85,6 +85,27 @@ aside::-webkit-scrollbar-track { background: transparent; }
   font-family: inherit !important;
   font-size: inherit !important;
 }
+/* Also target plain <pre><code> blocks (unlabeled code blocks) */
+.callout-body > pre,
+.callout-body pre {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0.25rem 0 !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  white-space: pre-wrap !important;
+  color: #e2e8f0 !important;
+}
+.callout-body pre > code,
+.callout-body code {
+  background: none !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  color: #e2e8f0 !important;
+  padding: 0 !important;
+}
 .callout-body ul,
 .callout-body ol {
   margin: 0.5rem 0 0 1.25rem;
