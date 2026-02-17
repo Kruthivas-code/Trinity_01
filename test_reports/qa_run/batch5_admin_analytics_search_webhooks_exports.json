@@ -1,0 +1,303 @@
+{
+  "batch": "batch5_admin_analytics_search_webhooks_exports",
+  "timestamp": "2026-02-17T09:04:27.372947+00:00",
+  "duration_seconds": 13.5,
+  "summary": {
+    "total": 36,
+    "passed": 25,
+    "failed": 11,
+    "errors": 0,
+    "skipped": 0,
+    "pass_rate": "69.4%"
+  },
+  "results": [
+    {
+      "test_id": "16.1",
+      "description": "GET /api/admin/settings returns global settings",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Settings keys: ['type', 'company_name', 'updated_at', 'updated_by', 'auto_reassign_reopened']",
+      "duration_ms": 6.1
+    },
+    {
+      "test_id": "16.2",
+      "description": "PUT /api/admin/settings updates settings",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 45.1
+    },
+    {
+      "test_id": "16.3",
+      "description": "Agent cannot access admin settings (403)",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=200",
+      "duration_ms": 8.9
+    },
+    {
+      "test_id": "16.4",
+      "description": "Create custom field (text, ticket)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "field_id=field_38b331b5df79",
+      "duration_ms": 50.0
+    },
+    {
+      "test_id": "16.5",
+      "description": "List custom fields",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Found 2 custom fields",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "16.6",
+      "description": "Update custom field",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 45.9
+    },
+    {
+      "test_id": "16.7",
+      "description": "Delete custom field",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "16.8",
+      "description": "List routing rules",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Found 0 routing rules",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "16.9",
+      "description": "Create routing rule",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=422, body={\"detail\":[{\"type\":\"list_type\",\"loc\":[\"body\",\"condition_groups\",0],\"msg\":\"Input should be a valid list\",\"input\":{\"conditions\":[{\"field\":\"priority\",\"operator\":\"is\",\"value\":\"urgent\"}]},\"url\":\"https://er",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "16.10",
+      "description": "Test routing rules (dry run)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 47.0
+    },
+    {
+      "test_id": "16.11",
+      "description": "Delete routing rule",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "No routing rule",
+      "duration_ms": 0.0
+    },
+    {
+      "test_id": "16.12",
+      "description": "GET auto-close status",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Data: {'enabled': True, 'auto_close_hours': 24, 'description': 'Resolved tickets are automatically closed after 24 hours'}",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "17.1",
+      "description": "GET /api/analytics/summary returns faceted summary",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Summary keys: ['by_status', 'by_assignee', 'my_tickets', 'total']",
+      "duration_ms": 47.0
+    },
+    {
+      "test_id": "17.2",
+      "description": "GET /api/analytics/overview?period=7d",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Overview keys: ['period', 'total_tickets', 'tickets_in_period', 'resolved_in_period', 'resolution_rate', 'by_status', 'by_priority', 'by_source', 'by_escalation', 'avg_resolution_time']",
+      "duration_ms": 50.9
+    },
+    {
+      "test_id": "17.3",
+      "description": "GET /api/analytics/overview?period=30d",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 62.0
+    },
+    {
+      "test_id": "17.4",
+      "description": "GET /api/analytics/agents returns per-agent stats",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Agent analytics type=dict",
+      "duration_ms": 50.2
+    },
+    {
+      "test_id": "17.5",
+      "description": "GET /api/dashboard/stats",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=404",
+      "duration_ms": 57.7
+    },
+    {
+      "test_id": "18.1",
+      "description": "POST /api/search with query",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Search results type=dict",
+      "duration_ms": 45.4
+    },
+    {
+      "test_id": "18.2",
+      "description": "GET /api/search/suggestions (min 2 chars)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Suggestions type=dict",
+      "duration_ms": 52.6
+    },
+    {
+      "test_id": "18.3",
+      "description": "Suggestions with <2 chars returns empty/422",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Returned dict (may be empty)",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "18.4",
+      "description": "GET /api/notifications lists notifications",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Found 0 notifications",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "18.5",
+      "description": "GET /api/presence/stats",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 46.9
+    },
+    {
+      "test_id": "19.1",
+      "description": "GET /api/webhooks lists all",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Found 4 webhooks",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "19.2",
+      "description": "Create webhook",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "webhook_id=None",
+      "duration_ms": 70.0
+    },
+    {
+      "test_id": "19.3",
+      "description": "SSRF: private IP webhook URL blocked",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=400, detail=Invalid webhook URL: URL resolves to a blocked address (127.0.0.1).",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "19.4",
+      "description": "SSRF: 10.x.x.x webhook URL blocked",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=400",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "19.5",
+      "description": "Update webhook (deactivate)",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "No webhook",
+      "duration_ms": 0.0
+    },
+    {
+      "test_id": "19.6",
+      "description": "GET webhook logs",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "No webhook",
+      "duration_ms": 0.0
+    },
+    {
+      "test_id": "19.7",
+      "description": "Delete webhook",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "No webhook",
+      "duration_ms": 0.0
+    },
+    {
+      "test_id": "20.1",
+      "description": "GET /api/export?format=json (basic export)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Export returned data",
+      "duration_ms": 287.6
+    },
+    {
+      "test_id": "20.2",
+      "description": "GET /api/export?format=csv (basic CSV export)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200, content-type=text/csv; charset=utf-8",
+      "duration_ms": 173.7
+    },
+    {
+      "test_id": "20.3",
+      "description": "POST /api/admin/export/tickets (admin, JSON)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 5715.7
+    },
+    {
+      "test_id": "20.4",
+      "description": "POST /api/admin/export/full (all collections)",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=500",
+      "duration_ms": 297.3
+    },
+    {
+      "test_id": "20.5",
+      "description": "GET /api/admin/export/customers",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 1407.3
+    },
+    {
+      "test_id": "20.6",
+      "description": "GET /api/admin/export/analytics",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 51.2
+    },
+    {
+      "test_id": "20.7",
+      "description": "Agent cannot access admin exports (403)",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=200",
+      "duration_ms": 4414.4
+    }
+  ]
+}

@@ -1,0 +1,279 @@
+{
+  "batch": "batch6_kb_portal_email_health",
+  "timestamp": "2026-02-17T09:04:29.616087+00:00",
+  "duration_seconds": 1.8,
+  "summary": {
+    "total": 33,
+    "passed": 20,
+    "failed": 13,
+    "errors": 0,
+    "skipped": 0,
+    "pass_rate": "60.6%"
+  },
+  "results": [
+    {
+      "test_id": "22.1",
+      "description": "GET /api/knowledge-base lists snippets",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Type=dict",
+      "duration_ms": 9.4
+    },
+    {
+      "test_id": "22.2",
+      "description": "Create KB snippet",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "snippet_id=kb_1f4f5723be00",
+      "duration_ms": 52.0
+    },
+    {
+      "test_id": "22.3",
+      "description": "Get single KB snippet",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "status=draft",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "22.4",
+      "description": "Update KB snippet to published",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 46.9
+    },
+    {
+      "test_id": "22.5",
+      "description": "Search KB snippets",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=404",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "22.6",
+      "description": "Export KB snippets (JSON)",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=404",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "22.7",
+      "description": "Export KB snippets (CSV)",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=404",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "22.8",
+      "description": "Delete KB snippet",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 45.9
+    },
+    {
+      "test_id": "23.1",
+      "description": "GET /api/kb/navigation (public, no auth)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 4.7
+    },
+    {
+      "test_id": "23.2",
+      "description": "GET /api/kb/public-data (public)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 48.3
+    },
+    {
+      "test_id": "23.3",
+      "description": "GET /api/kb/articles (public, lists all)",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Found 1 articles",
+      "duration_ms": 45.9
+    },
+    {
+      "test_id": "23.4",
+      "description": "Create KB article (admin)",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=422, body={\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"section_key\"],\"msg\":\"Field required\",\"input\":{\"title\":\"QA Article b3b87e\",\"slug\":\"qa-test-article-1b21ea\",\"content\":\"This is QA test article content.\",\"sect",
+      "duration_ms": 4.9
+    },
+    {
+      "test_id": "23.5",
+      "description": "Duplicate slug returns 409",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "No article created",
+      "duration_ms": 0.0
+    },
+    {
+      "test_id": "23.6",
+      "description": "Search KB articles (public)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "23.7",
+      "description": "GET /api/kb/admin/articles (admin, all articles)",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Found 2 articles (admin view)",
+      "duration_ms": 11.4
+    },
+    {
+      "test_id": "24.1",
+      "description": "Portal customer registration",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=404",
+      "duration_ms": 42.5
+    },
+    {
+      "test_id": "24.2",
+      "description": "Portal registration with short password fails",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=404",
+      "duration_ms": 43.0
+    },
+    {
+      "test_id": "24.3",
+      "description": "Portal customer login",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=404, body={\"detail\":\"Not Found\"}",
+      "duration_ms": 86.0
+    },
+    {
+      "test_id": "24.4",
+      "description": "Portal login with invalid credentials fails",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=404",
+      "duration_ms": 43.0
+    },
+    {
+      "test_id": "24.5",
+      "description": "GET /api/portal/categories (public)",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Found 1 categories",
+      "duration_ms": 45.1
+    },
+    {
+      "test_id": "24.6",
+      "description": "Submit ticket via portal",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "No portal auth",
+      "duration_ms": 0.0
+    },
+    {
+      "test_id": "24.7",
+      "description": "List portal tickets (customer's only)",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "No portal auth",
+      "duration_ms": 0.0
+    },
+    {
+      "test_id": "21.1",
+      "description": "Upload image (POST /api/upload/image)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200, body={\"success\":true,\"filename\":\"b928d3192e89435ca65f6c6da2e03d3c.jpg\",\"url\":\"/api/uploads/b928d3192e89435ca65f6c6da2e03d3c.jpg\",\"size\":122,\"content_type\":\"image/jpeg\"}",
+      "duration_ms": 5.9
+    },
+    {
+      "test_id": "21.2",
+      "description": "Path traversal on /api/uploads/ blocked",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=404",
+      "duration_ms": 50.0
+    },
+    {
+      "test_id": "21.3",
+      "description": "POST /api/import (JSON data import)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=422 (import endpoint accessible)",
+      "duration_ms": 4.7
+    },
+    {
+      "test_id": "21.4",
+      "description": "POST /api/tickets/:id/reply sends reply",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 216.3
+    },
+    {
+      "test_id": "27.1",
+      "description": "GET /api/tickets/:id/summary (AI summary)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200, body={\"eligible\":false,\"customer_message_count\":0,\"min_required\":5,\"conversation_summary\":null,\"past_issues_summary\":null,\"past_ticket_count\":0}",
+      "duration_ms": 248.0
+    },
+    {
+      "test_id": "33.1",
+      "description": "POST /api/import/atlas endpoint accessible",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=422 (Atlas import endpoint accessible)",
+      "duration_ms": 106.2
+    },
+    {
+      "test_id": "34.1",
+      "description": "Health check endpoint exists and responds",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Health check at /api/health: status=200",
+      "duration_ms": 99.5
+    },
+    {
+      "test_id": "34.2",
+      "description": "MongoDB is accessible and responding",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "MongoDB ping OK",
+      "duration_ms": 280.4
+    },
+    {
+      "test_id": "34.3",
+      "description": "Required MongoDB collections exist",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Required collections present=True, missing=[]",
+      "duration_ms": 2.1
+    },
+    {
+      "test_id": "34.4",
+      "description": "Backend server is running on port 8001",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Backend responded with status 401",
+      "duration_ms": 4.9
+    },
+    {
+      "test_id": "34.5",
+      "description": "Frontend server is running on port 3000",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Frontend status=200",
+      "duration_ms": 3.3
+    }
+  ]
+}
