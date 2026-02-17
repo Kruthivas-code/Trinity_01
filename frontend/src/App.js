@@ -46,13 +46,13 @@ function AppRouter() {
 
   return (
     <Routes>
-      {/* ==================== KB Docs (new homepage) ==================== */}
-      <Route path="/docs" element={<PublicDocs />} />
+      {/* ==================== KB Docs (homepage) ==================== */}
+      <Route path="/" element={<PublicDocs />} />
       <Route path="/docs/:slug" element={<PublicDocs />} />
 
       {/* ==================== Public Portal Routes ==================== */}
       <Route element={<PortalAuthProvider><PortalLayout /></PortalAuthProvider>}>
-        <Route path="/" element={<PortalHome />} />
+        <Route path="/portal" element={<PortalHome />} />
         <Route path="/portal/categories" element={<PortalHome />} />
         <Route path="/portal/category/:slug" element={<PortalCategory />} />
         <Route path="/portal/submit" element={<PortalSubmit />} />
