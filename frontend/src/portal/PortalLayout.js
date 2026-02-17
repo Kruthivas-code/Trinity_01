@@ -48,7 +48,7 @@ const PortalLayout = () => {
               Submit Ticket
             </Link>
             <Link
-              to="/docs"
+              to="/"
               className="px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               data-testid="nav-docs"
             >
