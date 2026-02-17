@@ -16,6 +16,7 @@ from database import (
     portal_categories_collection, portal_customers_collection,
     portal_sessions_collection, tickets_collection,
     messages_collection, email_replies_collection,
+    engineer_plans_collection,
 )
 from dependencies import get_current_user
 from utils import serialize_doc, generate_ticket_id
