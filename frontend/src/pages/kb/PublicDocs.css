@@ -63,14 +63,23 @@ aside::-webkit-scrollbar-track { background: transparent; }
   border: none !important;
   padding: 0 !important;
   margin: 0 !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
   white-space: pre-wrap !important;
   color: #e2e8f0 !important;
 }
-.callout-body .code-block pre code,
-.callout-body .code-block pre span {
+/* Override inline styles from SyntaxHighlighter */
+.callout-body .code-block pre[style],
+.callout-body .code-block code[style] {
+  background: none !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  color: #e2e8f0 !important;
+}
+.callout-body .code-block span[style] {
+  color: #e2e8f0 !important;
+  font-family: inherit !important;
+}
+.callout-body .code-block pre code {
   background: none !important;
   color: #e2e8f0 !important;
   font-family: inherit !important;
