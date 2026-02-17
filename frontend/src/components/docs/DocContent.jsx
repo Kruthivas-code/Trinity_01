@@ -4,7 +4,7 @@
  */
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useState, useMemo, useEffect, Children, isValidElement, Fragment } from 'react';
+import { useState, useMemo, useEffect, Children, isValidElement, cloneElement, Fragment } from 'react';
 import { Copy, Check, Terminal, FileCode, Info, Lightbulb, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
