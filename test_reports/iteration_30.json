@@ -1,0 +1,116 @@
+{
+  "summary": "Comprehensive testing of KB route changes and full-page editor. KB now at / (homepage), Portal at /portal, KB Editor at /dashboard/kb-editor. All 19 backend API tests passed. All frontend routing tests passed. KB Homepage (PublicDocs) loads with 5 top nav tabs, sidebar navigation, search (Cmd+K), TOC, prev/next navigation. Tab navigation correctly updates sidebar and navigates to first article in each tab. Direct URL routing (/docs/:slug) works with graceful fallback for nonexistent slugs. Portal routes at /portal, /portal/categories, /portal/login, /portal/submit all working. Protected routes (/dashboard, /dashboard/kb-editor) correctly redirect to login.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "features_tested": {
+    "routing_tests": {
+      "R1: Homepage / loads KB docs": "PASS - 'Welcome To Emergent' article displays",
+      "R2: /docs/welcome loads Welcome article": "PASS",
+      "R3: /docs/voice-mode loads Voice Mode article": "PASS",
+      "R4: /docs/nonexistent-slug graceful fallback": "PASS - Falls back to Welcome article",
+      "R5: /portal loads portal home": "PASS - Shows category grid",
+      "R6: /portal/categories loads portal": "PASS",
+      "R7: /portal/login loads login form": "PASS",
+      "R8: /portal/submit loads ticket form": "PASS",
+      "R9: /portal/my-tickets redirects to login": "PASS",
+      "R10: /login loads Google auth": "PASS",
+      "R11: /dashboard redirects to login": "PASS",
+      "R12: /dashboard/kb-editor redirects to login": "PASS",
+      "R13: /dashboard/kb-editor/:slug redirects to login": "PASS",
+      "R14: Logo click navigates to /": "PASS",
+      "R15: Support link navigates to /portal": "PASS",
+      "P10: /csat/:token route exists": "PASS"
+    },
+    "kb_homepage_tests": {
+      "K1: Dark theme (bg #0a0a0a)": "PASS",
+      "K2: Grid pattern background": "PASS",
+      "K3: Top nav shows 5 tabs": "PASS",
+      "K4: Each tab has icon": "PASS",
+      "K5: Active tab highlighted": "PASS",
+      "K6: Features tab navigation": "PASS - Shows Voice Mode",
+      "K7: Building Your App tab": "PASS - Shows Prompting Basics",
+      "K8: Deploy and Manage tab": "PASS - Shows Pre-Deployment Health Check",
+      "K9: Troubleshooting tab": "PASS - Shows Fixing Design Inconsistencies",
+      "K10: Search button with Cmd+K": "PASS",
+      "K11-K12: Sidebar nav tree": "PASS",
+      "K14-K15: Right sidebar TOC": "PASS",
+      "K16: Breadcrumb shows section": "PASS - 'Introduction'",
+      "K17: Page title displayed": "PASS - 'Welcome To Emergent'",
+      "K18: Copy page button": "PASS",
+      "K19: Prev/Next navigation": "PASS",
+      "K20: Next button navigates": "PASS",
+      "K21: Previous button navigates": "PASS",
+      "K22: Tab syncs with article": "PASS - Features tab active for voice-mode",
+      "K24: Mobile menu toggle": "PASS"
+    },
+    "kb_search_tests": {
+      "S1: Search button opens dialog": "PASS",
+      "S2: Cmd+K opens search": "PASS",
+      "S3: ESC closes search": "PASS",
+      "S4: Search input auto-focused": "PASS",
+      "S5: 1-char shows no results": "PASS",
+      "S6: 'voice' returns results": "PASS - 4 results",
+      "S9: Click result navigates": "PASS",
+      "S10: 'emergent' returns multiple": "PASS - 20 results"
+    },
+    "backend_api_tests": {
+      "A1: GET /api/kb/public-data returns 200": "PASS",
+      "A2: Response has 5 navigation tabs": "PASS",
+      "A3: Response has 21+ documents": "PASS",
+      "A4: Documents have id, slug, title, content": "PASS",
+      "A5: Tabs have groups with pages": "PASS",
+      "A6: Navbar has Support link to /portal": "PASS",
+      "A7: GET /api/kb/articles returns list": "PASS",
+      "A8: GET /api/kb/articles/welcome": "PASS",
+      "A9: GET /api/kb/articles/voice-mode": "PASS",
+      "A10: GET /api/kb/search?q=emergent": "PASS",
+      "A11-14: Admin endpoints require auth": "PASS (all 4 tests)",
+      "A15: GET /api/portal/categories regression": "PASS"
+    },
+    "portal_regression_tests": {
+      "P1: /portal loads with category grid": "PASS",
+      "P2: /portal/categories loads": "PASS",
+      "P3: /portal/login shows login form": "PASS",
+      "P4: /portal/submit loads form": "PASS",
+      "P5: Portal has styling": "PASS",
+      "P7: Portal shows category cards": "PASS",
+      "P8: /login shows Google sign-in": "PASS",
+      "P9: /dashboard requires auth": "PASS"
+    },
+    "kb_editor_auth_tests": {
+      "E1: /dashboard/kb-editor requires auth": "PASS - Redirects to /login"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_kb_routing_changes.py",
+    "/app/test_reports/pytest/pytest_kb_routing_changes.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "KBEditor.jsx (E2-E30) requires authentication to test - uses Google Auth",
+    "Full editor features (toolbar, MDX insertion, config panel) cannot be tested without login",
+    "Recommend manual verification of editor features after login"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_kb_routing_changes.py"
+  ],
+  "success_rate": {
+    "backend": "100% (19/19 tests passed)",
+    "frontend": "100% (all routing, KB homepage, search, portal regression tests passed)"
+  },
+  "test_credentials": {
+    "note": "Public endpoints tested. Admin/Editor features require Google Auth login"
+  },
+  "seed_data_creation": "Uses existing 21+ KB articles in kb_articles collection. 5 nav groups in kb_navigation collection.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Route changes complete: KB at / and /docs/:slug, Portal at /portal, KB Editor at /dashboard/kb-editor/:slug. All public features verified. Editor component (KBEditor.jsx) has split markdown/preview, formatting toolbar, MDX component insertion menu, config panel, device preview toggles - but requires authentication to test. KBArticleManager has 'Open Full Editor' link pointing to /dashboard/kb-editor. DocContent component renders MDX with callouts, code blocks, tabs, steps, accordion, youtube embeds.",
+  "note_on_editor_testing": "KB Editor (E2-E30) tests require authenticated session. The editor has data-testid attributes for: editor-header, editor-sidebar, editor-toolbar, markdown-editor, live-preview, config-panel, save-btn, view-mode-toggle, insert-menu components."
+}
