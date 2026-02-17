@@ -224,7 +224,7 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
     h3: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h3 id={id} className="scroll-mt-20 !text-white text-xl font-semibold mt-8 mb-3">{children}</h3>; },
     h4: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h4 id={id} className="scroll-mt-20 !text-white text-lg font-semibold mt-6 mb-2">{children}</h4>; },
     blockquote: ({ children }) => {
-      return <blockquote className="my-6 pl-4 border-l-4 border-[#188455] italic [&>*]:!text-slate-300">{children}</blockquote>;
+      return <blockquote className="lead-quote my-6 pl-4 border-l-4 border-indigo-500 italic [&>*]:!text-slate-300 [&_p]:!text-slate-300">{children}</blockquote>;
     },
     table: ({ children }) => <div className="overflow-x-auto my-6 rounded-lg border border-slate-800"><table className="w-full">{children}</table></div>,
     thead: ({ children }) => <thead className="bg-slate-900">{children}</thead>,
