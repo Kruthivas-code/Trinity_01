@@ -163,19 +163,15 @@ def run_batch():
 
     # ===== RBAC findings =====
     def test_1_5_rbac_settings():
-        """Document finding: admin/settings has no role check"""
+        """Verify admin/settings blocks agents"""
         r = api_get(s_agent, "/api/admin/settings")
-        if r.status_code == 200:
-            return True, "NOTE: /api/admin/settings is accessible by agents (no RBAC)"
         return r.status_code == 403, f"Status={r.status_code}"
-    runner.run_test("1.5.7", "FINDING: /api/admin/settings RBAC check", test_1_5_rbac_settings)
+    runner.run_test("1.5.7", "Agent blocked from /api/admin/settings (403)", test_1_5_rbac_settings)
 
     def test_1_5_rbac_exports():
         r = api_post(s_agent, "/api/admin/export/tickets", {"format": "json"})
-        if r.status_code == 200:
-            return True, "NOTE: /api/admin/export/tickets is accessible by agents (no RBAC)"
         return r.status_code == 403, f"Status={r.status_code}"
-    runner.run_test("1.5.8", "FINDING: /api/admin/export/tickets RBAC check", test_1_5_rbac_exports)
+    runner.run_test("1.5.8", "Agent blocked from /api/admin/export/tickets (403)", test_1_5_rbac_exports)
 
     # ===== 26. User Management =====
     print("\n--- 26. User Management ---")
