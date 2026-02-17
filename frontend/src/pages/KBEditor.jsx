@@ -336,6 +336,10 @@ const ConfigPanel = ({ form, setForm, navGroups, onClose }) => (
         </select>
       </div>
       <div>
+        <label className="block text-xs font-medium text-slate-400 mb-1.5">Icon</label>
+        <IconPicker value={form.icon || ''} onChange={v => setForm(f => ({ ...f, icon: v }))} />
+      </div>
+      <div>
         <label className="block text-xs font-medium text-slate-400 mb-1.5">Order</label>
         <input type="number" value={form.order ?? 0} onChange={e => setForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))}
           className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white" data-testid="config-order" />
