@@ -322,13 +322,12 @@
 }
 
 .kb-nav-section-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--kb-text-dim);
+  color: var(--kb-text);
   padding: 4px 12px;
   margin-bottom: 4px;
+  margin-top: 8px;
 }
 
 .kb-nav-item {
