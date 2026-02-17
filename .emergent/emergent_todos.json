@@ -1,50 +1,34 @@
 [
   {
-    "content": "Identify all gaps between QA plan and actual codebase routes",
-    "status": "completed"
-  },
-  {
-    "content": "Add User Management test cases (users.py)",
+    "content": "Add require_admin to all admin route endpoints (custom fields, routing rules, SLA policies, escalation rules)",
     "status": "in_progress"
   },
   {
-    "content": "Add AI Summary test cases (summaries.py)",
+    "content": "Fix portal category CRUD authorization (require_admin instead of get_current_user)",
     "status": "pending"
   },
   {
-    "content": "Expand KB tests with snippets + public KB (knowledge_base.py, kb.py)",
+    "content": "Add re.escape() to customer search regex to prevent NoSQL injection",
     "status": "pending"
   },
   {
-    "content": "Expand Portal tests with registration, auth, reply logic",
+    "content": "Sanitize error messages in auth.py, email.py, knowledge_base.py - never return str(e)",
     "status": "pending"
   },
   {
-    "content": "Expand CSAT tests with check, alert, analytics",
+    "content": "Externalize hardcoded CSAT base URL to environment variable",
     "status": "pending"
   },
   {
-    "content": "Expand Export tests with all admin export endpoints",
+    "content": "Add rate limiting to portal auth endpoints (register + login)",
     "status": "pending"
   },
   {
-    "content": "Expand Filter tests with filter engine detail",
+    "content": "Strengthen portal password policy (min 8 chars + complexity rules)",
     "status": "pending"
   },
   {
-    "content": "Add Upload/Import tests (email.py)",
-    "status": "pending"
-  },
-  {
-    "content": "Expand Admin tests (routing test, route ticket, auto-close)",
-    "status": "pending"
-  },
-  {
-    "content": "Add Health Check + Startup tests",
-    "status": "pending"
-  },
-  {
-    "content": "Update summary counts and note about /tmp reference repo",
+    "content": "Lint and verify all changes",
     "status": "pending"
   }
 ]

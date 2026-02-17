@@ -3,17 +3,21 @@ Routes for Knowledge Base snippets.
 """
 from datetime import datetime, timezone
 from typing import Optional
+import re
 import uuid
 import os
 import json
 import csv
 import io
+import logging
 from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import StreamingResponse
 from database import knowledge_snippets_collection
 from pymongo import ASCENDING, DESCENDING
 from dependencies import get_current_user
 from utils import serialize_doc
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["knowledge_base"])
 
@@ -33,10 +37,11 @@ async def list_snippets(
     query = {}
 
     if search:
+        escaped_search = re.escape(search)
         query["$or"] = [
-            {"title": {"$regex": search, "$options": "i"}},
-            {"content": {"$regex": search, "$options": "i"}},
-            {"tags": {"$regex": search, "$options": "i"}},
+            {"title": {"$regex": escaped_search, "$options": "i"}},
+            {"content": {"$regex": escaped_search, "$options": "i"}},
+            {"tags": {"$regex": escaped_search, "$options": "i"}},
         ]
 
     if tag:
@@ -221,7 +226,8 @@ async def refine_snippet(
         return updated
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI refinement failed: {str(e)}")
+        logger.error(f"[KB REFINE] AI refinement failed for {snippet_id}: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="AI refinement failed due to an internal error")
 
 
 @router.get("/knowledge-base-export")
@@ -290,9 +296,9 @@ async def search_snippets(
             {"status": {"$in": ["published", "refined"]}},
             {
                 "$or": [
-                    {"title": {"$regex": q, "$options": "i"}},
-                    {"content": {"$regex": q, "$options": "i"}},
-                    {"tags": {"$regex": q, "$options": "i"}},
+                    {"title": {"$regex": re.escape(q), "$options": "i"}},
+                    {"content": {"$regex": re.escape(q), "$options": "i"}},
+                    {"tags": {"$regex": re.escape(q), "$options": "i"}},
                 ]
             },
         ]

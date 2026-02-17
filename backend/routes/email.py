@@ -145,8 +145,13 @@ async def import_tickets(
             "message": f"Successfully imported {imported_count} tickets",
             "count": imported_count
         }
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Import failed: invalid JSON format")
+    except csv.Error:
+        raise HTTPException(status_code=400, detail="Import failed: invalid CSV format")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Import failed: {str(e)}")
+        logger.error(f"[IMPORT] Unexpected error: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Import failed due to an unexpected error")
 
 
 # ==================== Atlas Import ====================
@@ -189,9 +194,9 @@ async def import_from_atlas(
         )
     except httpx.ConnectError:
         raise HTTPException(status_code=502, detail="Could not connect to Atlas API (api.atlas.so)")
-    except Exception as e:
+    except Exception:
         logger.error(f"[ATLAS IMPORT] Unexpected error: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Atlas import failed due to an internal error")
 
     return {
         "success": True,

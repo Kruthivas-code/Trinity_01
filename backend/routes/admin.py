@@ -35,7 +35,7 @@ router = APIRouter(prefix="/api", tags=["admin"])
 @router.get("/admin/custom-fields")
 async def get_custom_fields(
     entity_type: Optional[str] = None,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """List all custom fields, optionally filtered by entity type (ticket or user)."""
     query = {}
@@ -48,7 +48,7 @@ async def get_custom_fields(
 @router.post("/admin/custom-fields")
 async def create_custom_field(
     field_data: CustomFieldCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Create a new custom field for tickets or users."""
     valid_types = ["text", "number", "select", "date", "boolean"]
@@ -79,7 +79,7 @@ async def create_custom_field(
 async def update_custom_field(
     field_id: str,
     field_data: CustomFieldUpdate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Update an existing custom field definition."""
     field = custom_fields_collection.find_one({"field_id": field_id})
@@ -96,7 +96,7 @@ async def update_custom_field(
 @router.delete("/admin/custom-fields/{field_id}")
 async def delete_custom_field(
     field_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Delete a custom field by ID."""
     result = custom_fields_collection.delete_one({"field_id": field_id})
@@ -144,7 +144,7 @@ async def update_admin_settings(
 # ==================== Routing Rules ====================
 
 @router.get("/admin/routing-rules")
-async def get_routing_rules(current_user: dict = Depends(get_current_user)):
+async def get_routing_rules(current_user: dict = Depends(require_admin)):
     """List all ticket routing rules, sorted by priority."""
     rules = list(routing_rules_collection.find({}, {"_id": 0}).sort("priority", -1))
     return [serialize_doc(r) for r in rules]
@@ -153,7 +153,7 @@ async def get_routing_rules(current_user: dict = Depends(get_current_user)):
 @router.post("/admin/routing-rules")
 async def create_routing_rule(
     rule_data: RoutingRuleCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Create a new ticket routing rule with conditions and actions."""
     rule_id = f"rule_{uuid.uuid4().hex[:12]}"
@@ -181,7 +181,7 @@ async def create_routing_rule(
 async def update_routing_rule(
     rule_id: str,
     rule_data: RoutingRuleUpdate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Update an existing routing rule."""
     update_data = {"updated_at": datetime.now(timezone.utc)}
@@ -211,7 +211,7 @@ async def update_routing_rule(
 @router.delete("/admin/routing-rules/{rule_id}")
 async def delete_routing_rule(
     rule_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Delete a routing rule by ID."""
     result = routing_rules_collection.delete_one({"rule_id": rule_id})
@@ -223,7 +223,7 @@ async def delete_routing_rule(
 @router.post("/admin/routing-rules/test")
 async def test_routing_rule(
     ticket_data: dict,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Test routing rules against sample ticket data without applying changes."""
     rules = list(routing_rules_collection.find({"is_active": True}, {"_id": 0}).sort("priority", -1))
@@ -269,7 +269,7 @@ async def route_ticket(
 # ==================== SLA Policies (Admin) ====================
 
 @router.get("/admin/sla-policies")
-async def get_sla_policies(current_user: dict = Depends(get_current_user)):
+async def get_sla_policies(current_user: dict = Depends(require_admin)):
     """Get SLA policy configuration including priority-based targets and business hours."""
     settings = admin_settings_collection.find_one({"type": "sla_settings"}) or {}
     return {
@@ -293,7 +293,7 @@ async def get_sla_policies(current_user: dict = Depends(get_current_user)):
 @router.put("/admin/sla-policies")
 async def update_sla_policies(
     data: SLAPoliciesUpdate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Update SLA policy settings (response/resolution targets, business hours, holidays)."""
     update_data = {"updated_at": datetime.now(timezone.utc)}
@@ -319,7 +319,7 @@ async def update_sla_policies(
 # ==================== SLA Escalation Rules ====================
 
 @router.get("/admin/sla-escalation-rules")
-async def get_sla_escalation_rules(current_user: dict = Depends(get_current_user)):
+async def get_sla_escalation_rules(current_user: dict = Depends(require_admin)):
     """List all SLA escalation rules, sorted by priority."""
     rules = list(sla_escalation_rules_collection.find({}, {"_id": 0}).sort("priority", -1))
     return [serialize_doc(r) for r in rules]
@@ -328,7 +328,7 @@ async def get_sla_escalation_rules(current_user: dict = Depends(get_current_user
 @router.post("/admin/sla-escalation-rules")
 async def create_sla_escalation_rule(
     rule_data: SLAEscalationRuleCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Create a new SLA escalation rule with trigger conditions and actions."""
     rule_id = f"sla_rule_{uuid.uuid4().hex[:12]}"
@@ -355,7 +355,7 @@ async def create_sla_escalation_rule(
 async def update_sla_escalation_rule(
     rule_id: str,
     rule_data: SLAEscalationRuleUpdate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Update an existing SLA escalation rule."""
     update_data = {"updated_at": datetime.now(timezone.utc)}
@@ -387,7 +387,7 @@ async def update_sla_escalation_rule(
 @router.delete("/admin/sla-escalation-rules/{rule_id}")
 async def delete_sla_escalation_rule(
     rule_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_admin)
 ):
     """Delete an SLA escalation rule by ID."""
     result = sla_escalation_rules_collection.delete_one({"rule_id": rule_id})
@@ -397,7 +397,7 @@ async def delete_sla_escalation_rule(
 
 
 @router.post("/admin/sla-escalation-rules/check")
-async def run_sla_check(current_user: dict = Depends(get_current_user)):
+async def run_sla_check(current_user: dict = Depends(require_admin)):
     """Manually trigger SLA escalation check - stub"""
     return {"message": "SLA check completed", "escalated": 0, "checked": 0}
 
@@ -405,7 +405,7 @@ async def run_sla_check(current_user: dict = Depends(get_current_user)):
 # ==================== Auto-close Status ====================
 
 @router.get("/admin/auto-close-status")
-async def get_auto_close_status(current_user: dict = Depends(get_current_user)):
+async def get_auto_close_status(current_user: dict = Depends(require_admin)):
     """Get the auto-close configuration status"""
     return {
         "enabled": True,

@@ -124,10 +124,8 @@ async def create_session(request: Request, session_data: SessionCreate, response
     except HTTPException:
         raise
     except Exception as e:
-        logger.info(f"[AUTH] ERROR: {type(e).__name__}: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"[AUTH] ERROR: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="An internal error occurred during authentication")
 
 
 @router.get("/auth/me")

@@ -3,6 +3,7 @@ Routes for customers.
 """
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
+import re
 import uuid
 import asyncio
 import logging
@@ -36,12 +37,13 @@ async def list_customers(
     query = {}
     
     if search:
+        escaped_search = re.escape(search)
         query["$or"] = [
-            {"name": {"$regex": search, "$options": "i"}},
-            {"primary_email": {"$regex": search, "$options": "i"}},
-            {"linked_emails": {"$regex": search, "$options": "i"}},
-            {"company_name": {"$regex": search, "$options": "i"}},
-            {"customer_id": {"$regex": search, "$options": "i"}}
+            {"name": {"$regex": escaped_search, "$options": "i"}},
+            {"primary_email": {"$regex": escaped_search, "$options": "i"}},
+            {"linked_emails": {"$regex": escaped_search, "$options": "i"}},
+            {"company_name": {"$regex": escaped_search, "$options": "i"}},
+            {"customer_id": {"$regex": escaped_search, "$options": "i"}}
         ]
     
     if customer_type:

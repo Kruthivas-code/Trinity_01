@@ -18,7 +18,8 @@ from database import (
     messages_collection, email_replies_collection,
     engineer_plans_collection,
 )
-from dependencies import get_current_user
+from dependencies import get_current_user, require_admin
+from rate_limiter import limiter
 from utils import serialize_doc, generate_ticket_id
 
 logger = logging.getLogger(__name__)
@@ -119,9 +120,14 @@ async def get_portal_customer(request: Request, portal_token: Optional[str] = Co
 # ==================== Customer Auth ====================
 
 @router.post("/auth/register")
-async def register_customer(body: CustomerRegister):
-    if len(body.password) < 6:
-        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+@limiter.limit("5/minute")
+async def register_customer(request: Request, body: CustomerRegister):
+    if len(body.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    if not any(c.isupper() for c in body.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+    if not any(c.isdigit() for c in body.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one digit")
     existing = portal_customers_collection.find_one({"email": body.email.lower()})
     if existing:
         raise HTTPException(status_code=409, detail="Email already registered")
@@ -143,7 +149,8 @@ async def register_customer(body: CustomerRegister):
 
 
 @router.post("/auth/login")
-async def login_customer(body: CustomerLogin):
+@limiter.limit("10/minute")
+async def login_customer(request: Request, body: CustomerLogin):
     customer = portal_customers_collection.find_one({"email": body.email.lower()})
     if not customer:
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -196,7 +203,7 @@ async def get_category(slug: str):
 # ==================== Categories (Admin) ====================
 
 @router.post("/admin/categories")
-async def create_category(body: CategoryCreate, current_user: dict = Depends(get_current_user)):
+async def create_category(body: CategoryCreate, current_user: dict = Depends(require_admin)):
     existing = portal_categories_collection.find_one({"slug": body.slug})
     if existing:
         raise HTTPException(status_code=409, detail="Category slug already exists")
@@ -218,7 +225,7 @@ async def create_category(body: CategoryCreate, current_user: dict = Depends(get
 
 
 @router.put("/admin/categories/{slug}")
-async def update_category(slug: str, body: CategoryUpdate, current_user: dict = Depends(get_current_user)):
+async def update_category(slug: str, body: CategoryUpdate, current_user: dict = Depends(require_admin)):
     cat = portal_categories_collection.find_one({"slug": slug})
     if not cat:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -235,7 +242,7 @@ async def update_category(slug: str, body: CategoryUpdate, current_user: dict = 
 
 
 @router.delete("/admin/categories/{slug}")
-async def delete_category(slug: str, current_user: dict = Depends(get_current_user)):
+async def delete_category(slug: str, current_user: dict = Depends(require_admin)):
     result = portal_categories_collection.delete_one({"slug": slug})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Category not found")
@@ -266,12 +273,12 @@ async def list_engineer_plans():
     return {"plans": plans}
 
 @router.get("/admin/engineer-plans")
-async def admin_list_engineer_plans(current_user: dict = Depends(get_current_user)):
+async def admin_list_engineer_plans(current_user: dict = Depends(require_admin)):
     plans = list(engineer_plans_collection.find({}, {"_id": 0}).sort("order", 1))
     return {"plans": plans}
 
 @router.post("/admin/engineer-plans")
-async def create_engineer_plan(body: EngineerPlanCreate, current_user: dict = Depends(get_current_user)):
+async def create_engineer_plan(body: EngineerPlanCreate, current_user: dict = Depends(require_admin)):
     plan_id = str(uuid.uuid4())[:8]
     doc = {
         "plan_id": plan_id,
@@ -284,7 +291,7 @@ async def create_engineer_plan(body: EngineerPlanCreate, current_user: dict = De
     return doc
 
 @router.put("/admin/engineer-plans/{plan_id}")
-async def update_engineer_plan(plan_id: str, body: EngineerPlanUpdate, current_user: dict = Depends(get_current_user)):
+async def update_engineer_plan(plan_id: str, body: EngineerPlanUpdate, current_user: dict = Depends(require_admin)):
     updates = {k: v for k, v in body.dict().items() if v is not None}
     if updates:
         updates["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -292,7 +299,7 @@ async def update_engineer_plan(plan_id: str, body: EngineerPlanUpdate, current_u
     return engineer_plans_collection.find_one({"plan_id": plan_id}, {"_id": 0})
 
 @router.delete("/admin/engineer-plans/{plan_id}")
-async def delete_engineer_plan(plan_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_engineer_plan(plan_id: str, current_user: dict = Depends(require_admin)):
     result = engineer_plans_collection.delete_one({"plan_id": plan_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Plan not found")
