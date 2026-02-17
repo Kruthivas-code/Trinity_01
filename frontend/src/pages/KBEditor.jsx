@@ -39,8 +39,9 @@ const SNIPPET_MAP = {
   columns: '<Columns cols={2}>\n<Card title="Left" icon="zap">\nContent\n</Card>\n<Card title="Right" icon="code">\nContent\n</Card>\n</Columns>',
 };
 
-const EditorToolbar = ({ textareaRef, content, setContent }) => {
+const EditorToolbar = ({ textareaRef, content, setContent, onUploadImage }) => {
   const [showInsert, setShowInsert] = useState(false);
+  const fileInputRef = useRef(null);
 
   const wrap = (prefix, suffix = prefix) => {
     const ta = textareaRef.current;
@@ -80,6 +81,12 @@ const EditorToolbar = ({ textareaRef, content, setContent }) => {
     setTimeout(() => { ta.focus(); ta.setSelectionRange(text.length, text.length); }, 0);
   };
 
+  const handleFileSelect = (e) => {
+    const files = e.target.files;
+    if (files?.length) onUploadImage(files[0]);
+    e.target.value = '';
+  };
+
   return (
     <div className="flex items-center gap-0.5 px-3 py-2 border-b border-slate-800 bg-slate-900/50 flex-wrap" data-testid="editor-toolbar">
       <ToolBtn onClick={() => insertLine('# ')} title="Heading 1"><Heading1 className="w-4 h-4" /></ToolBtn>
@@ -96,7 +103,8 @@ const EditorToolbar = ({ textareaRef, content, setContent }) => {
       <ToolBtn onClick={() => insertLine('> ')} title="Blockquote"><Quote className="w-4 h-4" /></ToolBtn>
       <Divider />
       <ToolBtn onClick={() => wrap('[', '](url)')} title="Link"><LinkIcon className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => insertLine('![Alt text](image-url)')} title="Image"><ImageIcon className="w-4 h-4" /></ToolBtn>
+      <ToolBtn onClick={() => fileInputRef.current?.click()} title="Upload Image"><ImageIcon className="w-4 h-4" /></ToolBtn>
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" data-testid="image-file-input" />
       <ToolBtn onClick={() => insertLine('---\n')} title="Horizontal Rule"><MoreHorizontal className="w-4 h-4" /></ToolBtn>
       <Divider />
       <div className="relative">
