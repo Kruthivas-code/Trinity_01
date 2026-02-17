@@ -619,7 +619,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
       });
       if (response.ok) {
         const data = await response.json();
-        setActivityFeed(data || []);
+        setActivityFeed(data.activities || data || []);
       }
     } catch (error) {
       console.error('Failed to fetch activity feed:', error);
