@@ -178,6 +178,131 @@ const NavGroup = ({ group, groupKey, articles, selectedSlug, onSelect, expanded,
   );
 };
 
+// ===== Icon Picker =====
+const COMMON_ICONS = [
+  'file-text', 'book-open', 'code', 'zap', 'rocket', 'wrench', 'globe', 'shield',
+  'terminal', 'database', 'layers', 'git-branch', 'package', 'cloud', 'server', 'cpu',
+  'smartphone', 'monitor', 'mail', 'message-square', 'users', 'key', 'lock', 'unlock',
+  'credit-card', 'dollar-sign', 'bar-chart', 'pie-chart', 'activity', 'trending-up',
+  'check-circle', 'alert-triangle', 'info', 'help-circle', 'star', 'heart', 'thumbs-up',
+  'play', 'music', 'image', 'video', 'camera', 'mic', 'volume-2', 'headphones',
+  'link', 'external-link', 'share-2', 'download', 'upload', 'folder', 'clipboard',
+  'calendar', 'clock', 'map-pin', 'navigation', 'compass', 'sun', 'moon', 'settings',
+];
+
+const IconPicker = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const CurrentIcon = value ? getIcon(value) : FileText;
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(!open)} className="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white w-full hover:border-slate-600 transition-colors" data-testid="icon-picker-btn">
+        <CurrentIcon className="w-4 h-4 text-emerald-400" />
+        <span className="flex-1 text-left truncate">{value || 'No icon'}</span>
+        <ChevronDown className="w-3 h-3 text-slate-500" />
+      </button>
+      {open && (
+        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-2 max-h-48 overflow-y-auto" data-testid="icon-picker-grid">
+          <button onClick={() => { onChange(''); setOpen(false); }} className="w-full text-left px-2 py-1 text-xs text-slate-500 hover:text-white hover:bg-slate-800 rounded mb-1">No icon</button>
+          <div className="grid grid-cols-8 gap-1">
+            {COMMON_ICONS.map(icon => {
+              const Icon = getIcon(icon);
+              return (
+                <button key={icon} onClick={() => { onChange(icon); setOpen(false); }} title={icon}
+                  className={`p-1.5 rounded transition-all ${value === icon ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                  <Icon className="w-4 h-4" />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ===== Navigation Manager Modal =====
+const NavManager = ({ navGroups, onSave, onClose }) => {
+  const [groups, setGroups] = useState(JSON.parse(JSON.stringify(navGroups)));
+  const [saving, setSaving] = useState(false);
+
+  const addGroup = () => {
+    const key = `group-${Date.now()}`;
+    setGroups([...groups, { key, label: 'New Group', icon: 'file-text', sections: [{ key: 'default', label: 'Default' }] }]);
+  };
+  const removeGroup = (idx) => { if (window.confirm('Delete this nav group? Articles will remain but be unlinked.')) setGroups(groups.filter((_, i) => i !== idx)); };
+  const updateGroup = (idx, field, val) => { const g = [...groups]; g[idx] = { ...g[idx], [field]: val }; setGroups(g); };
+  const addSection = (gIdx) => { const g = [...groups]; g[gIdx].sections = [...(g[gIdx].sections || []), { key: `section-${Date.now()}`, label: 'New Section' }]; setGroups(g); };
+  const removeSection = (gIdx, sIdx) => { const g = [...groups]; g[gIdx].sections = g[gIdx].sections.filter((_, i) => i !== sIdx); setGroups(g); };
+  const updateSection = (gIdx, sIdx, field, val) => { const g = [...groups]; g[gIdx].sections[sIdx] = { ...g[gIdx].sections[sIdx], [field]: val }; setGroups(g); };
+  const moveGroup = (idx, dir) => { const g = [...groups]; const t = g[idx]; g[idx] = g[idx + dir]; g[idx + dir] = t; setGroups(g); };
+  const moveSection = (gIdx, sIdx, dir) => { const g = [...groups]; const secs = [...g[gIdx].sections]; const t = secs[sIdx]; secs[sIdx] = secs[sIdx + dir]; secs[sIdx + dir] = t; g[gIdx].sections = secs; setGroups(g); };
+
+  const handleSave = async () => {
+    setSaving(true);
+    await onSave(groups);
+    setSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" data-testid="nav-manager-modal">
+      <div className="bg-[#0f0f0f] border border-slate-800 rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
+          <h2 className="text-base font-semibold text-white">Navigation Structure</h2>
+          <div className="flex items-center gap-2">
+            <button onClick={addGroup} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors" data-testid="add-group-btn">
+              <Plus className="w-3 h-3" /> Add Tab
+            </button>
+            <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"><X className="w-4 h-4" /></button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {groups.map((group, gIdx) => (
+            <div key={group.key} className="border border-slate-800 rounded-lg bg-slate-900/50" data-testid={`nav-group-${gIdx}`}>
+              <div className="flex items-center gap-2 p-3 border-b border-slate-800/50">
+                <div className="flex flex-col gap-0.5">
+                  <button disabled={gIdx === 0} onClick={() => moveGroup(gIdx, -1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▲</button>
+                  <button disabled={gIdx === groups.length - 1} onClick={() => moveGroup(gIdx, 1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▼</button>
+                </div>
+                <input value={group.label} onChange={e => updateGroup(gIdx, 'label', e.target.value)} placeholder="Tab name"
+                  className="flex-1 bg-transparent text-sm font-medium text-white placeholder:text-slate-600 outline-none border-b border-transparent focus:border-emerald-500 px-1 py-0.5" />
+                <input value={group.key} onChange={e => updateGroup(gIdx, 'key', e.target.value)} placeholder="key"
+                  className="w-36 bg-slate-800 text-xs font-mono text-slate-400 rounded px-2 py-1 border border-slate-700" />
+                <button onClick={() => removeGroup(gIdx)} className="p-1 text-slate-600 hover:text-red-400 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
+              <div className="p-3 space-y-2">
+                {(group.sections || []).map((sec, sIdx) => (
+                  <div key={sec.key} className="flex items-center gap-2 pl-4" data-testid={`nav-section-${gIdx}-${sIdx}`}>
+                    <div className="flex flex-col gap-0.5">
+                      <button disabled={sIdx === 0} onClick={() => moveSection(gIdx, sIdx, -1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▲</button>
+                      <button disabled={sIdx === (group.sections || []).length - 1} onClick={() => moveSection(gIdx, sIdx, 1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▼</button>
+                    </div>
+                    <FolderOpen className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
+                    <input value={sec.label} onChange={e => updateSection(gIdx, sIdx, 'label', e.target.value)} placeholder="Section name"
+                      className="flex-1 bg-transparent text-sm text-slate-300 placeholder:text-slate-600 outline-none border-b border-transparent focus:border-emerald-500 px-1 py-0.5" />
+                    <input value={sec.key} onChange={e => updateSection(gIdx, sIdx, 'key', e.target.value)} placeholder="key"
+                      className="w-36 bg-slate-800 text-xs font-mono text-slate-400 rounded px-2 py-1 border border-slate-700" />
+                    <button onClick={() => removeSection(gIdx, sIdx)} className="p-1 text-slate-600 hover:text-red-400 rounded"><Trash2 className="w-3 h-3" /></button>
+                  </div>
+                ))}
+                <button onClick={() => addSection(gIdx)} className="flex items-center gap-1.5 ml-4 px-2 py-1 text-xs text-slate-500 hover:text-emerald-400 rounded hover:bg-slate-800/50 transition-colors" data-testid={`add-section-${gIdx}`}>
+                  <Plus className="w-3 h-3" /> Add Section
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-slate-800">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Cancel</button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors" data-testid="save-nav-btn">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Navigation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ===== Config Panel =====
 const ConfigPanel = ({ form, setForm, navGroups, onClose }) => (
   <div className="w-72 border-l border-slate-800 bg-[#0f0f0f] flex flex-col h-full overflow-y-auto" data-testid="config-panel">
