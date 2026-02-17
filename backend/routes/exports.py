@@ -14,6 +14,9 @@ from database import (
     db, tickets_collection, users_collection, teams_collection,
     customers_collection, messages_collection, ticket_changelog_collection,
     admin_settings_collection, csat_responses_collection,
+    feature_requests_collection, sla_policies_collection,
+    routing_rules_collection, canned_responses_collection,
+    custom_fields_collection,
 )
 from dependencies import get_current_user, require_admin
 from models.schemas import ExportRequest
