@@ -402,8 +402,23 @@ const PublicDocs = () => {
   };
 
   const currentIndex = documents.findIndex(d => d.id === selectedDoc?.id);
-  const prevDoc = currentIndex > 0 ? documents[currentIndex - 1] : null;
-  const nextDoc = currentIndex < documents.length - 1 ? documents[currentIndex + 1] : null;
+
+  // Tab-scoped prev/next: navigate within the active tab's articles only
+  const tabDocSlugs = useMemo(() => {
+    const currentTab = tabs.find(t => t.id === activeTab);
+    if (!currentTab) return [];
+    const slugs = [];
+    for (const group of currentTab.groups || []) {
+      for (const page of group.pages || []) {
+        slugs.push(typeof page === 'string' ? page : page.page);
+      }
+    }
+    return slugs;
+  }, [tabs, activeTab]);
+
+  const tabDocIndex = tabDocSlugs.indexOf(selectedDoc?.slug);
+  const prevDoc = tabDocIndex > 0 ? documents.find(d => d.slug === tabDocSlugs[tabDocIndex - 1]) : null;
+  const nextDoc = tabDocIndex < tabDocSlugs.length - 1 ? documents.find(d => d.slug === tabDocSlugs[tabDocIndex + 1]) : null;
 
   if (loading) {
     return (
