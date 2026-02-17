@@ -242,6 +242,85 @@ async def delete_category(slug: str, current_user: dict = Depends(get_current_us
     return {"message": "Deleted"}
 
 
+# ==================== Engineer Plans ====================
+
+class EngineerPlanCreate(BaseModel):
+    title: str
+    price: int
+    hours: int
+    period: str = "month"
+    features: list = []
+    active: bool = True
+
+class EngineerPlanUpdate(BaseModel):
+    title: Optional[str] = None
+    price: Optional[int] = None
+    hours: Optional[int] = None
+    period: Optional[str] = None
+    features: Optional[list] = None
+    active: Optional[bool] = None
+
+@router.get("/engineer-plans")
+async def list_engineer_plans():
+    plans = list(engineer_plans_collection.find({"active": True}, {"_id": 0}).sort("order", 1))
+    return {"plans": plans}
+
+@router.get("/admin/engineer-plans")
+async def admin_list_engineer_plans(current_user: dict = Depends(get_current_user)):
+    plans = list(engineer_plans_collection.find({}, {"_id": 0}).sort("order", 1))
+    return {"plans": plans}
+
+@router.post("/admin/engineer-plans")
+async def create_engineer_plan(body: EngineerPlanCreate, current_user: dict = Depends(get_current_user)):
+    plan_id = str(uuid.uuid4())[:8]
+    doc = {
+        "plan_id": plan_id,
+        **body.dict(),
+        "order": engineer_plans_collection.count_documents({}) + 1,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    engineer_plans_collection.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@router.put("/admin/engineer-plans/{plan_id}")
+async def update_engineer_plan(plan_id: str, body: EngineerPlanUpdate, current_user: dict = Depends(get_current_user)):
+    updates = {k: v for k, v in body.dict().items() if v is not None}
+    if updates:
+        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        engineer_plans_collection.update_one({"plan_id": plan_id}, {"$set": updates})
+    return engineer_plans_collection.find_one({"plan_id": plan_id}, {"_id": 0})
+
+@router.delete("/admin/engineer-plans/{plan_id}")
+async def delete_engineer_plan(plan_id: str, current_user: dict = Depends(get_current_user)):
+    result = engineer_plans_collection.delete_one({"plan_id": plan_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return {"message": "Deleted"}
+
+def _seed_engineer_plans():
+    if engineer_plans_collection.count_documents({}) == 0:
+        engineer_plans_collection.insert_one({
+            "plan_id": "dedicated-10",
+            "title": "Dedicated Engineer",
+            "price": 1000,
+            "hours": 10,
+            "period": "month",
+            "features": [
+                "Priority response within 1 hour",
+                "1:1 video sessions with a senior engineer",
+                "Direct Slack channel access",
+                "Architecture review & code audit",
+                "Custom integration assistance",
+            ],
+            "active": True,
+            "order": 1,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+_seed_engineer_plans()
+
+
 # ==================== Ticket Submission ====================
 
 @router.post("/tickets")
