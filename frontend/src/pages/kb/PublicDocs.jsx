@@ -278,6 +278,52 @@ const CopyButton = ({ text, theme }) => {
   );
 };
 
+const FeedbackWidget = ({ slug, theme }) => {
+  const [submitted, setSubmitted] = useState(null);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => { setSubmitted(null); }, [slug]);
+
+  const submit = async (helpful) => {
+    if (sending || submitted !== null) return;
+    setSending(true);
+    try {
+      await fetch(`${API}/api/kb/articles/${slug}/feedback`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ helpful }),
+      });
+      setSubmitted(helpful);
+    } catch { /* silent */ }
+    setSending(false);
+  };
+
+  return (
+    <div className={`flex flex-col items-center gap-3 mt-14 pt-8 border-t ${theme.border}`} data-testid="kb-feedback-widget">
+      {submitted === null ? (
+        <>
+          <span className={`text-sm ${theme.textMuted}`}>Was this article helpful?</span>
+          <div className="flex items-center gap-3">
+            <button onClick={() => submit(true)} disabled={sending}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${theme.border} text-sm ${theme.textMuted} hover:text-emerald-400 hover:border-emerald-500/40 transition-all`}
+              data-testid="feedback-helpful-btn">
+              <ThumbsUp className="w-4 h-4" />Yes
+            </button>
+            <button onClick={() => submit(false)} disabled={sending}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${theme.border} text-sm ${theme.textMuted} hover:text-red-400 hover:border-red-500/40 transition-all`}
+              data-testid="feedback-unhelpful-btn">
+              <ThumbsDown className="w-4 h-4" />No
+            </button>
+          </div>
+        </>
+      ) : (
+        <span className={`text-sm ${submitted ? 'text-emerald-400' : 'text-slate-400'}`} data-testid="feedback-thanks">
+          {submitted ? 'Glad this helped!' : 'Thanks for letting us know. We\'ll improve this article.'}
+        </span>
+      )}
+    </div>
+  );
+};
+
 // ============= MAIN COMPONENT =============
 const PublicDocs = () => {
   const { slug: docSlug } = useParams();
