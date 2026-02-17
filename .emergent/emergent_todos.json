@@ -1,38 +1,50 @@
 [
   {
-    "content": "Fix 1: API Key Verification Performance (SHA-256 lookup)",
+    "content": "Identify all gaps between QA plan and actual codebase routes",
     "status": "completed"
   },
   {
-    "content": "Fix 2: SSRF Protection in Webhook Delivery",
-    "status": "completed"
+    "content": "Add User Management test cases (users.py)",
+    "status": "in_progress"
   },
   {
-    "content": "Fix 3: Import File Size Limit (5MB)",
-    "status": "completed"
+    "content": "Add AI Summary test cases (summaries.py)",
+    "status": "pending"
   },
   {
-    "content": "Fix 4: Graceful Shutdown (cancel email_sync_task)",
-    "status": "completed"
+    "content": "Expand KB tests with snippets + public KB (knowledge_base.py, kb.py)",
+    "status": "pending"
   },
   {
-    "content": "Fix 5: Replace deprecated bleach with nh3",
-    "status": "completed"
+    "content": "Expand Portal tests with registration, auth, reply logic",
+    "status": "pending"
   },
   {
-    "content": "Fix 6: Request Body Size Middleware (50MB limit)",
-    "status": "completed"
+    "content": "Expand CSAT tests with check, alert, analytics",
+    "status": "pending"
   },
   {
-    "content": "Fix 7: Clean Up .env (remove CORS_ORIGINS)",
-    "status": "completed"
+    "content": "Expand Export tests with all admin export endpoints",
+    "status": "pending"
   },
   {
-    "content": "Run linter and verify server health",
-    "status": "completed"
+    "content": "Expand Filter tests with filter engine detail",
+    "status": "pending"
   },
   {
-    "content": "Run Playwright verification tests",
-    "status": "completed"
+    "content": "Add Upload/Import tests (email.py)",
+    "status": "pending"
+  },
+  {
+    "content": "Expand Admin tests (routing test, route ticket, auto-close)",
+    "status": "pending"
+  },
+  {
+    "content": "Add Health Check + Startup tests",
+    "status": "pending"
+  },
+  {
+    "content": "Update summary counts and note about /tmp reference repo",
+    "status": "pending"
   }
 ]
