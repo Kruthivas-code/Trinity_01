@@ -321,6 +321,38 @@ def _seed_engineer_plans():
 _seed_engineer_plans()
 
 
+# ==================== Inquiries ====================
+
+class InquirySubmit(BaseModel):
+    name: str
+    email: str
+    company: Optional[str] = ""
+    message: str
+    type: str  # partner, sales, engineer
+
+@router.post("/inquiries")
+async def submit_inquiry(body: InquirySubmit):
+    """Public inquiry endpoint - creates a ticket tagged by inquiry type."""
+    type_labels = {"partner": "Partner Program Inquiry", "sales": "Sales Inquiry", "engineer": "Dedicated Engineer Inquiry"}
+    ticket_id = generate_ticket_id()
+    ticket_doc = {
+        "ticket_id": ticket_id,
+        "uuid": str(uuid.uuid4()),
+        "title": f"[{type_labels.get(body.type, 'Inquiry')}] from {body.name}",
+        "description": f"Name: {body.name}\nEmail: {body.email}\nCompany: {body.company or 'N/A'}\n\n{body.message}",
+        "status": "todo",
+        "priority": "medium" if body.type != "engineer" else "high",
+        "tags": [body.type, "inquiry"],
+        "source": "portal",
+        "portal_customer_email": body.email,
+        "portal_customer_name": body.name,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+    }
+    tickets_collection.insert_one(ticket_doc)
+    return {"status": "ok", "ticket_id": ticket_id}
+
+
 # ==================== Ticket Submission ====================
 
 @router.post("/tickets")
