@@ -34,7 +34,7 @@ PLATFORM_COMMANDS = [
     {"id": "admin-general", "type": "command", "category": "Admin", "title": "General Settings", "subtitle": "System settings", "action": "/admin?tab=general", "keywords": ["general", "settings", "system", "config"]},
     
     # Actions
-    {"id": "action-new-ticket", "type": "action", "category": "Actions", "title": "Create New Ticket", "subtitle": "Open a support ticket", "action": "create_ticket", "keywords": ["new", "create", "add", "ticket", "issue", "request"]},
+    {"id": "action-new-ticket", "type": "action", "category": "Actions", "title": "Create New Ticket", "subtitle": "Open a ticket", "action": "create_ticket", "keywords": ["new", "create", "add", "ticket", "issue", "request"]},
     {"id": "action-new-team", "type": "action", "category": "Actions", "title": "Create New Team", "subtitle": "Add a team", "action": "create_team", "keywords": ["new", "create", "add", "team", "group"]},
     {"id": "action-export-tickets", "type": "action", "category": "Actions", "title": "Export Tickets", "subtitle": "Download as CSV/JSON", "action": "export_tickets", "keywords": ["export", "download", "csv", "json", "backup", "tickets"]},
     {"id": "action-export-users", "type": "action", "category": "Actions", "title": "Export Users", "subtitle": "Download user list", "action": "export_users", "keywords": ["export", "download", "users", "agents"]},

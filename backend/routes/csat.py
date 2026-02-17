@@ -163,8 +163,8 @@ Your ticket has been resolved!
 
 Hi {token_doc['customer_name']},
 
-Your support request has been resolved:
-Ticket #{ticket_id}: {ticket.get('title', 'Support Request')}
+Your request has been resolved:
+Ticket #{ticket_id}: {ticket.get('title', 'Request')}
 {f"Resolved by: {token_doc['resolved_by_name']}" if token_doc.get("resolved_by_name") else ""}
 
 How was your experience? Click a rating:

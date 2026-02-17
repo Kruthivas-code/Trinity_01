@@ -175,8 +175,8 @@ async def refine_snippet(
             api_key=api_key,
             session_id=f"kb_refine_{snippet_id}_{uuid.uuid4().hex[:8]}",
             system_message=(
-                "You are a technical writer for a customer support knowledge base. "
-                "Your job is to take a raw support agent reply and transform it into a clean, "
+                "You are a technical writer for a customer knowledge base. "
+                "Your job is to take a raw agent reply and transform it into a clean, "
                 "concise, well-structured knowledge base article snippet. "
                 "Rules: "
                 "- Keep it concise and actionable. "

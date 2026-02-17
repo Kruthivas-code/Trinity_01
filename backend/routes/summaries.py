@@ -64,7 +64,7 @@ async def _generate_summary(api_key: str, ticket_id: str, conversation_text: str
         api_key=api_key,
         session_id=f"ticket_summary_{ticket_id}_{uuid.uuid4().hex[:6]}",
         system_message=(
-            "You summarize support ticket conversations in 3-5 concise lines. "
+            "You summarize ticket conversations in 3-5 concise lines. "
             "Focus on: what the customer's issue is, what has been tried, and current status. "
             "Be direct and factual. No preamble, no bullet points, just a short paragraph."
         ),
@@ -84,7 +84,7 @@ async def _generate_summary(api_key: str, ticket_id: str, conversation_text: str
             api_key=api_key,
             session_id=f"past_summary_{ticket_id}_{uuid.uuid4().hex[:6]}",
             system_message=(
-                "You summarize a customer's past support tickets in 3-5 concise lines. "
+                "You summarize a customer's past tickets in 3-5 concise lines. "
                 "Mention the key issues and their outcomes. "
                 "Be direct and factual. No preamble, no bullet points, just a short paragraph."
             ),
