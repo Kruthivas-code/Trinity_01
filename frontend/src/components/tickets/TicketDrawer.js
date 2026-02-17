@@ -1753,6 +1753,49 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
                   </div>
                 )}
                 
+                {/* Portal Ticket Metadata */}
+                {ticket.source === 'portal' && (ticket.job_id || ticket.video_link || ticket.portal_category || ticket.tags?.length > 0) && (
+                  <div className="p-3 rounded-lg bg-secondary/20 border border-border/30" data-testid="portal-metadata">
+                    <h4 className="text-xs font-medium text-muted-foreground mb-2">Ticket Details</h4>
+                    <div className="space-y-1.5 text-sm">
+                      {ticket.job_id && (
+                        <div className="flex">
+                          <span className="w-20 text-muted-foreground shrink-0">Job ID:</span>
+                          <span className="text-foreground font-mono text-xs" data-testid="metadata-job-id">{ticket.job_id}</span>
+                        </div>
+                      )}
+                      {ticket.video_link && (
+                        <div className="flex">
+                          <span className="w-20 text-muted-foreground shrink-0">Video:</span>
+                          <a href={ticket.video_link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-xs truncate" data-testid="metadata-video-link">{ticket.video_link}</a>
+                        </div>
+                      )}
+                      {ticket.portal_category && (
+                        <div className="flex">
+                          <span className="w-20 text-muted-foreground shrink-0">Category:</span>
+                          <span className="text-foreground">{ticket.portal_category}</span>
+                        </div>
+                      )}
+                      {ticket.portal_subcategory && (
+                        <div className="flex">
+                          <span className="w-20 text-muted-foreground shrink-0">Subtopic:</span>
+                          <span className="text-foreground">{ticket.portal_subcategory}</span>
+                        </div>
+                      )}
+                      {ticket.tags?.length > 0 && (
+                        <div className="flex">
+                          <span className="w-20 text-muted-foreground shrink-0">Tags:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {ticket.tags.map((t, i) => (
+                              <span key={i} className="px-1.5 py-0.5 rounded bg-secondary/40 text-[10px] font-mono text-muted-foreground">{t}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Activity Timeline */}
                 <div>
                   <h4 className="text-xs font-medium text-muted-foreground mb-2">Activity Log</h4>
