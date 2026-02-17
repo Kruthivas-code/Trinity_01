@@ -720,6 +720,9 @@ const KBEditor = () => {
         {/* Config Panel */}
         {configOpen && form && <ConfigPanel form={form} setForm={setForm} navGroups={navGroups} onClose={() => setConfigOpen(false)} />}
       </div>
+
+      {/* Navigation Manager Modal */}
+      {navManagerOpen && <NavManager navGroups={navGroups} onSave={saveNavigation} onClose={() => setNavManagerOpen(false)} />}
     </div>
   );
 };
