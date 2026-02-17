@@ -16,6 +16,7 @@ router = APIRouter(prefix="/api/kb", tags=["knowledge_base_public"])
 kb_articles = db["kb_articles"]
 kb_navigation = db["kb_navigation"]
 kb_image_files = db["kb_image_files"]
+kb_feedback = db["kb_feedback"]
 
 
 # ── Image serving ─────────────────────────────────────────────
@@ -139,6 +140,36 @@ async def get_article(slug: str):
         "prev": prev_art,
         "next": next_art,
     }
+
+
+# ── Feedback ───────────────────────────────────────────────────
+
+class FeedbackBody(BaseModel):
+    helpful: bool
+
+@router.post("/articles/{slug}/feedback")
+async def submit_feedback(slug: str, body: FeedbackBody):
+    article = kb_articles.find_one({"slug": slug, "published": True})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    kb_feedback.insert_one({
+        "article_slug": slug,
+        "helpful": body.helpful,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return {"status": "ok"}
+
+@router.get("/articles/{slug}/feedback")
+async def get_article_feedback(slug: str):
+    pipeline = [
+        {"$match": {"article_slug": slug}},
+        {"$group": {"_id": None, "total": {"$sum": 1}, "helpful": {"$sum": {"$cond": ["$helpful", 1, 0]}}}},
+    ]
+    result = list(kb_feedback.aggregate(pipeline))
+    if not result:
+        return {"total": 0, "helpful": 0, "unhelpful": 0}
+    r = result[0]
+    return {"total": r["total"], "helpful": r["helpful"], "unhelpful": r["total"] - r["helpful"]}
 
 
 @router.get("/search")
