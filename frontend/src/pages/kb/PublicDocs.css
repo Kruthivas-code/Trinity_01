@@ -32,3 +32,46 @@ aside::-webkit-scrollbar-track { background: transparent; }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Lead blockquote decorative quotes */
+.lead-quote > p::before {
+  content: "\201C";
+}
+.lead-quote > p::after {
+  content: "\201D";
+}
+
+/* Callout body: flatten code blocks and lists into flowing text */
+.callout-body > p { margin: 0; }
+.callout-body > p:not(:last-child) { margin-bottom: 0.5rem; }
+.callout-body > div[class*="text-slate"] { color: #e2e8f0; }
+.callout-body .code-block {
+  background: none;
+  border: none;
+  margin: 0;
+  display: inline;
+}
+.callout-body .code-block > div:first-child { display: none; }
+.callout-body .code-block pre,
+.callout-body .code-block pre[class*="language-"] {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0.25rem 0 !important;
+  display: inline;
+  font-size: 0.875rem;
+}
+.callout-body .code-block pre code,
+.callout-body .code-block pre span {
+  background: none !important;
+  color: #e2e8f0 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.callout-body ul,
+.callout-body ol {
+  margin: 0.5rem 0 0 1.25rem;
+  padding: 0;
+}
+.callout-body li {
+  margin-bottom: 0.25rem;
+}
