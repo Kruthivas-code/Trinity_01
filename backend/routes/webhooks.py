@@ -292,39 +292,33 @@ async def trigger_auto_close(current_user: dict = Depends(get_current_user)):
     
     cutoff_time = datetime.now(timezone.utc) - timedelta(hours=AUTO_CLOSE_HOURS)
     
-    resolved_tickets = list(tickets_collection.find({
-        "status": "resolved",
-        "resolved_at": {"$lte": cutoff_time}
-    }))
+    query = {"status": "resolved", "resolved_at": {"$lte": cutoff_time}}
+    resolved_tickets = list(tickets_collection.find(query, {"ticket_id": 1, "_id": 0}))
+    closed_tickets = [t["ticket_id"] for t in resolved_tickets]
     
-    closed_count = 0
-    closed_tickets = []
-    
-    for ticket in resolved_tickets:
-        tickets_collection.update_one(
-            {"ticket_id": ticket["ticket_id"]},
-            {"$set": {
-                "status": "closed",
-                "closed_at": datetime.now(timezone.utc),
-                "auto_closed": True,
-                "updated_at": datetime.now(timezone.utc)
-            }}
+    if closed_tickets:
+        now = datetime.now(timezone.utc)
+        # Batch update all resolved tickets at once
+        tickets_collection.update_many(
+            {"ticket_id": {"$in": closed_tickets}},
+            {"$set": {"status": "closed", "closed_at": now, "auto_closed": True, "updated_at": now}}
         )
-        
-        messages_collection.insert_one({
-            "message_id": f"msg_{uuid4().hex[:12]}",
-            "ticket_id": ticket["ticket_id"],
-            "type": "system",
-            "text": f"Auto-closed after {AUTO_CLOSE_HOURS} hours in resolved status",
-            "created_by": "system",
-            "created_at": datetime.now(timezone.utc)
-        })
-        
-        closed_count += 1
-        closed_tickets.append(ticket["ticket_id"])
+        # Batch insert system messages
+        system_messages = [
+            {
+                "message_id": f"msg_{uuid4().hex[:12]}",
+                "ticket_id": tid,
+                "type": "system",
+                "text": f"Auto-closed after {AUTO_CLOSE_HOURS} hours in resolved status",
+                "created_by": "system",
+                "created_at": now
+            }
+            for tid in closed_tickets
+        ]
+        messages_collection.insert_many(system_messages)
     
     return {
-        "message": f"Auto-closed {closed_count} tickets",
+        "message": f"Auto-closed {len(closed_tickets)} tickets",
         "closed_tickets": closed_tickets
     }
 
