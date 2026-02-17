@@ -45,6 +45,7 @@ Build an enterprise ticket management platform with email-first support manageme
 - Bulk section move feature
 - **KB Previous/Next Navigation Verification** -- All 5 tabs verified (12/12 tests passed Feb 2026)
 - **Article Feedback Widget** -- "Was this article helpful?" thumbs up/down on every KB article, anonymous, confirmation messages, resets on navigation. Admin sidebar shows color-coded helpfulness % badges per article (green >=70%, amber >=40%, red <40%). Backend: kb_feedback collection, POST/GET endpoints. (Feb 2026, all tests passed)
+- **Portal Homepage Redesign** -- Vercel-style contact page with: Emergent logo (theme-adaptive), no navbar on homepage, "How can we help?" hero (no search bar), 4 contact cards (Product help scrolls to categories, Partner Programs modal, Emergency Help for Deployed App, Talk to Sales modal), Dedicated Engineer upsell section ($1000/10hrs admin-configurable via engineer_plans collection), category grid with internal KB links (/docs/:slug). All inquiry modals create tagged tickets. Word "support" removed from entire page. (Feb 2026, all tests passed)
 
 ## P1 - Next Priority
 - New Email System (transactional emails for ticket notifications)
