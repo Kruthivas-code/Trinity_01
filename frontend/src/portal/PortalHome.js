@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Search, CreditCard, Receipt, Globe, Boxes, UserCog, ShieldCheck, Rocket, Bot, Database, Smartphone, ArrowRight, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Wrench, AlertTriangle, MessageSquare, Users,
+  CreditCard, Receipt, Globe, Boxes, UserCog, ShieldCheck,
+  Rocket, Bot, Database, Smartphone,
+  ArrowRight, ChevronRight, X, Clock, Zap, Video, Hash, FileCheck, Settings2,
+  Send,
+} from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -9,77 +15,262 @@ const ICON_MAP = {
   Rocket, Bot, Database, Smartphone,
 };
 
+// ===== Modals =====
+const Modal = ({ open, onClose, title, children }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" data-testid="modal-overlay">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-card border border-border rounded-xl w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200" data-testid="modal-content">
+        <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors" data-testid="modal-close">
+          <X size={16} />
+        </button>
+        <h2 className="text-lg font-semibold text-foreground mb-4">{title}</h2>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const InquiryForm = ({ type, onClose }) => {
+  const [form, setForm] = useState({ name: '', email: '', company: '', message: '' });
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
+    setSending(true);
+    try {
+      await fetch(`${BACKEND_URL}/api/portal/inquiries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, type }),
+      });
+    } catch { /* silent */ }
+    setSending(false);
+    setSent(true);
+  };
+
+  if (sent) {
+    return (
+      <div className="text-center py-4">
+        <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-3">
+          <ChevronRight className="w-5 h-5 text-emerald-500" />
+        </div>
+        <p className="text-sm text-foreground font-medium mb-1">Inquiry submitted</p>
+        <p className="text-xs text-muted-foreground">We'll get back to you within 24 hours.</p>
+        <button onClick={onClose} className="mt-4 px-4 py-2 text-sm bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity">
+          Close
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <input type="text" placeholder="Your name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-foreground/20" required data-testid="inquiry-name" />
+      <input type="email" placeholder="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-foreground/20" required data-testid="inquiry-email" />
+      {type === 'partner' && (
+        <input type="text" placeholder="Company name" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))}
+          className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-foreground/20" data-testid="inquiry-company" />
+      )}
+      <textarea placeholder={type === 'partner' ? 'Tell us about your partnership goals...' : type === 'sales' ? 'Tell us about your needs...' : 'How can we help?'}
+        value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={3}
+        className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-foreground/20 resize-none" required data-testid="inquiry-message" />
+      <button type="submit" disabled={sending}
+        className="w-full py-2.5 bg-foreground text-background text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
+        data-testid="inquiry-submit">
+        {sending ? 'Sending...' : 'Submit'}
+        {!sending && <Send size={14} />}
+      </button>
+    </form>
+  );
+};
+
+// ===== Main Component =====
 const PortalHome = () => {
   const [categories, setCategories] = useState([]);
-  const [search, setSearch] = useState('');
+  const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [partnerModal, setPartnerModal] = useState(false);
+  const [salesModal, setSalesModal] = useState(false);
+  const [engineerModal, setEngineerModal] = useState(false);
+  const categoriesRef = useRef(null);
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/portal/categories`)
-      .then(r => r.json())
-      .then(d => { setCategories(d.categories || []); setLoading(false); })
-      .catch(() => setLoading(false));
+    Promise.all([
+      fetch(`${BACKEND_URL}/api/portal/categories`).then(r => r.json()),
+      fetch(`${BACKEND_URL}/api/portal/engineer-plans`).then(r => r.json()),
+    ]).then(([catData, planData]) => {
+      setCategories(catData.categories || []);
+      setPlans(planData.plans || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
-  const filtered = search.trim()
-    ? categories.filter(c =>
-        c.title.toLowerCase().includes(search.toLowerCase()) ||
-        c.description?.toLowerCase().includes(search.toLowerCase()) ||
-        c.subtopics?.some(s => s.name.toLowerCase().includes(search.toLowerCase()))
-      )
-    : categories;
+  const scrollToCategories = () => {
+    categoriesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const totalSubtopics = (cat) => cat.subtopics?.length || 0;
 
   return (
     <div data-testid="portal-home">
       {/* Hero */}
-      <div className="pt-16 pb-12 px-6">
+      <div className="pt-16 pb-14 px-6">
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-[11px] font-mono uppercase tracking-[0.25em] text-muted-foreground mb-4">
-            Support Center
-          </p>
-          <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-foreground mb-4">
+          <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight text-foreground mb-4" data-testid="portal-hero-title">
             How can we help?
           </h1>
-          <p className="text-base text-muted-foreground mb-8 max-w-md mx-auto">
-            Search our knowledge base or browse categories below
+          <p className="text-base text-muted-foreground max-w-md mx-auto">
+            Get help from experts, sales, or our community.
           </p>
-
-          {/* Search */}
-          <div className="relative max-w-lg mx-auto">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="search_topics()..."
-              className="w-full h-11 pl-11 pr-4 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/40 placeholder:font-mono focus:outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 transition-all"
-              data-testid="portal-search"
-            />
-          </div>
         </div>
       </div>
 
+      {/* Contact Cards */}
+      <div className="max-w-3xl mx-auto px-6 pb-8">
+        {/* Primary Card - Product Help */}
+        <button
+          onClick={scrollToCategories}
+          className="w-full text-left p-6 sm:p-8 rounded-xl border border-border/50 bg-card hover:border-foreground/20 transition-all group mb-4"
+          data-testid="product-help-card"
+        >
+          <div className="mb-5">
+            <Wrench size={24} className="text-foreground/70" strokeWidth={1.5} />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground mb-1">Product help</h2>
+          <p className="text-sm text-muted-foreground mb-6">Get help from an expert.</p>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-foreground text-background text-sm font-medium rounded-lg group-hover:opacity-90 transition-opacity">
+              Browse topics
+            </span>
+            <span className="text-xs text-muted-foreground">For customers on paid plans</span>
+          </div>
+        </button>
+
+        {/* Three Secondary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Partner Programs */}
+          <button
+            onClick={() => setPartnerModal(true)}
+            className="text-left p-5 rounded-xl border border-border/50 bg-card hover:border-foreground/20 transition-all group"
+            data-testid="partner-card"
+          >
+            <div className="mb-4">
+              <Users size={20} className="text-foreground/70" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-sm font-semibold text-foreground mb-1">Partner programs</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed mb-4">Enquire about partnership opportunities.</p>
+            <span className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-muted/50 text-foreground rounded-lg group-hover:bg-muted transition-colors">
+              Enquire
+            </span>
+          </button>
+
+          {/* Emergency Help */}
+          <Link
+            to="/portal/submit?priority=emergency&category=deployments"
+            className="text-left p-5 rounded-xl border border-border/50 bg-card hover:border-foreground/20 transition-all group"
+            data-testid="emergency-card"
+          >
+            <div className="mb-4">
+              <AlertTriangle size={20} className="text-foreground/70" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-sm font-semibold text-foreground mb-1">Emergency help for Deployed App</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed mb-4">Urgent help when your app is down.</p>
+            <span className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-muted/50 text-foreground rounded-lg group-hover:bg-muted transition-colors">
+              Emergency
+            </span>
+          </Link>
+
+          {/* Talk to Sales */}
+          <button
+            onClick={() => setSalesModal(true)}
+            className="text-left p-5 rounded-xl border border-border/50 bg-card hover:border-foreground/20 transition-all group"
+            data-testid="sales-card"
+          >
+            <div className="mb-4">
+              <MessageSquare size={20} className="text-foreground/70" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-sm font-semibold text-foreground mb-1">Talk to sales</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed mb-4">Work with our team on enterprise solutions.</p>
+            <span className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-muted/50 text-foreground rounded-lg group-hover:bg-muted transition-colors">
+              Talk to sales
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Dedicated Engineer Upsell */}
+      {plans.length > 0 && (
+        <div className="max-w-3xl mx-auto px-6 py-10">
+          <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
+            <div className="p-6 sm:p-8">
+              <div className="flex items-center gap-2 mb-1">
+                <Zap size={16} className="text-amber-400" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">Premium</span>
+              </div>
+              <h2 className="text-xl font-semibold text-foreground mb-2">Need dedicated expert help?</h2>
+              <p className="text-sm text-muted-foreground mb-6">Get a senior engineer assigned to your account for hands-on assistance.</p>
+
+              <div className="space-y-4">
+                {plans.map(plan => (
+                  <div key={plan.plan_id} className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-8 p-5 rounded-lg bg-muted/30 border border-border/30">
+                    <div className="flex-1">
+                      <h3 className="text-base font-semibold text-foreground mb-0.5">{plan.title}</h3>
+                      <p className="text-sm text-muted-foreground mb-3">{plan.hours} hours of dedicated engineer time per {plan.period}</p>
+                      <ul className="space-y-1.5">
+                        {(plan.features || []).map((f, i) => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <ChevronRight size={12} className="text-emerald-500 mt-0.5 flex-shrink-0" />
+                            <span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="sm:text-right flex-shrink-0">
+                      <div className="text-2xl font-bold text-foreground">${plan.price.toLocaleString()}</div>
+                      <div className="text-xs text-muted-foreground mb-3">per {plan.period}</div>
+                      <button
+                        onClick={() => setEngineerModal(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-foreground text-background text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+                        data-testid="engineer-plan-cta"
+                      >
+                        Get started
+                        <ArrowRight size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Category Grid */}
-      <div className="max-w-4xl mx-auto px-6 pb-16">
+      <div ref={categoriesRef} className="max-w-3xl mx-auto px-6 pb-10 scroll-mt-20" data-testid="categories-section">
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-foreground mb-1">Browse by topic</h2>
+          <p className="text-sm text-muted-foreground">Find answers in our knowledge base or submit a ticket.</p>
+        </div>
+
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="h-32 rounded-lg bg-muted/30 animate-pulse" />
             ))}
           </div>
-        ) : filtered.length === 0 ? (
+        ) : categories.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-muted-foreground text-sm">No matching categories found</p>
-            <Link to="/portal/submit" className="text-sm text-foreground underline underline-offset-4 mt-2 inline-block">
-              Submit a ticket instead
-            </Link>
+            <p className="text-muted-foreground text-sm">No categories available</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filtered.map(cat => {
+            {categories.map(cat => {
               const Icon = ICON_MAP[cat.icon] || Boxes;
               return (
                 <Link
@@ -111,20 +302,36 @@ const PortalHome = () => {
             })}
           </div>
         )}
-
-        {/* CTA */}
-        <div className="mt-12 text-center">
-          <p className="text-sm text-muted-foreground mb-3">Can't find what you're looking for?</p>
-          <Link
-            to="/portal/submit"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
-            data-testid="portal-submit-cta"
-          >
-            Submit a ticket
-            <ArrowRight size={14} />
-          </Link>
-        </div>
       </div>
+
+      {/* CTA */}
+      <div className="max-w-3xl mx-auto px-6 pb-16 text-center">
+        <p className="text-sm text-muted-foreground mb-3">Can't find what you're looking for?</p>
+        <Link
+          to="/portal/submit"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+          data-testid="portal-submit-cta"
+        >
+          Submit a ticket
+          <ArrowRight size={14} />
+        </Link>
+      </div>
+
+      {/* Modals */}
+      <Modal open={partnerModal} onClose={() => setPartnerModal(false)} title="Enquire about partner programs">
+        <p className="text-sm text-muted-foreground mb-4">Tell us about your partnership goals and we'll connect you with the right team.</p>
+        <InquiryForm type="partner" onClose={() => setPartnerModal(false)} />
+      </Modal>
+
+      <Modal open={salesModal} onClose={() => setSalesModal(false)} title="Talk to sales">
+        <p className="text-sm text-muted-foreground mb-4">Tell us about your enterprise needs and our team will reach out.</p>
+        <InquiryForm type="sales" onClose={() => setSalesModal(false)} />
+      </Modal>
+
+      <Modal open={engineerModal} onClose={() => setEngineerModal(false)} title="Get dedicated engineer time">
+        <p className="text-sm text-muted-foreground mb-4">Interested in a dedicated engineer for your team? Tell us about your requirements.</p>
+        <InquiryForm type="engineer" onClose={() => setEngineerModal(false)} />
+      </Modal>
     </div>
   );
 };
