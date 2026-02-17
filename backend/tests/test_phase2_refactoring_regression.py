@@ -37,7 +37,7 @@ import os
 import uuid
 
 # Use the public URL from frontend/.env for testing
-BASE_URL = "https://support-portal-86.preview.emergentagent.com"
+BASE_URL = "https://ticket-ai-system-1.preview.emergentagent.com"
 
 # Test credentials
 SESSION_TOKEN = "7N_TW_9vqeefrLlsBi_s9cZyXCYznDfSPaSt8iwcJic"
