@@ -2,13 +2,14 @@
 Public Knowledge Base API routes.
 Serves articles for the help.emergent.sh-style KB frontend.
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import Response
 from database import db
 from dependencies import get_current_user
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
+import uuid
 
 router = APIRouter(prefix="/api/kb", tags=["knowledge_base_public"])
 
