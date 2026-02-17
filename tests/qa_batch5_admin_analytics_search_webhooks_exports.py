@@ -26,13 +26,11 @@ def run_batch():
         return api_put(s, "/api/admin/settings", {"auto_reassign_reopened": True}).status_code == 200, "Updated"
     runner.run_test("16.2", "PUT /api/admin/settings", test_16_2)
 
-    def test_16_3_finding():
-        """Document: admin/settings has no RBAC check for agents"""
+    def test_16_3():
+        """Verify admin/settings blocks agents"""
         r = api_get(s_agent, "/api/admin/settings")
-        if r.status_code == 200:
-            return True, "FINDING: No RBAC on /api/admin/settings - agents can read"
-        return r.status_code == 403, f"Has RBAC, status={r.status_code}"
-    runner.run_test("16.3", "FINDING: /api/admin/settings RBAC", test_16_3_finding)
+        return r.status_code == 403, f"Status={r.status_code}"
+    runner.run_test("16.3", "Agent blocked from /api/admin/settings (403)", test_16_3)
 
     # Custom Fields
     created_cf_id = None
@@ -208,12 +206,10 @@ def run_batch():
         return api_get(s, "/api/admin/export/analytics").status_code == 200, "OK"
     runner.run_test("20.6", "GET /api/admin/export/analytics", test_20_6)
 
-    def test_20_7_finding():
+    def test_20_7():
         r = api_post(s_agent, "/api/admin/export/tickets", {"format": "json"})
-        if r.status_code == 200:
-            return True, "FINDING: No RBAC on /api/admin/export/tickets - agents can export"
         return r.status_code == 403, f"Status={r.status_code}"
-    runner.run_test("20.7", "FINDING: /api/admin/export/tickets RBAC", test_20_7_finding)
+    runner.run_test("20.7", "Agent blocked from /api/admin/export/tickets (403)", test_20_7)
 
     runner.save_report()
 

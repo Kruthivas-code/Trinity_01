@@ -238,8 +238,7 @@ def run_batch():
     def test_5_4():
         if not created_ticket_ids: return False, "No tickets"
         r = api_get(s, f"/api/tickets/{created_ticket_ids[0]}/activity-feed")
-        # APP BUG: activity-feed endpoint returns 500 server error
-        return r.status_code == 200, f"Status={r.status_code} (APP BUG: 500 if failing)"
+        return r.status_code == 200, f"Status={r.status_code}"
     runner.run_test("5.4", "Get ticket activity-feed", test_5_4)
 
     # ===== 6. Tags & Starred =====

@@ -250,8 +250,7 @@ def run_batch():
         tid = t.json().get("ticket_id")
         r = api_get(s, f"/api/sla/ticket/{tid}")
         api_delete(s, f"/api/tickets/{tid}")
-        # APP BUG: SLA ticket endpoint returns 500 server error
-        return r.status_code == 200, f"Status={r.status_code} (APP BUG: 500 if failing)"
+        return r.status_code == 200, f"Status={r.status_code}"
     runner.run_test("15.6", "GET /api/sla/ticket/:id", test_15_6)
 
     runner.save_report()
