@@ -180,6 +180,7 @@ class ArticleUpdate(BaseModel):
     content_markdown: Optional[str] = None
     published: Optional[bool] = None
     order: Optional[int] = None
+    icon: Optional[str] = None
 
 
 class ArticleCreate(BaseModel):
@@ -192,6 +193,7 @@ class ArticleCreate(BaseModel):
     content_markdown: str = ""
     published: bool = True
     order: int = 0
+    icon: str = ""
 
 
 @router.post("/admin/articles")
