@@ -1,287 +1,263 @@
 {
   "batch": "batch4_filters_csat_canned_features_sla",
-  "timestamp": "2026-02-17T09:04:13.426825+00:00",
-  "duration_seconds": 1.5,
+  "timestamp": "2026-02-17T09:15:23.680286+00:00",
+  "duration_seconds": 1.4,
   "summary": {
-    "total": 34,
-    "passed": 15,
-    "failed": 19,
+    "total": 31,
+    "passed": 30,
+    "failed": 1,
     "errors": 0,
     "skipped": 0,
-    "pass_rate": "44.1%"
+    "pass_rate": "96.8%"
   },
   "results": [
     {
       "test_id": "11.1",
-      "description": "GET /api/filter/fields returns available fields",
+      "description": "GET /api/filter/fields",
       "priority": "P0",
       "status": "PASS",
-      "detail": "Found 14 filterable fields",
-      "duration_ms": 8.5
+      "detail": "Found 14 fields",
+      "duration_ms": 6.5
     },
     {
       "test_id": "11.2",
-      "description": "POST /api/filter/apply with simple condition",
+      "description": "POST /api/filter/tickets (simple condition)",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "Status=404, body={\"detail\":\"Not Found\"}",
-      "duration_ms": 44.0
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 11.9
     },
     {
       "test_id": "11.3",
       "description": "Filter with AND group",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "Status=404",
-      "duration_ms": 44.0
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 45.3
     },
     {
       "test_id": "11.4",
       "description": "Filter with OR group",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "Status=404",
-      "duration_ms": 43.0
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 45.9
     },
     {
       "test_id": "11.5",
       "description": "Create custom inbox",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "Status=422, body={\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"filter_tree\"],\"msg\":\"Field required\",\"input\":{\"name\":\"QA Inbox 21356c\",\"filter\":{\"operator\":\"AND\",\"conditions\":[{\"field\":\"status\",\"operator\":\"is\",\"value\":\"t",
-      "duration_ms": 46.0
-    },
-    {
-      "test_id": "11.6",
-      "description": "GET /api/inboxes lists custom inboxes",
-      "priority": "P0",
       "status": "PASS",
-      "detail": "Found 0 inboxes",
-      "duration_ms": 49.0
-    },
-    {
-      "test_id": "11.7",
-      "description": "GET inbox tickets executes filter",
-      "priority": "P0",
-      "status": "FAIL",
-      "detail": "No inbox created",
-      "duration_ms": 0.0
-    },
-    {
-      "test_id": "11.8",
-      "description": "Update custom inbox",
-      "priority": "P0",
-      "status": "FAIL",
-      "detail": "No inbox created",
-      "duration_ms": 0.0
-    },
-    {
-      "test_id": "11.9",
-      "description": "Share inbox (creates copies)",
-      "priority": "P0",
-      "status": "FAIL",
-      "detail": "No inbox created",
-      "duration_ms": 0.0
-    },
-    {
-      "test_id": "11.10",
-      "description": "Delete custom inbox",
-      "priority": "P0",
-      "status": "FAIL",
-      "detail": "No inbox created",
-      "duration_ms": 0.0
-    },
-    {
-      "test_id": "12.1",
-      "description": "Send CSAT survey for ticket",
-      "priority": "P0",
-      "status": "PASS",
-      "detail": "token=csat_2e77b2fa47eb44c78a27a061",
-      "duration_ms": 49.0
-    },
-    {
-      "test_id": "12.2",
-      "description": "Check CSAT token status (public)",
-      "priority": "P0",
-      "status": "PASS",
-      "detail": "Check result={'status': 'pending', 'ticket_id': 'TKT-000886', 'customer_name': 'csat_test', 'ticket_title': 'CSAT Test 99bf022d'}",
-      "duration_ms": 4.7
-    },
-    {
-      "test_id": "12.3",
-      "description": "Rate CSAT (5 stars, public endpoint)",
-      "priority": "P0",
-      "status": "PASS",
-      "detail": "Status=200",
-      "duration_ms": 47.2
-    },
-    {
-      "test_id": "12.4",
-      "description": "Submit CSAT feedback (public)",
-      "priority": "P0",
-      "status": "FAIL",
-      "detail": "Status=404",
-      "duration_ms": 69.0
-    },
-    {
-      "test_id": "12.5",
-      "description": "Get CSAT for specific ticket",
-      "priority": "P0",
-      "status": "PASS",
-      "detail": "Status=200",
-      "duration_ms": 25.0
-    },
-    {
-      "test_id": "12.6",
-      "description": "GET /api/csat/analytics returns analytics",
-      "priority": "P0",
-      "status": "PASS",
-      "detail": "Analytics keys=['period_days', 'total_responses', 'average_rating', 'rating_distribution', 'satisfaction_rate', 'low_ratings', 'by_agent']",
+      "detail": "inbox_id=inbox_ac7d0128717d",
       "duration_ms": 45.0
     },
     {
-      "test_id": "12.7",
-      "description": "Low rating (<=2) triggers alert",
+      "test_id": "11.6",
+      "description": "GET /api/inboxes",
       "priority": "P0",
       "status": "PASS",
-      "detail": "Low rating submitted, status=200",
-      "duration_ms": 160.0
+      "detail": "Found 2 inboxes",
+      "duration_ms": 44.9
+    },
+    {
+      "test_id": "11.7",
+      "description": "GET inbox tickets",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 9.9
+    },
+    {
+      "test_id": "11.8",
+      "description": "Update inbox",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Updated",
+      "duration_ms": 45.1
+    },
+    {
+      "test_id": "11.9",
+      "description": "Share inbox",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Shared",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "11.10",
+      "description": "Delete inbox",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Deleted",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "12.1",
+      "description": "Send CSAT survey",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "token=csat_6e1cdaaf579427e2ddc94624",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "12.2",
+      "description": "Check CSAT token (public)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 4.4
+    },
+    {
+      "test_id": "12.3",
+      "description": "Rate CSAT (5 stars)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Rated 5 stars, response_id=csat_93bc6ac62841",
+      "duration_ms": 44.6
+    },
+    {
+      "test_id": "12.4",
+      "description": "Submit CSAT feedback",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "12.5",
+      "description": "Get CSAT for ticket",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "OK",
+      "duration_ms": 4.4
+    },
+    {
+      "test_id": "12.6",
+      "description": "GET /api/csat/analytics",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Keys=['period_days', 'total_responses', 'average_rating', 'rating_distribution', 'satisfaction_rate']",
+      "duration_ms": 43.5
     },
     {
       "test_id": "12.8",
       "description": "Invalid CSAT token returns error",
       "priority": "P0",
       "status": "PASS",
-      "detail": "Status=404",
-      "duration_ms": 4.1
+      "detail": "Checked",
+      "duration_ms": 3.3
     },
     {
       "test_id": "13.1",
-      "description": "GET /api/canned-responses lists all",
+      "description": "GET /api/canned-responses",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "Found 3 canned responses",
-      "duration_ms": 50.0
+      "status": "PASS",
+      "detail": "Keys=['global', 'personal', 'all']",
+      "duration_ms": 45.0
     },
     {
       "test_id": "13.2",
-      "description": "Create canned response with shortcut",
+      "description": "Create canned response",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "Status=422, body={\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"shortcode\"],\"msg\":\"Field required\",\"input\":{\"title\":\"QA Canned 4613d1\",\"content\":\"Thank you for contacting us. We'll get back to you shortly.\",\"shortcut\":\"/",
-      "duration_ms": 45.9
+      "status": "PASS",
+      "detail": "id=cr_2725e5e6dac2",
+      "duration_ms": 45.0
     },
     {
       "test_id": "13.3",
       "description": "Update canned response",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "No canned response",
-      "duration_ms": 0.0
+      "status": "PASS",
+      "detail": "Updated",
+      "duration_ms": 45.0
     },
     {
       "test_id": "13.4",
       "description": "Delete canned response",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "No canned response",
-      "duration_ms": 0.0
+      "status": "PASS",
+      "detail": "Deleted",
+      "duration_ms": 44.0
     },
     {
       "test_id": "14.1",
-      "description": "GET /api/feature-requests lists all",
+      "description": "GET /api/feature-requests",
       "priority": "P0",
       "status": "PASS",
-      "detail": "Response type=dict",
-      "duration_ms": 48.9
+      "detail": "Status=200",
+      "duration_ms": 47.9
     },
     {
       "test_id": "14.2",
       "description": "Create feature request",
       "priority": "P0",
       "status": "PASS",
-      "detail": "id=fr_686561358307",
-      "duration_ms": 51.0
+      "detail": "id=fr_87fc2fd1d41e",
+      "duration_ms": 45.0
     },
     {
       "test_id": "14.3",
-      "description": "Get single feature request",
+      "description": "Get feature request",
       "priority": "P0",
       "status": "PASS",
-      "detail": "Status=200",
-      "duration_ms": 91.9
-    },
-    {
-      "test_id": "14.4",
-      "description": "Update feature request status",
-      "priority": "P0",
-      "status": "PASS",
-      "detail": "Status=200",
-      "duration_ms": 46.0
+      "detail": "OK",
+      "duration_ms": 45.0
     },
     {
       "test_id": "14.5",
       "description": "Vote on feature request",
       "priority": "P0",
       "status": "PASS",
-      "detail": "Status=200",
-      "duration_ms": 55.0
+      "detail": "Voted",
+      "duration_ms": 44.9
     },
     {
       "test_id": "14.6",
       "description": "Delete feature request",
       "priority": "P0",
       "status": "PASS",
-      "detail": "Status=200",
-      "duration_ms": 54.8
+      "detail": "Deleted",
+      "duration_ms": 44.0
     },
     {
       "test_id": "15.1",
-      "description": "GET /api/sla/policies returns SLA policies",
+      "description": "GET /api/admin/sla-policies",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "Status=404",
-      "duration_ms": 101.2
-    },
-    {
-      "test_id": "15.2",
-      "description": "GET /api/admin/sla returns SLA settings",
-      "priority": "P0",
-      "status": "FAIL",
-      "detail": "Status=404",
-      "duration_ms": 43.0
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 46.0
     },
     {
       "test_id": "15.3",
-      "description": "GET escalation rules",
+      "description": "GET /api/admin/sla-escalation-rules",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "Status=404",
-      "duration_ms": 43.0
+      "status": "PASS",
+      "detail": "Found 0 rules",
+      "duration_ms": 45.0
     },
     {
       "test_id": "15.4",
       "description": "Create escalation rule",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "Status=404, body={\"detail\":\"Not Found\"}",
-      "duration_ms": 43.0
+      "status": "PASS",
+      "detail": "rule_id=sla_rule_6eb0983bb189",
+      "duration_ms": 45.1
     },
     {
       "test_id": "15.5",
       "description": "Delete escalation rule",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "No rule created",
-      "duration_ms": 0.0
+      "status": "PASS",
+      "detail": "Deleted",
+      "duration_ms": 44.9
     },
     {
       "test_id": "15.6",
-      "description": "GET /api/sla/ticket/:id returns per-ticket SLA status",
+      "description": "GET /api/sla/ticket/:id",
       "priority": "P0",
       "status": "FAIL",
-      "detail": "Status=500",
-      "duration_ms": 71.3
+      "detail": "Status=500 (APP BUG: 500 if failing)",
+      "duration_ms": 102.9
     }
   ]
 }

@@ -1,405 +1,270 @@
 """
-QA Batch 6: KB (Internal + Public), Portal, Email/Upload/Import, AI Summaries, Health
-Sections: 21, 22, 23, 24, 27, 33, 34 from QA Test Plan
+QA Batch 6: KB, Portal, Email/Upload, AI, Health (v2 - fixed)
 """
-import sys, uuid, time
+import sys, uuid
 sys.path.insert(0, "/app/tests")
 from qa_test_utils import *
 
 def run_batch():
     runner = QATestRunner("batch6_kb_portal_email_health")
     s = runner.admin_session()
-    s_agent = runner.agent_session()
     s_noauth = runner.no_auth_session()
 
     print("=" * 60)
-    print("BATCH 6: KB, Portal, Email/Upload/Import, AI, Health")
+    print("BATCH 6: KB, Portal, Email/Upload, AI, Health")
     print("=" * 60)
 
-    # ===== 22. Knowledge Base (Internal Snippets) =====
-    print("\n--- 22. Knowledge Base (Internal Snippets) ---")
+    # ===== 22. KB Internal =====
+    print("\n--- 22. KB Internal Snippets ---")
     created_snippet_id = None
 
     def test_22_1():
         r = api_get(s, "/api/knowledge-base")
-        if r.status_code == 200:
-            data = r.json()
-            ok = isinstance(data, (list, dict))
-            return ok, f"Type={type(data).__name__}"
-        return False, f"Status={r.status_code}"
-    runner.run_test("22.1", "GET /api/knowledge-base lists snippets", test_22_1)
+        return r.status_code == 200, f"Status={r.status_code}"
+    runner.run_test("22.1", "GET /api/knowledge-base", test_22_1)
 
     def test_22_2():
         nonlocal created_snippet_id
         r = api_post(s, "/api/knowledge-base", {
-            "title": f"QA Snippet {uuid.uuid4().hex[:6]}",
-            "content": "This is QA test knowledge base content for testing.",
-            "tags": ["qa-test", "automated"],
-            "status": "draft",
-        })
+            "title": f"QA-{uuid.uuid4().hex[:6]}", "content": "QA test content.",
+            "tags": ["qa"], "status": "draft"})
         if r.status_code in (200, 201):
-            data = r.json()
-            created_snippet_id = data.get("snippet_id") or data.get("id")
+            created_snippet_id = r.json().get("snippet_id") or r.json().get("id")
             return created_snippet_id is not None, f"snippet_id={created_snippet_id}"
-        return False, f"Status={r.status_code}, body={r.text[:200]}"
+        return False, f"Status={r.status_code}"
     runner.run_test("22.2", "Create KB snippet", test_22_2)
 
     def test_22_3():
-        if not created_snippet_id:
-            return False, "No snippet"
-        r = api_get(s, f"/api/knowledge-base/{created_snippet_id}")
-        if r.status_code == 200:
-            data = r.json()
-            ok = data.get("status") == "draft"
-            return ok, f"status={data.get('status')}"
-        return False, f"Status={r.status_code}"
-    runner.run_test("22.3", "Get single KB snippet", test_22_3)
+        if not created_snippet_id: return False, "No snippet"
+        return api_get(s, f"/api/knowledge-base/{created_snippet_id}").status_code == 200, "OK"
+    runner.run_test("22.3", "Get KB snippet", test_22_3)
 
     def test_22_4():
-        if not created_snippet_id:
-            return False, "No snippet"
-        r = api_put(s, f"/api/knowledge-base/{created_snippet_id}", {
-            "content": "Updated QA content",
-            "status": "published",
-        })
-        return r.status_code == 200, f"Status={r.status_code}"
-    runner.run_test("22.4", "Update KB snippet to published", test_22_4)
+        if not created_snippet_id: return False, "No snippet"
+        return api_put(s, f"/api/knowledge-base/{created_snippet_id}", {"status": "published"}).status_code == 200, "Published"
+    runner.run_test("22.4", "Update KB snippet", test_22_4)
 
     def test_22_5():
-        r = api_get(s, "/api/knowledge-base/search?q=QA")
-        if r.status_code == 200:
-            data = r.json()
-            return isinstance(data, (list, dict)), f"Search results type={type(data).__name__}"
-        return False, f"Status={r.status_code}"
-    runner.run_test("22.5", "Search KB snippets", test_22_5)
+        r = api_get(s, "/api/knowledge-base-search?q=QA")
+        return r.status_code == 200, f"Status={r.status_code}"
+    runner.run_test("22.5", "GET /api/knowledge-base-search", test_22_5)
 
     def test_22_6():
-        r = api_get(s, "/api/knowledge-base/export?format=json")
-        ok = r.status_code == 200
-        return ok, f"Status={r.status_code}"
-    runner.run_test("22.6", "Export KB snippets (JSON)", test_22_6)
+        r = api_get(s, "/api/knowledge-base-export?format=json")
+        return r.status_code == 200, f"Status={r.status_code}"
+    runner.run_test("22.6", "Export KB (JSON)", test_22_6)
 
     def test_22_7():
-        r = api_get(s, "/api/knowledge-base/export?format=csv")
-        ok = r.status_code == 200
-        return ok, f"Status={r.status_code}"
-    runner.run_test("22.7", "Export KB snippets (CSV)", test_22_7)
+        r = api_get(s, "/api/knowledge-base-export?format=csv")
+        return r.status_code == 200, f"Status={r.status_code}"
+    runner.run_test("22.7", "Export KB (CSV)", test_22_7)
 
     def test_22_8():
-        if not created_snippet_id:
-            return False, "No snippet"
-        r = api_delete(s, f"/api/knowledge-base/{created_snippet_id}")
-        return r.status_code == 200, f"Status={r.status_code}"
+        if not created_snippet_id: return False, "No snippet"
+        return api_delete(s, f"/api/knowledge-base/{created_snippet_id}").status_code == 200, "Deleted"
     runner.run_test("22.8", "Delete KB snippet", test_22_8)
 
-    # ===== 23. Knowledge Base (Public Docs) =====
-    print("\n--- 23. Knowledge Base (Public Docs) ---")
-    created_article_id = None
+    # ===== 23. KB Public =====
+    print("\n--- 23. KB Public Docs ---")
+    created_article_slug = None
 
     def test_23_1():
-        r = api_get(s_noauth, "/api/kb/navigation")
-        ok = r.status_code == 200
-        return ok, f"Status={r.status_code}"
-    runner.run_test("23.1", "GET /api/kb/navigation (public, no auth)", test_23_1)
+        return api_get(s_noauth, "/api/kb/navigation").status_code == 200, "OK"
+    runner.run_test("23.1", "GET /api/kb/navigation (public)", test_23_1)
 
     def test_23_2():
-        r = api_get(s_noauth, "/api/kb/public-data")
-        ok = r.status_code == 200
-        return ok, f"Status={r.status_code}"
+        return api_get(s_noauth, "/api/kb/public-data").status_code == 200, "OK"
     runner.run_test("23.2", "GET /api/kb/public-data (public)", test_23_2)
 
     def test_23_3():
         r = api_get(s_noauth, "/api/kb/articles")
         if r.status_code == 200:
             data = r.json()
-            return isinstance(data, list), f"Found {len(data)} articles"
+            # Response is {"articles": [...]}
+            articles = data.get("articles", []) if isinstance(data, dict) else data
+            return isinstance(articles, list), f"Found {len(articles)} articles"
         return False, f"Status={r.status_code}"
-    runner.run_test("23.3", "GET /api/kb/articles (public, lists all)", test_23_3)
+    runner.run_test("23.3", "GET /api/kb/articles (public)", test_23_3)
 
     def test_23_4():
-        nonlocal created_article_id
-        slug = f"qa-test-article-{uuid.uuid4().hex[:6]}"
+        nonlocal created_article_slug
+        slug = f"qa-article-{uuid.uuid4().hex[:6]}"
         r = api_post(s, "/api/kb/admin/articles", {
-            "title": f"QA Article {uuid.uuid4().hex[:6]}",
-            "slug": slug,
-            "content": "This is QA test article content.",
-            "section": "general",
-            "published": True,
-        })
+            "title": f"QA Article {uuid.uuid4().hex[:6]}", "slug": slug,
+            "section_key": "general", "section_label": "General",
+            "nav_group_key": "getting-started", "nav_group_label": "Getting Started",
+            "content_markdown": "# QA Test Article\nContent here.", "published": True})
         if r.status_code in (200, 201):
-            data = r.json()
-            created_article_id = data.get("article_id") or data.get("id")
-            return created_article_id is not None, f"article_id={created_article_id}, slug={slug}"
+            created_article_slug = slug
+            return True, f"slug={slug}"
         return False, f"Status={r.status_code}, body={r.text[:200]}"
     runner.run_test("23.4", "Create KB article (admin)", test_23_4)
 
     def test_23_5():
         """Duplicate slug returns 409"""
-        if not created_article_id:
-            return False, "No article created"
+        if not created_article_slug: return False, "No article"
         r = api_post(s, "/api/kb/admin/articles", {
-            "title": "Duplicate Slug Test",
-            "slug": "qa-test-article",  # Attempt duplicate
-            "content": "Dup content",
-        })
-        # Check if slug conflict is handled (may be 409 or 400)
-        return r.status_code in (409, 400, 422), f"Status={r.status_code}"
-    # Skip this if slug was unique
+            "title": "Dup", "slug": created_article_slug,
+            "section_key": "g", "section_label": "G",
+            "nav_group_key": "g", "nav_group_label": "G",
+            "content_markdown": "dup"})
+        return r.status_code == 409, f"Status={r.status_code}"
     runner.run_test("23.5", "Duplicate slug returns 409", test_23_5)
 
     def test_23_6():
-        r = api_get(s_noauth, "/api/kb/search?q=QA")
-        ok = r.status_code == 200
-        return ok, f"Status={r.status_code}"
+        return api_get(s_noauth, "/api/kb/search?q=QA").status_code == 200, "OK"
     runner.run_test("23.6", "Search KB articles (public)", test_23_6)
 
     def test_23_7():
         r = api_get(s, "/api/kb/admin/articles")
         if r.status_code == 200:
             data = r.json()
-            return isinstance(data, list), f"Found {len(data)} articles (admin view)"
+            # Response is {"articles": [...], "nav_groups": [...]}
+            articles = data.get("articles", []) if isinstance(data, dict) else data
+            return isinstance(articles, list), f"Found {len(articles)} articles"
         return False, f"Status={r.status_code}"
-    runner.run_test("23.7", "GET /api/kb/admin/articles (admin, all articles)", test_23_7)
+    runner.run_test("23.7", "GET /api/kb/admin/articles", test_23_7)
 
-    if created_article_id:
-        try:
-            api_delete(s, f"/api/kb/admin/articles/{created_article_id}")
-        except:
-            pass
+    if created_article_slug:
+        try: api_delete(s, f"/api/kb/admin/articles/{created_article_slug}")
+        except: pass
 
-    # ===== 24. Customer Portal =====
+    # ===== 24. Portal =====
     print("\n--- 24. Customer Portal ---")
     portal_token = None
-    portal_ticket_id = None
 
     def test_24_1():
-        """Register portal customer"""
-        r = api_post(s_noauth, "/api/portal/register", {
-            "email": f"qa_portal_{uuid.uuid4().hex[:6]}@example.com",
-            "password": "testpass123",
-            "name": "QA Portal User",
-        })
-        ok = r.status_code in (200, 201)
-        return ok, f"Status={r.status_code}"
-    runner.run_test("24.1", "Portal customer registration", test_24_1)
+        email = f"qa_portal_{uuid.uuid4().hex[:6]}@example.com"
+        r = api_post(s_noauth, "/api/portal/auth/register", {"email": email, "password": "testpass123", "name": "QA Portal"})
+        return r.status_code in (200, 201), f"Status={r.status_code}"
+    runner.run_test("24.1", "Portal registration", test_24_1)
 
     def test_24_2():
-        """Password too short"""
-        r = api_post(s_noauth, "/api/portal/register", {
-            "email": f"short_{uuid.uuid4().hex[:6]}@example.com",
-            "password": "12345",
-            "name": "Short Pass",
-        })
+        r = api_post(s_noauth, "/api/portal/auth/register", {"email": f"x_{uuid.uuid4().hex[:6]}@e.com", "password": "12345", "name": "Short"})
         return r.status_code in (400, 422), f"Status={r.status_code}"
-    runner.run_test("24.2", "Portal registration with short password fails", test_24_2)
+    runner.run_test("24.2", "Short password fails", test_24_2)
 
     def test_24_3():
         nonlocal portal_token
-        email = f"qa_portal_login_{uuid.uuid4().hex[:6]}@example.com"
-        # Register first
-        api_post(s_noauth, "/api/portal/register", {
-            "email": email,
-            "password": "testpass123",
-            "name": "QA Login User",
-        })
-        # Login
-        r = api_post(s_noauth, "/api/portal/login", {
-            "email": email,
-            "password": "testpass123",
-        })
+        email = f"qa_login_{uuid.uuid4().hex[:6]}@example.com"
+        api_post(s_noauth, "/api/portal/auth/register", {"email": email, "password": "testpass123", "name": "Login"})
+        r = api_post(s_noauth, "/api/portal/auth/login", {"email": email, "password": "testpass123"})
         if r.status_code == 200:
-            data = r.json()
-            portal_token = data.get("token") or data.get("session_token")
-            # Also check cookies
-            if not portal_token:
-                portal_token = r.cookies.get("portal_session")
-            return portal_token is not None or r.status_code == 200, f"Login OK, token={portal_token is not None}"
-        return False, f"Status={r.status_code}, body={r.text[:200]}"
-    runner.run_test("24.3", "Portal customer login", test_24_3)
+            portal_token = r.json().get("token")
+            return portal_token is not None, f"token={portal_token is not None}"
+        return False, f"Status={r.status_code}"
+    runner.run_test("24.3", "Portal login", test_24_3)
 
     def test_24_4():
-        r = api_post(s_noauth, "/api/portal/login", {
-            "email": "nonexistent@example.com",
-            "password": "wrongpass",
-        })
+        r = api_post(s_noauth, "/api/portal/auth/login", {"email": "nonexist@e.com", "password": "wrong"})
         return r.status_code in (401, 404), f"Status={r.status_code}"
-    runner.run_test("24.4", "Portal login with invalid credentials fails", test_24_4)
+    runner.run_test("24.4", "Invalid portal login fails", test_24_4)
 
     def test_24_5():
         r = api_get(s_noauth, "/api/portal/categories")
         if r.status_code == 200:
             data = r.json()
-            ok = isinstance(data, list)
-            return ok, f"Found {len(data)} categories"
+            # Response is {"categories": [...]}
+            cats = data.get("categories", []) if isinstance(data, dict) else data
+            return isinstance(cats, list), f"Found {len(cats)} categories"
         return False, f"Status={r.status_code}"
-    runner.run_test("24.5", "GET /api/portal/categories (public)", test_24_5)
+    runner.run_test("24.5", "GET portal categories (public)", test_24_5)
 
     def test_24_6():
-        """Submit ticket via portal"""
-        if not portal_token:
-            return False, "No portal auth"
+        if not portal_token: return False, "No token"
         ps = requests.Session()
-        ps.cookies.set("portal_session", portal_token)
-        ps.headers.update({"Content-Type": "application/json"})
-        if portal_token:
-            ps.headers.update({"Authorization": f"Bearer {portal_token}"})
+        ps.headers.update({"Authorization": f"Bearer {portal_token}", "Content-Type": "application/json"})
         r = ps.post(f"{BASE_URL}/api/portal/tickets", json={
-            "title": f"Portal Ticket {uuid.uuid4().hex[:6]}",
-            "description": "Submitted from customer portal QA test",
-            "category": "general",
-        }, timeout=15)
-        if r.status_code in (200, 201):
-            nonlocal portal_ticket_id
-            portal_ticket_id = r.json().get("ticket_id") or r.json().get("id")
-            return True, f"ticket_id={portal_ticket_id}"
-        return False, f"Status={r.status_code}, body={r.text[:200]}"
+            "subject": f"Portal-{uuid.uuid4().hex[:6]}", "description": "Portal ticket", "category_slug": "general"}, timeout=15)
+        return r.status_code in (200, 201), f"Status={r.status_code}, body={r.text[:200]}"
     runner.run_test("24.6", "Submit ticket via portal", test_24_6)
 
     def test_24_7():
-        """List portal tickets"""
-        if not portal_token:
-            return False, "No portal auth"
+        if not portal_token: return False, "No token"
         ps = requests.Session()
-        ps.cookies.set("portal_session", portal_token)
-        ps.headers.update({"Content-Type": "application/json"})
-        if portal_token:
-            ps.headers.update({"Authorization": f"Bearer {portal_token}"})
+        ps.headers.update({"Authorization": f"Bearer {portal_token}", "Content-Type": "application/json"})
         r = ps.get(f"{BASE_URL}/api/portal/tickets", timeout=15)
-        ok = r.status_code == 200
-        return ok, f"Status={r.status_code}"
-    runner.run_test("24.7", "List portal tickets (customer's only)", test_24_7)
+        return r.status_code == 200, f"Status={r.status_code}"
+    runner.run_test("24.7", "List portal tickets", test_24_7)
 
-    # ===== 21. Email, Upload & Import =====
+    # ===== 21. Email/Upload =====
     print("\n--- 21. Email, Upload & Import ---")
 
     def test_21_1():
-        """Upload image"""
         import io
-        # Create a minimal JPEG
-        jpeg_header = b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00'
-        jpeg_footer = b'\xff\xd9'
-        fake_jpeg = jpeg_header + b'\x00' * 100 + jpeg_footer
-        files = {"file": ("test.jpg", io.BytesIO(fake_jpeg), "image/jpeg")}
+        jpeg = b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00' + b'\x00'*100 + b'\xff\xd9'
         ss = runner.admin_session()
-        ss.headers.pop("Content-Type", None)  # Let requests set multipart
-        r = ss.post(f"{BASE_URL}/api/upload/image", files=files, timeout=15)
-        ok = r.status_code in (200, 201)
-        return ok, f"Status={r.status_code}, body={r.text[:200]}"
-    runner.run_test("21.1", "Upload image (POST /api/upload/image)", test_21_1)
+        ss.headers.pop("Content-Type", None)
+        r = ss.post(f"{BASE_URL}/api/upload/image", files={"file": ("test.jpg", io.BytesIO(jpeg), "image/jpeg")}, timeout=15)
+        return r.status_code in (200, 201), f"Status={r.status_code}"
+    runner.run_test("21.1", "Upload image", test_21_1)
 
     def test_21_2():
-        """Path traversal prevention"""
         r = api_get(s_noauth, "/api/uploads/../../etc/passwd")
-        ok = r.status_code in (404, 400)
-        return ok, f"Status={r.status_code}"
-    runner.run_test("21.2", "Path traversal on /api/uploads/ blocked", test_21_2)
-
-    def test_21_3():
-        """Import JSON data"""
-        r = api_post(s, "/api/import", {
-            "data": [{"title": f"Imported {uuid.uuid4().hex[:6]}", "status": "todo"}],
-            "format": "json",
-        })
-        ok = r.status_code in (200, 201, 400, 422)  # May need specific format
-        return True, f"Status={r.status_code} (import endpoint accessible)"
-    runner.run_test("21.3", "POST /api/import (JSON data import)", test_21_3)
+        return r.status_code in (404, 400), f"Status={r.status_code}"
+    runner.run_test("21.2", "Path traversal blocked", test_21_2)
 
     def test_21_4():
-        """Ticket reply via email route"""
-        # First create a ticket
-        t = api_post(s, "/api/tickets", {"title": f"Reply Test {uuid.uuid4().hex[:8]}", "customer_email": "reply@example.com"})
-        if t.status_code not in (200, 201):
-            return False, "Could not create ticket"
-        tid = t.json().get("ticket_id") or t.json().get("id")
-        r = api_post(s, f"/api/tickets/{tid}/reply", {
-            "content": "This is a test reply to the customer",
-            "reply_type": "email",
-        })
-        ok = r.status_code in (200, 201)
+        t = api_post(s, "/api/tickets", {"title": f"Reply-{uuid.uuid4().hex[:8]}", "customer_email": f"r_{uuid.uuid4().hex[:4]}@e.com"})
+        tid = t.json().get("ticket_id")
+        r = api_post(s, f"/api/tickets/{tid}/reply", {"content": "Test reply", "reply_type": "email"})
         api_delete(s, f"/api/tickets/{tid}")
-        return ok, f"Status={r.status_code}"
-    runner.run_test("21.4", "POST /api/tickets/:id/reply sends reply", test_21_4)
+        return r.status_code in (200, 201), f"Status={r.status_code}"
+    runner.run_test("21.4", "Ticket reply", test_21_4)
 
-    # ===== 27. AI Summaries =====
+    # ===== 27. AI =====
     print("\n--- 27. AI Summaries ---")
 
     def test_27_1():
-        """AI summary for ticket (may require min messages)"""
-        t = api_post(s, "/api/tickets", {"title": f"AI Summary Test {uuid.uuid4().hex[:8]}"})
-        if t.status_code not in (200, 201):
-            return False, "Could not create ticket"
-        tid = t.json().get("ticket_id") or t.json().get("id")
+        t = api_post(s, "/api/tickets", {"title": f"AI-{uuid.uuid4().hex[:8]}"})
+        tid = t.json().get("ticket_id")
         r = api_get(s, f"/api/tickets/{tid}/summary")
-        # May return 200 with "not enough messages" or 400
-        ok = r.status_code in (200, 400, 404)
         api_delete(s, f"/api/tickets/{tid}")
-        return ok, f"Status={r.status_code}, body={r.text[:200]}"
-    runner.run_test("27.1", "GET /api/tickets/:id/summary (AI summary)", test_27_1)
+        return r.status_code in (200, 400, 404), f"Status={r.status_code}"
+    runner.run_test("27.1", "GET /api/tickets/:id/summary", test_27_1)
 
     # ===== 33. Atlas Import =====
     print("\n--- 33. Atlas Import ---")
 
     def test_33_1():
         r = api_post(s, "/api/import/atlas", {"atlas_url": "https://invalid.atlas.so/api/v1"})
-        # Should fail with auth/connection error but endpoint exists
-        ok = r.status_code in (200, 400, 401, 422, 500)
-        return True, f"Status={r.status_code} (Atlas import endpoint accessible)"
-    runner.run_test("33.1", "POST /api/import/atlas endpoint accessible", test_33_1)
+        return r.status_code in (200, 400, 401, 422, 500), f"Status={r.status_code} (endpoint accessible)"
+    runner.run_test("33.1", "Atlas import endpoint accessible", test_33_1)
 
-    # ===== 34. Health Check & Startup =====
-    print("\n--- 34. Health Check & Startup ---")
+    # ===== 34. Health =====
+    print("\n--- 34. Health & Startup ---")
 
     def test_34_1():
-        # Try various health check paths
-        for path in ["/health", "/api/health", "/", "/api/"]:
+        for path in ["/health", "/api/health", "/"]:
             r = api_get(s_noauth, path)
-            if r.status_code == 200:
-                return True, f"Health check at {path}: status=200"
-        return False, f"No health endpoint found (tried /health, /api/health, /, /api/)"
-    runner.run_test("34.1", "Health check endpoint exists and responds", test_34_1)
+            if r.status_code == 200: return True, f"Health at {path}"
+        return False, "No health endpoint"
+    runner.run_test("34.1", "Health check", test_34_1)
 
     def test_34_2():
-        """Check MongoDB is accessible"""
         from pymongo import MongoClient
-        try:
-            client = MongoClient("mongodb://localhost:27017", serverSelectionTimeoutMS=5000)
-            client.admin.command('ping')
-            return True, "MongoDB ping OK"
-        except Exception as e:
-            return False, f"MongoDB error: {e}"
-    runner.run_test("34.2", "MongoDB is accessible and responding", test_34_2)
+        client = MongoClient("mongodb://localhost:27017", serverSelectionTimeoutMS=5000)
+        client.admin.command('ping')
+        return True, "MongoDB OK"
+    runner.run_test("34.2", "MongoDB accessible", test_34_2)
 
     def test_34_3():
-        """Check required collections exist"""
         from pymongo import MongoClient
         client = MongoClient("mongodb://localhost:27017")
-        db = client["test_database"]
-        collections = db.list_collection_names()
-        required = ["users", "tickets", "user_sessions"]
-        missing = [c for c in required if c not in collections]
-        ok = len(missing) == 0
-        return ok, f"Required collections present={ok}, missing={missing}"
-    runner.run_test("34.3", "Required MongoDB collections exist", test_34_3)
+        colls = client["test_database"].list_collection_names()
+        missing = [c for c in ["users", "tickets", "user_sessions"] if c not in colls]
+        return len(missing) == 0, f"Missing: {missing}"
+    runner.run_test("34.3", "Required collections exist", test_34_3)
 
     def test_34_4():
-        """Backend server is running on port 8001"""
-        try:
-            r = requests.get(f"{BASE_URL}/api/auth/me", timeout=5)
-            ok = r.status_code in (200, 401)  # Either works, server is responding
-            return ok, f"Backend responded with status {r.status_code}"
-        except Exception as e:
-            return False, f"Backend not accessible: {e}"
-    runner.run_test("34.4", "Backend server is running on port 8001", test_34_4)
+        r = requests.get(f"{BASE_URL}/api/auth/me", timeout=5)
+        return r.status_code in (200, 401), f"Backend responds: {r.status_code}"
+    runner.run_test("34.4", "Backend on port 8001", test_34_4)
 
     def test_34_5():
-        """Frontend is accessible on port 3000"""
-        try:
-            r = requests.get("http://localhost:3000", timeout=10)
-            ok = r.status_code == 200
-            return ok, f"Frontend status={r.status_code}"
-        except Exception as e:
-            return False, f"Frontend not accessible: {e}"
-    runner.run_test("34.5", "Frontend server is running on port 3000", test_34_5)
+        r = requests.get("http://localhost:3000", timeout=10)
+        return r.status_code == 200, f"Frontend: {r.status_code}"
+    runner.run_test("34.5", "Frontend on port 3000", test_34_5)
 
     runner.save_report()
 

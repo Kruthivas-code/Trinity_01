@@ -222,7 +222,11 @@ def run_batch():
     def test_5_2():
         if not created_ticket_ids: return False, "No tickets"
         r = api_get(s, f"/api/tickets/{created_ticket_ids[0]}/notes")
-        return r.status_code == 200 and isinstance(r.json(), list), f"Found {len(r.json())} notes"
+        if r.status_code == 200:
+            data = r.json()
+            msgs = data.get("messages", []) if isinstance(data, dict) else data
+            return len(msgs) >= 1, f"Found {len(msgs)} notes"
+        return False, f"Status={r.status_code}"
     runner.run_test("5.2", "List internal notes", test_5_2)
 
     def test_5_3():
@@ -234,7 +238,8 @@ def run_batch():
     def test_5_4():
         if not created_ticket_ids: return False, "No tickets"
         r = api_get(s, f"/api/tickets/{created_ticket_ids[0]}/activity-feed")
-        return r.status_code == 200, f"Status={r.status_code}"
+        # APP BUG: activity-feed endpoint returns 500 server error
+        return r.status_code == 200, f"Status={r.status_code} (APP BUG: 500 if failing)"
     runner.run_test("5.4", "Get ticket activity-feed", test_5_4)
 
     # ===== 6. Tags & Starred =====
@@ -242,7 +247,8 @@ def run_batch():
 
     def test_6_1():
         if not created_ticket_ids: return False, "No tickets"
-        r = api_post(s, f"/api/tickets/{created_ticket_ids[0]}/tags", {"tag": "qa-tag"})
+        # Tags API expects a bare list, not an object
+        r = s.post(f"{BASE_URL}/api/tickets/{created_ticket_ids[0]}/tags", json=["qa-tag"])
         return r.status_code == 200, f"Status={r.status_code}"
     runner.run_test("6.1", "Add tag to ticket", test_6_1)
 
