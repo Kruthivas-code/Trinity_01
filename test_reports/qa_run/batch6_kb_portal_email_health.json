@@ -1,7 +1,7 @@
 {
   "batch": "batch6_kb_portal_email_health",
-  "timestamp": "2026-02-17T09:15:26.282509+00:00",
-  "duration_seconds": 2.1,
+  "timestamp": "2026-02-17T09:22:38.521799+00:00",
+  "duration_seconds": 2.2,
   "summary": {
     "total": 32,
     "passed": 32,
@@ -17,15 +17,15 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 6.8
+      "duration_ms": 7.5
     },
     {
       "test_id": "22.2",
       "description": "Create KB snippet",
       "priority": "P0",
       "status": "PASS",
-      "detail": "snippet_id=kb_92c1530b9b91",
-      "duration_ms": 47.5
+      "detail": "snippet_id=kb_ba8dcb82325f",
+      "duration_ms": 44.7
     },
     {
       "test_id": "22.3",
@@ -41,7 +41,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Published",
-      "duration_ms": 46.0
+      "duration_ms": 47.0
     },
     {
       "test_id": "22.5",
@@ -49,7 +49,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 45.0
+      "duration_ms": 46.0
     },
     {
       "test_id": "22.6",
@@ -65,7 +65,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 46.0
+      "duration_ms": 45.0
     },
     {
       "test_id": "22.8",
@@ -81,7 +81,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 4.4
+      "duration_ms": 4.6
     },
     {
       "test_id": "23.2",
@@ -89,7 +89,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 47.7
+      "duration_ms": 48.5
     },
     {
       "test_id": "23.3",
@@ -97,15 +97,15 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Found 46 articles",
-      "duration_ms": 45.0
+      "duration_ms": 45.9
     },
     {
       "test_id": "23.4",
       "description": "Create KB article (admin)",
       "priority": "P0",
       "status": "PASS",
-      "detail": "slug=qa-article-ffabad",
-      "duration_ms": 5.3
+      "detail": "slug=qa-article-f89d9b",
+      "duration_ms": 5.4
     },
     {
       "test_id": "23.5",
@@ -113,7 +113,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=409",
-      "duration_ms": 43.6
+      "duration_ms": 43.5
     },
     {
       "test_id": "23.6",
@@ -121,7 +121,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 4.9
+      "duration_ms": 4.3
     },
     {
       "test_id": "23.7",
@@ -129,7 +129,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Found 47 articles",
-      "duration_ms": 51.2
+      "duration_ms": 50.8
     },
     {
       "test_id": "24.1",
@@ -137,7 +137,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 227.3
+      "duration_ms": 226.9
     },
     {
       "test_id": "24.2",
@@ -145,7 +145,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=400",
-      "duration_ms": 43.6
+      "duration_ms": 43.1
     },
     {
       "test_id": "24.3",
@@ -153,7 +153,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "token=True",
-      "duration_ms": 534.0
+      "duration_ms": 533.0
     },
     {
       "test_id": "24.4",
@@ -161,7 +161,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=401",
-      "duration_ms": 45.0
+      "duration_ms": 44.9
     },
     {
       "test_id": "24.5",
@@ -169,15 +169,15 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Found 10 categories",
-      "duration_ms": 44.0
+      "duration_ms": 45.0
     },
     {
       "test_id": "24.6",
       "description": "Submit ticket via portal",
       "priority": "P0",
       "status": "PASS",
-      "detail": "Status=200, body={\"ticket_id\":\"TKT-000925\",\"status\":\"todo\",\"message\":\"Ticket submitted successfully\"}",
-      "duration_ms": 5.4
+      "detail": "Status=200, body={\"ticket_id\":\"TKT-000941\",\"status\":\"todo\",\"message\":\"Ticket submitted successfully\"}",
+      "duration_ms": 6.4
     },
     {
       "test_id": "24.7",
@@ -185,7 +185,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 3.6
+      "duration_ms": 4.4
     },
     {
       "test_id": "21.1",
@@ -193,7 +193,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 3.9
+      "duration_ms": 4.6
     },
     {
       "test_id": "21.2",
@@ -201,7 +201,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=404",
-      "duration_ms": 41.9
+      "duration_ms": 42.3
     },
     {
       "test_id": "21.4",
@@ -209,7 +209,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 158.0
+      "duration_ms": 178.0
     },
     {
       "test_id": "27.1",
@@ -217,7 +217,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 183.9
+      "duration_ms": 181.9
     },
     {
       "test_id": "33.1",
@@ -225,7 +225,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=422 (endpoint accessible)",
-      "duration_ms": 44.9
+      "duration_ms": 45.0
     },
     {
       "test_id": "34.1",
@@ -241,7 +241,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "MongoDB OK",
-      "duration_ms": 160.9
+      "duration_ms": 172.0
     },
     {
       "test_id": "34.3",
@@ -265,7 +265,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Frontend: 200",
-      "duration_ms": 2.0
+      "duration_ms": 2.3
     }
   ]
 }

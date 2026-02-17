@@ -1,7 +1,7 @@
 {
   "batch": "batch5_admin_analytics_search_webhooks_exports",
-  "timestamp": "2026-02-17T09:14:27.883406+00:00",
-  "duration_seconds": 12.2,
+  "timestamp": "2026-02-17T09:22:35.857840+00:00",
+  "duration_seconds": 12.3,
   "summary": {
     "total": 33,
     "passed": 33,
@@ -17,7 +17,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Keys: ['type', 'company_name', 'updated_at', 'updated_by', 'auto_reassign_reopened']",
-      "duration_ms": 6.5
+      "duration_ms": 6.0
     },
     {
       "test_id": "16.2",
@@ -25,14 +25,14 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Updated",
-      "duration_ms": 47.2
+      "duration_ms": 46.8
     },
     {
       "test_id": "16.3",
-      "description": "FINDING: /api/admin/settings RBAC",
+      "description": "Agent blocked from /api/admin/settings (403)",
       "priority": "P0",
       "status": "PASS",
-      "detail": "FINDING: No RBAC on /api/admin/settings - agents can read",
+      "detail": "Status=403",
       "duration_ms": 4.7
     },
     {
@@ -40,7 +40,7 @@
       "description": "Create custom field",
       "priority": "P0",
       "status": "PASS",
-      "detail": "field_id=field_d06806a8b8a9",
+      "detail": "field_id=field_7a7557726fc3",
       "duration_ms": 45.3
     },
     {
@@ -49,7 +49,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Found 2",
-      "duration_ms": 45.0
+      "duration_ms": 46.0
     },
     {
       "test_id": "16.7",
@@ -57,7 +57,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Deleted",
-      "duration_ms": 44.9
+      "duration_ms": 45.0
     },
     {
       "test_id": "16.8",
@@ -65,15 +65,15 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 45.0
+      "duration_ms": 44.9
     },
     {
       "test_id": "16.9",
       "description": "Create routing rule",
       "priority": "P0",
       "status": "PASS",
-      "detail": "rule_id=rule_c670a4c447b7",
-      "duration_ms": 49.0
+      "detail": "rule_id=rule_55cbbccfd67e",
+      "duration_ms": 45.0
     },
     {
       "test_id": "16.10",
@@ -81,7 +81,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 44.9
+      "duration_ms": 45.0
     },
     {
       "test_id": "16.11",
@@ -105,7 +105,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Keys: ['by_status', 'by_assignee', 'my_tickets', 'total']",
-      "duration_ms": 47.0
+      "duration_ms": 48.0
     },
     {
       "test_id": "17.2",
@@ -121,7 +121,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 50.0
+      "duration_ms": 49.9
     },
     {
       "test_id": "17.4",
@@ -129,7 +129,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 49.0
+      "duration_ms": 50.0
     },
     {
       "test_id": "18.1",
@@ -137,7 +137,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 13.9
+      "duration_ms": 15.1
     },
     {
       "test_id": "18.2",
@@ -145,7 +145,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 45.0
+      "duration_ms": 45.8
     },
     {
       "test_id": "18.4",
@@ -153,7 +153,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Found 0",
-      "duration_ms": 44.0
+      "duration_ms": 45.0
     },
     {
       "test_id": "18.5",
@@ -161,7 +161,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 44.9
+      "duration_ms": 45.9
     },
     {
       "test_id": "19.1",
@@ -169,15 +169,15 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 45.0
+      "duration_ms": 46.0
     },
     {
       "test_id": "19.2",
       "description": "Create webhook",
       "priority": "P0",
       "status": "PASS",
-      "detail": "webhook_id=wh_961c31b1d149",
-      "duration_ms": 48.0
+      "detail": "webhook_id=wh_14ddeaabb1d5",
+      "duration_ms": 47.0
     },
     {
       "test_id": "19.3",
@@ -185,7 +185,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=400",
-      "duration_ms": 45.0
+      "duration_ms": 44.9
     },
     {
       "test_id": "19.4",
@@ -193,7 +193,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=400",
-      "duration_ms": 45.0
+      "duration_ms": 46.0
     },
     {
       "test_id": "19.5",
@@ -209,7 +209,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 45.0
+      "duration_ms": 46.0
     },
     {
       "test_id": "19.7",
@@ -217,7 +217,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Deleted",
-      "duration_ms": 46.0
+      "duration_ms": 45.0
     },
     {
       "test_id": "20.1",
@@ -225,7 +225,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 288.7
+      "duration_ms": 291.7
     },
     {
       "test_id": "20.2",
@@ -233,7 +233,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 174.7
+      "duration_ms": 185.5
     },
     {
       "test_id": "20.3",
@@ -241,15 +241,15 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 4415.9
+      "duration_ms": 4393.9
     },
     {
       "test_id": "20.4",
       "description": "POST /api/admin/export/full",
       "priority": "P0",
       "status": "PASS",
-      "detail": "FINDING: /api/admin/export/full returns 500 (server error)",
-      "duration_ms": 280.0
+      "detail": "Status=200",
+      "duration_ms": 4877.5
     },
     {
       "test_id": "20.5",
@@ -257,7 +257,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 1407.4
+      "duration_ms": 1412.7
     },
     {
       "test_id": "20.6",
@@ -265,15 +265,15 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "OK",
-      "duration_ms": 49.2
+      "duration_ms": 50.3
     },
     {
       "test_id": "20.7",
-      "description": "FINDING: /api/admin/export/tickets RBAC",
+      "description": "Agent blocked from /api/admin/export/tickets (403)",
       "priority": "P0",
       "status": "PASS",
-      "detail": "FINDING: No RBAC on /api/admin/export/tickets - agents can export",
-      "duration_ms": 4535.8
+      "detail": "Status=403",
+      "duration_ms": 4.4
     }
   ]
 }
