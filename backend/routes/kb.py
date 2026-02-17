@@ -190,6 +190,15 @@ async def search_articles(q: str = ""):
 async def admin_list_articles(current_user: dict = Depends(get_current_user)):
     articles = list(kb_articles.find({}, {"_id": 0}).sort("order", 1))
     nav = kb_navigation.find_one({}, {"_id": 0})
+    # Attach feedback stats per article
+    feedback_pipeline = [
+        {"$group": {"_id": "$article_slug", "total": {"$sum": 1}, "helpful": {"$sum": {"$cond": ["$helpful", 1, 0]}}}},
+    ]
+    stats = {r["_id"]: {"total": r["total"], "helpful": r["helpful"]} for r in kb_feedback.aggregate(feedback_pipeline)}
+    for a in articles:
+        s = stats.get(a["slug"], {"total": 0, "helpful": 0})
+        a["feedback_total"] = s["total"]
+        a["feedback_helpful"] = s["helpful"]
     return {"articles": articles, "nav_groups": (nav or {}).get("nav_groups", [])}
 
 
