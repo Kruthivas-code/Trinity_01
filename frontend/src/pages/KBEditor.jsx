@@ -523,7 +523,7 @@ const KBEditor = () => {
         {/* Main Editor Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {form && viewMode !== 'preview' && (
-            <EditorToolbar textareaRef={textareaRef} content={form.content_markdown || ''} setContent={v => setForm(f => ({ ...f, content_markdown: v }))} />
+            <EditorToolbar textareaRef={textareaRef} content={form.content_markdown || ''} setContent={v => setForm(f => ({ ...f, content_markdown: v }))} onUploadImage={uploadImage} />
           )}
           <div className="flex-1 flex overflow-hidden">
             {/* Markdown Editor */}
