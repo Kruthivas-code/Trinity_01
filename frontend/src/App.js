@@ -34,7 +34,7 @@ import PortalTickets from './portal/PortalTickets';
 import PortalTicketDetail from './portal/PortalTicketDetail';
 
 // KB Docs imports
-import KBDocs from './pages/kb/KBDocs';
+import PublicDocs from './pages/kb/PublicDocs';
 
 function AppRouter() {
   const location = useLocation();
@@ -47,8 +47,8 @@ function AppRouter() {
   return (
     <Routes>
       {/* ==================== KB Docs (new homepage) ==================== */}
-      <Route path="/docs" element={<KBDocs />} />
-      <Route path="/docs/:slug" element={<KBDocs />} />
+      <Route path="/docs" element={<PublicDocs />} />
+      <Route path="/docs/:slug" element={<PublicDocs />} />
 
       {/* ==================== Public Portal Routes ==================== */}
       <Route element={<PortalAuthProvider><PortalLayout /></PortalAuthProvider>}>
