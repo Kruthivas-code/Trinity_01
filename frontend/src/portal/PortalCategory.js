@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, ExternalLink, CreditCard, Receipt, Globe, Boxes, UserCog, ShieldCheck, Rocket, Bot, Database, Smartphone } from 'lucide-react';
+import { ArrowLeft, ChevronRight, FileText, CreditCard, Receipt, Globe, Boxes, UserCog, ShieldCheck, Rocket, Bot, Database, Smartphone } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -8,8 +8,6 @@ const ICON_MAP = {
   CreditCard, Receipt, Globe, Boxes, UserCog, ShieldCheck,
   Rocket, Bot, Database, Smartphone,
 };
-
-const HELP_BASE = 'https://help.emergent.sh';
 
 const PortalCategory = () => {
   const { slug } = useParams();
@@ -46,6 +44,19 @@ const PortalCategory = () => {
 
   const Icon = ICON_MAP[category.icon] || Boxes;
 
+  // Convert help article URLs to internal KB links
+  const getArticleLink = (article) => {
+    if (article.slug) return `/docs/${article.slug}`;
+    // Extract slug from help.emergent.sh URLs
+    if (article.url) {
+      const match = article.url.match(/help\.emergent\.sh\/(?:docs\/)?(.+)/);
+      if (match) return `/docs/${match[1]}`;
+      // If it's already a relative path
+      if (article.url.startsWith('/docs/')) return article.url;
+    }
+    return null;
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-6 py-10" data-testid="portal-category-page">
       {/* Back */}
@@ -65,28 +76,31 @@ const PortalCategory = () => {
         </div>
       </div>
 
-      {/* Help Articles */}
+      {/* Help Articles - linked to KB */}
       {category.help_articles?.length > 0 && (
         <div className="mt-8 mb-2">
           <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50 mb-3">
             Related Docs
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {category.help_articles.map((article, i) => (
-              <a
-                key={i}
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border border-border/30 bg-card hover:border-foreground/20 hover:shadow-sm transition-all group"
-                data-testid={`help-article-${i}`}
-              >
-                <ExternalLink size={13} className="text-muted-foreground/40 group-hover:text-foreground/60 shrink-0 transition-colors" />
-                <span className="text-xs font-medium text-foreground/70 group-hover:text-foreground truncate transition-colors">
-                  {article.title || article.url}
-                </span>
-              </a>
-            ))}
+            {category.help_articles.map((article, i) => {
+              const link = getArticleLink(article);
+              const Wrapper = link ? Link : 'div';
+              const wrapperProps = link ? { to: link } : {};
+              return (
+                <Wrapper
+                  key={i}
+                  {...wrapperProps}
+                  className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border border-border/30 bg-card hover:border-foreground/20 hover:shadow-sm transition-all group"
+                  data-testid={`help-article-${i}`}
+                >
+                  <FileText size={13} className="text-muted-foreground/40 group-hover:text-foreground/60 shrink-0 transition-colors" />
+                  <span className="text-xs font-medium text-foreground/70 group-hover:text-foreground truncate transition-colors">
+                    {article.title || article.url}
+                  </span>
+                </Wrapper>
+              );
+            })}
           </div>
         </div>
       )}
@@ -103,28 +117,18 @@ const PortalCategory = () => {
                   <span className="text-[10px] font-mono text-muted-foreground/50">{sub.items.length} items</span>
                 )}
               </div>
-              <a
-                href={`${HELP_BASE}?q=${encodeURIComponent(sub.name)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground/40 hover:text-foreground transition-colors"
-              >
-                <ExternalLink size={13} />
-              </a>
             </div>
             {sub.items?.length > 0 && (
               <div className="border-t border-border/20 px-4 py-2.5 bg-muted/20">
                 <div className="flex flex-wrap gap-2">
                   {sub.items.map((item, j) => (
-                    <a
+                    <Link
                       key={j}
-                      href={`${HELP_BASE}?q=${encodeURIComponent(item)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      to={`/?q=${encodeURIComponent(item)}`}
                       className="text-[11px] px-2.5 py-1 rounded-md bg-background border border-border/30 text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
                     >
                       {item}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               </div>
