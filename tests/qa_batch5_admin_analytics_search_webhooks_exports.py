@@ -193,8 +193,6 @@ def run_batch():
 
     def test_20_4():
         r = api_post(s, "/api/admin/export/full", {"format": "json"})
-        if r.status_code == 500:
-            return True, "FINDING: /api/admin/export/full returns 500 (server error)"
         return r.status_code == 200, f"Status={r.status_code}"
     runner.run_test("20.4", "POST /api/admin/export/full", test_20_4)
 

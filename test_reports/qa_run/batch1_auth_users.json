@@ -1,7 +1,7 @@
 {
   "batch": "batch1_auth_users",
-  "timestamp": "2026-02-17T09:14:08.707325+00:00",
-  "duration_seconds": 5.5,
+  "timestamp": "2026-02-17T09:22:16.448933+00:00",
+  "duration_seconds": 1.5,
   "summary": {
     "total": 24,
     "passed": 24,
@@ -17,7 +17,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200, user_id=qa_admin_user",
-      "duration_ms": 5.9
+      "duration_ms": 9.4
     },
     {
       "test_id": "1.2.2",
@@ -25,7 +25,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 3.7
+      "duration_ms": 4.9
     },
     {
       "test_id": "1.2.3",
@@ -33,7 +33,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=401",
-      "duration_ms": 2.6
+      "duration_ms": 3.4
     },
     {
       "test_id": "1.2.4",
@@ -41,7 +41,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=401",
-      "duration_ms": 3.2
+      "duration_ms": 3.6
     },
     {
       "test_id": "1.2.5",
@@ -49,7 +49,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=401, detail=Session expired",
-      "duration_ms": 172.7
+      "duration_ms": 237.6
     },
     {
       "test_id": "1.3.1",
@@ -57,7 +57,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200, deleted=True",
-      "duration_ms": 6.7
+      "duration_ms": 44.5
     },
     {
       "test_id": "1.3.2",
@@ -65,15 +65,15 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 2.3
+      "duration_ms": 3.4
     },
     {
       "test_id": "1.4.1",
       "description": "Create API key returns key_id and full key",
       "priority": "P0",
       "status": "PASS",
-      "detail": "key_id=key_c5f1615d23a6",
-      "duration_ms": 225.3
+      "detail": "key_id=key_5896f9a8fda9",
+      "duration_ms": 413.4
     },
     {
       "test_id": "1.4.3",
@@ -81,7 +81,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Found 1 keys, hash_exposed=False",
-      "duration_ms": 43.8
+      "duration_ms": 45.1
     },
     {
       "test_id": "1.4.7",
@@ -89,7 +89,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 226.1
+      "duration_ms": 262.9
     },
     {
       "test_id": "1.4.4",
@@ -97,7 +97,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 3.8
+      "duration_ms": 4.2
     },
     {
       "test_id": "1.4.6",
@@ -105,7 +105,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=401",
-      "duration_ms": 3.1
+      "duration_ms": 3.6
     },
     {
       "test_id": "1.4.5",
@@ -113,7 +113,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=404",
-      "duration_ms": 3.2
+      "duration_ms": 3.6
     },
     {
       "test_id": "1.5.1",
@@ -121,7 +121,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 49.8
+      "duration_ms": 8.8
     },
     {
       "test_id": "1.5.3",
@@ -129,7 +129,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=403",
-      "duration_ms": 44.9
+      "duration_ms": 44.6
     },
     {
       "test_id": "1.5.5",
@@ -137,23 +137,23 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 4.2
+      "duration_ms": 5.1
     },
     {
       "test_id": "1.5.7",
-      "description": "FINDING: /api/admin/settings RBAC check",
+      "description": "Agent blocked from /api/admin/settings (403)",
       "priority": "P0",
       "status": "PASS",
-      "detail": "NOTE: /api/admin/settings is accessible by agents (no RBAC)",
-      "duration_ms": 43.7
+      "detail": "Status=403",
+      "duration_ms": 43.9
     },
     {
       "test_id": "1.5.8",
-      "description": "FINDING: /api/admin/export/tickets RBAC check",
+      "description": "Agent blocked from /api/admin/export/tickets (403)",
       "priority": "P0",
       "status": "PASS",
-      "detail": "NOTE: /api/admin/export/tickets is accessible by agents (no RBAC)",
-      "duration_ms": 4342.0
+      "detail": "Status=403",
+      "duration_ms": 46.0
     },
     {
       "test_id": "26.1",
@@ -169,7 +169,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "theme=light",
-      "duration_ms": 136.6
+      "duration_ms": 132.6
     },
     {
       "test_id": "26.3",
@@ -185,7 +185,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Search returned response, type=dict",
-      "duration_ms": 46.0
+      "duration_ms": 45.0
     },
     {
       "test_id": "26.5",
@@ -201,7 +201,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=403",
-      "duration_ms": 4.0
+      "duration_ms": 4.5
     }
   ]
 }

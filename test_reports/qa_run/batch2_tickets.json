@@ -1,14 +1,14 @@
 {
   "batch": "batch2_tickets",
-  "timestamp": "2026-02-17T09:15:21.828442+00:00",
-  "duration_seconds": 2.4,
+  "timestamp": "2026-02-17T09:22:19.478452+00:00",
+  "duration_seconds": 2.5,
   "summary": {
     "total": 33,
-    "passed": 32,
-    "failed": 1,
+    "passed": 33,
+    "failed": 0,
     "errors": 0,
     "skipped": 0,
-    "pass_rate": "97.0%"
+    "pass_rate": "100.0%"
   },
   "results": [
     {
@@ -16,16 +16,16 @@
       "description": "List tickets returns paginated list",
       "priority": "P0",
       "status": "PASS",
-      "detail": "total=857",
-      "duration_ms": 13.0
+      "detail": "total=861",
+      "duration_ms": 12.5
     },
     {
       "test_id": "2.1.2",
       "description": "Filter by status=todo",
       "priority": "P0",
       "status": "PASS",
-      "detail": "total=852, all_todo=True",
-      "duration_ms": 10.3
+      "detail": "total=856, all_todo=True",
+      "duration_ms": 9.9
     },
     {
       "test_id": "2.1.9",
@@ -33,7 +33,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Got 3 tickets",
-      "duration_ms": 45.0
+      "duration_ms": 44.8
     },
     {
       "test_id": "2.1.14",
@@ -49,15 +49,15 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=422",
-      "duration_ms": 44.0
+      "duration_ms": 46.0
     },
     {
       "test_id": "2.2.1",
       "description": "Create ticket gets TKT-XXXXXX ID",
       "priority": "P0",
       "status": "PASS",
-      "detail": "ticket_id=TKT-000915",
-      "duration_ms": 143.1
+      "detail": "ticket_id=TKT-000931",
+      "duration_ms": 126.0
     },
     {
       "test_id": "2.2.2",
@@ -65,7 +65,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "priority=high",
-      "duration_ms": 91.0
+      "duration_ms": 95.0
     },
     {
       "test_id": "2.2.3",
@@ -73,7 +73,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Checked",
-      "duration_ms": 44.9
+      "duration_ms": 45.9
     },
     {
       "test_id": "2.2.4",
@@ -81,7 +81,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Checked",
-      "duration_ms": 46.0
+      "duration_ms": 45.0
     },
     {
       "test_id": "2.2.6",
@@ -97,7 +97,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Checked",
-      "duration_ms": 44.9
+      "duration_ms": 46.0
     },
     {
       "test_id": "2.2.10",
@@ -112,24 +112,24 @@
       "description": "Customer email auto-creates customer",
       "priority": "P0",
       "status": "PASS",
-      "detail": "customer_id=CUST-000022",
-      "duration_ms": 90.0
+      "detail": "customer_id=CUST-000026",
+      "duration_ms": 91.0
     },
     {
       "test_id": "2.2.19",
       "description": "Sequential ticket IDs",
       "priority": "P0",
       "status": "PASS",
-      "detail": "TKT-000918 -> TKT-000919, sequential=True",
-      "duration_ms": 180.0
+      "detail": "TKT-000934 -> TKT-000935, sequential=True",
+      "duration_ms": 185.0
     },
     {
       "test_id": "2.3.1",
       "description": "Get valid ticket",
       "priority": "P0",
       "status": "PASS",
-      "detail": "Got ticket TKT-000915",
-      "duration_ms": 46.9
+      "detail": "Got ticket TKT-000931",
+      "duration_ms": 44.9
     },
     {
       "test_id": "2.3.2",
@@ -137,7 +137,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Checked",
-      "duration_ms": 44.9
+      "duration_ms": 46.0
     },
     {
       "test_id": "2.4.1",
@@ -145,15 +145,15 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "status=in_progress",
-      "duration_ms": 70.0
+      "duration_ms": 72.0
     },
     {
       "test_id": "2.4.3",
       "description": "Status=resolved sets resolved_at",
       "priority": "P0",
       "status": "PASS",
-      "detail": "resolved_at=2026-02-17T09:15:20.440000",
-      "duration_ms": 68.0
+      "detail": "resolved_at=2026-02-17T09:22:18.011000",
+      "duration_ms": 71.0
     },
     {
       "test_id": "2.4.6",
@@ -177,7 +177,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "del=200, get=404",
-      "duration_ms": 183.0
+      "duration_ms": 182.0
     },
     {
       "test_id": "2.5.2",
@@ -185,14 +185,14 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Checked",
-      "duration_ms": 45.9
+      "duration_ms": 44.9
     },
     {
       "test_id": "3.1",
       "description": "GET escalation-counts",
       "priority": "P0",
       "status": "PASS",
-      "detail": "counts={'L1': {'total': 860, 'todo': 856, 'in_progress': 3, 'waiting': 1}, 'L2': {'total': 0}, 'L3': {'total': 0}}",
+      "detail": "counts={'L1': {'total': 864, 'todo': 860, 'in_progress': 3, 'waiting': 1}, 'L2': {'total': 0}, 'L3': {'total': 0}}",
       "duration_ms": 47.0
     },
     {
@@ -208,7 +208,7 @@
       "description": "Link tickets",
       "priority": "P0",
       "status": "PASS",
-      "detail": "Status=200, body={\"ticket_id\":\"TKT-000915\",\"uuid\":\"ed9b0d09-8a5e-4a77-b2fd-72cb0d563c53\",\"title\":\"QA-86b5b2ad\",\"description\":\"\",\"status\":\"resolved\",\"assignee_id\":\"qa_admin_user\",\"priority\":\"medium\",\"escalation_level\":",
+      "detail": "Status=200, body={\"ticket_id\":\"TKT-000931\",\"uuid\":\"4a36ceee-970e-4d7e-b245-bcb3e5cec88d\",\"title\":\"QA-bdb7e35e\",\"description\":\"\",\"status\":\"resolved\",\"assignee_id\":\"qa_admin_user\",\"priority\":\"medium\",\"escalation_level\":",
       "duration_ms": 48.9
     },
     {
@@ -217,7 +217,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200, body={\"message\":\"Updated 2 tickets\",\"matched\":2,\"modified\":2}",
-      "duration_ms": 45.9
+      "duration_ms": 46.0
     },
     {
       "test_id": "5.1",
@@ -247,9 +247,9 @@
       "test_id": "5.4",
       "description": "Get ticket activity-feed",
       "priority": "P0",
-      "status": "FAIL",
-      "detail": "Status=500 (APP BUG: 500 if failing)",
-      "duration_ms": 10.9
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 46.0
     },
     {
       "test_id": "6.1",
@@ -257,7 +257,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 5.1
+      "duration_ms": 45.0
     },
     {
       "test_id": "6.2",
@@ -265,7 +265,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 67.0
+      "duration_ms": 69.0
     },
     {
       "test_id": "6.3",
@@ -273,7 +273,7 @@
       "priority": "P0",
       "status": "PASS",
       "detail": "Status=200",
-      "duration_ms": 45.0
+      "duration_ms": 44.9
     }
   ]
 }
