@@ -87,12 +87,12 @@ const Callout = ({ type, title, children }) => {
   const displayTitle = title || config.title;
 
   return (
-    <div className={`my-6 p-4 rounded-lg border relative z-10 ${config.bg} ${config.border}`} data-testid="callout">
+    <div className={`my-6 p-4 rounded-lg border relative z-10 ${config.bg} ${config.border} callout-container`} data-testid="callout">
       <div className="flex gap-3">
         <div className={`flex-shrink-0 mt-0.5 ${config.iconColor}`}><Icon className="w-5 h-5" /></div>
         <div className="flex-1 min-w-0">
           {displayTitle && <p className={`font-semibold ${config.iconColor} mb-1`}>{displayTitle}</p>}
-          <div className="text-[15px] leading-relaxed text-slate-200 [&>p]:m-0 [&>p:not(:last-child)]:mb-2 [&>div]:text-slate-200">{children}</div>
+          <div className="text-[15px] leading-relaxed text-slate-200 callout-body">{children}</div>
         </div>
       </div>
     </div>
