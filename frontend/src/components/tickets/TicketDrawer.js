@@ -50,8 +50,8 @@ const PRIORITIES = [
 ];
 
 const ESCALATION_LEVELS = [
-  { value: 'L1', label: 'L1 - Basic Support', color: 'bg-blue-500' },
-  { value: 'L2', label: 'L2 - Advanced Support', color: 'bg-amber-500' },
+  { value: 'L1', label: 'L1 - Basic', color: 'bg-blue-500' },
+  { value: 'L2', label: 'L2 - Advanced', color: 'bg-amber-500' },
   { value: 'L3', label: 'L3 - Specialist', color: 'bg-red-500' }
 ];
 

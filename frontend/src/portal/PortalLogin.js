@@ -39,7 +39,7 @@ const PortalLogin = () => {
           <span className="text-background text-sm font-bold">E</span>
         </div>
         <h1 className="text-xl font-semibold mb-1">
-          {mode === 'login' ? 'Sign in to Support' : 'Create an account'}
+          {mode === 'login' ? 'Sign in' : 'Create an account'}
         </h1>
         <p className="text-sm text-muted-foreground">
           {mode === 'login' ? 'Track your tickets and submit new ones' : 'Sign up to submit and track tickets'}

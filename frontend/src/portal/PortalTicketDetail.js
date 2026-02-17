@@ -133,7 +133,7 @@ const PortalTicketDetail = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-baseline gap-2 mb-1">
                   <span className="text-xs font-medium text-foreground">
-                    {isCustomer ? (msg.author_name || 'You') : (msg.author_name || 'Support Agent')}
+                    {isCustomer ? (msg.author_name || 'You') : (msg.author_name || 'Agent')}
                   </span>
                   <span className="text-[10px] text-muted-foreground/40">{formatDate(msg.created_at)}</span>
                 </div>

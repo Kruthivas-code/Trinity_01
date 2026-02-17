@@ -23,7 +23,7 @@ const LoginPage = () => {
             Trinity
           </h1>
           <p className="text-sm text-muted-foreground">
-            Email-First Support Management
+            Email-First Help Management
           </p>
         </div>
 
