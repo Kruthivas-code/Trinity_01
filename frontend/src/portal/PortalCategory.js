@@ -39,7 +39,7 @@ const PortalCategory = () => {
     return (
       <div className="max-w-3xl mx-auto px-6 py-16 text-center">
         <p className="text-muted-foreground">Category not found</p>
-        <Link to="/" className="text-sm text-foreground underline underline-offset-4 mt-2 inline-block">Back to home</Link>
+        <Link to="/portal" className="text-sm text-foreground underline underline-offset-4 mt-2 inline-block">Back to home</Link>
       </div>
     );
   }
