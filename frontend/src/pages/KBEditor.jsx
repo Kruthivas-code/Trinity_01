@@ -469,7 +469,7 @@ const KBEditor = () => {
       setOriginalSlug(art.slug);
       setForm({ ...art });
     }
-  }, [paramSlug, articles, navGroups, navigate, form]);
+  }, [paramSlug, articles, navGroups, navigate]);
 
   // Save handler
   const handleSave = useCallback(async () => {
