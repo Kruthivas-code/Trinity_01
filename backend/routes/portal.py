@@ -44,6 +44,8 @@ class TicketSubmit(BaseModel):
     subcategory: Optional[str] = None
     subject: str
     description: str
+    tags: Optional[list] = []
+    priority: Optional[str] = "medium"
 
 class TicketReply(BaseModel):
     body: str
@@ -371,7 +373,8 @@ async def submit_ticket(body: TicketSubmit, customer: dict = Depends(get_portal_
         "title": body.subject.strip()[:200],
         "description": body.description.strip()[:10000],
         "status": "todo",
-        "priority": "medium",
+        "priority": body.priority if body.priority in ("low", "medium", "high", "urgent") else "medium",
+        "tags": [t for t in (body.tags or []) if t.strip()],
         "source": "portal",
         "portal_category": body.category_slug,
         "portal_subcategory": body.subcategory,
