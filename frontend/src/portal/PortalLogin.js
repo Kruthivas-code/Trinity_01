@@ -110,7 +110,7 @@ const PortalLogin = () => {
       </div>
 
       <div className="mt-6 text-center">
-        <Link to="/" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors font-mono">
+        <Link to="/portal" className="text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors font-mono">
           back to home
         </Link>
       </div>

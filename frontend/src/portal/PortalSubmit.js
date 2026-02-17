@@ -72,7 +72,7 @@ const PortalSubmit = () => {
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-10" data-testid="portal-submit-page">
-      <Link to="/" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-8">
+      <Link to="/portal" className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-8">
         <ArrowLeft size={12} />
         <span className="font-mono">back</span>
       </Link>
