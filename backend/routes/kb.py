@@ -52,13 +52,13 @@ async def get_public_data():
                 a for a in all_articles
                 if a.get("nav_group_key") == group["key"] and a.get("section_key") == section["key"]
             ]
-            pages = [{"page": a["slug"], "title": a["title"]} for a in section_articles]
+            pages = [{"page": a["slug"], "title": a["title"], "icon": a.get("icon", "")} for a in section_articles]
             if pages:
                 tab_groups.append({"group": section.get("label", section["key"]), "pages": pages})
         tabs.append({
             "id": group["key"],
             "label": group.get("label", group["key"]),
-            "icon": NAV_GROUP_ICONS.get(group["key"], "file-text"),
+            "icon": group.get("icon") or NAV_GROUP_ICONS.get(group["key"], "file-text"),
             "groups": tab_groups,
         })
 
