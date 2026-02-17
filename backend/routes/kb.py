@@ -229,3 +229,51 @@ async def delete_article(slug: str, current_user: dict = Depends(get_current_use
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Article not found")
     return {"message": "Deleted"}
+
+
+# ── Admin image upload ────────────────────────────────────────
+
+ALLOWED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/gif", "image/webp", "image/avif", "image/svg+xml"}
+MAX_IMAGE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+@router.post("/admin/images")
+async def upload_kb_image(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    """Upload an image for use in KB articles. Stores in MongoDB."""
+    if file.content_type not in ALLOWED_IMAGE_TYPES:
+        raise HTTPException(400, detail=f"Unsupported file type: {file.content_type}. Allowed: png, jpg, gif, webp, avif, svg")
+
+    data = await file.read()
+    if len(data) > MAX_IMAGE_SIZE:
+        raise HTTPException(400, detail="File too large. Maximum size is 10 MB.")
+
+    # Generate a unique filename preserving extension
+    ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else "png"
+    unique_name = f"{uuid.uuid4().hex[:12]}.{ext}"
+
+    kb_image_files.insert_one({
+        "filename": unique_name,
+        "original_name": file.filename,
+        "content_type": file.content_type,
+        "data": data,
+        "size": len(data),
+        "uploaded_at": datetime.now(timezone.utc),
+        "uploaded_by": current_user.get("email", "unknown"),
+    })
+
+    return {"filename": unique_name, "url": f"/api/kb/images/{unique_name}", "size": len(data)}
+
+
+@router.get("/admin/images")
+async def list_kb_images(current_user: dict = Depends(get_current_user)):
+    """List all uploaded KB images (without binary data)."""
+    images = list(kb_image_files.find({}, {"_id": 0, "data": 0}).sort("uploaded_at", -1).limit(100))
+    return {"images": images}
+
+
+@router.delete("/admin/images/{filename}")
+async def delete_kb_image(filename: str, current_user: dict = Depends(get_current_user)):
+    result = kb_image_files.delete_one({"filename": filename})
+    if result.deleted_count == 0:
+        raise HTTPException(404, detail="Image not found")
+    return {"message": "Deleted"}
