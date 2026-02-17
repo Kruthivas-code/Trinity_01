@@ -274,6 +274,8 @@ async def get_ticket_activity(
 @router.get("/tickets/{ticket_id}/activity-feed")
 async def get_ticket_activity_feed(
     ticket_id: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(100, ge=1, le=500),
     current_user: dict = Depends(get_current_user)
 ):
     """Get a rich activity feed for a ticket including changelog, merges, and system events."""
@@ -346,7 +348,10 @@ async def get_ticket_activity_feed(
             return ts.replace(tzinfo=timezone.utc)
         return ts
     activities.sort(key=_sort_key)
-    return [serialize_doc(a) for a in activities]
+    total = len(activities)
+    skip = (page - 1) * limit
+    paginated = activities[skip:skip + limit]
+    return {"activities": [serialize_doc(a) for a in paginated], "total": total, "page": page, "has_more": skip + limit < total}
 
 
 # ==================== Tag Management ====================
