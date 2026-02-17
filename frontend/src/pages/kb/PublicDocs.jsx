@@ -41,9 +41,9 @@ const TopNavigation = ({ config, tabs, activeTab, onTabChange, theme, mobileMenu
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 ${theme.navBg} border-b ${theme.border}`} data-testid="kb-header">
       <div className="h-14 px-4 sm:px-6 flex items-center">
-        <Link to="/" className="flex items-center gap-2 flex-shrink-0 mr-4 lg:mr-8" data-testid="logo-link">
+        <a href="https://app.emergent.sh" className="flex items-center gap-2 flex-shrink-0 mr-4 lg:mr-8" data-testid="logo-link">
           <img src="/images/emergent-logo-dark.png" alt="Emergent" className="h-6" />
-        </Link>
+        </a>
 
         <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center" data-testid="kb-top-nav">
           {tabs.map((tab) => {
@@ -61,18 +61,12 @@ const TopNavigation = ({ config, tabs, activeTab, onTabChange, theme, mobileMenu
         </nav>
 
         <div className="flex items-center gap-3 sm:gap-4 ml-auto">
-          {links.map((link, i) => (
-            <a key={i} href={link.href || '#'} className={`hidden sm:block text-sm font-medium ${theme.textMuted} hover:text-white transition-colors`}>
-              {link.label}
-            </a>
-          ))}
-          <a href={primaryCta.href} target="_blank" rel="noopener noreferrer"
+          <Link to="/portal"
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#188455] hover:bg-[#157149] text-white text-sm font-medium rounded-lg transition-colors"
             data-testid="cta-button">
-            <span className="hidden sm:inline">{primaryCta.label}</span>
-            <span className="sm:hidden">Build Now</span>
+            <span>Get more help</span>
             <ArrowRight className="w-4 h-4" />
-          </a>
+          </Link>
           <button className={`lg:hidden p-2 rounded-lg ${theme.hover} ${theme.text}`} onClick={onMobileMenuToggle} data-testid="mobile-nav-toggle">
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
