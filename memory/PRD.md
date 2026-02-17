@@ -38,6 +38,8 @@ Build an enterprise ticket management platform with email-first support manageme
 ## P0 - Completed
 - Admin Image Upload in KB Editor (toolbar button, drag-and-drop, paste support, stored in MongoDB)
 - KB Visual Consistency Fixes: decorative blockquote quotes, indigo border color, callout code block font normalization, "Made with Emergent" badge
+- Header Navigation: "Get more help" CTA → portal, logo → app.emergent.sh
+- KB Editor Enhancements: Navigation Manager (CRUD for tabs/sections), Icon Picker, auto-increment ordering, tab-scoped prev/next
 
 ## P1 - Next Priority
 - New Email System (transactional emails for ticket notifications)
