@@ -37,6 +37,7 @@ const PortalSubmit = () => {
     subcategory: paramSubtopic,
     subject: '',
     description: '',
+    job_id: '',
     tags: [paramCategory, paramSubtopic, paramTag].filter(Boolean),
     priority: paramPriority || 'medium',
   });
