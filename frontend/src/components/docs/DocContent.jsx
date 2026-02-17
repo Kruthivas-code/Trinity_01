@@ -181,6 +181,10 @@ const RenderComponent = ({ type, items, props, content, mdComponents }) => {
       return <YouTubeEmbed id={props?.id} title={props?.title} />;
     case 'Loom':
       return <LoomEmbed id={props?.id} title={props?.title} />;
+    case 'Figure':
+      return <Figure src={props?.src} alt={props?.alt} caption={props?.caption} />;
+    case 'Video':
+      return props?.src ? <Figure src={props?.src} alt={props?.alt} caption={props?.caption || props?.title} /> : null;
     default: return null;
   }
 };
