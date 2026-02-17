@@ -1,34 +1,38 @@
 [
   {
-    "content": "Add require_admin to all admin.py routes (17 endpoints)",
-    "status": "completed"
+    "content": "Fix N+1 in customers.py list_customers — batch ticket stats + CSAT stats",
+    "status": "pending"
   },
   {
-    "content": "Fix portal category/plan CRUD authorization (require_admin)",
-    "status": "completed"
+    "content": "Fix N+1 in analytics.py get_agent_analytics — single aggregation pipeline",
+    "status": "pending"
   },
   {
-    "content": "Add re.escape() to customer/KB search regex (NoSQL injection fix)",
-    "status": "completed"
+    "content": "Fix N+1 in exports.py admin_export_tickets & export_full — batch notes/changelog/CSAT",
+    "status": "pending"
   },
   {
-    "content": "Sanitize error messages in auth.py, email.py, knowledge_base.py",
-    "status": "completed"
+    "content": "Fix N+1 in exports.py export_analytics — batch agent name lookup",
+    "status": "pending"
   },
   {
-    "content": "Externalize hardcoded CSAT base URL to environment variable",
-    "status": "completed"
+    "content": "Fix bulk-tag and trigger-auto-close to use batch writes",
+    "status": "pending"
   },
   {
-    "content": "Add rate limiting to portal register (5/min) and login (10/min)",
-    "status": "completed"
+    "content": "Fix bulk-update changelog to use insert_many",
+    "status": "pending"
   },
   {
-    "content": "Strengthen portal password policy (8 chars, uppercase, digit)",
-    "status": "completed"
+    "content": "Add pagination to starred, by-email, activity-feed, changelog endpoints",
+    "status": "pending"
   },
   {
-    "content": "Lint and verify all changes",
-    "status": "completed"
+    "content": "Fix search suggestions regex injection (re.escape)",
+    "status": "pending"
+  },
+  {
+    "content": "Lint and verify all Phase 2 changes",
+    "status": "pending"
   }
 ]
