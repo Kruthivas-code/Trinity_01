@@ -35,6 +35,7 @@ import PortalTicketDetail from './portal/PortalTicketDetail';
 
 // KB Docs imports
 import PublicDocs from './pages/kb/PublicDocs';
+import KBEditor from './pages/KBEditor';
 
 function AppRouter() {
   const location = useLocation();
