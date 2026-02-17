@@ -158,12 +158,18 @@ const NavGroup = ({ group, groupKey, articles, selectedSlug, onSelect, expanded,
         <div className="ml-5 space-y-0.5">
           {articles.map(art => {
             const isActive = art.slug === selectedSlug;
+            const fbPct = art.feedback_total > 0 ? Math.round((art.feedback_helpful / art.feedback_total) * 100) : null;
             return (
               <div key={art.slug} className={`group flex items-center gap-1 rounded-lg transition-colors ${isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}>
                 <button onClick={() => onSelect(art.slug)} className="flex-1 flex items-center gap-2 px-2 py-1.5 text-left min-w-0" data-testid={`nav-article-${art.slug}`}>
                   <FileText className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="text-sm truncate">{art.title}</span>
                 </button>
+                {fbPct !== null && (
+                  <span className={`text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5 flex-shrink-0 ${fbPct >= 70 ? 'bg-emerald-500/15 text-emerald-400' : fbPct >= 40 ? 'bg-amber-500/15 text-amber-400' : 'bg-red-500/15 text-red-400'}`} data-testid={`feedback-stat-${art.slug}`} title={`${art.feedback_helpful}/${art.feedback_total} found helpful`}>
+                    <ThumbsUp className="w-2.5 h-2.5" />{fbPct}%
+                  </span>
+                )}
                 {!art.published && <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">draft</span>}
                 <button onClick={() => onDelete(art.slug)} disabled={deleting === art.slug}
                   className="p-1 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 rounded transition-all flex-shrink-0">
