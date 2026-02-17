@@ -550,6 +550,16 @@ const KBEditor = () => {
 
   const handleDocSelect = (slug) => navigate(`/dashboard/kb-editor/${slug}`);
 
+  // Save navigation structure
+  const saveNavigation = async (newGroups) => {
+    try {
+      const res = await fetch(`${API}/api/kb/admin/navigation`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nav_groups: newGroups }) });
+      if (!res.ok) throw new Error('Failed to save');
+      await fetchAll();
+      setNavManagerOpen(false);
+    } catch (e) { console.error(e); alert('Failed to save navigation: ' + e.message); }
+  };
+
   // Build sidebar tree
   const tree = useMemo(() => navGroups.map(group => ({
     ...group,
