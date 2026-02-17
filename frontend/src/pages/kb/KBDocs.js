@@ -163,6 +163,59 @@ const extractTOC = (md) => {
 };
 
 
+// ── Article with Copy Page button ──
+const CopyPageArticle = ({ article, prevNext }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(article.content_markdown || '');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) { console.error(e); }
+  };
+
+  return (
+    <>
+      <div className="kb-breadcrumb" data-testid="kb-breadcrumb">
+        <span>{article.section_label}</span>
+      </div>
+      <div className="kb-title-row">
+        <h1 className="kb-page-title" data-testid="kb-page-title">{article.title}</h1>
+        <button onClick={handleCopy} className="kb-copy-btn" data-testid="kb-copy-page">
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+          <span>{copied ? 'Copied!' : 'Copy page'}</span>
+          {!copied && <ChevronDown size={12} />}
+        </button>
+      </div>
+      <div className="kb-article-body" data-testid="kb-article-body">
+        {renderMarkdown(article.content_markdown)}
+      </div>
+      <div className="kb-prev-next" data-testid="kb-prev-next">
+        {prevNext.prev ? (
+          <Link to={`/docs/${prevNext.prev.slug}`} className="kb-prev-next-link prev">
+            <ChevronLeft size={16} />
+            <div>
+              <span className="kb-prev-next-label">Previous</span>
+              <span className="kb-prev-next-title">{prevNext.prev.title}</span>
+            </div>
+          </Link>
+        ) : <div />}
+        {prevNext.next ? (
+          <Link to={`/docs/${prevNext.next.slug}`} className="kb-prev-next-link next">
+            <div>
+              <span className="kb-prev-next-label">Next</span>
+              <span className="kb-prev-next-title">{prevNext.next.title}</span>
+            </div>
+            <ChevronRight size={16} />
+          </Link>
+        ) : <div />}
+      </div>
+    </>
+  );
+};
+
+
 const KBDocs = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
