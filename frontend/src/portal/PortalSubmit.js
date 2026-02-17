@@ -181,6 +181,22 @@ const PortalSubmit = () => {
           <input type="hidden" value="urgent" />
         )}
 
+        {/* Job ID — mandatory for certain categories */}
+        {jobIdRequired && (
+          <div>
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Job ID *</label>
+            <input
+              type="text"
+              value={form.job_id}
+              onChange={e => setForm(f => ({ ...f, job_id: e.target.value }))}
+              placeholder="e.g. job_abc123 — find this in your chat URL"
+              className="w-full h-10 px-3 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 transition-all"
+              data-testid="submit-job-id-input"
+            />
+            <p className="text-[11px] text-muted-foreground/60 mt-1">The job ID from the agent chat where you experienced the issue</p>
+          </div>
+        )}
+
         {/* Subject */}
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1.5">Subject *</label>
