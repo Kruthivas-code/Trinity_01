@@ -1,7 +1,7 @@
 [
   {
     "content": "Fix N+1 in customers.py list_customers — batch ticket stats + CSAT stats",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Fix N+1 in analytics.py get_agent_analytics — single aggregation pipeline",
