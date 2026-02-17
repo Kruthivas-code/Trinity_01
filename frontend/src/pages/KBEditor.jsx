@@ -370,6 +370,54 @@ const KBEditor = () => {
     finally { setDeleting(null); }
   };
 
+  // Image upload: inserts markdown at cursor
+  const uploadImage = useCallback(async (file) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/api/kb/admin/images`, { method: 'POST', credentials: 'include', body: formData });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || 'Upload failed'); }
+      const { url } = await res.json();
+      const altText = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
+      const markdown = `![${altText}](${url})`;
+      const ta = textareaRef.current;
+      if (ta && form) {
+        const pos = ta.selectionStart;
+        const before = (form.content_markdown || '').substring(0, pos);
+        const after = (form.content_markdown || '').substring(pos);
+        const nl = before.length > 0 && !before.endsWith('\n') ? '\n' : '';
+        setForm(f => ({ ...f, content_markdown: `${before}${nl}${markdown}\n${after}` }));
+        setTimeout(() => { ta.focus(); }, 0);
+      } else {
+        setForm(f => ({ ...f, content_markdown: (f?.content_markdown || '') + `\n${markdown}\n` }));
+      }
+    } catch (e) { console.error(e); alert(`Image upload failed: ${e.message}`); }
+    finally { setUploading(false); }
+  }, [form]);
+
+  // Drag & drop handler
+  const handleDrop = useCallback((e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file?.type.startsWith('image/')) uploadImage(file);
+  }, [uploadImage]);
+
+  // Paste handler for images
+  const handlePaste = useCallback((e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        uploadImage(item.getAsFile());
+        return;
+      }
+    }
+  }, [uploadImage]);
+
   const handleDocSelect = (slug) => navigate(`/dashboard/kb-editor/${slug}`);
 
   // Build sidebar tree
