@@ -583,19 +583,27 @@ async def delete_ticket(ticket_id: str, current_user: dict = Depends(get_current
 
 
 @router.get("/tickets/{ticket_id}/changelog")
-async def get_ticket_changelog(ticket_id: str, current_user: dict = Depends(get_current_user)):
-    """Get the change history for a ticket with user names resolved."""
+async def get_ticket_changelog(
+    ticket_id: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(100, ge=1, le=500),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get the change history for a ticket with user names resolved, with pagination."""
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
-    changelog = list(ticket_changelog_collection.find({"ticket_id": ticket_id}, {"_id": 0}).sort("changed_at", DESCENDING))
+    query = {"ticket_id": ticket_id}
+    total = ticket_changelog_collection.count_documents(query)
+    skip = (page - 1) * limit
+    changelog = list(ticket_changelog_collection.find(query, {"_id": 0}).sort("changed_at", DESCENDING).skip(skip).limit(limit))
     user_ids = list(set(entry.get("changed_by") for entry in changelog if entry.get("changed_by")))
     users = {u["user_id"]: u.get("name", "Unknown") for u in users_collection.find({"user_id": {"$in": user_ids}}, {"user_id": 1, "name": 1})}
     for entry in changelog:
         entry["changed_by_name"] = users.get(entry.get("changed_by"), "Unknown")
         if isinstance(entry.get("changed_at"), datetime):
             entry["changed_at"] = entry["changed_at"].isoformat()
-    return changelog
+    return {"changelog": changelog, "total": total, "page": page, "has_more": skip + limit < total}
 
 
 @router.get("/tickets/{ticket_id}/metadata")
@@ -642,17 +650,25 @@ async def reorder_tickets(reorder_data: TicketReorder, current_user: dict = Depe
 # ==================== Conversation History ====================
 
 @router.get("/tickets/by-email/{email}")
-async def get_tickets_by_email(email: str, current_user: dict = Depends(get_current_user)):
-    """Get all tickets associated with a customer email address."""
+async def get_tickets_by_email(
+    email: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(50, ge=1, le=200),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get tickets associated with a customer email address, with pagination."""
     email_lower = email.lower().strip()
-    tickets = list(tickets_collection.find({
+    query = {
         "$or": [
             {"customer_email": {"$regex": f"^{re.escape(email_lower)}$", "$options": "i"}},
             {"email_sender": {"$regex": f"^{re.escape(email_lower)}$", "$options": "i"}},
             {"email_from": {"$regex": re.escape(email_lower), "$options": "i"}}
         ]
-    }).sort("created_at", DESCENDING))
-    return [serialize_doc(t) for t in tickets]
+    }
+    total = tickets_collection.count_documents(query)
+    skip = (page - 1) * limit
+    tickets = list(tickets_collection.find(query).sort("created_at", DESCENDING).skip(skip).limit(limit))
+    return {"tickets": [serialize_doc(t) for t in tickets], "total": total, "page": page, "has_more": skip + limit < total}
 
 
 @router.get("/tickets/{ticket_id}/related")
