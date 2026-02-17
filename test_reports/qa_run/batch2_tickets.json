@@ -1,0 +1,279 @@
+{
+  "batch": "batch2_tickets",
+  "timestamp": "2026-02-17T09:04:09.654417+00:00",
+  "duration_seconds": 2.0,
+  "summary": {
+    "total": 33,
+    "passed": 27,
+    "failed": 6,
+    "errors": 0,
+    "skipped": 0,
+    "pass_rate": "81.8%"
+  },
+  "results": [
+    {
+      "test_id": "2.1.1",
+      "description": "List all tickets returns paginated list",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "total=858, tickets_count=50",
+      "duration_ms": 13.9
+    },
+    {
+      "test_id": "2.1.2",
+      "description": "Filter by status=todo",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "total=853, all_todo=True",
+      "duration_ms": 11.6
+    },
+    {
+      "test_id": "2.1.9",
+      "description": "Pagination: page=1, limit=3",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "tickets=3, total=858",
+      "duration_ms": 45.3
+    },
+    {
+      "test_id": "2.1.14",
+      "description": "Invalid page=0 returns 422",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=422",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "2.1.15",
+      "description": "Limit=201 exceeds max returns 422",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=422",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "2.2.1",
+      "description": "Create ticket with title only, gets TKT-XXXXXX ID",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "ticket_id=TKT-000878",
+      "duration_ms": 69.0
+    },
+    {
+      "test_id": "2.2.2",
+      "description": "Create with all fields persists correctly",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "ticket_id=TKT-000879, priority=high",
+      "duration_ms": 64.0
+    },
+    {
+      "test_id": "2.2.3",
+      "description": "Empty title returns 422",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=422",
+      "duration_ms": 45.9
+    },
+    {
+      "test_id": "2.2.4",
+      "description": "Title >500 chars returns 422",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=422",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "2.2.6",
+      "description": "Invalid status returns 422",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=422",
+      "duration_ms": 44.9
+    },
+    {
+      "test_id": "2.2.7",
+      "description": "Invalid priority returns 422",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=422",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "2.2.10",
+      "description": "Tags >50 returns 422",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=422",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "2.2.12",
+      "description": "Customer email auto-creates/links customer",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "customer_id=CUST-000006",
+      "duration_ms": 53.0
+    },
+    {
+      "test_id": "2.2.19",
+      "description": "Sequential ticket ID generation",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "id1=TKT-000881, id2=TKT-000882, sequential=True",
+      "duration_ms": 97.0
+    },
+    {
+      "test_id": "2.3.1",
+      "description": "Get valid ticket by ID",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Got ticket TKT-000878",
+      "duration_ms": 44.9
+    },
+    {
+      "test_id": "2.3.2",
+      "description": "Non-existent ticket returns 404",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=404",
+      "duration_ms": 44.9
+    },
+    {
+      "test_id": "2.4.1",
+      "description": "Update single field (status)",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "status=in_progress",
+      "duration_ms": 47.0
+    },
+    {
+      "test_id": "2.4.3",
+      "description": "Status=resolved sets resolved_at",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "resolved_at=2026-02-17T09:04:08.439000",
+      "duration_ms": 48.0
+    },
+    {
+      "test_id": "2.4.6",
+      "description": "Update non-existent ticket returns 404",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=404",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "2.4.10",
+      "description": "Changelog logged for changed fields",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Found 4 changelog entries",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "2.5.1",
+      "description": "Delete ticket removes it",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Delete status=200, get_after=404",
+      "duration_ms": 139.0
+    },
+    {
+      "test_id": "2.5.2",
+      "description": "Delete non-existent ticket returns 404",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=404",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "3.1",
+      "description": "GET escalation-counts returns L1/L2/L3 counts",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "escalation_counts={'L1': {'total': 861, 'todo': 857, 'in_progress': 3, 'waiting': 1}, 'L2': {'total': 0}, 'L3': {'total': 0}}",
+      "duration_ms": 48.9
+    },
+    {
+      "test_id": "3.2",
+      "description": "Filter tickets by escalation_level=L1",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "total=863, all_L1=True",
+      "duration_ms": 14.7
+    },
+    {
+      "test_id": "4.1",
+      "description": "Merge tickets: secondary becomes 'merged'",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=400, body={\"detail\":\"Target ticket ID required\"}",
+      "duration_ms": 142.3
+    },
+    {
+      "test_id": "4.2",
+      "description": "Link tickets as related",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=400",
+      "duration_ms": 45.0
+    },
+    {
+      "test_id": "4.3",
+      "description": "Bulk update tickets",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=404, body={\"detail\":\"Ticket not found\"}",
+      "duration_ms": 44.9
+    },
+    {
+      "test_id": "5.1",
+      "description": "Add internal note to ticket",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Status=200",
+      "duration_ms": 47.0
+    },
+    {
+      "test_id": "5.2",
+      "description": "List internal notes for ticket",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Found 4 notes",
+      "duration_ms": 46.0
+    },
+    {
+      "test_id": "5.3",
+      "description": "Get ticket messages/activity",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=404",
+      "duration_ms": 43.9
+    },
+    {
+      "test_id": "6.1",
+      "description": "GET /api/tags returns tag list",
+      "priority": "P0",
+      "status": "FAIL",
+      "detail": "Status=404",
+      "duration_ms": 43.0
+    },
+    {
+      "test_id": "6.2",
+      "description": "Star a ticket",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "is_starred=True",
+      "duration_ms": 47.0
+    },
+    {
+      "test_id": "6.3",
+      "description": "Filter starred tickets",
+      "priority": "P0",
+      "status": "PASS",
+      "detail": "Found 1 starred tickets",
+      "duration_ms": 46.0
+    }
+  ]
+}
