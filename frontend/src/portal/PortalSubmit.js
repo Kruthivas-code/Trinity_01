@@ -182,21 +182,37 @@ const PortalSubmit = () => {
           <input type="hidden" value="urgent" />
         )}
 
-        {/* Job ID — mandatory for certain categories */}
-        {jobIdRequired && (
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Job ID *</label>
-            <input
-              type="text"
-              value={form.job_id}
-              onChange={e => setForm(f => ({ ...f, job_id: e.target.value }))}
-              placeholder="e.g. job_abc123 — find this in your chat URL"
-              className="w-full h-10 px-3 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 transition-all"
-              data-testid="submit-job-id-input"
-            />
-            <p className="text-[11px] text-muted-foreground/60 mt-1">The job ID from the agent chat where you experienced the issue</p>
-          </div>
-        )}
+        {/* Job ID — always visible, mandatory for certain categories */}
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+            Job ID {jobIdRequired ? '*' : <span className="text-muted-foreground/40">(optional)</span>}
+          </label>
+          <input
+            type="text"
+            value={form.job_id}
+            onChange={e => setForm(f => ({ ...f, job_id: e.target.value }))}
+            placeholder="e.g. job_abc123 — find this in your chat URL"
+            className="w-full h-10 px-3 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 transition-all"
+            data-testid="submit-job-id-input"
+          />
+          <p className="text-[11px] text-muted-foreground/60 mt-1">The job ID from the agent chat where you experienced the issue</p>
+        </div>
+
+        {/* Video Recording Link — always optional */}
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+            Video recording link <span className="text-muted-foreground/40">(optional)</span>
+          </label>
+          <input
+            type="url"
+            value={form.video_link}
+            onChange={e => setForm(f => ({ ...f, video_link: e.target.value }))}
+            placeholder="e.g. https://www.loom.com/share/..."
+            className="w-full h-10 px-3 rounded-lg border border-border bg-card text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-foreground/20 focus:border-foreground/30 transition-all"
+            data-testid="submit-video-link-input"
+          />
+          <p className="text-[11px] text-muted-foreground/60 mt-1">Loom, YouTube, or any screen recording showing the issue</p>
+        </div>
 
         {/* Subject */}
         <div>
