@@ -42,7 +42,7 @@ const TopNavigation = ({ config, tabs, activeTab, onTabChange, theme, mobileMenu
     <header className={`fixed top-0 left-0 right-0 z-50 ${theme.navBg} border-b ${theme.border}`} data-testid="kb-header">
       <div className="h-14 px-4 sm:px-6 flex items-center">
         <Link to="/" className="flex items-center gap-2 flex-shrink-0 mr-4 lg:mr-8" data-testid="logo-link">
-          <span className={`font-semibold text-lg ${theme.text}`}>{config?.site_title || 'Emergent Docs'}</span>
+          <img src="/images/emergent-logo-dark.png" alt="Emergent" className="h-6" />
         </Link>
 
         <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center" data-testid="kb-top-nav">
