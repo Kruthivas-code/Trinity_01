@@ -1,34 +1,34 @@
 [
   {
-    "content": "Add require_admin to all admin route endpoints (custom fields, routing rules, SLA policies, escalation rules)",
-    "status": "in_progress"
+    "content": "Add require_admin to all admin.py routes (17 endpoints)",
+    "status": "completed"
   },
   {
-    "content": "Fix portal category CRUD authorization (require_admin instead of get_current_user)",
-    "status": "pending"
+    "content": "Fix portal category/plan CRUD authorization (require_admin)",
+    "status": "completed"
   },
   {
-    "content": "Add re.escape() to customer search regex to prevent NoSQL injection",
-    "status": "pending"
+    "content": "Add re.escape() to customer/KB search regex (NoSQL injection fix)",
+    "status": "completed"
   },
   {
-    "content": "Sanitize error messages in auth.py, email.py, knowledge_base.py - never return str(e)",
-    "status": "pending"
+    "content": "Sanitize error messages in auth.py, email.py, knowledge_base.py",
+    "status": "completed"
   },
   {
     "content": "Externalize hardcoded CSAT base URL to environment variable",
-    "status": "pending"
+    "status": "completed"
   },
   {
-    "content": "Add rate limiting to portal auth endpoints (register + login)",
-    "status": "pending"
+    "content": "Add rate limiting to portal register (5/min) and login (10/min)",
+    "status": "completed"
   },
   {
-    "content": "Strengthen portal password policy (min 8 chars + complexity rules)",
-    "status": "pending"
+    "content": "Strengthen portal password policy (8 chars, uppercase, digit)",
+    "status": "completed"
   },
   {
     "content": "Lint and verify all changes",
-    "status": "pending"
+    "status": "completed"
   }
 ]
