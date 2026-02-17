@@ -86,7 +86,7 @@ async def send_csat_survey(
     
     email_content = {
         "to": customer_email,
-        "subject": f"How was your experience? - {ticket.get('title', 'Your support request')}",
+        "subject": f"How was your experience? - {ticket.get('title', 'Your request')}",
         "html": f"""
 <!DOCTYPE html>
 <html>
@@ -108,7 +108,7 @@ async def send_csat_survey(
                     Hi {token_doc['customer_name']},
                 </p>
                 <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
-                    Your support request has been resolved:
+                    Your request has been resolved:
                 </p>
                 <div style="background-color: #f9fafb; border-radius: 8px; padding: 20px; margin-bottom: 30px;">
                     <p style="color: #6b7280; font-size: 14px; margin: 0 0 5px;">Ticket #{ticket_id}</p>
