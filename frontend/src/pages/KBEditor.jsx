@@ -11,7 +11,7 @@ import {
   List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon,
   Info, AlertTriangle, Lightbulb, CheckCircle, Columns,
   SplitSquareVertical, ExternalLink, Search, MoreHorizontal,
-  Youtube
+  Youtube, ThumbsUp
 } from 'lucide-react';
 import { DocContent } from '../components/docs/DocContent';
 import { getIcon } from '../components/docs/IconPicker';
