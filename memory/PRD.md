@@ -17,7 +17,7 @@ Build an enterprise ticket management platform with email-first support manageme
 - Knowledge Base with AI refinement (Gemini)
 - AI Ticket Summarization
 - **Customer Portal** at `/` and `/portal/*` — auth, ticket submission/tracking, 10 admin-editable categories with help.emergent.sh links
-- **KB Docs Site** at `/docs/:slug` — 21 articles from help.emergent.sh, sidebar nav, top nav, search, dark/light mode, markdown rendering, TOC, prev/next
+- **KB Docs Site (v2 - Ported from help.emergent.sh source)** at `/docs/:slug` — 21 articles, dark theme (#0a0a0a), 5 top nav tabs with icons, hierarchical left sidebar, right TOC, FlexSearch-powered search (Cmd+K), prev/next navigation, copy page button, breadcrumbs, rich markdown rendering (react-markdown + remark-gfm + react-syntax-highlighter), custom MDX components (Steps, Cards, Tabs, Accordion, Callouts, YouTube/Loom embeds)
 - **Admin KB Article Manager** at `/settings` — full CRUD: tree view (nav group > section > articles), markdown editor, publish/unpublish toggle, create/delete, slug rename, nav/section assignment, preview link. Navigation structure preserved from original help.emergent.sh
 - Data import/export, API key management, custom inboxes/filters
 
@@ -39,8 +39,16 @@ Build an enterprise ticket management platform with email-first support manageme
 
 ## P2 - Backlog
 - Real-time notification center
-- KB full-text search improvement
+- KB Image Handling (download/store images from scraped articles)
 - Advanced analytics
+
+## Key Files (KB v2)
+- `frontend/src/pages/kb/PublicDocs.jsx` — Main KB page (ported from help.emergent.sh)
+- `frontend/src/components/docs/DocContent.jsx` — Rich markdown renderer
+- `frontend/src/components/docs/{Steps,Cards,Tabs,Accordion,IconPicker}.jsx` — Custom MDX components
+- `frontend/src/lib/mdx/parser.js` — MDX component extraction
+- `frontend/src/lib/search/index.js` — FlexSearch client-side search
+- `backend/routes/kb.py` — Public & Admin KB API endpoints (includes /api/kb/public-data)
 
 ## 3rd Party Integrations
 - Gemini 3 Flash (via emergentintegrations + EMERGENT_LLM_KEY)
