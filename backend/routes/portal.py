@@ -46,6 +46,7 @@ class TicketSubmit(BaseModel):
     description: str
     tags: Optional[list] = []
     priority: Optional[str] = "medium"
+    job_id: Optional[str] = None
 
 class TicketReply(BaseModel):
     body: str
