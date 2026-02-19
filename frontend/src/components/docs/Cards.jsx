@@ -46,10 +46,7 @@ export const Card = ({ title, children, href, icon, color, className = '' }) => 
     <>
       {IconComponent && (
         <div className="mb-4">
-          <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700/50 flex items-center justify-center"
-            style={color ? { borderColor: `${color}30` } : {}}>
-            <IconComponent className="w-5 h-5 text-gray-700 dark:text-white" style={color ? { color } : {}} />
-          </div>
+          <IconComponent className="w-7 h-7 text-[#00A1B2]" />
         </div>
       )}
       <h4 className="text-base font-semibold !text-gray-900 dark:!text-white mb-2 group-hover:text-[#00A1B2] dark:group-hover:text-[#00A1B2] transition-colors flex items-center gap-2">
@@ -60,24 +57,24 @@ export const Card = ({ title, children, href, icon, color, className = '' }) => 
           </span>
         )}
       </h4>
-      <div className="text-sm !text-gray-600 dark:!text-slate-400 leading-relaxed [&_p]:!text-gray-600 dark:[&_p]:!text-slate-400 [&_p]:!m-0">
+      <div className="text-sm !text-gray-500 dark:!text-slate-400 leading-relaxed [&_p]:!text-gray-500 dark:[&_p]:!text-slate-400 [&_p]:!m-0">
         {children}
       </div>
     </>
   );
 
+  const cardClass = `card group text-left w-full p-5 bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:border-[#00A1B2] dark:hover:border-[#00A1B2] rounded-2xl transition-all duration-200 ${className}`;
+
   if (href) {
     return (
-      <button onClick={handleClick}
-        className={`card group text-left w-full p-5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-900/30 dark:hover:bg-slate-900/60 border border-gray-200 hover:border-gray-300 dark:border-slate-800/60 dark:hover:border-slate-700 rounded-xl transition-all duration-200 ${className}`}
-        data-testid="card">
+      <button onClick={handleClick} className={cardClass} data-testid="card">
         {content}
       </button>
     );
   }
 
   return (
-    <div className={`card group p-5 bg-gray-50 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-800/60 rounded-xl ${className}`} data-testid="card">
+    <div className={cardClass} data-testid="card">
       {content}
     </div>
   );
