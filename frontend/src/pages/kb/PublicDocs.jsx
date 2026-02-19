@@ -226,13 +226,13 @@ const RightSidebar = ({ headings, theme }) => {
   if (validHeadings.length === 0) return null;
 
   return (
-    <aside className="hidden xl:block fixed top-14 right-0 bottom-0 w-56 overflow-y-auto z-10 border-l border-slate-800/50" data-testid="kb-toc">
+    <aside className={`hidden xl:block fixed top-14 right-0 bottom-0 w-56 overflow-y-auto z-10 border-l ${theme.tocBorder}`} data-testid="kb-toc">
       <div className="p-4">
         <h4 className={`text-xs font-semibold ${theme.text} mb-3 uppercase tracking-wider`}>On this page</h4>
         <nav className="space-y-0.5">
           {validHeadings.map((h) => (
             <a key={h.id} href={`#${h.id}`}
-              className={`block py-1 text-[13px] leading-snug transition-colors break-words ${activeId === h.id ? `${theme.text} font-medium` : `${theme.textMuted} hover:text-white`}`}
+              className={`block py-1 text-[13px] leading-snug transition-colors break-words ${activeId === h.id ? `${theme.activeAccent} font-medium` : `${theme.textMuted} ${theme.hoverText}`}`}
               style={{ paddingLeft: `${(h.level - 2) * 8}px` }}>
               {h.text}
             </a>
