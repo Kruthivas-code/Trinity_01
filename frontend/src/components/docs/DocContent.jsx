@@ -71,7 +71,7 @@ const CodeBlockRenderer = ({ children, className }) => {
           <span className="text-xs font-medium">{langName}</span>
         </div>
         <button onClick={handleCopy} className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white rounded transition-colors" data-testid="copy-code-btn">
-          {copied ? <><Check className="w-3.5 h-3.5 text-emerald-500" /><span className="text-emerald-500">Copied</span></> : <><Copy className="w-3.5 h-3.5" /><span>Copy</span></>}
+          {copied ? <><Check className="w-3.5 h-3.5 text-[#00A1B2]" /><span className="text-[#00A1B2]">Copied</span></> : <><Copy className="w-3.5 h-3.5" /><span>Copy</span></>}
         </button>
       </div>
       <SyntaxHighlighter language={language} style={codeTheme} customStyle={{ margin: 0, borderRadius: 0 }}>
