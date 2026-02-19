@@ -59,32 +59,17 @@ const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle }) =>
 };
 
 // ============= LEFT SIDEBAR =============
-const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect, onTabChange, theme, onSearchOpen, mobileOpen, onMobileClose }) => {
-  const currentTab = tabs.find(t => t.id === activeTab) || tabs[0];
-  const groups = currentTab?.groups || [];
+const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect, theme, onSearchOpen, mobileOpen, onMobileClose }) => {
+  const [collapsedTabs, setCollapsedTabs] = useState({});
+
+  const toggleTab = (tabId) => {
+    setCollapsedTabs(prev => ({ ...prev, [tabId]: !prev[tabId] }));
+  };
 
   return (
     <>
       {mobileOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onMobileClose} />}
       <aside className={`fixed top-14 bottom-0 left-0 z-40 w-72 lg:w-64 ${theme.sidebarBg} border-r ${theme.border} transform transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`} data-testid="kb-sidebar">
-        {tabs.length > 1 && (
-          <div className="lg:hidden border-b border-white/10 p-3">
-            <div className="flex flex-wrap gap-2">
-              {tabs.map((tab) => {
-                const TabIcon = tab.icon ? getIcon(tab.icon) : null;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button key={tab.id} onClick={() => onTabChange(tab.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${isActive ? 'bg-[#188455] text-white' : `${theme.textMuted} ${theme.hover}`}`}>
-                    {TabIcon && <TabIcon className="w-4 h-4" />}
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         <div className="p-4">
           <button onClick={onSearchOpen} className={`w-full flex items-center gap-3 px-3 py-2.5 ${theme.inputBg} rounded-lg text-sm ${theme.textMuted} transition-colors`} data-testid="sidebar-search">
             <Search className="w-4 h-4" />
@@ -94,31 +79,54 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 pb-4" data-testid="kb-nav-tree">
-          {groups.map((group, gi) => (
-            <div key={gi} className="mb-6">
-              <h3 className={`px-3 mb-2 text-sm font-semibold ${theme.text}`}>{group.group}</h3>
-              <div className="space-y-0.5">
-                {group.pages?.map((page, pi) => {
-                  const pageSlug = typeof page === 'string' ? page : page.page;
-                  const doc = documents.find(d => d.slug?.toLowerCase() === pageSlug?.toLowerCase());
-                  const title = typeof page === 'string' ? doc?.title || page : page.title || page.page;
-                  const pageIcon = typeof page === 'object' ? page.icon : null;
-                  const PageIcon = pageIcon ? getIcon(pageIcon) : null;
-                  const isActive = pageSlug?.toLowerCase() === selectedDocSlug?.toLowerCase();
-                  const isMissing = !doc;
+          {tabs.map((tab) => {
+            const TabIcon = tab.icon ? getIcon(tab.icon) : null;
+            const isTabActive = activeTab === tab.id;
+            const isCollapsed = collapsedTabs[tab.id] === true;
+            const groups = tab.groups || [];
 
-                  return (
-                    <button key={pi} onClick={() => { if (!isMissing) { onDocSelect(pageSlug); onMobileClose(); } }} disabled={isMissing}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${isActive ? `${theme.activeBg} ${theme.activeText} border-l-2 border-[#188455] -ml-[2px] pl-[14px]` : isMissing ? 'text-slate-600 cursor-not-allowed' : `${theme.textMuted} ${theme.hover}`}`}
-                      data-testid={`sidebar-page-${pageSlug}`}>
-                      {PageIcon && <PageIcon className={`w-4 h-4 flex-shrink-0 ${isMissing ? 'opacity-50' : ''}`} />}
-                      <span className={`truncate ${isMissing ? 'italic opacity-50' : ''}`}>{title}</span>
-                    </button>
-                  );
-                })}
+            return (
+              <div key={tab.id} className="mb-2" data-testid={`sidebar-tab-${tab.id}`}>
+                {tabs.length > 1 && (
+                  <button
+                    onClick={() => toggleTab(tab.id)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${isTabActive ? theme.text : theme.textMuted} ${theme.hover}`}
+                    data-testid={`sidebar-tab-toggle-${tab.id}`}
+                  >
+                    {TabIcon && <TabIcon className="w-4 h-4 flex-shrink-0" />}
+                    <span className="flex-1 text-left truncate">{tab.label}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
+                  </button>
+                )}
+
+                {!isCollapsed && groups.map((group, gi) => (
+                  <div key={gi} className={`${tabs.length > 1 ? 'mt-1 mb-4' : 'mb-6'}`}>
+                    <h3 className={`px-3 ${tabs.length > 1 ? 'pl-5' : ''} mb-2 text-xs font-semibold uppercase tracking-wider ${theme.textSecondary}`}>{group.group}</h3>
+                    <div className="space-y-0.5">
+                      {group.pages?.map((page, pi) => {
+                        const pageSlug = typeof page === 'string' ? page : page.page;
+                        const doc = documents.find(d => d.slug?.toLowerCase() === pageSlug?.toLowerCase());
+                        const title = typeof page === 'string' ? doc?.title || page : page.title || page.page;
+                        const pageIcon = typeof page === 'object' ? page.icon : null;
+                        const PageIcon = pageIcon ? getIcon(pageIcon) : null;
+                        const isActive = pageSlug?.toLowerCase() === selectedDocSlug?.toLowerCase();
+                        const isMissing = !doc;
+
+                        return (
+                          <button key={pi} onClick={() => { if (!isMissing) { onDocSelect(pageSlug); onMobileClose(); } }} disabled={isMissing}
+                            className={`w-full flex items-center gap-3 ${tabs.length > 1 ? 'pl-5' : 'pl-3'} pr-3 py-2 rounded-lg text-sm transition-all ${isActive ? `${theme.activeBg} ${theme.activeText} border-l-2 border-[#188455] -ml-[2px]` : isMissing ? 'text-slate-600 cursor-not-allowed' : `${theme.textMuted} ${theme.hover}`}`}
+                            data-testid={`sidebar-page-${pageSlug}`}>
+                            {PageIcon && <PageIcon className={`w-4 h-4 flex-shrink-0 ${isMissing ? 'opacity-50' : ''}`} />}
+                            <span className={`truncate ${isMissing ? 'italic opacity-50' : ''}`}>{title}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </nav>
         <div className="p-4" />
       </aside>
