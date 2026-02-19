@@ -91,7 +91,7 @@ const THEMES = {
 };
 
 // ============= TOP NAVIGATION =============
-const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onThemeToggle, isDark }) => {
+const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onThemeToggle, isDark, onSearchOpen }) => {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 ${theme.navBg} border-b ${theme.border}`} data-testid="kb-header">
       <div className="h-14 px-4 sm:px-6 flex items-center justify-between">
@@ -99,7 +99,15 @@ const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onTh
           <img src="/images/emergent-logo-dark.png" alt="Emergent" className={`h-6 ${theme.logoInvert ? 'invert' : ''}`} />
         </a>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="hidden lg:flex flex-1 justify-center px-8">
+          <button onClick={onSearchOpen} className={`w-full max-w-[548px] flex items-center gap-3 px-4 py-2 ${theme.inputBg} rounded-lg text-sm ${theme.textMuted} transition-colors`} data-testid="topnav-search">
+            <Search className="w-4 h-4" />
+            <span className="flex-1 text-left">Search...</span>
+            <kbd className={`px-1.5 py-0.5 text-xs rounded ${theme.kbdBg}`}>&#8984;K</kbd>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           <button
             onClick={onThemeToggle}
             className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`}
@@ -109,7 +117,7 @@ const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onTh
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
           <Link to="/portal"
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg border ${theme.ctaSecondaryBorder} ${theme.ctaSecondaryText} transition-colors`}
+            className={`hidden sm:flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg border ${theme.ctaSecondaryBorder} ${theme.ctaSecondaryText} transition-colors`}
             data-testid="need-help-button">
             <span>Need Help</span>
           </Link>
