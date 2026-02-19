@@ -1,15 +1,15 @@
 [
   {
     "content": "Step 1: Extract 4 Modal Components (MergeTicketModal, LinkTicketModal, SplitTicketModal, FeatureRequestModal)",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Step 2: Extract EmailMessage component to its own file",
-    "status": "in_progress"
+    "status": "completed"
   },
   {
     "content": "Step 3: Extract useTicketDrawer custom hook",
-    "status": "pending"
+    "status": "in_progress"
   },
   {
     "content": "Step 4: Extract TicketDetailsPanel (right sidebar)",

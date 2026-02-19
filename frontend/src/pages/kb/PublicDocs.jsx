@@ -242,6 +242,11 @@ const RightSidebar = ({ headings, theme }) => {
               const isActive = activeId === h.id;
               return (
                 <a key={h.id} href={`#${h.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const el = document.getElementById(h.id);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
                   className={`relative block pl-4 py-1.5 text-[13px] leading-snug transition-colors break-words ${
                     isActive
                       ? `${theme.activeAccent} font-medium`
