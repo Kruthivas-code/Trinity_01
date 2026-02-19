@@ -52,7 +52,7 @@ export const Card = ({ title, children, href, icon, color, className = '' }) => 
           </div>
         </div>
       )}
-      <h4 className="text-base font-semibold !text-gray-900 dark:!text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-emerald-400 transition-colors flex items-center gap-2">
+      <h4 className="text-base font-semibold !text-gray-900 dark:!text-white mb-2 group-hover:text-[#00A1B2] dark:group-hover:text-[#00A1B2] transition-colors flex items-center gap-2">
         {title}
         {href && (
           <span className="opacity-0 group-hover:opacity-100 transition-opacity">

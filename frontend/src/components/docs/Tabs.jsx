@@ -13,7 +13,7 @@ export const Tabs = ({ children, defaultTab = 0, className = '' }) => {
           <button key={index} onClick={() => setActiveTab(index)}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
               activeTab === index
-                ? 'text-[#188455] border-[#188455]'
+                ? 'text-[#00A1B2] border-[#00A1B2]'
                 : 'text-gray-400 dark:text-slate-400 border-transparent hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-600'
             }`}
             data-testid={`tab-${index}`}>

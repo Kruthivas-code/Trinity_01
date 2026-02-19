@@ -33,7 +33,7 @@ export const AccordionItem = ({ title, children, defaultOpen = false, className 
         <ChevronDown className={`w-4 h-4 text-gray-400 dark:text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       <div className={`overflow-hidden transition-all duration-200 ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}>
-        <div className="px-4 pb-4 [&_p]:!text-gray-600 dark:[&_p]:!text-slate-400 [&_code]:!text-emerald-600 dark:[&_code]:!text-emerald-400 [&_strong]:!text-gray-900 dark:[&_strong]:!text-slate-200 [&_a]:!text-[#188455]"
+        <div className="px-4 pb-4 [&_p]:!text-gray-600 dark:[&_p]:!text-slate-400 [&_code]:!text-[#00A1B2] dark:[&_code]:!text-[#00A1B2] [&_strong]:!text-gray-900 dark:[&_strong]:!text-slate-200 [&_a]:!text-[#00A1B2]"
           data-testid="accordion-content">
           {children}
         </div>

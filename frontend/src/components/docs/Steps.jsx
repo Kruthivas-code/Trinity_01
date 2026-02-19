@@ -25,7 +25,7 @@ export const Step = ({ title, children, stepNumber = 1, isLast = false, icon = n
   return (
     <div className={`step-item relative ${className}`} data-testid={`step-${stepNumber}`}>
       <div className="flex items-center gap-4 mb-2">
-        <div className="w-8 h-8 rounded-full bg-[#188455] flex items-center justify-center flex-shrink-0">
+        <div className="w-8 h-8 rounded-full bg-[#00A1B2] flex items-center justify-center flex-shrink-0">
           {IconComponent ? (
             <IconComponent className="w-4 h-4 text-white" />
           ) : (
@@ -36,7 +36,7 @@ export const Step = ({ title, children, stepNumber = 1, isLast = false, icon = n
       </div>
       <div className="flex gap-4">
         <div className="w-8 flex justify-center flex-shrink-0">
-          {!isLast && <div className="w-0.5 h-full bg-[#188455]/30 min-h-[40px]" />}
+          {!isLast && <div className="w-0.5 h-full bg-[#00A1B2]/30 min-h-[40px]" />}
         </div>
         <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-6'}`}>
           <div className="text-[15px] !text-gray-600 dark:!text-slate-400 leading-relaxed [&>p]:mb-3 [&>p:last-child]:mb-0">
