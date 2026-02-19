@@ -540,9 +540,9 @@ const PublicDocs = () => {
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} documents={documents} onSelect={handleDocSelect} theme={theme} config={config} />
       <LeftSidebar activeTab={activeTab} tabs={tabs} documents={documents} selectedDocSlug={selectedDoc?.slug} onDocSelect={handleDocSelect} theme={theme} onSearchOpen={() => setSearchOpen(true)} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
 
-      <main className="lg:ml-64 xl:mr-56 min-h-screen pt-14 relative z-10">
+      <main className="lg:ml-64 xl:mr-56 min-h-screen pt-14 relative z-10 overflow-x-hidden">
         {selectedDoc ? (
-          <article key={selectedDoc.id} className="max-w-none xl:max-w-3xl mx-auto px-4 sm:px-6 py-10 animate-fadeIn">
+          <article key={selectedDoc.id} className="max-w-[800px] mx-auto px-4 sm:px-6 py-10 animate-fadeIn">
             <div className={`text-sm ${theme.textMuted} mb-4`} data-testid="kb-breadcrumb">{getBreadcrumb()}</div>
             <div className="flex items-start justify-between gap-4 mb-8">
               <h1 className={`text-3xl sm:text-4xl font-bold ${theme.text} tracking-tight`} data-testid="kb-page-title">{selectedDoc.title}</h1>
