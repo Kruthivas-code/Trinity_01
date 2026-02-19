@@ -216,28 +216,28 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
 
   const mdComponents = useMemo(() => ({
     code: ({ node, inline, className, children, ...props }) => {
-      if (inline) return <code className="px-1.5 py-0.5 bg-slate-800 text-pink-400 rounded text-[0.875em] font-mono" {...props}>{children}</code>;
+      if (inline) return <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-800 text-pink-600 dark:text-pink-400 rounded text-[0.875em] font-mono" {...props}>{children}</code>;
       return <CodeBlockRenderer className={className}>{children}</CodeBlockRenderer>;
     },
-    h1: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h1 id={id} className="scroll-mt-20 !text-white font-bold">{children}</h1>; },
-    h2: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h2 id={id} className="scroll-mt-20 !text-white text-2xl font-semibold mt-10 mb-4">{children}</h2>; },
-    h3: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h3 id={id} className="scroll-mt-20 !text-white text-xl font-semibold mt-8 mb-3">{children}</h3>; },
-    h4: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h4 id={id} className="scroll-mt-20 !text-white text-lg font-semibold mt-6 mb-2">{children}</h4>; },
+    h1: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h1 id={id} className="scroll-mt-20 !text-gray-900 dark:!text-white font-bold">{children}</h1>; },
+    h2: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h2 id={id} className="scroll-mt-20 !text-gray-900 dark:!text-white text-2xl font-semibold mt-10 mb-4">{children}</h2>; },
+    h3: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h3 id={id} className="scroll-mt-20 !text-gray-900 dark:!text-white text-xl font-semibold mt-8 mb-3">{children}</h3>; },
+    h4: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h4 id={id} className="scroll-mt-20 !text-gray-900 dark:!text-white text-lg font-semibold mt-6 mb-2">{children}</h4>; },
     blockquote: ({ children }) => {
-      return <blockquote className="lead-quote my-6 pl-4 border-l-4 border-indigo-500 italic [&>*]:!text-slate-300 [&_p]:!text-slate-300">{children}</blockquote>;
+      return <blockquote className="lead-quote my-6 pl-4 border-l-4 border-indigo-500 italic [&>*]:!text-gray-600 dark:[&>*]:!text-slate-300 [&_p]:!text-gray-600 dark:[&_p]:!text-slate-300">{children}</blockquote>;
     },
-    table: ({ children }) => <div className="overflow-x-auto my-6 rounded-lg border border-slate-800"><table className="w-full">{children}</table></div>,
-    thead: ({ children }) => <thead className="bg-slate-900">{children}</thead>,
-    th: ({ children }) => <th className="text-left px-4 py-3 text-sm font-semibold !text-slate-200 border-b border-slate-800">{children}</th>,
-    td: ({ children }) => <td className="px-4 py-3 text-sm !text-slate-300 border-b border-slate-800/50">{children}</td>,
+    table: ({ children }) => <div className="overflow-x-auto my-6 rounded-lg border border-gray-200 dark:border-slate-800"><table className="w-full">{children}</table></div>,
+    thead: ({ children }) => <thead className="bg-gray-50 dark:bg-slate-900">{children}</thead>,
+    th: ({ children }) => <th className="text-left px-4 py-3 text-sm font-semibold !text-gray-900 dark:!text-slate-200 border-b border-gray-200 dark:border-slate-800">{children}</th>,
+    td: ({ children }) => <td className="px-4 py-3 text-sm !text-gray-700 dark:!text-slate-300 border-b border-gray-100 dark:border-slate-800/50">{children}</td>,
     a: ({ href, children }) => { const ext = href?.startsWith('http'); return <a href={href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined} className="text-[#188455] hover:text-[#1fa968] underline-offset-2 hover:underline">{children}</a>; },
-    img: ({ src, alt }) => <img src={src} alt={alt} className="rounded-lg border border-slate-800 my-6 max-w-full" loading="lazy" />,
-    hr: () => <hr className="border-slate-800 my-8" />,
-    ul: ({ children }) => <ul className="my-4 ml-6 list-disc space-y-2 !text-slate-300">{children}</ul>,
-    ol: ({ children }) => <ol className="my-4 ml-6 list-decimal space-y-2 !text-slate-300">{children}</ol>,
+    img: ({ src, alt }) => <img src={src} alt={alt} className="rounded-lg border border-gray-200 dark:border-slate-800 my-6 max-w-full" loading="lazy" />,
+    hr: () => <hr className="border-gray-200 dark:border-slate-800 my-8" />,
+    ul: ({ children }) => <ul className="my-4 ml-6 list-disc space-y-2 !text-gray-700 dark:!text-slate-300">{children}</ul>,
+    ol: ({ children }) => <ol className="my-4 ml-6 list-decimal space-y-2 !text-gray-700 dark:!text-slate-300">{children}</ol>,
     li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-    p: ({ children }) => <p className="my-4 leading-relaxed !text-slate-300">{children}</p>,
-    strong: ({ children }) => <strong className="font-semibold !text-slate-100">{children}</strong>,
+    p: ({ children }) => <p className="my-4 leading-relaxed !text-gray-700 dark:!text-slate-300">{children}</p>,
+    strong: ({ children }) => <strong className="font-semibold !text-gray-900 dark:!text-slate-100">{children}</strong>,
   }), []);
 
   if (!content) return <div className="text-slate-500 italic" data-testid="doc-empty">No content available.</div>;
