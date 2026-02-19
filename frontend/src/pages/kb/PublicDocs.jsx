@@ -281,6 +281,14 @@ const RightSidebar = ({ headings, theme }) => {
   );
 };
 
+// ============= HIGHLIGHT MATCH =============
+const HighlightMatch = ({ text, query }) => {
+  if (!query || query.length < 2) return <>{text}</>;
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  const parts = text.split(regex);
+  return <>{parts.map((part, i) => regex.test(part) ? <span key={i} className="text-[#00A1B2] font-semibold">{part}</span> : part)}</>;
+};
+
 // ============= SEARCH DIALOG =============
 const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => {
   const [query, setQuery] = useState('');
@@ -293,14 +301,31 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
       for (const group of (tab.groups || [])) {
         for (const page of (group.pages || [])) {
           const ps = typeof page === 'string' ? page : page.page;
-          if (ps?.toLowerCase() === slug?.toLowerCase()) return `${tab.label} > ${group.group}`;
+          if (ps?.toLowerCase() === slug?.toLowerCase()) return { tab: tab.label, group: group.group };
         }
       }
     }
     return null;
   };
 
-  useEffect(() => { if (open) { setQuery(''); setResults({ documents: [], headings: [] }); setTimeout(() => inputRef.current?.focus(), 100); } }, [open]);
+  const getTabLabel = (slug) => {
+    for (const tab of tabs) {
+      const found = tab.groups?.some(g => g.pages?.some(p => (typeof p === 'string' ? p : p.page)?.toLowerCase() === slug?.toLowerCase()));
+      if (found) return tab.label;
+    }
+    return null;
+  };
+
+  useEffect(() => {
+    if (open) {
+      setQuery(''); setResults({ documents: [], headings: [] });
+      setTimeout(() => inputRef.current?.focus(), 100);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
   useEffect(() => { if (query.length >= 2) setResults(search(query)); else setResults({ documents: [], headings: [] }); }, [query]);
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape' && open) onClose(); };
@@ -310,53 +335,64 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
 
   if (!open) return null;
   const hasResults = results.documents?.length > 0 || results.headings?.length > 0;
+  const isDark = theme.id === 'dark';
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh]">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative w-full max-w-2xl mx-4 ${theme.searchDialogBg} rounded-xl shadow-2xl overflow-hidden`}>
-        <div className={`flex items-center gap-3 px-4 py-4 border-b ${theme.searchDialogBorder}`}>
-          <Search className={`w-5 h-5 ${theme.searchResultMuted}`} />
-          <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search documentation..."
-            className={`flex-1 bg-transparent text-lg outline-none ${theme.searchDialogInput}`} data-testid="search-input" />
-          <kbd className={`px-2 py-1 text-xs rounded border ${theme.searchDialogKbd}`}>ESC</kbd>
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh]">
+      <div className={`fixed inset-0 ${isDark ? 'bg-black/70' : 'bg-white/70'} backdrop-blur-md`} onClick={onClose} />
+      <div className={`relative w-full max-w-[620px] mx-4 ${isDark ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-gray-200'} border rounded-2xl shadow-2xl overflow-hidden`}>
+        <div className={`flex items-center gap-3 px-5 py-4 ${hasResults || query.length >= 2 ? `border-b ${isDark ? 'border-white/10' : 'border-gray-100'}` : ''}`}>
+          <Search className={`w-5 h-5 flex-shrink-0 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
+          <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search..."
+            className={`flex-1 bg-transparent text-base outline-none ${isDark ? 'text-white placeholder:text-slate-500' : 'text-gray-900 placeholder:text-gray-400'}`} data-testid="search-input" />
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <kbd className={`px-2 py-0.5 text-[11px] font-medium rounded border ${isDark ? 'text-slate-400 bg-white/5 border-white/10' : 'text-gray-400 bg-gray-100 border-gray-200'}`}>ESC</kbd>
+            <button onClick={onClose} className={`p-1 rounded ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-400 hover:text-gray-900'} transition-colors`}>
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-        <div className="max-h-[60vh] overflow-auto">
-          {hasResults ? (
-            <div className="p-2">
-              {results.documents?.map((r, i) => {
-                const bc = getBreadcrumb(r.slug);
-                return (
-                  <button key={`d-${i}`} onClick={() => { onSelect(r.slug); onClose(); }} className={`w-full text-left px-4 py-3 rounded-lg ${theme.searchResultHover} transition-colors group`}>
-                    {bc && <div className={`text-xs ${theme.searchResultMuted} mb-1`}>{bc}</div>}
-                    <div className="flex items-center gap-2">
-                      <span className={`${theme.searchResultMuted} text-sm`}>#</span>
-                      <span className={`font-medium ${theme.searchResultTitle} transition-colors`}>{r.title}</span>
-                    </div>
-                    {r.snippet && <div className={`text-sm ${theme.searchResultSnippet} mt-1 line-clamp-2 pl-5`}>{r.snippet}</div>}
-                  </button>
-                );
-              })}
-              {results.headings?.map((r, i) => {
-                const bc = getBreadcrumb(r.slug);
-                return (
-                  <button key={`h-${i}`} onClick={() => { onSelect(r.slug); onClose(); setTimeout(() => { const el = document.getElementById(r.anchor); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 300); }}
-                    className={`w-full text-left px-4 py-3 rounded-lg ${theme.searchResultHover} transition-colors group`}>
-                    {bc && <div className={`text-xs ${theme.searchResultMuted} mb-1`}>{bc} &gt; {r.docTitle}</div>}
-                    <div className="flex items-center gap-2">
-                      <span className={`${theme.searchResultMuted} text-sm`}>{'#'.repeat(r.level || 1)}</span>
-                      <span className={`font-medium ${theme.searchResultTitle} transition-colors`}>{r.text}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          ) : query.length >= 2 ? (
-            <div className="px-4 py-12 text-center"><div className={`${theme.textMuted} mb-2`}>No results for "{query}"</div><div className={`text-sm ${theme.textSecondary}`}>Try different keywords</div></div>
-          ) : (
-            <div className="px-4 py-12 text-center"><div className={`${theme.textMuted} mb-2`}>Search documentation</div><div className={`text-sm ${theme.textSecondary}`}>Type at least 2 characters</div></div>
-          )}
-        </div>
+        {(hasResults || query.length >= 2) && (
+          <div className="max-h-[55vh] overflow-auto">
+            {hasResults ? (
+              <div className="py-2">
+                {results.documents?.map((r, i) => {
+                  const bc = getBreadcrumb(r.slug);
+                  const tabLabel = getTabLabel(r.slug);
+                  const snippet = r.snippet || (documents.find(d => d.slug === r.slug)?.content?.substring(0, 120) + '...');
+                  return (
+                    <button key={`d-${i}`} onClick={() => { onSelect(r.slug); onClose(); }}
+                      className={`w-full text-left px-5 py-3.5 ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'} transition-colors border-b ${isDark ? 'border-white/5' : 'border-gray-50'} last:border-0`}>
+                      {bc && <div className={`text-[11px] uppercase tracking-wider mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{bc.tab} &gt; {bc.group}</div>}
+                      <div className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        <HighlightMatch text={r.title} query={query} />
+                      </div>
+                      {tabLabel && <div className={`text-xs mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{tabLabel}</div>}
+                      {snippet && <div className={`text-xs leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{snippet}</div>}
+                    </button>
+                  );
+                })}
+                {results.headings?.map((r, i) => {
+                  const bc = getBreadcrumb(r.slug);
+                  return (
+                    <button key={`h-${i}`} onClick={() => { onSelect(r.slug); onClose(); setTimeout(() => { const el = document.getElementById(r.anchor); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 300); }}
+                      className={`w-full text-left px-5 py-3.5 ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'} transition-colors border-b ${isDark ? 'border-white/5' : 'border-gray-50'} last:border-0`}>
+                      {bc && <div className={`text-[11px] uppercase tracking-wider mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{bc.tab} &gt; {r.docTitle || bc.group}</div>}
+                      <div className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        <HighlightMatch text={r.text} query={query} />
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="px-5 py-10 text-center">
+                <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>No results for "<span className="font-medium">{query}</span>"</div>
+                <div className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Try different keywords</div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
