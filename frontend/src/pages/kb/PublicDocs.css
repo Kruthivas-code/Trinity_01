@@ -25,6 +25,34 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Sidebar scrollbar: hidden by default, visible on hover */
+.kb-sidebar-scroll {
+  scrollbar-width: none; /* Firefox */
+}
+.kb-sidebar-scroll::-webkit-scrollbar {
+  width: 0;
+}
+.kb-sidebar-scroll:hover {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(0,0,0,0.15) transparent;
+}
+.kb-sidebar-scroll:hover::-webkit-scrollbar {
+  width: 4px;
+}
+.kb-sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 4px;
+}
+:is(.dark) .kb-sidebar-scroll:hover {
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+:is(.dark) .kb-sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+}
+.kb-sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* Scrollbar - dark */
 .bg-\[\\#0a0a0a\] aside::-webkit-scrollbar { width: 4px; }
 .bg-\[\\#0a0a0a\] aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
