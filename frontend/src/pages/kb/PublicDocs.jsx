@@ -57,7 +57,7 @@ const THEMES = {
     id: 'light',
     bg: 'bg-white',
     navBg: 'bg-white',
-    sidebarBg: 'bg-[#f9f9fb]',
+    sidebarBg: 'bg-white',
     text: 'text-gray-900',
     textMuted: 'text-gray-500',
     textSecondary: 'text-gray-400',
