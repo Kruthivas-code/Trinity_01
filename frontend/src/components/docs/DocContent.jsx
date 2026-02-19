@@ -240,7 +240,7 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
     strong: ({ children }) => <strong className="font-semibold !text-gray-900 dark:!text-slate-100">{children}</strong>,
   }), []);
 
-  if (!content) return <div className="text-slate-500 italic" data-testid="doc-empty">No content available.</div>;
+  if (!content) return <div className="text-gray-500 dark:text-slate-500 italic" data-testid="doc-empty">No content available.</div>;
 
   return (
     <div className={`doc-content ${className}`} data-testid="doc-content">
