@@ -166,7 +166,7 @@ const RenderComponent = ({ type, items, props, content, mdComponents }) => {
     case 'Card':
       return <div className="my-6"><Card title={props?.title} icon={props?.icon} href={props?.href} color={props?.color}><NestedContent content={content} mdComponents={mdComponents} /></Card></div>;
     case 'iframe':
-      return <div className="my-6 relative w-full aspect-video rounded-xl overflow-hidden border border-slate-800"><iframe src={props?.src} title={props?.title || 'Embedded'} className="absolute inset-0 w-full h-full" frameBorder="0" allowFullScreen /></div>;
+      return <div className="my-6 relative w-full aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800"><iframe src={props?.src} title={props?.title || 'Embedded'} className="absolute inset-0 w-full h-full" frameBorder="0" allowFullScreen /></div>;
     case 'Tabs': case 'CodeGroup':
       return <Tabs>{items?.map((item, i) => <Tab key={i} label={item.label}><NestedContent content={item.content} mdComponents={mdComponents} /></Tab>)}</Tabs>;
     case 'Accordion':
