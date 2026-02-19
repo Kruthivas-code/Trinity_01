@@ -382,26 +382,6 @@ const PublicDocs = () => {
     }
   }, [documents, docSlug, selectedDoc, getFirstNavDocument, isNavigating]);
 
-  const handleTabChange = useCallback((tabId) => {
-    if (isNavigating) return;
-    setActiveTab(tabId);
-    const tab = tabs.find(t => t.id === tabId);
-    if (tab?.groups) {
-      for (const group of tab.groups) {
-        if (group.pages?.length > 0) {
-          const slug = typeof group.pages[0] === 'string' ? group.pages[0] : group.pages[0].page;
-          const doc = documents.find(d => d.slug?.toLowerCase() === slug?.toLowerCase());
-          if (doc && doc.id !== selectedDoc?.id) {
-            setIsNavigating(true);
-            setSelectedDoc(doc);
-            requestAnimationFrame(() => { navigate(`/docs/${doc.slug}`); setTimeout(() => setIsNavigating(false), 100); });
-            return;
-          }
-        }
-      }
-    }
-  }, [tabs, documents, navigate, selectedDoc, isNavigating]);
-
   const handleDocSelect = useCallback((slug) => {
     if (isNavigating) return;
     const doc = documents.find(d => d.slug?.toLowerCase() === slug?.toLowerCase());
