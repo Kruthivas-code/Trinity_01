@@ -175,7 +175,7 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
                     <div key={gi} className="mb-1">
                       <button
                         onClick={() => toggleGroup(groupKey)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${theme.text} ${theme.hover}`}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${theme.textMuted} ${theme.hoverText} ${theme.hover}`}
                         data-testid={`sidebar-group-toggle-${gi}`}
                       >
                         <span className="truncate">{group.group}</span>
