@@ -446,8 +446,6 @@ const PublicDocs = () => {
 
   return (
     <div className={`min-h-screen ${theme.bg} relative`} data-testid="kb-docs">
-      <div className="fixed inset-0 pointer-events-none z-0 bg-grid-pattern" />
-      <div className="fixed inset-0 pointer-events-none z-0 bg-hero-glow" />
 
       <TopNavigation config={config} theme={theme} mobileMenuOpen={mobileMenuOpen} onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} documents={documents} onSelect={handleDocSelect} theme={theme} config={config} />
