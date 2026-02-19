@@ -230,7 +230,7 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
     thead: ({ children }) => <thead className="bg-gray-50 dark:bg-slate-900">{children}</thead>,
     th: ({ children }) => <th className="text-left px-4 py-3 text-sm font-semibold !text-gray-900 dark:!text-slate-200 border-b border-gray-200 dark:border-slate-800">{children}</th>,
     td: ({ children }) => <td className="px-4 py-3 text-sm !text-gray-700 dark:!text-slate-300 border-b border-gray-100 dark:border-slate-800/50">{children}</td>,
-    a: ({ href, children }) => { const ext = href?.startsWith('http'); return <a href={href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined} className="text-[#188455] hover:text-[#1fa968] underline-offset-2 hover:underline">{children}</a>; },
+    a: ({ href, children }) => { const ext = href?.startsWith('http'); return <a href={href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined} className="text-[#00A1B2] hover:text-[#00bdd0] underline-offset-2 hover:underline">{children}</a>; },
     img: ({ src, alt }) => <img src={src} alt={alt} className="rounded-lg border border-gray-200 dark:border-slate-800 my-6 max-w-full" loading="lazy" />,
     hr: () => <hr className="border-gray-200 dark:border-slate-800 my-8" />,
     ul: ({ children }) => <ul className="my-4 ml-6 list-disc space-y-2 !text-gray-700 dark:!text-slate-300">{children}</ul>,
