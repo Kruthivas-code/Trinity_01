@@ -363,7 +363,7 @@ const FeedbackWidget = ({ slug, theme }) => {
           <span className={`text-sm ${theme.textMuted}`}>Was this article helpful?</span>
           <div className="flex items-center gap-3">
             <button onClick={() => submit(true)} disabled={sending}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${theme.border} text-sm ${theme.textMuted} hover:text-emerald-400 hover:border-emerald-500/40 transition-all`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${theme.border} text-sm ${theme.textMuted} hover:text-[#00A1B2] hover:border-[#00A1B2]/40 transition-all`}
               data-testid="feedback-helpful-btn">
               <ThumbsUp className="w-4 h-4" />Yes
             </button>
