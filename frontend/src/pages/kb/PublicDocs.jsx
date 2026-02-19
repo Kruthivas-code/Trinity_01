@@ -11,7 +11,6 @@ import {
   ThumbsUp, ThumbsDown, Sun, Moon
 } from 'lucide-react';
 import { DocContent } from '../../components/docs/DocContent';
-import { getIcon } from '../../components/docs/IconPicker';
 import { search, initializeSearch } from '../../lib/search';
 import './PublicDocs.css';
 
