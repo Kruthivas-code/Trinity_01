@@ -528,7 +528,7 @@ const PublicDocs = () => {
   if (loading) {
     return (
       <div className={`min-h-screen ${theme.bg} flex items-center justify-center`}>
-        <div className="animate-spin w-8 h-8 border-2 border-[#188455] border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-2 border-[#00A1B2] border-t-transparent rounded-full" />
       </div>
     );
   }
