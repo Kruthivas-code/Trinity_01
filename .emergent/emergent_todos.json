@@ -1,34 +1,18 @@
 [
   {
-    "content": "Step 1: Extract 4 Modal Components (MergeTicketModal, LinkTicketModal, SplitTicketModal, FeatureRequestModal)",
+    "content": "Fix CORS: add localhost origins to backend .env ALLOWED_ORIGINS",
     "status": "completed"
   },
   {
-    "content": "Step 2: Extract EmailMessage component to its own file",
+    "content": "Fix Socket.IO CORS: replace wildcard with specific origins in realtime.py",
     "status": "completed"
   },
   {
-    "content": "Step 3: Extract useTicketDrawer custom hook",
+    "content": "Fix WebSocket HMR: change WDS_SOCKET_PORT to auto-detect in frontend .env",
+    "status": "completed"
+  },
+  {
+    "content": "Restart backend and frontend, then verify fixes",
     "status": "in_progress"
-  },
-  {
-    "content": "Step 4: Extract TicketDetailsPanel (right sidebar)",
-    "status": "pending"
-  },
-  {
-    "content": "Step 5: Extract CustomerHistoryPanel (left sidebar)",
-    "status": "pending"
-  },
-  {
-    "content": "Step 6: Extract TicketConversation (middle panel)",
-    "status": "pending"
-  },
-  {
-    "content": "Step 7: Rewrite TicketDrawer.js as thin shell",
-    "status": "pending"
-  },
-  {
-    "content": "Verify: Lint, build, and browser test",
-    "status": "pending"
   }
 ]

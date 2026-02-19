@@ -21,10 +21,20 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Build allowed origins for Socket.IO CORS (must match server.py CORS config)
+_sio_origins = os.environ.get("ALLOWED_ORIGINS", "").split(",")
+if not _sio_origins or _sio_origins == [""]:
+    _sio_origins = [
+        "https://ticket-triage-4.preview.emergentagent.com",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ]
+_sio_origins = [o.strip() for o in _sio_origins if o.strip()]
+
 # Create Socket.IO server with async mode
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins='*',
+    cors_allowed_origins=_sio_origins,
     logger=True,
     engineio_logger=True
 )
