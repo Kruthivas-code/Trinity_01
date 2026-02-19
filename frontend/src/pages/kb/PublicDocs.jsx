@@ -375,7 +375,7 @@ const FeedbackWidget = ({ slug, theme }) => {
           </div>
         </>
       ) : (
-        <span className={`text-sm ${submitted ? 'text-emerald-400' : 'text-slate-400'}`} data-testid="feedback-thanks">
+        <span className={`text-sm ${submitted ? 'text-[#00A1B2]' : 'text-slate-400'}`} data-testid="feedback-thanks">
           {submitted ? 'Glad this helped!' : 'Thanks for letting us know. We\'ll improve this article.'}
         </span>
       )}
