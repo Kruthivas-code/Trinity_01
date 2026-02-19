@@ -161,9 +161,9 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
             const groups = tab.groups || [];
 
             return (
-              <div key={tab.id} className="mb-2" data-testid={`sidebar-tab-${tab.id}`}>
+              <div key={tab.id} className="mb-4" data-testid={`sidebar-tab-${tab.id}`}>
                 {tabs.length > 1 && (
-                  <div className={`px-3 pt-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider ${theme.textSecondary}`} data-testid={`sidebar-tab-label-${tab.id}`}>
+                  <div className={`px-3 mb-3 text-base font-bold ${theme.text}`} data-testid={`sidebar-tab-label-${tab.id}`}>
                     {tab.label}
                   </div>
                 )}
@@ -176,30 +176,27 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
                     <div key={gi} className="mb-1">
                       <button
                         onClick={() => toggleGroup(groupKey)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${theme.text} ${theme.hover}`}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${theme.text} ${theme.hover}`}
                         data-testid={`sidebar-group-toggle-${gi}`}
                       >
-                        <ChevronDown className={`w-3.5 h-3.5 ${theme.textSecondary} transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
-                        <span className="flex-1 text-left truncate">{group.group}</span>
+                        <span className="truncate">{group.group}</span>
+                        <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 ${theme.textSecondary} transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
                       </button>
 
                       {!isCollapsed && (
-                        <div className="ml-1 space-y-px">
+                        <div className="mt-0.5 space-y-px">
                           {group.pages?.map((page, pi) => {
                             const pageSlug = typeof page === 'string' ? page : page.page;
                             const doc = documents.find(d => d.slug?.toLowerCase() === pageSlug?.toLowerCase());
                             const title = typeof page === 'string' ? doc?.title || page : page.title || page.page;
-                            const pageIcon = typeof page === 'object' ? page.icon : null;
-                            const PageIcon = pageIcon ? getIcon(pageIcon) : null;
                             const isActive = pageSlug?.toLowerCase() === selectedDocSlug?.toLowerCase();
                             const isMissing = !doc;
 
                             return (
                               <button key={pi} onClick={() => { if (!isMissing) { onDocSelect(pageSlug); onMobileClose(); } }} disabled={isMissing}
-                                className={`w-full flex items-center gap-2.5 pl-4 pr-3 py-2 rounded-lg text-[13.5px] leading-snug transition-colors ${isActive ? `${theme.activeBg} ${theme.activeText} font-medium` : isMissing ? 'text-gray-400 cursor-not-allowed' : `${theme.textMuted} ${theme.hover} ${theme.hoverText}`}`}
+                                className={`w-full text-left pl-6 pr-3 py-2 rounded-lg text-[13.5px] leading-snug transition-colors ${isActive ? `${theme.activeBg} ${theme.activeText} font-medium` : isMissing ? 'text-gray-400 cursor-not-allowed' : `${theme.textMuted} ${theme.hover} ${theme.hoverText}`}`}
                                 data-testid={`sidebar-page-${pageSlug}`}>
-                                {PageIcon && <PageIcon className={`w-4 h-4 flex-shrink-0 ${isMissing ? 'opacity-50' : ''}`} />}
-                                <span className={`truncate ${isMissing ? 'italic opacity-50' : ''}`}>{title}</span>
+                                <span className={isMissing ? 'italic opacity-50' : ''}>{title}</span>
                               </button>
                             );
                           })}
