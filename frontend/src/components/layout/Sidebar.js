@@ -70,17 +70,17 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
 
   const escalationFolders = [
     { 
-      id: 'l1', level: 'L1', label: 'L1 - Basic', icon: Inbox,
+      id: 'l1', level: 'L1', label: 'L1', icon: Inbox,
       dotColor: 'bg-emerald-500', chipBg: 'bg-emerald-50', chipText: 'text-emerald-800', chipBorder: 'border-emerald-200',
       path: '/all-tickets?level=L1'
     },
     { 
-      id: 'l2', level: 'L2', label: 'L2 - Intermediate', icon: AlertTriangle,
+      id: 'l2', level: 'L2', label: 'L2', icon: AlertTriangle,
       dotColor: 'bg-amber-500', chipBg: 'bg-amber-50', chipText: 'text-amber-900', chipBorder: 'border-amber-200',
       path: '/all-tickets?level=L2'
     },
     { 
-      id: 'l3', level: 'L3', label: 'L3 - Advanced', icon: Zap,
+      id: 'l3', level: 'L3', label: 'L3', icon: Zap,
       dotColor: 'bg-rose-500', chipBg: 'bg-rose-50', chipText: 'text-rose-800', chipBorder: 'border-rose-200',
       path: '/all-tickets?level=L3'
     },
