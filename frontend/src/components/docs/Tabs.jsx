@@ -8,13 +8,13 @@ export const Tabs = ({ children, defaultTab = 0, className = '' }) => {
 
   return (
     <div className={`tabs-container my-6 ${className}`} data-testid="tabs">
-      <div className="flex border-b border-slate-800 overflow-x-auto">
+      <div className="flex border-b border-gray-200 dark:border-slate-800 overflow-x-auto">
         {tabs.map((tab, index) => (
           <button key={index} onClick={() => setActiveTab(index)}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
               activeTab === index
                 ? 'text-[#188455] border-[#188455]'
-                : 'text-slate-400 border-transparent hover:text-white hover:border-slate-600'
+                : 'text-gray-400 dark:text-slate-400 border-transparent hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-600'
             }`}
             data-testid={`tab-${index}`}>
             {tab.props.label || `Tab ${index + 1}`}

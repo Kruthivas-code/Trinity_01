@@ -32,14 +32,14 @@ export const Step = ({ title, children, stepNumber = 1, isLast = false, icon = n
             <span className="text-sm font-semibold text-white">{stepNumber}</span>
           )}
         </div>
-        <h4 className="text-lg font-semibold !text-white">{title}</h4>
+        <h4 className="text-lg font-semibold !text-gray-900 dark:!text-white">{title}</h4>
       </div>
       <div className="flex gap-4">
         <div className="w-8 flex justify-center flex-shrink-0">
           {!isLast && <div className="w-0.5 h-full bg-[#188455]/30 min-h-[40px]" />}
         </div>
         <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-6'}`}>
-          <div className="text-[15px] !text-slate-400 leading-relaxed [&>p]:mb-3 [&>p:last-child]:mb-0">
+          <div className="text-[15px] !text-gray-600 dark:!text-slate-400 leading-relaxed [&>p]:mb-3 [&>p:last-child]:mb-0">
             {children}
           </div>
         </div>

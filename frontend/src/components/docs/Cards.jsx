@@ -46,13 +46,13 @@ export const Card = ({ title, children, href, icon, color, className = '' }) => 
     <>
       {IconComponent && (
         <div className="mb-4">
-          <div className="w-10 h-10 rounded-lg bg-slate-800/50 border border-slate-700/50 flex items-center justify-center"
+          <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700/50 flex items-center justify-center"
             style={color ? { borderColor: `${color}30` } : {}}>
-            <IconComponent className="w-5 h-5" color={color || '#FFFFFF'} />
+            <IconComponent className="w-5 h-5 text-gray-700 dark:text-white" style={color ? { color } : {}} />
           </div>
         </div>
       )}
-      <h4 className="text-base font-semibold !text-white mb-2 group-hover:text-emerald-400 transition-colors flex items-center gap-2">
+      <h4 className="text-base font-semibold !text-gray-900 dark:!text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-emerald-400 transition-colors flex items-center gap-2">
         {title}
         {href && (
           <span className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -60,7 +60,7 @@ export const Card = ({ title, children, href, icon, color, className = '' }) => 
           </span>
         )}
       </h4>
-      <div className="text-sm !text-slate-400 leading-relaxed [&_p]:!text-slate-400 [&_p]:!m-0">
+      <div className="text-sm !text-gray-600 dark:!text-slate-400 leading-relaxed [&_p]:!text-gray-600 dark:[&_p]:!text-slate-400 [&_p]:!m-0">
         {children}
       </div>
     </>
@@ -69,7 +69,7 @@ export const Card = ({ title, children, href, icon, color, className = '' }) => 
   if (href) {
     return (
       <button onClick={handleClick}
-        className={`card group text-left w-full p-5 bg-slate-900/30 hover:bg-slate-900/60 border border-slate-800/60 hover:border-slate-700 rounded-xl transition-all duration-200 ${className}`}
+        className={`card group text-left w-full p-5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-900/30 dark:hover:bg-slate-900/60 border border-gray-200 hover:border-gray-300 dark:border-slate-800/60 dark:hover:border-slate-700 rounded-xl transition-all duration-200 ${className}`}
         data-testid="card">
         {content}
       </button>
@@ -77,7 +77,7 @@ export const Card = ({ title, children, href, icon, color, className = '' }) => 
   }
 
   return (
-    <div className={`card group p-5 bg-slate-900/30 border border-slate-800/60 rounded-xl ${className}`} data-testid="card">
+    <div className={`card group p-5 bg-gray-50 dark:bg-slate-900/30 border border-gray-200 dark:border-slate-800/60 rounded-xl ${className}`} data-testid="card">
       {content}
     </div>
   );
