@@ -331,7 +331,7 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
   const isDark = theme.id === 'dark';
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh]">
       <div className={`fixed inset-0 ${isDark ? 'bg-black/70' : 'bg-white/70'} backdrop-blur-md`} onClick={onClose} />
       <div className={`relative w-full max-w-[620px] mx-4 ${isDark ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-gray-200'} border rounded-2xl shadow-2xl overflow-hidden`}>
         <div className={`flex items-center gap-3 px-5 py-4 ${hasResults || query.length >= 2 ? `border-b ${isDark ? 'border-white/10' : 'border-gray-100'}` : ''}`}>
