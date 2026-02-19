@@ -275,13 +275,13 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh]">
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl mx-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-slate-700">
-          <Search className="w-5 h-5 text-slate-400" />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative w-full max-w-2xl mx-4 ${theme.searchDialogBg} rounded-xl shadow-2xl overflow-hidden`}>
+        <div className={`flex items-center gap-3 px-4 py-4 border-b ${theme.searchDialogBorder}`}>
+          <Search className={`w-5 h-5 ${theme.searchResultMuted}`} />
           <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search documentation..."
-            className="flex-1 bg-transparent text-white text-lg placeholder:text-slate-500 outline-none" data-testid="search-input" />
-          <kbd className="px-2 py-1 text-xs text-slate-400 bg-slate-800 rounded border border-slate-700">ESC</kbd>
+            className={`flex-1 bg-transparent text-lg outline-none ${theme.searchDialogInput}`} data-testid="search-input" />
+          <kbd className={`px-2 py-1 text-xs rounded border ${theme.searchDialogKbd}`}>ESC</kbd>
         </div>
         <div className="max-h-[60vh] overflow-auto">
           {hasResults ? (
@@ -289,13 +289,13 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
               {results.documents?.map((r, i) => {
                 const bc = getBreadcrumb(r.slug);
                 return (
-                  <button key={`d-${i}`} onClick={() => { onSelect(r.slug); onClose(); }} className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors group">
-                    {bc && <div className="text-xs text-slate-500 mb-1">{bc}</div>}
+                  <button key={`d-${i}`} onClick={() => { onSelect(r.slug); onClose(); }} className={`w-full text-left px-4 py-3 rounded-lg ${theme.searchResultHover} transition-colors group`}>
+                    {bc && <div className={`text-xs ${theme.searchResultMuted} mb-1`}>{bc}</div>}
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-500 text-sm">#</span>
-                      <span className="font-medium text-white group-hover:text-emerald-400 transition-colors">{r.title}</span>
+                      <span className={`${theme.searchResultMuted} text-sm`}>#</span>
+                      <span className={`font-medium ${theme.searchResultTitle} transition-colors`}>{r.title}</span>
                     </div>
-                    {r.snippet && <div className="text-sm text-slate-400 mt-1 line-clamp-2 pl-5">{r.snippet}</div>}
+                    {r.snippet && <div className={`text-sm ${theme.searchResultSnippet} mt-1 line-clamp-2 pl-5`}>{r.snippet}</div>}
                   </button>
                 );
               })}
@@ -303,20 +303,20 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
                 const bc = getBreadcrumb(r.slug);
                 return (
                   <button key={`h-${i}`} onClick={() => { onSelect(r.slug); onClose(); setTimeout(() => { const el = document.getElementById(r.anchor); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 300); }}
-                    className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors group">
-                    {bc && <div className="text-xs text-slate-500 mb-1">{bc} &gt; {r.docTitle}</div>}
+                    className={`w-full text-left px-4 py-3 rounded-lg ${theme.searchResultHover} transition-colors group`}>
+                    {bc && <div className={`text-xs ${theme.searchResultMuted} mb-1`}>{bc} &gt; {r.docTitle}</div>}
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-500 text-sm">{'#'.repeat(r.level || 1)}</span>
-                      <span className="font-medium text-white group-hover:text-emerald-400 transition-colors">{r.text}</span>
+                      <span className={`${theme.searchResultMuted} text-sm`}>{'#'.repeat(r.level || 1)}</span>
+                      <span className={`font-medium ${theme.searchResultTitle} transition-colors`}>{r.text}</span>
                     </div>
                   </button>
                 );
               })}
             </div>
           ) : query.length >= 2 ? (
-            <div className="px-4 py-12 text-center"><div className="text-slate-400 mb-2">No results for "{query}"</div><div className="text-sm text-slate-500">Try different keywords</div></div>
+            <div className="px-4 py-12 text-center"><div className={`${theme.textMuted} mb-2`}>No results for "{query}"</div><div className={`text-sm ${theme.textSecondary}`}>Try different keywords</div></div>
           ) : (
-            <div className="px-4 py-12 text-center"><div className="text-slate-400 mb-2">Search documentation</div><div className="text-sm text-slate-500">Type at least 2 characters</div></div>
+            <div className="px-4 py-12 text-center"><div className={`${theme.textMuted} mb-2`}>Search documentation</div><div className={`text-sm ${theme.textSecondary}`}>Type at least 2 characters</div></div>
           )}
         </div>
       </div>
