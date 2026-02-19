@@ -109,10 +109,10 @@ const YouTubeEmbed = ({ id, title }) => {
   }
   return (
     <div className="my-6 relative z-10" data-testid="youtube-embed">
-      <div className="relative w-full rounded-xl overflow-hidden border border-slate-800 shadow-lg bg-slate-900" style={{ paddingBottom: '56.25%' }}>
+      <div className="relative w-full rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800 shadow-lg bg-gray-50 dark:bg-slate-900" style={{ paddingBottom: '56.25%' }}>
         <iframe className="absolute inset-0 w-full h-full" src={`https://www.youtube.com/embed/${videoId}`} title={title || 'Video'} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
       </div>
-      {title && title.trim() && <p className="mt-2 text-sm text-slate-400 text-center">{title}</p>}
+      {title && title.trim() && <p className="mt-2 text-sm text-gray-500 dark:text-slate-400 text-center">{title}</p>}
     </div>
   );
 };
@@ -123,10 +123,10 @@ const LoomEmbed = ({ id, title }) => {
   if (id.includes('loom.com')) { const m = id.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/); if (m) loomId = m[1]; }
   return (
     <div className="my-6 relative z-10" data-testid="loom-embed">
-      <div className="relative w-full rounded-xl overflow-hidden border border-slate-800 shadow-lg bg-slate-900" style={{ paddingBottom: '56.25%' }}>
+      <div className="relative w-full rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800 shadow-lg bg-gray-50 dark:bg-slate-900" style={{ paddingBottom: '56.25%' }}>
         <iframe className="absolute inset-0 w-full h-full" src={`https://www.loom.com/embed/${loomId}`} title={title || 'Video'} frameBorder="0" allowFullScreen />
       </div>
-      {title && title.trim() && <p className="mt-2 text-sm text-slate-400 text-center">{title}</p>}
+      {title && title.trim() && <p className="mt-2 text-sm text-gray-500 dark:text-slate-400 text-center">{title}</p>}
     </div>
   );
 };
@@ -135,11 +135,11 @@ const Figure = ({ src, alt, caption }) => {
   if (!src) return null;
   return (
     <figure className="my-6 relative z-10" data-testid="figure">
-      <div className="rounded-xl overflow-hidden border border-slate-800 shadow-lg bg-slate-900">
+      <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800 shadow-lg bg-gray-50 dark:bg-slate-900">
         <img src={src} alt={alt || caption || 'Image'} className="w-full h-auto" loading="lazy" />
       </div>
       {caption && caption.trim() && (
-        <figcaption className="mt-2 text-sm text-slate-400 text-center">{caption}</figcaption>
+        <figcaption className="mt-2 text-sm text-gray-500 dark:text-slate-400 text-center">{caption}</figcaption>
       )}
     </figure>
   );
