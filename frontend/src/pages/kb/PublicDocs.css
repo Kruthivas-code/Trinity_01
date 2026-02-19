@@ -49,7 +49,9 @@ aside::-webkit-scrollbar-track { background: transparent; }
 /* Callout body: flatten code blocks and lists into flowing text */
 .callout-body > p { margin: 0; }
 .callout-body > p:not(:last-child) { margin-bottom: 0.5rem; }
-.callout-body > div[class*="text-slate"] { color: #e2e8f0; }
+
+/* Dark mode callout body */
+:is(.dark) .callout-body > div[class*="text-slate"] { color: #e2e8f0; }
 
 /* Hide code block wrapper entirely, show content as plain text */
 .callout-body .code-block {
@@ -69,8 +71,20 @@ aside::-webkit-scrollbar-track { background: transparent; }
   padding: 0 !important;
   margin: 0 !important;
   white-space: pre-wrap !important;
+}
+:is(.dark) .callout-body .code-block pre,
+:is(.dark) .callout-body .code-block pre[class*="language-"] {
   color: #e2e8f0 !important;
 }
+.callout-body .code-block pre,
+.callout-body .code-block pre[class*="language-"] {
+  color: #374151 !important;
+}
+:is(.dark) .callout-body .code-block pre,
+:is(.dark) .callout-body .code-block pre[class*="language-"] {
+  color: #e2e8f0 !important;
+}
+
 /* Override inline styles from SyntaxHighlighter */
 .callout-body .code-block pre[style],
 .callout-body .code-block code[style] {
@@ -78,17 +92,24 @@ aside::-webkit-scrollbar-track { background: transparent; }
   font-family: inherit !important;
   font-size: inherit !important;
   line-height: inherit !important;
+}
+:is(.dark) .callout-body .code-block pre[style],
+:is(.dark) .callout-body .code-block code[style] {
   color: #e2e8f0 !important;
 }
 .callout-body .code-block span[style] {
-  color: #e2e8f0 !important;
   font-family: inherit !important;
+}
+:is(.dark) .callout-body .code-block span[style] {
+  color: #e2e8f0 !important;
 }
 .callout-body .code-block pre code {
   background: none !important;
-  color: #e2e8f0 !important;
   font-family: inherit !important;
   font-size: inherit !important;
+}
+:is(.dark) .callout-body .code-block pre code {
+  color: #e2e8f0 !important;
 }
 /* Also target plain <pre><code> blocks (unlabeled code blocks) */
 .callout-body > pre,
@@ -101,6 +122,10 @@ aside::-webkit-scrollbar-track { background: transparent; }
   font-size: inherit !important;
   line-height: inherit !important;
   white-space: pre-wrap !important;
+  color: #374151 !important;
+}
+:is(.dark) .callout-body > pre,
+:is(.dark) .callout-body pre {
   color: #e2e8f0 !important;
 }
 .callout-body pre > code,
@@ -108,8 +133,12 @@ aside::-webkit-scrollbar-track { background: transparent; }
   background: none !important;
   font-family: inherit !important;
   font-size: inherit !important;
-  color: #e2e8f0 !important;
   padding: 0 !important;
+  color: #374151 !important;
+}
+:is(.dark) .callout-body pre > code,
+:is(.dark) .callout-body code {
+  color: #e2e8f0 !important;
 }
 .callout-body ul,
 .callout-body ol {
