@@ -555,14 +555,14 @@ const PublicDocs = () => {
             <div className={`flex flex-col sm:flex-row justify-between gap-4 mt-16 pt-8 border-t ${theme.border}`} data-testid="kb-prev-next">
               {prevDoc ? (
                 <button onClick={() => handleDocSelect(prevDoc.slug)} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${theme.border} ${theme.hover} transition-colors`} data-testid="prev-doc-btn">
-                  <ArrowLeft className="w-4 h-4 text-slate-500" />
-                  <div className="text-left"><span className="block text-xs text-slate-500">Previous</span><span className={`text-sm font-medium ${theme.text}`}>{prevDoc.title}</span></div>
+                  <ArrowLeft className={`w-4 h-4 ${theme.navArrowColor}`} />
+                  <div className="text-left"><span className={`block text-xs ${theme.navArrowColor}`}>Previous</span><span className={`text-sm font-medium ${theme.text}`}>{prevDoc.title}</span></div>
                 </button>
               ) : <div />}
               {nextDoc && (
                 <button onClick={() => handleDocSelect(nextDoc.slug)} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${theme.border} ${theme.hover} transition-colors`} data-testid="next-doc-btn">
-                  <div className="text-right"><span className="block text-xs text-slate-500">Next</span><span className={`text-sm font-medium ${theme.text}`}>{nextDoc.title}</span></div>
-                  <ArrowRight className="w-4 h-4 text-slate-500" />
+                  <div className="text-right"><span className={`block text-xs ${theme.navArrowColor}`}>Next</span><span className={`text-sm font-medium ${theme.text}`}>{nextDoc.title}</span></div>
+                  <ArrowRight className={`w-4 h-4 ${theme.navArrowColor}`} />
                 </button>
               )}
             </div>
