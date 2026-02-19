@@ -144,7 +144,7 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
           <button onClick={onSearchOpen} className={`w-full flex items-center gap-3 px-3 py-2.5 ${theme.inputBg} rounded-lg text-sm ${theme.textMuted} transition-colors`} data-testid="sidebar-search">
             <Search className="w-4 h-4" />
             <span className="flex-1 text-left">Search...</span>
-            <kbd className="px-1.5 py-0.5 text-xs rounded bg-white/10 text-slate-400">&#8984;K</kbd>
+            <kbd className={`px-1.5 py-0.5 text-xs rounded ${theme.kbdBg}`}>&#8984;K</kbd>
           </button>
         </div>
 
