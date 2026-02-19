@@ -156,7 +156,7 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 pb-4" data-testid="kb-nav-tree">
+        <nav className="flex-1 overflow-y-auto px-3 pt-4 pb-4" data-testid="kb-nav-tree">
           {tabs.map((tab) => {
             const TabIcon = tab.icon ? getIcon(tab.icon) : null;
             const isTabActive = activeTab === tab.id;
