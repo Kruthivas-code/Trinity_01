@@ -421,6 +421,13 @@ const PublicDocs = () => {
     return () => { document.documentElement.classList.remove('dark'); };
   }, [isDark]);
 
+  const tabs = useMemo(() => {
+    const rawTabs = config?.navigation?.tabs || [];
+    return rawTabs.length > 0
+      ? rawTabs.map(t => ({ id: t.id || t.label, label: t.label || t.id, icon: t.icon, groups: t.groups || [] }))
+      : [{ id: 'docs', label: 'Documentation', groups: documents.length > 0 ? [{ group: 'Documentation', pages: documents.map(d => ({ page: d.slug, title: d.title })) }] : [] }];
+  }, [config?.navigation, documents]);
+
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch(`${API}/api/kb/public-data`);
