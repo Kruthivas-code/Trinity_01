@@ -92,7 +92,7 @@ const Callout = ({ type, title, children }) => {
         <div className={`flex-shrink-0 mt-0.5 ${config.iconColor}`}><Icon className="w-5 h-5" /></div>
         <div className="flex-1 min-w-0">
           {displayTitle && <p className={`font-semibold ${config.iconColor} mb-1`}>{displayTitle}</p>}
-          <div className="text-[15px] leading-relaxed text-slate-200 callout-body">{children}</div>
+          <div className="text-[15px] leading-relaxed text-gray-700 dark:text-slate-200 callout-body">{children}</div>
         </div>
       </div>
     </div>
