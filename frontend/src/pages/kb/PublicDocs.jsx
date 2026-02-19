@@ -397,17 +397,29 @@ const PublicDocs = () => {
   const [toc, setToc] = useState([]);
   const [activeTab, setActiveTab] = useState('');
   const [isNavigating, setIsNavigating] = useState(false);
+  const [kbTheme, setKbTheme] = useState(() => {
+    return localStorage.getItem('kb-theme') || 'light';
+  });
 
-  const theme = THEMES.dark;
+  const isDark = kbTheme === 'dark';
+  const theme = isDark ? THEMES.dark : THEMES.light;
 
-  const tabs = useMemo(() => {
-    const rawTabs = config?.navigation?.tabs || [];
-    return rawTabs.length > 0
-      ? rawTabs.map(t => ({ id: t.id || t.label, label: t.label || t.id, icon: t.icon, groups: t.groups || [] }))
-      : [{ id: 'docs', label: 'Documentation', groups: documents.length > 0 ? [{ group: 'Documentation', pages: documents.map(d => ({ page: d.slug, title: d.title })) }] : [] }];
-  }, [config?.navigation, documents]);
+  const toggleKbTheme = useCallback(() => {
+    setKbTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kb-theme', next);
+      return next;
+    });
+  }, []);
 
-  useEffect(() => { document.documentElement.classList.add('dark'); }, []);
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    return () => { document.documentElement.classList.remove('dark'); };
+  }, [isDark]);
 
   const fetchData = useCallback(async () => {
     try {
