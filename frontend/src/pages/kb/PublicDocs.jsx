@@ -184,7 +184,7 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
 
                         return (
                           <button key={pi} onClick={() => { if (!isMissing) { onDocSelect(pageSlug); onMobileClose(); } }} disabled={isMissing}
-                            className={`w-full flex items-center gap-3 ${tabs.length > 1 ? 'pl-5' : 'pl-3'} pr-3 py-2 rounded-lg text-sm transition-all ${isActive ? `${theme.activeBg} ${theme.activeText} border-l-2 border-[#188455] -ml-[2px]` : isMissing ? 'text-slate-600 cursor-not-allowed' : `${theme.textMuted} ${theme.hover}`}`}
+                            className={`w-full flex items-center gap-3 ${tabs.length > 1 ? 'pl-5' : 'pl-3'} pr-3 py-2 rounded-lg text-sm transition-all ${isActive ? `${theme.activeBg} ${theme.activeAccent} font-medium border-l-2 border-blue-500 -ml-[2px]` : isMissing ? 'text-gray-400 cursor-not-allowed' : `${theme.textMuted} ${theme.hover}`}`}
                             data-testid={`sidebar-page-${pageSlug}`}>
                             {PageIcon && <PageIcon className={`w-4 h-4 flex-shrink-0 ${isMissing ? 'opacity-50' : ''}`} />}
                             <span className={`truncate ${isMissing ? 'italic opacity-50' : ''}`}>{title}</span>
