@@ -108,14 +108,6 @@ const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onTh
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <button
-            onClick={onThemeToggle}
-            className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`}
-            data-testid="kb-theme-toggle"
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
           <Link to="/portal"
             className={`hidden sm:flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg border ${theme.ctaSecondaryBorder} ${theme.ctaSecondaryText} transition-colors`}
             data-testid="need-help-button">
@@ -127,6 +119,14 @@ const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onTh
             <span>Try Emergent</span>
             <ArrowRight className="w-4 h-4" />
           </a>
+          <button
+            onClick={onThemeToggle}
+            className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`}
+            data-testid="kb-theme-toggle"
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
           <button className={`lg:hidden p-2 rounded-lg ${theme.hover} ${theme.text}`} onClick={onMobileMenuToggle} data-testid="mobile-nav-toggle">
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
