@@ -368,7 +368,7 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
                         <HighlightMatch text={r.title} query={query} />
                       </div>
                       {tabLabel && <div className={`text-xs mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{tabLabel}</div>}
-                      {snippet && <div className={`text-xs leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{snippet}</div>}
+                      {snippet && <div className={`text-xs leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}><HighlightMatch text={snippet} query={query} /></div>}
                     </button>
                   );
                 })}
