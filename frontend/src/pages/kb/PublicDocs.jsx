@@ -91,22 +91,30 @@ const THEMES = {
 };
 
 // ============= TOP NAVIGATION =============
-const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle }) => {
+const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onThemeToggle, isDark }) => {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 ${theme.navBg} border-b ${theme.border}`} data-testid="kb-header">
       <div className="h-14 px-4 sm:px-6 flex items-center justify-between">
         <a href="https://app.emergent.sh" className="flex items-center gap-2 flex-shrink-0" data-testid="logo-link">
-          <img src="/images/emergent-logo-dark.png" alt="Emergent" className="h-6" />
+          <img src="/images/emergent-logo-dark.png" alt="Emergent" className={`h-6 ${theme.logoInvert ? 'invert' : ''}`} />
         </a>
 
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            onClick={onThemeToggle}
+            className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`}
+            data-testid="kb-theme-toggle"
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
           <Link to="/portal"
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 text-slate-400 hover:text-white text-sm font-medium rounded-lg border border-white/10 hover:border-white/20 transition-colors"
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg border ${theme.ctaSecondaryBorder} ${theme.ctaSecondaryText} transition-colors`}
             data-testid="need-help-button">
             <span>Need Help</span>
           </Link>
           <a href="https://app.emergent.sh"
-            className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#188455] hover:bg-[#157149] text-white text-sm font-medium rounded-lg transition-colors"
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 ${theme.ctaPrimaryBg} text-sm font-medium rounded-lg transition-colors`}
             data-testid="cta-button">
             <span>Try Emergent</span>
             <ArrowRight className="w-4 h-4" />
