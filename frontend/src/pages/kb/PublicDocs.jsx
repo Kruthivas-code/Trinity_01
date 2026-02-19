@@ -34,34 +34,15 @@ const THEMES = {
 };
 
 // ============= TOP NAVIGATION =============
-const TopNavigation = ({ config, tabs, activeTab, onTabChange, theme, mobileMenuOpen, onMobileMenuToggle }) => {
-  const navbar = config?.navbar || {};
-  const links = navbar.links || [];
-  const primaryCta = navbar.primary || { label: 'Try Emergent', href: 'https://app.emergent.sh' };
-
+const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle }) => {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 ${theme.navBg} border-b ${theme.border}`} data-testid="kb-header">
-      <div className="h-14 px-4 sm:px-6 flex items-center">
-        <a href="https://app.emergent.sh" className="flex items-center gap-2 flex-shrink-0 mr-4 lg:mr-8" data-testid="logo-link">
+      <div className="h-14 px-4 sm:px-6 flex items-center justify-between">
+        <a href="https://app.emergent.sh" className="flex items-center gap-2 flex-shrink-0" data-testid="logo-link">
           <img src="/images/emergent-logo-dark.png" alt="Emergent" className="h-6" />
         </a>
 
-        <nav className="hidden lg:flex items-center gap-1 flex-1 justify-center" data-testid="kb-top-nav">
-          {tabs.map((tab) => {
-            const TabIcon = tab.icon ? getIcon(tab.icon) : null;
-            const isActive = activeTab === tab.id;
-            return (
-              <button key={tab.id} onClick={() => onTabChange(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${isActive ? `${theme.activeBg} ${theme.activeText}` : `${theme.textMuted} ${theme.hover}`}`}
-                data-testid={`tab-${tab.id}`}>
-                {TabIcon && <TabIcon className="w-4 h-4" />}
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="flex items-center gap-3 sm:gap-4 ml-auto">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Link to="/portal"
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#188455] hover:bg-[#157149] text-white text-sm font-medium rounded-lg transition-colors"
             data-testid="cta-button">
