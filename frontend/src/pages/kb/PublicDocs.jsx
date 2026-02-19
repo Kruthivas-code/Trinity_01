@@ -138,10 +138,10 @@ const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onTh
 
 // ============= LEFT SIDEBAR =============
 const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect, theme, onSearchOpen, mobileOpen, onMobileClose }) => {
-  const [collapsedTabs, setCollapsedTabs] = useState({});
+  const [collapsedGroups, setCollapsedGroups] = useState({});
 
-  const toggleTab = (tabId) => {
-    setCollapsedTabs(prev => ({ ...prev, [tabId]: !prev[tabId] }));
+  const toggleGroup = (key) => {
+    setCollapsedGroups(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
@@ -158,44 +158,56 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
 
         <nav className="flex-1 overflow-y-auto overscroll-contain px-4 pt-5 pb-6 kb-sidebar-scroll" data-testid="kb-nav-tree">
           {tabs.map((tab) => {
-            const isCollapsed = collapsedTabs[tab.id] === true;
             const groups = tab.groups || [];
 
             return (
-              <div key={tab.id} className="mb-1" data-testid={`sidebar-tab-${tab.id}`}>
+              <div key={tab.id} className="mb-2" data-testid={`sidebar-tab-${tab.id}`}>
                 {tabs.length > 1 && (
-                  <button
-                    onClick={() => toggleTab(tab.id)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-bold transition-colors ${theme.text} ${theme.hover}`}
-                    data-testid={`sidebar-tab-toggle-${tab.id}`}
-                  >
-                    <span className="flex-1 text-left truncate">{tab.label}</span>
-                    <ChevronDown className={`w-3.5 h-3.5 ${theme.textSecondary} transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
-                  </button>
+                  <div className={`px-3 pt-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider ${theme.textSecondary}`} data-testid={`sidebar-tab-label-${tab.id}`}>
+                    {tab.label}
+                  </div>
                 )}
 
-                {!isCollapsed && groups.map((group, gi) => (
-                  <div key={gi} className={`${tabs.length > 1 ? 'mt-2 mb-6' : 'mb-7'}`}>
-                    <h3 className={`px-3 ${tabs.length > 1 ? 'pl-3' : ''} mb-1.5 text-sm font-bold ${theme.text}`}>{group.group}</h3>
-                    <div className="space-y-px">
-                      {group.pages?.map((page, pi) => {
-                        const pageSlug = typeof page === 'string' ? page : page.page;
-                        const doc = documents.find(d => d.slug?.toLowerCase() === pageSlug?.toLowerCase());
-                        const title = typeof page === 'string' ? doc?.title || page : page.title || page.page;
-                        const isActive = pageSlug?.toLowerCase() === selectedDocSlug?.toLowerCase();
-                        const isMissing = !doc;
+                {groups.map((group, gi) => {
+                  const groupKey = `${tab.id}-${gi}`;
+                  const isCollapsed = collapsedGroups[groupKey] === true;
 
-                        return (
-                          <button key={pi} onClick={() => { if (!isMissing) { onDocSelect(pageSlug); onMobileClose(); } }} disabled={isMissing}
-                            className={`w-full text-left px-3 py-2 rounded-lg text-[13.5px] leading-snug transition-colors ${isActive ? `${theme.activeBg} ${theme.activeText} font-medium` : isMissing ? 'text-gray-400 cursor-not-allowed' : `${theme.textMuted} ${theme.hover} ${theme.hoverText}`}`}
-                            data-testid={`sidebar-page-${pageSlug}`}>
-                            <span className={`${isMissing ? 'italic opacity-50' : ''}`}>{title}</span>
-                          </button>
-                        );
-                      })}
+                  return (
+                    <div key={gi} className="mb-1">
+                      <button
+                        onClick={() => toggleGroup(groupKey)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${theme.text} ${theme.hover}`}
+                        data-testid={`sidebar-group-toggle-${gi}`}
+                      >
+                        <ChevronDown className={`w-3.5 h-3.5 ${theme.textSecondary} transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
+                        <span className="flex-1 text-left truncate">{group.group}</span>
+                      </button>
+
+                      {!isCollapsed && (
+                        <div className="ml-1 space-y-px">
+                          {group.pages?.map((page, pi) => {
+                            const pageSlug = typeof page === 'string' ? page : page.page;
+                            const doc = documents.find(d => d.slug?.toLowerCase() === pageSlug?.toLowerCase());
+                            const title = typeof page === 'string' ? doc?.title || page : page.title || page.page;
+                            const pageIcon = typeof page === 'object' ? page.icon : null;
+                            const PageIcon = pageIcon ? getIcon(pageIcon) : null;
+                            const isActive = pageSlug?.toLowerCase() === selectedDocSlug?.toLowerCase();
+                            const isMissing = !doc;
+
+                            return (
+                              <button key={pi} onClick={() => { if (!isMissing) { onDocSelect(pageSlug); onMobileClose(); } }} disabled={isMissing}
+                                className={`w-full flex items-center gap-2.5 pl-4 pr-3 py-2 rounded-lg text-[13.5px] leading-snug transition-colors ${isActive ? `${theme.activeBg} ${theme.activeText} font-medium` : isMissing ? 'text-gray-400 cursor-not-allowed' : `${theme.textMuted} ${theme.hover} ${theme.hoverText}`}`}
+                                data-testid={`sidebar-page-${pageSlug}`}>
+                                {PageIcon && <PageIcon className={`w-4 h-4 flex-shrink-0 ${isMissing ? 'opacity-50' : ''}`} />}
+                                <span className={`truncate ${isMissing ? 'italic opacity-50' : ''}`}>{title}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })}
