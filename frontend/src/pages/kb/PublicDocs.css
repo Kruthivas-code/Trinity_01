@@ -20,9 +20,14 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Scrollbar */
+/* Scrollbar - dark */
+.bg-\[\\#0a0a0a\] aside::-webkit-scrollbar { width: 4px; }
+.bg-\[\\#0a0a0a\] aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.bg-\[\\#0a0a0a\] aside::-webkit-scrollbar-track { background: transparent; }
+
+/* Scrollbar - light */
 aside::-webkit-scrollbar { width: 4px; }
-aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+aside::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
 aside::-webkit-scrollbar-track { background: transparent; }
 
 /* line clamp utility */
