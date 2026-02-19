@@ -1,38 +1,34 @@
 [
   {
-    "content": "Fix N+1 in customers.py list_customers — batch ticket stats + CSAT stats",
-    "status": "completed"
+    "content": "Step 1: Extract 4 Modal Components (MergeTicketModal, LinkTicketModal, SplitTicketModal, FeatureRequestModal)",
+    "status": "in_progress"
   },
   {
-    "content": "Fix N+1 in analytics.py get_agent_analytics — single aggregation pipeline",
-    "status": "completed"
+    "content": "Step 2: Extract EmailMessage component to its own file",
+    "status": "in_progress"
   },
   {
-    "content": "Fix N+1 in exports.py admin_export_tickets & export_full — batch notes/changelog/CSAT",
-    "status": "completed"
+    "content": "Step 3: Extract useTicketDrawer custom hook",
+    "status": "pending"
   },
   {
-    "content": "Fix N+1 in exports.py export_analytics — batch agent name lookup",
-    "status": "completed"
+    "content": "Step 4: Extract TicketDetailsPanel (right sidebar)",
+    "status": "pending"
   },
   {
-    "content": "Fix bulk-tag and trigger-auto-close to use batch writes",
-    "status": "completed"
+    "content": "Step 5: Extract CustomerHistoryPanel (left sidebar)",
+    "status": "pending"
   },
   {
-    "content": "Fix bulk-update changelog to use insert_many",
-    "status": "completed"
+    "content": "Step 6: Extract TicketConversation (middle panel)",
+    "status": "pending"
   },
   {
-    "content": "Add pagination to starred, by-email, activity-feed, changelog endpoints",
-    "status": "completed"
+    "content": "Step 7: Rewrite TicketDrawer.js as thin shell",
+    "status": "pending"
   },
   {
-    "content": "Fix search suggestions regex injection (re.escape)",
-    "status": "completed"
-  },
-  {
-    "content": "Lint and verify all Phase 2 changes",
-    "status": "completed"
+    "content": "Verify: Lint, build, and browser test",
+    "status": "pending"
   }
 ]

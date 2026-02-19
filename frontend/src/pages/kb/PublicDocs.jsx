@@ -209,10 +209,13 @@ const RightSidebar = ({ headings, theme }) => {
   const [activeId, setActiveId] = useState('');
   const [validHeadings, setValidHeadings] = useState([]);
 
+  // Only show H2 headings
+  const h2Headings = useMemo(() => headings.filter(h => h.level === 2), [headings]);
+
   useEffect(() => {
-    const existing = headings.filter(h => document.getElementById(h.id));
+    const existing = h2Headings.filter(h => document.getElementById(h.id));
     setValidHeadings(existing);
-  }, [headings]);
+  }, [h2Headings]);
 
   useEffect(() => {
     if (validHeadings.length === 0) return;
@@ -226,17 +229,32 @@ const RightSidebar = ({ headings, theme }) => {
   if (validHeadings.length === 0) return null;
 
   return (
-    <aside className={`hidden xl:block fixed top-14 right-0 bottom-0 w-56 overflow-y-auto z-10 border-l ${theme.tocBorder}`} data-testid="kb-toc">
-      <div className="p-4">
-        <h4 className={`text-xs font-semibold ${theme.text} mb-3 uppercase tracking-wider`}>On this page</h4>
-        <nav className="space-y-0.5">
-          {validHeadings.map((h) => (
-            <a key={h.id} href={`#${h.id}`}
-              className={`block py-1 text-[13px] leading-snug transition-colors break-words ${activeId === h.id ? `${theme.activeAccent} font-medium` : `${theme.textMuted} ${theme.hoverText}`}`}
-              style={{ paddingLeft: `${(h.level - 2) * 8}px` }}>
-              {h.text}
-            </a>
-          ))}
+    <aside className={`hidden xl:block fixed top-14 right-0 bottom-0 w-56 overflow-y-auto z-10`} data-testid="kb-toc">
+      <div className="p-4 pt-6">
+        <h4 className={`text-xs font-semibold ${theme.text} mb-4 flex items-center gap-2`}>
+          <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="10" y2="8"/><line x1="2" y1="12" x2="12" y2="12"/></svg>
+          On this page
+        </h4>
+        <nav className="relative">
+          <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-200 dark:bg-white/10" />
+          <div className="space-y-0">
+            {validHeadings.map((h) => {
+              const isActive = activeId === h.id;
+              return (
+                <a key={h.id} href={`#${h.id}`}
+                  className={`relative block pl-4 py-1.5 text-[13px] leading-snug transition-colors break-words ${
+                    isActive
+                      ? `${theme.activeAccent} font-medium`
+                      : `${theme.textMuted} hover:text-gray-800 dark:hover:text-gray-200`
+                  }`}>
+                  {isActive && (
+                    <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#00A1B2] rounded-full" />
+                  )}
+                  {h.text}
+                </a>
+              );
+            })}
+          </div>
         </nav>
       </div>
     </aside>
