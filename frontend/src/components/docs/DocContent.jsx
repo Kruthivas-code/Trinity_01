@@ -39,12 +39,12 @@ const LANG_NAMES = {
 const CALLOUT_CONFIG = {
   NOTE: { icon: Info, bg: 'bg-blue-500/10', border: 'border-blue-500/30', iconColor: 'text-blue-400', title: 'Note' },
   INFO: { icon: Info, bg: 'bg-blue-500/10', border: 'border-blue-500/30', iconColor: 'text-blue-400', title: 'Info' },
-  TIP: { icon: Lightbulb, bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', iconColor: 'text-emerald-400', title: 'Tip' },
+  TIP: { icon: Lightbulb, bg: 'bg-[#00A1B2]/10', border: 'border-[#00A1B2]/30', iconColor: 'text-[#00A1B2]', title: 'Tip' },
   WARNING: { icon: AlertTriangle, bg: 'bg-amber-500/10', border: 'border-amber-500/30', iconColor: 'text-amber-400', title: 'Warning' },
   CAUTION: { icon: AlertTriangle, bg: 'bg-amber-500/10', border: 'border-amber-500/30', iconColor: 'text-amber-400', title: 'Caution' },
   ERROR: { icon: AlertCircle, bg: 'bg-red-500/10', border: 'border-red-500/30', iconColor: 'text-red-400', title: 'Error' },
   DANGER: { icon: AlertCircle, bg: 'bg-red-500/10', border: 'border-red-500/30', iconColor: 'text-red-400', title: 'Danger' },
-  SUCCESS: { icon: CheckCircle, bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', iconColor: 'text-emerald-400', title: 'Success' },
+  SUCCESS: { icon: CheckCircle, bg: 'bg-[#00A1B2]/10', border: 'border-[#00A1B2]/30', iconColor: 'text-[#00A1B2]', title: 'Success' },
 };
 
 const CodeBlockRenderer = ({ children, className }) => {
