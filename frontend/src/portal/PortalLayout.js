@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Sun, Moon, LogOut } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
@@ -8,6 +8,15 @@ const PortalLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { customer, logout } = usePortalAuth();
   const isLight = theme === 'light';
+
+  // Sync dark class — fixes stale state after navigating from docs page
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   return (
     <div className={`min-h-screen ${isLight ? 'bg-white text-gray-900' : 'bg-[#0a0a0a] text-white'}`} data-testid="portal-layout">
