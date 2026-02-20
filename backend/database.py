@@ -25,6 +25,7 @@ counters_collection = db.counters
 
 # Email
 email_replies_collection = db.email_replies
+email_threads_collection = db.email_threads
 
 # Teams & Shifts
 teams_collection = db.teams
