@@ -564,6 +564,19 @@ async def update_ticket(
                 messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "text": f"Assigned to {assignee_name}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
             elif field == "status":
                 messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "text": f"Status changed to {new_val.replace('_', ' ').title()}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
+                # Send status update email for key status changes
+                if new_val in ("resolved", "closed", "in_progress") and current_ticket.get("customer_email"):
+                    try:
+                        from services.email_service import send_status_update
+                        send_status_update(
+                            ticket_id=ticket_id,
+                            customer_email=current_ticket["customer_email"],
+                            customer_name=current_ticket.get("customer_name", ""),
+                            original_subject=current_ticket.get("title", "Your support request"),
+                            new_status=new_val,
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to send status update email for {ticket_id}: {e}")
             elif field == "priority":
                 messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "text": f"Priority set to {new_val.title()}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
     if reassignment_info and reassignment_info.get("reassigned"):
