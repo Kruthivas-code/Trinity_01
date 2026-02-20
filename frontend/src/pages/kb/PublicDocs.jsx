@@ -108,16 +108,10 @@ const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onTh
 
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           <Link to="/portal"
-            className={`hidden sm:flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg border ${theme.ctaSecondaryBorder} ${theme.ctaSecondaryText} transition-colors`}
+            className="hidden sm:flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#00A1B2] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
             data-testid="need-help-button">
             <span>Need Help</span>
           </Link>
-          <a href="https://app.emergent.sh"
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-2 ${theme.ctaPrimaryBg} text-sm font-medium rounded-lg transition-colors`}
-            data-testid="cta-button">
-            <span>Try Emergent</span>
-            <ArrowRight className="w-4 h-4" />
-          </a>
           <button
             onClick={onThemeToggle}
             className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`}
