@@ -404,6 +404,13 @@ async def submit_ticket(body: TicketSubmit, customer: dict = Depends(get_portal_
         "created_at": datetime.now(timezone.utc),
     })
 
+    # Send confirmation email (background, non-blocking)
+    try:
+        from services.email_service import send_ticket_confirmation
+        send_ticket_confirmation(ticket_id, customer["email"], customer["name"], body.subject.strip()[:200])
+    except Exception as e:
+        logger.warning(f"Failed to send ticket confirmation email: {e}")
+
     return {"ticket_id": ticket_id, "status": "todo", "message": "Ticket submitted successfully"}
 
 
