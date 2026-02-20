@@ -84,7 +84,7 @@ const PortalTickets = () => {
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${filter === f.key ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${filter === f.key ? 'bg-[#00A1B2] text-white' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
             data-testid={`filter-${f.key}`}
           >
             {f.label}

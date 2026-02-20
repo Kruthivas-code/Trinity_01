@@ -35,8 +35,8 @@ const PortalLogin = () => {
   return (
     <div className="max-w-sm mx-auto px-6 py-16" data-testid="portal-login-page">
       <div className="text-center mb-8">
-        <div className="h-10 w-10 rounded-lg bg-foreground flex items-center justify-center mx-auto mb-4">
-          <span className="text-background text-sm font-bold">E</span>
+        <div className="h-10 w-10 rounded-lg bg-[#00A1B2] flex items-center justify-center mx-auto mb-4">
+          <span className="text-white text-sm font-bold">E</span>
         </div>
         <h1 className="text-xl font-semibold mb-1">
           {mode === 'login' ? 'Sign in' : 'Create an account'}
