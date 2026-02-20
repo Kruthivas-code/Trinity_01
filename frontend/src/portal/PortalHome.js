@@ -132,11 +132,11 @@ const PortalHome = () => {
       </div>
 
       {/* Contact Cards */}
-      <div className="max-w-3xl mx-auto px-6 pb-8">
+      <div className="max-w-[960px] mx-auto px-6 pb-8">
         {/* Primary Card - Product Help */}
         <button
           onClick={scrollToCategories}
-          className="w-full text-left p-6 sm:p-8 rounded-xl border border-border/50 bg-card hover:border-[#00A1B2]/30 transition-all group mb-4"
+          className="w-full text-left p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:border-[#00A1B2] dark:hover:border-[#00A1B2] transition-all group mb-4"
           data-testid="product-help-card"
         >
           <div className="mb-5">
@@ -157,7 +157,7 @@ const PortalHome = () => {
           {/* Partner Programs */}
           <button
             onClick={() => setPartnerModal(true)}
-            className="text-left p-5 rounded-xl border border-border/50 bg-card hover:border-[#00A1B2]/30 transition-all group"
+            className="text-left p-5 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:border-[#00A1B2] dark:hover:border-[#00A1B2] transition-all group"
             data-testid="partner-card"
           >
             <div className="mb-4">
@@ -165,7 +165,7 @@ const PortalHome = () => {
             </div>
             <h3 className="text-sm font-semibold text-foreground mb-1">Partner programs</h3>
             <p className="text-xs text-muted-foreground leading-relaxed mb-4">Enquire about partnership opportunities.</p>
-            <span className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-[#00A1B2]/10 text-[#00A1B2] rounded-lg group-hover:bg-[#00A1B2]/20 transition-colors">
+            <span className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-[#999999] rounded-lg group-hover:bg-gray-200 dark:group-hover:bg-white/15 transition-colors">
               Enquire
             </span>
           </button>
@@ -173,7 +173,7 @@ const PortalHome = () => {
           {/* Emergency Help */}
           <Link
             to="/portal/submit?priority=emergency&category=deployments"
-            className="text-left p-5 rounded-xl border border-border/50 bg-card hover:border-[#00A1B2]/30 transition-all group"
+            className="text-left p-5 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:border-[#00A1B2] dark:hover:border-[#00A1B2] transition-all group"
             data-testid="emergency-card"
           >
             <div className="mb-4">
@@ -181,7 +181,7 @@ const PortalHome = () => {
             </div>
             <h3 className="text-sm font-semibold text-foreground mb-1">Emergency help for Deployed App</h3>
             <p className="text-xs text-muted-foreground leading-relaxed mb-4">Urgent help when your app is down.</p>
-            <span className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-[#00A1B2]/10 text-[#00A1B2] rounded-lg group-hover:bg-[#00A1B2]/20 transition-colors">
+            <span className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-[#999999] rounded-lg group-hover:bg-gray-200 dark:group-hover:bg-white/15 transition-colors">
               Emergency
             </span>
           </Link>
@@ -189,7 +189,7 @@ const PortalHome = () => {
           {/* Talk to Sales */}
           <button
             onClick={() => setSalesModal(true)}
-            className="text-left p-5 rounded-xl border border-border/50 bg-card hover:border-[#00A1B2]/30 transition-all group"
+            className="text-left p-5 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:border-[#00A1B2] dark:hover:border-[#00A1B2] transition-all group"
             data-testid="sales-card"
           >
             <div className="mb-4">
@@ -197,7 +197,7 @@ const PortalHome = () => {
             </div>
             <h3 className="text-sm font-semibold text-foreground mb-1">Talk to sales</h3>
             <p className="text-xs text-muted-foreground leading-relaxed mb-4">Work with our team on enterprise solutions.</p>
-            <span className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-[#00A1B2]/10 text-[#00A1B2] rounded-lg group-hover:bg-[#00A1B2]/20 transition-colors">
+            <span className="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-[#999999] rounded-lg group-hover:bg-gray-200 dark:group-hover:bg-white/15 transition-colors">
               Talk to sales
             </span>
           </button>
