@@ -343,12 +343,12 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
       <div className={`fixed inset-0 ${isDark ? 'bg-black/70' : 'bg-white/70'} backdrop-blur-md`} onClick={onClose} />
       <div className={`relative w-full max-w-[620px] mx-4 ${isDark ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-gray-200'} border rounded-2xl shadow-2xl overflow-hidden`}>
         <div className={`flex items-center gap-3 px-5 py-4 ${hasResults || query.length >= 2 ? `border-b ${isDark ? 'border-white/10' : 'border-gray-100'}` : ''}`}>
-          <Search className={`w-5 h-5 flex-shrink-0 ${isDark ? 'text-slate-400' : 'text-gray-400'}`} />
+          <Search className={`w-5 h-5 flex-shrink-0 ${isDark ? 'text-[#999999]' : 'text-gray-400'}`} />
           <input ref={inputRef} type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search..."
-            className={`flex-1 bg-transparent text-base outline-none ${isDark ? 'text-white placeholder:text-slate-500' : 'text-gray-900 placeholder:text-gray-400'}`} data-testid="search-input" />
+            className={`flex-1 bg-transparent text-base outline-none ${isDark ? 'text-white placeholder:text-[#787878]' : 'text-gray-900 placeholder:text-gray-400'}`} data-testid="search-input" />
           <div className="flex items-center gap-2 flex-shrink-0">
-            <kbd className={`px-2 py-0.5 text-[11px] font-medium rounded border ${isDark ? 'text-slate-400 bg-white/5 border-white/10' : 'text-gray-400 bg-gray-100 border-gray-200'}`}>ESC</kbd>
-            <button onClick={onClose} className={`p-1 rounded ${isDark ? 'text-slate-400 hover:text-white' : 'text-gray-400 hover:text-gray-900'} transition-colors`}>
+            <kbd className={`px-2 py-0.5 text-[11px] font-medium rounded border ${isDark ? 'text-[#999999] bg-white/5 border-white/10' : 'text-gray-400 bg-gray-100 border-gray-200'}`}>ESC</kbd>
+            <button onClick={onClose} className={`p-1 rounded ${isDark ? 'text-[#999999] hover:text-white' : 'text-gray-400 hover:text-gray-900'} transition-colors`}>
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -364,12 +364,12 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
                   return (
                     <button key={`d-${i}`} onClick={() => { onSelect(r.slug); onClose(); }}
                       className={`w-full text-left px-5 py-3.5 ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'} transition-colors border-b ${isDark ? 'border-white/5' : 'border-gray-50'} last:border-0`}>
-                      {bc && <div className={`text-[11px] uppercase tracking-wider mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{bc.tab} &gt; {bc.group}</div>}
+                      {bc && <div className={`text-[11px] uppercase tracking-wider mb-1.5 ${isDark ? 'text-[#787878]' : 'text-gray-400'}`}>{bc.tab} &gt; {bc.group}</div>}
                       <div className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <HighlightMatch text={r.title} query={query} />
                       </div>
-                      {tabLabel && <div className={`text-xs mb-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{tabLabel}</div>}
-                      {snippet && <div className={`text-xs leading-relaxed line-clamp-2 ${isDark ? 'text-slate-400' : 'text-gray-500'}`}><HighlightMatch text={snippet} query={query} /></div>}
+                      {tabLabel && <div className={`text-xs mb-1 ${isDark ? 'text-[#787878]' : 'text-gray-400'}`}>{tabLabel}</div>}
+                      {snippet && <div className={`text-xs leading-relaxed line-clamp-2 ${isDark ? 'text-[#999999]' : 'text-gray-500'}`}><HighlightMatch text={snippet} query={query} /></div>}
                     </button>
                   );
                 })}
@@ -378,7 +378,7 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
                   return (
                     <button key={`h-${i}`} onClick={() => { onSelect(r.slug); onClose(); setTimeout(() => { const el = document.getElementById(r.anchor); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 300); }}
                       className={`w-full text-left px-5 py-3.5 ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'} transition-colors border-b ${isDark ? 'border-white/5' : 'border-gray-50'} last:border-0`}>
-                      {bc && <div className={`text-[11px] uppercase tracking-wider mb-1.5 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>{bc.tab} &gt; {r.docTitle || bc.group}</div>}
+                      {bc && <div className={`text-[11px] uppercase tracking-wider mb-1.5 ${isDark ? 'text-[#787878]' : 'text-gray-400'}`}>{bc.tab} &gt; {r.docTitle || bc.group}</div>}
                       <div className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <HighlightMatch text={r.text} query={query} />
                       </div>
@@ -388,8 +388,8 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
               </div>
             ) : (
               <div className="px-5 py-10 text-center">
-                <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>No results for "<span className="font-medium">{query}</span>"</div>
-                <div className={`text-xs mt-1 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>Try different keywords</div>
+                <div className={`text-sm ${isDark ? 'text-[#999999]' : 'text-gray-500'}`}>No results for "<span className="font-medium">{query}</span>"</div>
+                <div className={`text-xs mt-1 ${isDark ? 'text-[#787878]' : 'text-gray-400'}`}>Try different keywords</div>
               </div>
             )}
           </div>
@@ -450,7 +450,7 @@ const FeedbackWidget = ({ slug, theme }) => {
           </div>
         </>
       ) : (
-        <span className={`text-sm ${submitted ? 'text-[#00A1B2]' : 'text-slate-400'}`} data-testid="feedback-thanks">
+        <span className={`text-sm ${submitted ? 'text-[#00A1B2]' : 'text-[#999999]'}`} data-testid="feedback-thanks">
           {submitted ? 'Glad this helped!' : 'Thanks for letting us know. We\'ll improve this article.'}
         </span>
       )}
