@@ -221,6 +221,22 @@ async def add_internal_note(
     }
     messages_collection.insert_one(note_doc)
     update_fields = {"updated_at": datetime.now(timezone.utc)}
+
+    # Send email notification to customer when agent replies
+    if (note.type or "internal_note") == "reply" and ticket.get("customer_email"):
+        try:
+            from services.email_service import send_agent_reply_notification
+            send_agent_reply_notification(
+                ticket_id=ticket_id,
+                customer_email=ticket["customer_email"],
+                customer_name=ticket.get("customer_name", ""),
+                original_subject=ticket.get("title", "Your support request"),
+                reply_content=note.content,
+                agent_name=current_user.get("name", "Support Agent"),
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send agent reply email for {ticket_id}: {e}")
+
     if mentions:
         tickets_collection.update_one(
             {"ticket_id": ticket_id},
