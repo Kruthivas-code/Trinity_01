@@ -5,7 +5,7 @@ import {
   CreditCard, Receipt, Globe, Boxes, UserCog, ShieldCheck,
   Rocket, Bot, Database, Smartphone,
   ArrowRight, ChevronRight, X, Clock, Zap, Video, Hash, FileCheck, Settings2,
-  Send,
+  Send, Search,
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
