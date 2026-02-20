@@ -66,11 +66,11 @@ const CodeBlockRenderer = ({ children, className }) => {
   return (
     <div className="code-block my-4 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-800" data-testid="code-block">
       <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
-        <div className="flex items-center gap-2 text-gray-500 dark:text-slate-400">
+        <div className="flex items-center gap-2 text-gray-500 dark:text-[#999999]">
           {isTerminal ? <Terminal className="w-4 h-4" /> : <FileCode className="w-4 h-4" />}
           <span className="text-xs font-medium">{langName}</span>
         </div>
-        <button onClick={handleCopy} className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white rounded transition-colors" data-testid="copy-code-btn">
+        <button onClick={handleCopy} className="flex items-center gap-1.5 px-2 py-1 text-xs text-gray-500 dark:text-[#999999] hover:text-gray-900 dark:hover:text-white rounded transition-colors" data-testid="copy-code-btn">
           {copied ? <><Check className="w-3.5 h-3.5 text-[#00A1B2]" /><span className="text-[#00A1B2]">Copied</span></> : <><Copy className="w-3.5 h-3.5" /><span>Copy</span></>}
         </button>
       </div>
@@ -92,7 +92,7 @@ const Callout = ({ type, title, children }) => {
         <div className={`flex-shrink-0 mt-0.5 ${config.iconColor}`}><Icon className="w-5 h-5" /></div>
         <div className="flex-1 min-w-0">
           {displayTitle && <p className={`font-semibold ${config.iconColor} mb-1`}>{displayTitle}</p>}
-          <div className="text-[15px] leading-relaxed text-gray-700 dark:text-slate-200 callout-body">{children}</div>
+          <div className="text-[15px] leading-relaxed text-gray-700 dark:text-[#999999] callout-body">{children}</div>
         </div>
       </div>
     </div>
@@ -224,23 +224,23 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
     h3: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h3 id={id} className="scroll-mt-20 !text-gray-900 dark:!text-white text-xl font-semibold mt-8 mb-3">{children}</h3>; },
     h4: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h4 id={id} className="scroll-mt-20 !text-gray-900 dark:!text-white text-lg font-semibold mt-6 mb-2">{children}</h4>; },
     blockquote: ({ children }) => {
-      return <blockquote className="lead-quote my-6 pl-4 border-l-4 border-indigo-500 italic [&>*]:!text-gray-600 dark:[&>*]:!text-slate-300 [&_p]:!text-gray-600 dark:[&_p]:!text-slate-300">{children}</blockquote>;
+      return <blockquote className="lead-quote my-6 pl-4 border-l-4 border-indigo-500 italic [&>*]:!text-gray-600 dark:[&>*]:!text-[#999999] [&_p]:!text-gray-600 dark:[&_p]:!text-[#999999]">{children}</blockquote>;
     },
     table: ({ children }) => <div className="overflow-x-auto my-6 rounded-lg border border-gray-200 dark:border-slate-800"><table className="w-full">{children}</table></div>,
     thead: ({ children }) => <thead className="bg-gray-50 dark:bg-slate-900">{children}</thead>,
-    th: ({ children }) => <th className="text-left px-4 py-3 text-sm font-semibold !text-gray-900 dark:!text-slate-200 border-b border-gray-200 dark:border-slate-800">{children}</th>,
-    td: ({ children }) => <td className="px-4 py-3 text-sm !text-gray-700 dark:!text-slate-300 border-b border-gray-100 dark:border-slate-800/50">{children}</td>,
+    th: ({ children }) => <th className="text-left px-4 py-3 text-sm font-semibold !text-gray-900 dark:!text-white border-b border-gray-200 dark:border-slate-800">{children}</th>,
+    td: ({ children }) => <td className="px-4 py-3 text-sm !text-gray-700 dark:!text-[#999999] border-b border-gray-100 dark:border-slate-800/50">{children}</td>,
     a: ({ href, children }) => { const ext = href?.startsWith('http'); return <a href={href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined} className="text-[#00A1B2] hover:text-[#00bdd0] underline-offset-2 hover:underline">{children}</a>; },
     img: ({ src, alt }) => <img src={src} alt={alt} className="rounded-lg border border-gray-200 dark:border-slate-800 my-6 max-w-full" loading="lazy" />,
     hr: () => <hr className="border-gray-200 dark:border-slate-800 my-8" />,
-    ul: ({ children }) => <ul className="my-4 ml-6 list-disc space-y-2 !text-gray-700 dark:!text-slate-300">{children}</ul>,
-    ol: ({ children }) => <ol className="my-4 ml-6 list-decimal space-y-2 !text-gray-700 dark:!text-slate-300">{children}</ol>,
+    ul: ({ children }) => <ul className="my-4 ml-6 list-disc space-y-2 !text-gray-700 dark:!text-[#999999]">{children}</ul>,
+    ol: ({ children }) => <ol className="my-4 ml-6 list-decimal space-y-2 !text-gray-700 dark:!text-[#999999]">{children}</ol>,
     li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-    p: ({ children }) => <p className="my-4 leading-relaxed !text-gray-700 dark:!text-slate-300">{children}</p>,
-    strong: ({ children }) => <strong className="font-semibold !text-gray-900 dark:!text-slate-100">{children}</strong>,
+    p: ({ children }) => <p className="my-4 leading-relaxed !text-gray-700 dark:!text-[#999999]">{children}</p>,
+    strong: ({ children }) => <strong className="font-semibold !text-gray-900 dark:!text-white">{children}</strong>,
   }), []);
 
-  if (!content) return <div className="text-gray-500 dark:text-slate-500 italic" data-testid="doc-empty">No content available.</div>;
+  if (!content) return <div className="text-gray-500 dark:text-[#787878] italic" data-testid="doc-empty">No content available.</div>;
 
   return (
     <div className={`doc-content ${className}`} data-testid="doc-content">
