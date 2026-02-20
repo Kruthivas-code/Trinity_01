@@ -276,7 +276,7 @@ const PortalHome = () => {
                 <Link
                   key={cat.slug}
                   to={`/portal/category/${cat.slug}`}
-                  className="group p-5 rounded-lg border border-border/50 bg-card hover:border-[#00A1B2]/30 hover:shadow-sm transition-all"
+                  className="group p-5 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:border-[#00A1B2] dark:hover:border-[#00A1B2] hover:shadow-sm transition-all"
                   data-testid={`category-card-${cat.slug}`}
                 >
                   <div className="flex items-start justify-between mb-3">
