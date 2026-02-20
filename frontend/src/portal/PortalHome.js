@@ -236,7 +236,7 @@ const PortalHome = () => {
                       <div className="text-xs text-muted-foreground mb-3">per {plan.period}</div>
                       <button
                         onClick={() => setEngineerModal(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-foreground text-background text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#00A1B2] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
                         data-testid="engineer-plan-cta"
                       >
                         Get started
