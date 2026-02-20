@@ -81,7 +81,7 @@ const InquiryForm = ({ type, onClose }) => {
         value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} rows={3}
         className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-foreground/20 resize-none" required data-testid="inquiry-message" />
       <button type="submit" disabled={sending}
-        className="w-full py-2.5 bg-foreground text-background text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
+        className="w-full py-2.5 bg-[#00A1B2] text-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center justify-center gap-2"
         data-testid="inquiry-submit">
         {sending ? 'Sending...' : 'Submit'}
         {!sending && <Send size={14} />}
