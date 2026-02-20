@@ -137,7 +137,7 @@ const PortalHome = () => {
         {/* Primary Card - Product Help */}
         <button
           onClick={scrollToCategories}
-          className="w-full text-left p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:border-[#00A1B2] dark:hover:border-[#00A1B2] transition-all group mb-4"
+          className="w-full text-left p-6 sm:p-8 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:border-[#00A1B2] dark:hover:border-[#00A1B2] transition-all group mb-4 min-h-[285px]"
           data-testid="product-help-card"
         >
           <div className="mb-5">
