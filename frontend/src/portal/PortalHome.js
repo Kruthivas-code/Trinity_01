@@ -259,50 +259,85 @@ const PortalHome = () => {
           <p className="text-sm text-muted-foreground">Find answers in our knowledge base or submit a ticket.</p>
         </div>
 
+        {/* Search */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search topics..."
+              className="w-full h-10 pl-10 pr-4 rounded-xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-[#00A1B2] dark:focus:border-[#00A1B2] transition-colors"
+              data-testid="portal-search-input"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors">
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </div>
+
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-32 rounded-lg bg-muted/30 animate-pulse" />
+              <div key={i} className="h-[218px] rounded-2xl bg-muted/30 animate-pulse" />
             ))}
           </div>
         ) : categories.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground text-sm">No categories available</p>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {categories.map(cat => {
-              const Icon = ICON_MAP[cat.icon] || Boxes;
-              return (
-                <Link
-                  key={cat.slug}
-                  to={`/portal/category/${cat.slug}`}
-                  className="group p-5 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:border-[#00A1B2] dark:hover:border-[#00A1B2] hover:shadow-sm transition-all"
-                  data-testid={`category-card-${cat.slug}`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="h-9 w-9 rounded-md bg-[#00A1B2]/10 flex items-center justify-center text-[#00A1B2] group-hover:bg-[#00A1B2]/20 transition-colors">
-                      <Icon size={18} strokeWidth={1.5} />
+        ) : (() => {
+          const filtered = searchQuery.trim()
+            ? categories.filter(cat =>
+                cat.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                cat.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                cat.subtopics?.some(s => s.name?.toLowerCase().includes(searchQuery.toLowerCase()))
+              )
+            : categories;
+
+          return filtered.length === 0 ? (
+            <div className="text-center py-12 rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-[#0a0a0a]">
+              <p className="text-sm text-muted-foreground">No topics matching "<span className="font-medium text-foreground">{searchQuery}</span>"</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">Try different keywords</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filtered.map(cat => {
+                const Icon = ICON_MAP[cat.icon] || Boxes;
+                return (
+                  <Link
+                    key={cat.slug}
+                    to={`/portal/category/${cat.slug}`}
+                    className="group p-5 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:border-[#00A1B2] dark:hover:border-[#00A1B2] hover:shadow-sm transition-all max-h-[218px] flex flex-col"
+                    data-testid={`category-card-${cat.slug}`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="h-9 w-9 rounded-md bg-[#00A1B2]/10 flex items-center justify-center text-[#00A1B2] group-hover:bg-[#00A1B2]/20 transition-colors flex-shrink-0">
+                        <Icon size={18} strokeWidth={1.5} />
+                      </div>
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50">
+                        {totalSubtopics(cat)} topics
+                      </span>
                     </div>
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50">
-                      {totalSubtopics(cat)} topics
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-medium text-foreground mb-1 group-hover:translate-x-0.5 transition-transform">
-                    {cat.title}
-                  </h3>
-                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                    {cat.description}
-                  </p>
-                  <div className="mt-3 flex items-center gap-1 text-[10px] font-medium text-[#00A1B2]/60 group-hover:text-[#00A1B2] transition-colors">
-                    <span className="font-mono">explore</span>
-                    <ChevronRight size={10} />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+                    <h3 className="text-sm font-medium text-foreground mb-1 group-hover:translate-x-0.5 transition-transform">
+                      {cat.title}
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 flex-1">
+                      {cat.description}
+                    </p>
+                    <div className="mt-3 flex items-center gap-1 text-[10px] font-medium text-[#00A1B2]/60 group-hover:text-[#00A1B2] transition-colors">
+                      <span className="font-mono">explore</span>
+                      <ChevronRight size={10} />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {/* CTA */}
