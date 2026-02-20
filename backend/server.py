@@ -337,6 +337,11 @@ async def create_mongodb_indexes():
         tickets_collection.create_index([("email_thread_message_ids", ASCENDING)], sparse=True, background=True)
         email_replies_collection.create_index([("ticket_id", ASCENDING)], background=True)
         email_replies_collection.create_index("email_rfc_message_id", unique=True, sparse=True, background=True)
+        # Email threads indexes
+        from database import email_threads_collection
+        email_threads_collection.create_index([("ticket_id", ASCENDING), ("created_at", DESCENDING)], background=True)
+        email_threads_collection.create_index([("message_id", ASCENDING), ("direction", ASCENDING)], background=True)
+        email_threads_collection.create_index([("direction", ASCENDING)], background=True)
         canned_responses_collection.create_index("response_id", unique=True, background=True)
         canned_responses_collection.create_index([("scope", ASCENDING), ("shortcode", ASCENDING)], background=True)
         routing_rules_collection.create_index("rule_id", unique=True, background=True)
