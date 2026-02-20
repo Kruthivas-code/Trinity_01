@@ -98,6 +98,7 @@ const PortalHome = () => {
   const [partnerModal, setPartnerModal] = useState(false);
   const [salesModal, setSalesModal] = useState(false);
   const [engineerModal, setEngineerModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const categoriesRef = useRef(null);
 
   useEffect(() => {
