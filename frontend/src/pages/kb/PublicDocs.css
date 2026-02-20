@@ -84,7 +84,7 @@ aside::-webkit-scrollbar-track { background: transparent; }
 .callout-body > p:not(:last-child) { margin-bottom: 0.5rem; }
 
 /* Dark mode callout body */
-:is(.dark) .callout-body > div[class*="text-slate"] { color: #e2e8f0; }
+:is(.dark) .callout-body > div { color: #999999; }
 
 /* Hide code block wrapper entirely, show content as plain text */
 .callout-body .code-block {
