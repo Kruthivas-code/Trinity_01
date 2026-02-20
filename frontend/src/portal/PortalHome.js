@@ -136,16 +136,16 @@ const PortalHome = () => {
         {/* Primary Card - Product Help */}
         <button
           onClick={scrollToCategories}
-          className="w-full text-left p-6 sm:p-8 rounded-xl border border-border/50 bg-card hover:border-foreground/20 transition-all group mb-4"
+          className="w-full text-left p-6 sm:p-8 rounded-xl border border-border/50 bg-card hover:border-[#00A1B2]/30 transition-all group mb-4"
           data-testid="product-help-card"
         >
           <div className="mb-5">
-            <Wrench size={24} className="text-foreground/70" strokeWidth={1.5} />
+            <Wrench size={24} className="text-[#00A1B2]" strokeWidth={1.5} />
           </div>
           <h2 className="text-lg font-semibold text-foreground mb-1">Product help</h2>
           <p className="text-sm text-muted-foreground mb-6">Get help from an expert.</p>
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-foreground text-background text-sm font-medium rounded-lg group-hover:opacity-90 transition-opacity">
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-[#00A1B2] text-white text-sm font-medium rounded-lg group-hover:opacity-90 transition-opacity">
               Browse topics
             </span>
             <span className="text-xs text-muted-foreground">For customers on paid plans</span>
