@@ -40,7 +40,9 @@ export const PortalAuthProvider = ({ children }) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { throw new Error(text || 'Login failed'); }
     if (!res.ok) throw new Error(data.detail || 'Login failed');
     localStorage.setItem('portal_token', data.token);
     setToken(data.token);
@@ -54,7 +56,9 @@ export const PortalAuthProvider = ({ children }) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password }),
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { throw new Error(text || 'Registration failed'); }
     if (!res.ok) throw new Error(data.detail || 'Registration failed');
     localStorage.setItem('portal_token', data.token);
     setToken(data.token);
