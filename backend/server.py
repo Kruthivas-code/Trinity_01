@@ -285,6 +285,9 @@ async def startup_event():
     await create_mongodb_indexes()
     auto_close_task = asyncio.create_task(auto_close_resolved_tickets())
     seed_default_categories()
+    # Start email IMAP poller
+    from services.email_poller import start_poller as start_email_poller
+    start_email_poller()
     logger.info(f"[STARTUP] Instance {_instance_id} started")
 
 
