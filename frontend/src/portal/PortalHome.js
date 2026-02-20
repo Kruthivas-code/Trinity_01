@@ -60,7 +60,7 @@ const InquiryForm = ({ type, onClose }) => {
         </div>
         <p className="text-sm text-foreground font-medium mb-1">Inquiry submitted</p>
         <p className="text-xs text-muted-foreground">We'll get back to you within 24 hours.</p>
-        <button onClick={onClose} className="mt-4 px-4 py-2 text-sm bg-foreground text-background rounded-lg hover:opacity-90 transition-opacity">
+        <button onClick={onClose} className="mt-4 px-4 py-2 text-sm bg-[#00A1B2] text-white rounded-lg hover:opacity-90 transition-opacity">
           Close
         </button>
       </div>
