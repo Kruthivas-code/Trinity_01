@@ -206,8 +206,8 @@ const PortalHome = () => {
 
       {/* Dedicated Engineer Upsell */}
       {plans.length > 0 && (
-        <div className="max-w-3xl mx-auto px-6 py-10">
-          <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
+        <div className="max-w-[960px] mx-auto px-6 py-10">
+          <div className="rounded-2xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 overflow-hidden">
             <div className="p-6 sm:p-8">
               <div className="flex items-center gap-2 mb-1">
                 <Zap size={16} className="text-amber-400" />
