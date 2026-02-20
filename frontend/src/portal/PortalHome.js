@@ -305,7 +305,7 @@ const PortalHome = () => {
       </div>
 
       {/* CTA */}
-      <div className="max-w-3xl mx-auto px-6 pb-16 text-center">
+      <div className="max-w-[960px] mx-auto px-6 pb-16 text-center">
         <p className="text-sm text-muted-foreground mb-3">Can't find what you're looking for?</p>
         <Link
           to="/portal/submit"
