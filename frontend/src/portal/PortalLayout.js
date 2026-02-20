@@ -1,79 +1,85 @@
 import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
-import { Sun, Moon, LogOut, FileText } from 'lucide-react';
+import { Sun, Moon, LogOut, ArrowRight } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { usePortalAuth } from './PortalAuthContext';
 
 const PortalLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const { customer, logout } = usePortalAuth();
+  const isLight = theme === 'light';
 
   return (
-    <div className="min-h-screen bg-background text-foreground" data-testid="portal-layout">
-      <header className="border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/portal" className="flex items-center gap-2.5" data-testid="portal-logo">
-              <img
-                src="/images/emergent-logo-dark.png"
-                alt="Emergent"
-                className={`h-5 ${theme === 'light' ? 'invert' : ''}`}
-              />
-            </Link>
-            <div className="w-px h-4 bg-border/40" />
-            <Link
-              to="/"
-              className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-              data-testid="portal-docs-link"
-            >
-              <FileText size={11} />
-              Docs
-            </Link>
-          </div>
+    <div className={`min-h-screen ${isLight ? 'bg-white text-gray-900' : 'bg-[#0a0a0a] text-white'}`} data-testid="portal-layout">
+      <header className={`fixed top-0 left-0 right-0 z-50 ${isLight ? 'bg-white border-gray-200' : 'bg-[#0a0a0a] border-white/10'} border-b`}>
+        <div className="h-14 px-4 sm:px-6 flex items-center justify-between">
+          <Link to="/portal" className="flex items-center gap-2 flex-shrink-0" data-testid="portal-logo">
+            <img
+              src="/images/emergent-logo-dark.png"
+              alt="Emergent"
+              className={`h-6 ${isLight ? 'invert' : ''}`}
+            />
+          </Link>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              data-testid="theme-toggle"
-            >
-              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-            </button>
-
-            {customer ? (
-              <div className="flex items-center gap-1.5 ml-1">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            {customer && (
+              <>
                 <Link
                   to="/portal/my-tickets"
-                  className="px-2.5 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className={`hidden sm:flex items-center px-3 py-1.5 text-sm ${isLight ? 'text-gray-500 hover:text-gray-900' : 'text-[#999999] hover:text-white'} transition-colors`}
                   data-testid="portal-my-tickets-link"
                 >
                   My Tickets
                 </Link>
-                <div className="w-px h-4 bg-border/40" />
-                <span className="text-xs text-muted-foreground/60">{customer.name?.split(' ')[0]}</span>
+                <span className={`hidden sm:inline text-xs ${isLight ? 'text-gray-400' : 'text-[#787878]'}`}>{customer.name?.split(' ')[0]}</span>
                 <button
                   onClick={logout}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  className={`p-2 rounded-lg ${isLight ? 'text-gray-400 hover:text-gray-900 hover:bg-gray-100' : 'text-[#999999] hover:text-white hover:bg-white/5'} transition-colors`}
                   data-testid="portal-logout-btn"
                   title="Sign out"
                 >
-                  <LogOut size={13} />
+                  <LogOut className="w-4 h-4" />
                 </button>
-              </div>
-            ) : (
+                <div className={`w-px h-4 ${isLight ? 'bg-gray-200' : 'bg-white/10'}`} />
+              </>
+            )}
+            {!customer && (
               <Link
                 to="/portal/login"
-                className="ml-1 px-3 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className={`px-3 py-1.5 text-sm ${isLight ? 'text-gray-500 hover:text-gray-900' : 'text-[#999999] hover:text-white'} transition-colors`}
                 data-testid="portal-signin-link"
               >
                 Sign in
               </Link>
             )}
+            <Link
+              to="/"
+              className={`hidden sm:flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${isLight ? 'border-gray-200 hover:border-gray-300 text-gray-500 hover:text-gray-900' : 'border-white/10 hover:border-white/20 text-[#999999] hover:text-white'}`}
+              data-testid="portal-docs-link"
+            >
+              Docs
+            </Link>
+            <a
+              href="https://app.emergent.sh"
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-black text-white hover:bg-gray-900 text-sm font-medium rounded-lg transition-colors"
+              data-testid="portal-cta-button"
+            >
+              <span>Try Emergent</span>
+              <ArrowRight className="w-4 h-4" />
+            </a>
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-lg transition-colors ${isLight ? 'text-gray-400 hover:text-gray-900 hover:bg-gray-100' : 'text-[#999999] hover:text-white hover:bg-white/5'}`}
+              data-testid="theme-toggle"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </header>
 
-      <main>
+      <main className="pt-14">
         <Outlet />
       </main>
     </div>
