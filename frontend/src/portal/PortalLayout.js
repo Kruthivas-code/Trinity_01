@@ -54,19 +54,11 @@ const PortalLayout = () => {
             )}
             <Link
               to="/"
-              className={`hidden sm:flex items-center gap-1.5 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${isLight ? 'border-gray-200 hover:border-gray-300 text-gray-500 hover:text-gray-900' : 'border-white/10 hover:border-white/20 text-[#999999] hover:text-white'}`}
+              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#00A1B2] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
               data-testid="portal-docs-link"
             >
               Docs
             </Link>
-            <a
-              href="https://app.emergent.sh"
-              className="flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-black text-white hover:bg-gray-900 text-sm font-medium rounded-lg transition-colors"
-              data-testid="portal-cta-button"
-            >
-              <span>Try Emergent</span>
-              <ArrowRight className="w-4 h-4" />
-            </a>
             <button
               onClick={toggleTheme}
               className={`p-2 rounded-lg transition-colors ${isLight ? 'text-gray-400 hover:text-gray-900 hover:bg-gray-100' : 'text-[#999999] hover:text-white hover:bg-white/5'}`}
