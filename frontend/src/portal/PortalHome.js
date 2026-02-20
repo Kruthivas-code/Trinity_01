@@ -276,11 +276,11 @@ const PortalHome = () => {
                 <Link
                   key={cat.slug}
                   to={`/portal/category/${cat.slug}`}
-                  className="group p-5 rounded-lg border border-border/50 bg-card hover:border-foreground/20 hover:shadow-sm transition-all"
+                  className="group p-5 rounded-lg border border-border/50 bg-card hover:border-[#00A1B2]/30 hover:shadow-sm transition-all"
                   data-testid={`category-card-${cat.slug}`}
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <div className="h-9 w-9 rounded-md bg-muted/50 flex items-center justify-center text-muted-foreground group-hover:text-foreground group-hover:bg-muted transition-colors">
+                    <div className="h-9 w-9 rounded-md bg-[#00A1B2]/10 flex items-center justify-center text-[#00A1B2] group-hover:bg-[#00A1B2]/20 transition-colors">
                       <Icon size={18} strokeWidth={1.5} />
                     </div>
                     <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50">
