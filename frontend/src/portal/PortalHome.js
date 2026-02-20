@@ -252,7 +252,7 @@ const PortalHome = () => {
       )}
 
       {/* Category Grid */}
-      <div ref={categoriesRef} className="max-w-3xl mx-auto px-6 pb-10 scroll-mt-20" data-testid="categories-section">
+      <div ref={categoriesRef} className="max-w-[960px] mx-auto px-6 pb-10 scroll-mt-20" data-testid="categories-section">
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-foreground mb-1">Browse by topic</h2>
           <p className="text-sm text-muted-foreground">Find answers in our knowledge base or submit a ticket.</p>
