@@ -162,7 +162,7 @@ const PortalTicketDetail = () => {
             <button
               type="submit"
               disabled={sending || !reply.trim()}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-[#00A1B2] text-white text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
               data-testid="reply-send-btn"
             >
               {sending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}

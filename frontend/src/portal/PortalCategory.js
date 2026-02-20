@@ -62,7 +62,7 @@ const PortalCategory = () => {
 
       {/* Header */}
       <div className="flex items-start gap-4 mb-2">
-        <div className="h-11 w-11 rounded-lg bg-muted/50 flex items-center justify-center text-foreground shrink-0">
+        <div className="h-11 w-11 rounded-lg bg-[#00A1B2]/10 flex items-center justify-center text-[#00A1B2] shrink-0">
           <Icon size={22} strokeWidth={1.5} />
         </div>
         <div>
@@ -119,7 +119,7 @@ const PortalCategory = () => {
         <p className="text-sm text-muted-foreground mb-3">None of these match your issue?</p>
         <Link
           to={`/portal/submit?category=${slug}`}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#00A1B2] text-white text-sm font-medium hover:opacity-90 transition-opacity"
           data-testid="category-submit-btn"
         >
           Describe your issue

@@ -67,7 +67,7 @@ const PortalSubmit = () => {
         <p className="text-sm text-muted-foreground mb-6">You need an account to submit and track tickets</p>
         <Link
           to={`/portal/login?redirect=${encodeURIComponent(redirect)}`}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#00A1B2] text-white text-sm font-medium hover:opacity-90 transition-opacity"
           data-testid="submit-signin-link"
         >
           Sign in
@@ -249,7 +249,7 @@ const PortalSubmit = () => {
         <button
           type="submit"
           disabled={submitting}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#00A1B2] text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           data-testid="submit-ticket-btn"
         >
           {submitting ? 'Submitting...' : 'Submit ticket'}

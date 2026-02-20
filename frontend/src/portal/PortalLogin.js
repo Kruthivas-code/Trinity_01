@@ -92,7 +92,7 @@ const PortalLogin = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-10 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="w-full h-10 rounded-lg bg-[#00A1B2] text-white text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           data-testid="login-submit-btn"
         >
           {loading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}

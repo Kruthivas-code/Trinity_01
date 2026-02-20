@@ -64,7 +64,7 @@ const PortalTickets = () => {
         </div>
         <Link
           to="/portal/submit"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#00A1B2] text-white text-sm font-medium hover:opacity-90 transition-opacity"
           data-testid="tickets-new-btn"
         >
           <Plus size={14} />
