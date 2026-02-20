@@ -57,7 +57,7 @@ export const Card = ({ title, children, href, icon, color, className = '' }) => 
           </span>
         )}
       </h4>
-      <div className="text-sm !text-gray-500 dark:!text-slate-400 leading-relaxed [&_p]:!text-gray-500 dark:[&_p]:!text-slate-400 [&_p]:!m-0">
+      <div className="text-sm !text-gray-500 dark:!text-[#999999] leading-relaxed [&_p]:!text-gray-500 dark:[&_p]:!text-[#999999] [&_p]:!m-0">
         {children}
       </div>
     </>

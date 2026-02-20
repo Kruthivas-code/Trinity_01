@@ -14,7 +14,7 @@ export const Tabs = ({ children, defaultTab = 0, className = '' }) => {
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
               activeTab === index
                 ? 'text-[#00A1B2] border-[#00A1B2]'
-                : 'text-gray-400 dark:text-slate-400 border-transparent hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-slate-600'
+                : 'text-gray-400 dark:text-[#999999] border-transparent hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-[#787878]'
             }`}
             data-testid={`tab-${index}`}>
             {tab.props.label || `Tab ${index + 1}`}
