@@ -293,7 +293,7 @@ const PortalHome = () => {
                   <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
                     {cat.description}
                   </p>
-                  <div className="mt-3 flex items-center gap-1 text-[10px] font-medium text-muted-foreground/40 group-hover:text-foreground/60 transition-colors">
+                  <div className="mt-3 flex items-center gap-1 text-[10px] font-medium text-[#00A1B2]/60 group-hover:text-[#00A1B2] transition-colors">
                     <span className="font-mono">explore</span>
                     <ChevronRight size={10} />
                   </div>
