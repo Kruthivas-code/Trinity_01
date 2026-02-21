@@ -203,6 +203,9 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
           {isCustomerMessage && (!source || source === 'portal') && !isFirst && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500" data-testid="source-portal-badge">via portal</span>
           )}
+          {source === 'atlas' && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700" data-testid="source-atlas-badge">via Atlas</span>
+          )}
           <span className="text-[11px] text-muted-foreground ml-auto shrink-0 tabular-nums">
             {formatDate(timestamp)}
           </span>
