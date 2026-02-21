@@ -1,11 +1,63 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X, ChevronDown, ChevronRight, Loader2, Star, AlertCircle,
   Sparkles, Link2, Settings, Users, Clock, ArrowUpCircle, UserCheck,
-  Copy, Bookmark, Scissors, Tag, MessageSquareHeart, Mail, Send, UserPlus
+  Copy, Bookmark, Scissors, Tag, MessageSquareHeart, Mail, Send, UserPlus,
+  CheckCircle, XCircle, AlertTriangle as TriangleAlert
 } from 'lucide-react';
 import AISummaryBadge from './AISummaryBadge';
 import { STATUSES, PRIORITIES, ESCALATION_LEVELS } from '../../hooks/useTicketDrawer';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+const EmailDeliveryStatus = ({ ticketId }) => {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    if (!ticketId) return;
+    fetch(`${BACKEND_URL}/api/tickets/${ticketId}/email-stats`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setStats(d); })
+      .catch(() => {});
+  }, [ticketId]);
+
+  if (!stats || (stats.outbound === 0 && stats.inbound === 0)) return null;
+
+  return (
+    <div className="pt-1.5 mt-1.5 border-t border-border/20" data-testid="email-delivery-status">
+      <div className="flex items-center gap-1.5 mb-1">
+        <Mail size={10} className="text-muted-foreground" />
+        <span className="text-[10px] text-muted-foreground">Email</span>
+      </div>
+      <div className="flex items-center gap-3">
+        {stats.outbound > 0 && (
+          <div className="flex items-center gap-1" title={`${stats.outbound} email(s) sent`}>
+            <CheckCircle size={10} className="text-emerald-500" />
+            <span className="text-[10px] text-emerald-600">{stats.outbound} sent</span>
+          </div>
+        )}
+        {stats.bounced > 0 && (
+          <div className="flex items-center gap-1" title={`${stats.bounced} email(s) bounced`}>
+            <XCircle size={10} className="text-red-500" />
+            <span className="text-[10px] text-red-500">{stats.bounced} bounced</span>
+          </div>
+        )}
+        {stats.failed > 0 && (
+          <div className="flex items-center gap-1" title={`${stats.failed} email(s) failed`}>
+            <TriangleAlert size={10} className="text-amber-500" />
+            <span className="text-[10px] text-amber-500">{stats.failed} failed</span>
+          </div>
+        )}
+        {stats.inbound > 0 && (
+          <div className="flex items-center gap-1" title={`${stats.inbound} email reply(s) received`}>
+            <Mail size={10} className="text-teal-500" />
+            <span className="text-[10px] text-teal-600">{stats.inbound} received</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const TicketDetailsPanel = ({
   ticket, users, currentUser,
