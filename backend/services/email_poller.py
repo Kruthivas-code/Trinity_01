@@ -542,11 +542,19 @@ def _handle_bounce(msg, from_addr: str, subject: str, body: str, message_id: str
         logger.info(f"[BOUNCE] Unmatched bounce from={from_addr} subject={subject[:60]}")
 
 
-def _process_email(mail, eid):
-    """Process a single email by ID."""
-    status, msg_data = mail.fetch(eid, "(RFC822)")
+def _process_email(mail, eid, folder="inbox"):
+    """Process a single inbound email by sequence ID."""
+    # Fetch with Gmail Thread ID
+    status, msg_data = mail.fetch(eid, "(RFC822 X-GM-THRID)")
     if status != "OK" or not msg_data or not msg_data[0]:
         return
+
+    # Extract Gmail Thread ID
+    gmail_thrid = None
+    if isinstance(msg_data[0][0], bytes):
+        thrid_match = re.search(rb"X-GM-THRID (\d+)", msg_data[0][0])
+        if thrid_match:
+            gmail_thrid = thrid_match.group(1).decode()
 
     raw_email = msg_data[0][1]
     msg = email.message_from_bytes(raw_email)
