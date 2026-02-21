@@ -177,7 +177,7 @@ def _match_ticket(msg, gmail_thrid=None) -> dict:
 def _is_already_processed(message_id: str) -> bool:
     if not message_id:
         return False
-    return email_threads_collection.find_one({"message_id": message_id, "direction": "inbound"}) is not None
+    return email_threads_collection.find_one({"message_id": message_id}) is not None
 
 
 def _is_own_email(msg) -> bool:
