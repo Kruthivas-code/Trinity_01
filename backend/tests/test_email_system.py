@@ -157,7 +157,9 @@ class TestRetryMechanism:
     def test_retry_failed_emails_empty_queue(self, mock_env):
         from services.email_service import retry_failed_emails
         import services.email_service as svc
-        with patch.object(svc.email_threads_collection, "find", return_value=[]):
+        mock_cursor = MagicMock()
+        mock_cursor.limit.return_value = []
+        with patch.object(svc.email_threads_collection, "find", return_value=mock_cursor):
             result = retry_failed_emails()
             assert result == 0
 
