@@ -296,6 +296,11 @@ def _process_email(mail, eid):
     subject = _decode_header_value(msg.get("Subject", ""))
     body = _extract_reply_body(msg)
 
+    # Detect bounce/delivery failure notifications
+    if _is_bounce_email(from_addr, subject):
+        _handle_bounce(msg, from_addr, subject, body, message_id)
+        return
+
     if not body.strip():
         return
 
