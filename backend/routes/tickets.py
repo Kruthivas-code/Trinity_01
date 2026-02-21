@@ -649,6 +649,24 @@ async def get_ticket_metadata(ticket_id: str, current_user: dict = Depends(get_c
     changelog_count = ticket_changelog_collection.count_documents({"ticket_id": ticket_id})
     last_change = ticket_changelog_collection.find_one({"ticket_id": ticket_id}, {"_id": 0}, sort=[("changed_at", DESCENDING)])
     notes_count = messages_collection.count_documents({"ticket_id": ticket_id})
+
+    # Email delivery stats
+    from database import email_threads_collection
+    email_stats = {"outbound": 0, "inbound": 0, "failed": 0, "bounced": 0}
+    email_pipeline = [
+        {"$match": {"ticket_id": ticket_id}},
+        {"$group": {"_id": "$direction", "count": {"$sum": 1}}},
+    ]
+    for r in email_threads_collection.aggregate(email_pipeline):
+        if r["_id"] == "outbound":
+            email_stats["outbound"] = r["count"]
+        elif r["_id"] == "inbound":
+            email_stats["inbound"] = r["count"]
+        elif r["_id"] == "outbound_failed":
+            email_stats["failed"] = r["count"]
+    # Count bounced
+    email_stats["bounced"] = email_threads_collection.count_documents({"ticket_id": ticket_id, "status": "bounced"})
+
     return {
         "ticket_id": ticket.get("ticket_id"), "uuid": ticket.get("uuid"), "title": ticket.get("title"),
         "status": ticket.get("status"), "priority": ticket.get("priority"), "escalation_level": ticket.get("escalation_level"),
@@ -662,6 +680,7 @@ async def get_ticket_metadata(ticket_id: str, current_user: dict = Depends(get_c
             "last_change": last_change.get("changed_at").isoformat() if last_change and isinstance(last_change.get("changed_at"), datetime) else None
         },
         "stats": {"changelog_entries": changelog_count, "notes_count": notes_count},
+        "email_stats": email_stats,
         "created_by": ticket.get("created_by")
     }
 
