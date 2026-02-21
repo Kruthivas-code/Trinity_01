@@ -57,12 +57,15 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
   - If no match → create new ticket with `source: "email"`, tagged `["email"]`
   - Own emails (from `support@emergent.sh` or `hey@emergent.sh`) are skipped
   - Duplicate emails are skipped (Message-ID dedup)
+  - **Bounce detection**: mailer-daemon/postmaster emails identified, original outbound marked as bounced
 - **Body processing**: Strips quoted text (`On ... wrote:`, `>` lines, `---`, `Original Message`), sanitizes HTML (XSS prevention, script/style removal, null byte removal)
 - **Resilience**: Auto-reconnect with exponential backoff on IMAP errors
 
 ### Dashboard Integration
 - Messages show **"via email"** (teal badge) or **"via portal"** (gray badge) based on `source` field
 - Email-sourced tickets show `Source: Email` in ticket attributes
+- **Email delivery status** widget in ticket detail sidebar: shows sent/bounced/failed/received counts
+- `GET /api/tickets/{id}/email-stats` endpoint for delivery stats
 
 ### Email Templates
 - Branded HTML with `#00A1B2` accent, responsive design
