@@ -500,6 +500,7 @@ const TicketConversation = ({
               mergedTicketTitle={msg.merged_ticket_title}
               currentTicketId={ticket?.ticket_id}
               emailData={msg.emailData}
+              source={msg.source}
               onSaveToKB={handleSaveToKB}
             />
           ))
