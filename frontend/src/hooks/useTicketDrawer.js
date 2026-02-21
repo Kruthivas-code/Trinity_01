@@ -9,7 +9,11 @@ export const STATUSES = [
   { value: 'in_progress', label: 'In Progress', color: 'bg-blue-400' },
   { value: 'waiting', label: 'Waiting', color: 'bg-amber-400' },
   { value: 'review', label: 'Review', color: 'bg-purple-400' },
-  { value: 'resolved', label: 'Resolved', color: 'bg-emerald-400' }
+  { value: 'resolved', label: 'Resolved', color: 'bg-emerald-400' },
+  { value: 'closed', label: 'Closed', color: 'bg-gray-400' },
+  { value: 'queued', label: 'Queued', color: 'bg-indigo-400' },
+  { value: 'assigned', label: 'Assigned', color: 'bg-cyan-400' },
+  { value: 'merged', label: 'Merged', color: 'bg-violet-400' }
 ];
 
 export const PRIORITIES = [
