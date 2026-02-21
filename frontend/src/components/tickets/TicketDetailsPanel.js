@@ -515,6 +515,9 @@ const TicketDetailsPanel = ({
                   Copy URL
                 </button>
               </div>
+              {ticket.customer_email && (
+                <EmailDeliveryStatus ticketId={ticket.ticket_id} />
+              )}
             </div>
           )}
         </div>
