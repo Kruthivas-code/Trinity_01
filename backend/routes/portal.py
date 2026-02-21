@@ -472,6 +472,7 @@ async def reply_to_my_ticket(
         "author_id": None,
         "author_name": customer["name"],
         "author_email": customer["email"],
+        "source": "portal",
         "created_at": datetime.now(timezone.utc),
     })
 
