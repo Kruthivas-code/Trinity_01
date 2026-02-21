@@ -185,8 +185,6 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 ## Pending / Backlog
 
 ### P1
-- Bounce/complaint handling via SES notifications
-- Email delivery status tracking (delivered/bounced)
 - Portal category alignment with user's desired structure
 
 ### P2
