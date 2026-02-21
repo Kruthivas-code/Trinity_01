@@ -29,9 +29,14 @@ const CustomerHistoryPanel = ({ ticket, users, relatedTickets, loadingRelated, a
               <p className="text-sm font-medium truncate">
                 {ticket.customer_name || ticket.email_sender_name || 'Customer'}
               </p>
-              <p className="text-[11px] text-muted-foreground truncate">
+              <button
+                onClick={() => { navigator.clipboard.writeText(ticket.customer_email || ticket.email_sender || ''); }}
+                className="text-[11px] text-muted-foreground hover:text-primary truncate block max-w-full transition-colors cursor-pointer"
+                title={`${ticket.customer_email || ticket.email_sender || 'No email'} — Click to copy`}
+                data-testid="customer-email-copy-panel"
+              >
                 {ticket.customer_email || ticket.email_sender || 'No email'}
-              </p>
+              </button>
             </div>
           </div>
         </div>
