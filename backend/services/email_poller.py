@@ -1,6 +1,7 @@
 """
 IMAP email poller for Trinity — reads inbound emails from Gmail and matches to tickets.
-Runs as a background thread.
+Production-grade with connection resilience, sanitization, retry processing.
+Runs as a background daemon thread.
 """
 import imaplib
 import email
@@ -9,6 +10,7 @@ from email.utils import parseaddr
 import os
 import re
 import uuid
+import html as html_lib
 import logging
 import time
 import threading
@@ -30,79 +32,118 @@ def _decode_header_value(raw):
     """Decode an email header value that may be encoded."""
     if not raw:
         return ""
-    parts = decode_header(raw)
-    decoded = []
-    for part, charset in parts:
-        if isinstance(part, bytes):
-            decoded.append(part.decode(charset or "utf-8", errors="replace"))
-        else:
-            decoded.append(part)
-    return "".join(decoded)
+    try:
+        parts = decode_header(raw)
+        decoded = []
+        for part, charset in parts:
+            if isinstance(part, bytes):
+                decoded.append(part.decode(charset or "utf-8", errors="replace"))
+            else:
+                decoded.append(part)
+        return "".join(decoded)
+    except Exception:
+        return str(raw)
+
+
+def _sanitize_body(text: str) -> str:
+    """Sanitize inbound email body — strip dangerous content, normalize whitespace."""
+    if not text:
+        return ""
+    # Remove null bytes
+    text = text.replace("\x00", "")
+    # Strip HTML tags if present (we only want plain text in the DB)
+    text = re.sub(r"<script[^>]*>.*?</script>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r"<style[^>]*>.*?</style>", "", text, flags=re.DOTALL | re.IGNORECASE)
+    # If still has HTML tags, strip them
+    if re.search(r"<[^>]+>", text):
+        text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+        text = re.sub(r"<p[^>]*>", "\n", text, flags=re.IGNORECASE)
+        text = re.sub(r"</p>", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"<[^>]+>", "", text)
+        text = html_lib.unescape(text)
+    # Normalize whitespace
+    text = re.sub(r"\r\n", "\n", text)
+    text = re.sub(r"\r", "\n", text)
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n{4,}", "\n\n\n", text)
+    return text.strip()[:10000]
 
 
 def _extract_reply_body(msg) -> str:
     """Extract the reply body, stripping quoted text."""
     body = ""
+
     if msg.is_multipart():
         for part in msg.walk():
             ct = part.get_content_type()
             cd = str(part.get("Content-Disposition", ""))
             if ct == "text/plain" and "attachment" not in cd:
                 try:
-                    body = part.get_payload(decode=True).decode("utf-8", errors="replace")
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        body = payload.decode("utf-8", errors="replace")
                 except Exception:
-                    body = part.get_payload(decode=True).decode("latin-1", errors="replace")
+                    try:
+                        body = part.get_payload(decode=True).decode("latin-1", errors="replace")
+                    except Exception:
+                        pass
                 break
-        if not body:
+        # Fallback to HTML if no plain text
+        if not body.strip():
             for part in msg.walk():
                 ct = part.get_content_type()
-                if ct == "text/html":
+                cd = str(part.get("Content-Disposition", ""))
+                if ct == "text/html" and "attachment" not in cd:
                     try:
-                        html = part.get_payload(decode=True).decode("utf-8", errors="replace")
-                        body = re.sub(r"<[^>]+>", "", html)
-                        body = re.sub(r"\s+", " ", body).strip()
+                        payload = part.get_payload(decode=True)
+                        if payload:
+                            body = payload.decode("utf-8", errors="replace")
                     except Exception:
                         pass
                     break
     else:
         try:
-            body = msg.get_payload(decode=True).decode("utf-8", errors="replace")
+            payload = msg.get_payload(decode=True)
+            if payload:
+                body = payload.decode("utf-8", errors="replace")
         except Exception:
-            body = str(msg.get_payload())
+            body = str(msg.get_payload() or "")
 
-    # Strip quoted text (lines starting with > or "On ... wrote:")
+    # Strip quoted text
     lines = body.split("\n")
     clean_lines = []
     for line in lines:
         stripped = line.strip()
-        if re.match(r"^On .+ wrote:$", stripped):
+        # Stop at common quote markers
+        if re.match(r"^On .+ wrote:\s*$", stripped):
             break
-        if re.match(r"^>", stripped):
+        if stripped.startswith(">"):
             continue
-        if stripped.startswith("---"):
+        if stripped == "---" or stripped.startswith("-----"):
             break
         if "Original Message" in stripped:
+            break
+        if re.match(r"^From:.+@", stripped):
             break
         if "Emergent Support" in stripped and "sent by" in stripped.lower():
             break
         clean_lines.append(line)
 
     result = "\n".join(clean_lines).strip()
-    return result if result else body.strip()
+    return _sanitize_body(result if result else body)
 
 
 def _match_ticket(msg) -> dict:
     """
     Match an inbound email to a ticket.
-    Priority: In-Reply-To → References → sender + recent ticket.
-    Returns {"ticket_id": ..., "match_method": ...} or None.
+    Priority: In-Reply-To -> References -> sender email + recent ticket.
     """
     in_reply_to = msg.get("In-Reply-To", "").strip()
     references_raw = msg.get("References", "")
     references = references_raw.split() if references_raw else []
     from_addr = parseaddr(msg.get("From", ""))[1].lower()
 
-    # 1. Match by In-Reply-To header
+    # 1. Match by In-Reply-To
     if in_reply_to:
         thread = email_threads_collection.find_one(
             {"message_id": in_reply_to, "direction": "outbound"},
@@ -111,7 +152,7 @@ def _match_ticket(msg) -> dict:
         if thread and thread.get("ticket_id"):
             return {"ticket_id": thread["ticket_id"], "match_method": "in_reply_to"}
 
-    # 2. Match by References chain
+    # 2. Match by References chain (newest first)
     for ref in reversed(references):
         ref = ref.strip()
         if ref:
@@ -122,13 +163,10 @@ def _match_ticket(msg) -> dict:
             if thread and thread.get("ticket_id"):
                 return {"ticket_id": thread["ticket_id"], "match_method": "references"}
 
-    # 3. Fallback: match by sender email + most recent open ticket
+    # 3. Fallback: sender email + most recent non-closed ticket
     if from_addr:
         ticket = tickets_collection.find_one(
-            {
-                "customer_email": from_addr,
-                "status": {"$nin": ["closed"]},
-            },
+            {"customer_email": from_addr, "status": {"$nin": ["closed"]}},
             {"_id": 0, "ticket_id": 1},
             sort=[("updated_at", -1)],
         )
@@ -139,19 +177,17 @@ def _match_ticket(msg) -> dict:
 
 
 def _is_already_processed(message_id: str) -> bool:
-    """Check if this email Message-ID has already been processed."""
     if not message_id:
         return False
-    return email_threads_collection.find_one(
-        {"message_id": message_id, "direction": "inbound"}
-    ) is not None
+    return email_threads_collection.find_one({"message_id": message_id, "direction": "inbound"}) is not None
 
 
 def _is_own_email(msg) -> bool:
-    """Check if this email was sent by us (to avoid processing our own outbound emails)."""
     from_addr = parseaddr(msg.get("From", ""))[1].lower()
     sender_email = _get_env("SES_SENDER_EMAIL", "support@emergent.sh").lower()
-    return from_addr == sender_email
+    # Also check hey@ alias
+    imap_user = _get_env("IMAP_USER", "").lower()
+    return from_addr in (sender_email, imap_user)
 
 
 def poll_inbox():
@@ -161,7 +197,6 @@ def poll_inbox():
     password = _get_env("IMAP_PASSWORD")
 
     if not user or not password:
-        logger.error("IMAP credentials not configured")
         return
 
     mail = None
@@ -170,28 +205,34 @@ def poll_inbox():
         mail.login(user, password)
         mail.select("INBOX")
 
-        # Search for unseen emails
         status, data = mail.search(None, "UNSEEN")
-        if status != "OK":
-            logger.warning(f"IMAP search failed: {status}")
+        if status != "OK" or not data[0]:
             return
 
         email_ids = data[0].split()
-        if not email_ids:
-            return
+        logger.info(f"[POLL] {len(email_ids)} unread email(s)")
 
-        logger.info(f"Found {len(email_ids)} unread email(s)")
-
+        processed = 0
+        errors = 0
         for eid in email_ids:
             try:
                 _process_email(mail, eid)
+                processed += 1
             except Exception as e:
-                logger.error(f"Error processing email {eid}: {e}", exc_info=True)
+                errors += 1
+                logger.error(f"[POLL] Error processing email {eid}: {e}", exc_info=True)
 
+        if processed or errors:
+            logger.info(f"[POLL] Processed={processed} errors={errors}")
+
+    except imaplib.IMAP4.abort as e:
+        logger.error(f"[POLL] IMAP connection aborted: {e}")
     except imaplib.IMAP4.error as e:
-        logger.error(f"IMAP error: {e}")
+        logger.error(f"[POLL] IMAP error: {e}")
+    except (ConnectionError, OSError, TimeoutError) as e:
+        logger.error(f"[POLL] Connection error: {e}")
     except Exception as e:
-        logger.error(f"IMAP connection error: {e}", exc_info=True)
+        logger.error(f"[POLL] Unexpected: {e}", exc_info=True)
     finally:
         if mail:
             try:
@@ -203,21 +244,17 @@ def poll_inbox():
 def _process_email(mail, eid):
     """Process a single email by ID."""
     status, msg_data = mail.fetch(eid, "(RFC822)")
-    if status != "OK":
+    if status != "OK" or not msg_data or not msg_data[0]:
         return
 
     raw_email = msg_data[0][1]
     msg = email.message_from_bytes(raw_email)
 
-    # Skip our own outbound emails
     if _is_own_email(msg):
         return
 
     message_id = msg.get("Message-ID", "").strip()
-
-    # Skip already processed
     if _is_already_processed(message_id):
-        logger.debug(f"Skipping already processed email: {message_id}")
         return
 
     from_name, from_addr = parseaddr(msg.get("From", ""))
@@ -226,17 +263,14 @@ def _process_email(mail, eid):
     body = _extract_reply_body(msg)
 
     if not body.strip():
-        logger.debug(f"Skipping empty email from {from_addr}")
         return
 
-    # Match to ticket
     match = _match_ticket(msg)
 
     if match:
         ticket_id = match["ticket_id"]
-        logger.info(f"Inbound email matched to {ticket_id} via {match['match_method']} | from={from_addr}")
+        logger.info(f"[INBOUND] Matched {ticket_id} via {match['match_method']} from={from_addr}")
 
-        # Add reply as customer message in ticket
         msg_id = f"msg_{uuid.uuid4().hex[:12]}"
         messages_collection.insert_one({
             "message_id": msg_id,
@@ -250,7 +284,6 @@ def _process_email(mail, eid):
             "created_at": datetime.now(timezone.utc),
         })
 
-        # Update ticket
         tickets_collection.update_one(
             {"ticket_id": ticket_id},
             {"$set": {
@@ -260,9 +293,9 @@ def _process_email(mail, eid):
             }},
         )
     else:
-        logger.info(f"Inbound email from {from_addr} did not match any ticket | subject={subject}")
+        logger.info(f"[INBOUND] No match from={from_addr} subject={subject[:60]}")
 
-    # Store in email_threads for dedup and threading
+    # Store for dedup and threading
     in_reply_to = msg.get("In-Reply-To", "").strip()
     references_raw = msg.get("References", "")
     references = references_raw.split() if references_raw else []
@@ -274,10 +307,11 @@ def _process_email(mail, eid):
         "in_reply_to": in_reply_to,
         "references": references,
         "direction": "inbound",
+        "status": "processed",
         "from_email": from_addr,
         "to_email": _get_env("SES_SENDER_EMAIL", "support@emergent.sh"),
-        "subject": subject,
-        "body_preview": body[:200] if body else "",
+        "subject": subject[:500],
+        "body_preview": body[:200],
         "matched": match is not None,
         "match_method": match["match_method"] if match else None,
         "created_at": datetime.now(timezone.utc),
@@ -285,21 +319,34 @@ def _process_email(mail, eid):
 
 
 def _poller_loop():
-    """Background loop that polls IMAP inbox at regular intervals."""
+    """Background loop: polls IMAP + processes retry queue."""
     interval = int(_get_env("EMAIL_POLL_INTERVAL", "30"))
-    logger.info(f"Email poller started | interval={interval}s")
-
-    # Initial delay to let app start up
-    time.sleep(5)
+    logger.info(f"[POLLER] Started | interval={interval}s")
+    time.sleep(5)  # startup delay
 
     backoff = 1
+    retry_cycle = 0
+
     while not _stop_event.is_set():
         try:
             poll_inbox()
-            backoff = 1  # Reset on success
+            backoff = 1
+
+            # Process retry queue every 5 cycles (~2.5 min at 30s interval)
+            retry_cycle += 1
+            if retry_cycle >= 5:
+                retry_cycle = 0
+                try:
+                    from services.email_service import retry_failed_emails
+                    retried = retry_failed_emails()
+                    if retried:
+                        logger.info(f"[RETRY] Retried {retried} email(s)")
+                except Exception as e:
+                    logger.error(f"[RETRY] Error: {e}")
+
         except Exception as e:
-            logger.error(f"Poller error (backoff={backoff}s): {e}")
-            backoff = min(backoff * 2, 300)  # Max 5 min backoff
+            logger.error(f"[POLLER] Error (backoff={backoff}s): {e}")
+            backoff = min(backoff * 2, 300)
 
         _stop_event.wait(timeout=max(interval, backoff))
 
@@ -308,19 +355,19 @@ def start_poller():
     """Start the IMAP poller in a background daemon thread."""
     global _poller_thread
     if _poller_thread and _poller_thread.is_alive():
-        logger.warning("Email poller already running")
+        logger.warning("[POLLER] Already running")
         return
 
     user = _get_env("IMAP_USER")
     password = _get_env("IMAP_PASSWORD")
     if not user or not password:
-        logger.warning("IMAP credentials not set — email poller disabled")
+        logger.warning("[POLLER] IMAP credentials not set — disabled")
         return
 
     _stop_event.clear()
     _poller_thread = threading.Thread(target=_poller_loop, daemon=True, name="email-poller")
     _poller_thread.start()
-    logger.info("Email poller thread started")
+    logger.info("[POLLER] Thread started")
 
 
 def stop_poller():
@@ -328,4 +375,4 @@ def stop_poller():
     _stop_event.set()
     if _poller_thread:
         _poller_thread.join(timeout=10)
-    logger.info("Email poller stopped")
+    logger.info("[POLLER] Stopped")
