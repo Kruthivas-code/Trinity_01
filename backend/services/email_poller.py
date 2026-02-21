@@ -284,7 +284,13 @@ def _process_email(mail, eid):
             }},
         )
     else:
-        logger.info(f"[INBOUND] No match from={from_addr} subject={subject[:60]}")
+        # Create a new ticket from this email
+        ticket_id = _create_ticket_from_email(from_name, from_addr, subject, body)
+        if ticket_id:
+            match = {"ticket_id": ticket_id, "match_method": "new_ticket"}
+            logger.info(f"[INBOUND] New ticket {ticket_id} from={from_addr} subject={subject[:60]}")
+        else:
+            logger.info(f"[INBOUND] Skipped from={from_addr} subject={subject[:60]}")
 
     # Store for dedup and threading
     in_reply_to = msg.get("In-Reply-To", "").strip()
