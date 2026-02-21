@@ -685,6 +685,26 @@ async def get_ticket_metadata(ticket_id: str, current_user: dict = Depends(get_c
     }
 
 
+@router.get("/tickets/{ticket_id}/email-stats")
+async def get_ticket_email_stats(ticket_id: str, current_user: dict = Depends(get_current_user)):
+    """Get email delivery stats for a ticket."""
+    from database import email_threads_collection
+    stats = {"outbound": 0, "inbound": 0, "failed": 0, "bounced": 0}
+    pipeline = [
+        {"$match": {"ticket_id": ticket_id}},
+        {"$group": {"_id": "$direction", "count": {"$sum": 1}}},
+    ]
+    for r in email_threads_collection.aggregate(pipeline):
+        if r["_id"] == "outbound":
+            stats["outbound"] = r["count"]
+        elif r["_id"] == "inbound":
+            stats["inbound"] = r["count"]
+        elif r["_id"] == "outbound_failed":
+            stats["failed"] = r["count"]
+    stats["bounced"] = email_threads_collection.count_documents({"ticket_id": ticket_id, "status": "bounced"})
+    return stats
+
+
 @router.post("/tickets/reorder")
 async def reorder_tickets(reorder_data: TicketReorder, current_user: dict = Depends(get_current_user)):
     """Reorder a ticket within a status column (used by Kanban board drag-and-drop)."""
