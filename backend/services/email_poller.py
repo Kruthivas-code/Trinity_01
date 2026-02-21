@@ -133,20 +133,19 @@ def _extract_reply_body(msg) -> str:
     return _sanitize_body(result if result else body)
 
 
-def _match_ticket(msg) -> dict:
+def _match_ticket(msg, gmail_thrid=None) -> dict:
     """
     Match an inbound email to a ticket.
-    Priority: In-Reply-To -> References -> sender email + recent ticket.
+    Priority: In-Reply-To -> References -> Gmail Thread ID.
     """
     in_reply_to = msg.get("In-Reply-To", "").strip()
     references_raw = msg.get("References", "")
     references = references_raw.split() if references_raw else []
-    from_addr = parseaddr(msg.get("From", ""))[1].lower()
 
     # 1. Match by In-Reply-To
     if in_reply_to:
         thread = email_threads_collection.find_one(
-            {"message_id": in_reply_to, "direction": "outbound"},
+            {"message_id": in_reply_to, "direction": {"$in": ["outbound", "outbound_gmail"]}},
             {"_id": 0, "ticket_id": 1},
         )
         if thread and thread.get("ticket_id"):
@@ -157,13 +156,21 @@ def _match_ticket(msg) -> dict:
         ref = ref.strip()
         if ref:
             thread = email_threads_collection.find_one(
-                {"message_id": ref, "direction": "outbound"},
+                {"message_id": ref, "direction": {"$in": ["outbound", "outbound_gmail"]}},
                 {"_id": 0, "ticket_id": 1},
             )
             if thread and thread.get("ticket_id"):
                 return {"ticket_id": thread["ticket_id"], "match_method": "references"}
 
-    # 3. No fallback — only match via threading headers
+    # 3. Match by Gmail Thread ID
+    if gmail_thrid:
+        thread = email_threads_collection.find_one(
+            {"gmail_thread_id": gmail_thrid, "ticket_id": {"$ne": None}},
+            {"_id": 0, "ticket_id": 1},
+        )
+        if thread and thread.get("ticket_id"):
+            return {"ticket_id": thread["ticket_id"], "match_method": "gmail_thread_id"}
+
     return None
 
 
