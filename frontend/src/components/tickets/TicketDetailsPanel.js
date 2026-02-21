@@ -539,9 +539,17 @@ const TicketDetailsPanel = ({
                 <span className="capitalize text-foreground/80">{ticket.source || 'manual'}</span>
               </div>
               {ticket.customer_email && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Customer</span>
-                  <span className="text-foreground/80 text-[10px] truncate max-w-[120px]">{ticket.customer_email}</span>
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-muted-foreground shrink-0">Customer</span>
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(ticket.customer_email); }}
+                    className="text-foreground/80 text-[10px] truncate max-w-[150px] hover:text-primary transition-colors cursor-pointer flex items-center gap-1"
+                    title={`${ticket.customer_email} — Click to copy`}
+                    data-testid="customer-email-copy"
+                  >
+                    <span className="truncate">{ticket.customer_email}</span>
+                    <Copy size={9} className="shrink-0 opacity-50" />
+                  </button>
                 </div>
               )}
               {ticket.domain && (
