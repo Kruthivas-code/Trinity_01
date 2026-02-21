@@ -275,6 +275,95 @@ def poll_inbox():
                 pass
 
 
+BOUNCE_SENDERS = {
+    "mailer-daemon", "postmaster", "mail-daemon", "mailerdaemon",
+    "noreply", "no-reply", "auto-reply", "autoreply",
+}
+
+BOUNCE_SUBJECT_PATTERNS = [
+    r"delivery.*(?:fail|status|notification)",
+    r"undeliverable",
+    r"returned mail",
+    r"mail delivery.*failed",
+    r"failure notice",
+    r"bounce",
+    r"rejected",
+    r"could not.*deliver",
+]
+
+
+def _is_bounce_email(from_addr: str, subject: str) -> bool:
+    """Detect if an email is a bounce/delivery failure notification."""
+    local_part = from_addr.split("@")[0].lower() if "@" in from_addr else from_addr.lower()
+    if local_part in BOUNCE_SENDERS:
+        return True
+    subject_lower = subject.lower()
+    for pattern in BOUNCE_SUBJECT_PATTERNS:
+        if re.search(pattern, subject_lower):
+            return True
+    return False
+
+
+def _handle_bounce(msg, from_addr: str, subject: str, body: str, message_id: str):
+    """Process a bounce email — find the original outbound email and mark it as bounced."""
+    in_reply_to = msg.get("In-Reply-To", "").strip()
+    references_raw = msg.get("References", "")
+    references = references_raw.split() if references_raw else []
+
+    # Try to find the original outbound email that bounced
+    bounced_ticket_id = None
+    for ref in [in_reply_to] + references:
+        ref = ref.strip()
+        if ref:
+            thread = email_threads_collection.find_one(
+                {"message_id": ref, "direction": "outbound"},
+                {"_id": 0, "ticket_id": 1, "to_email": 1},
+            )
+            if thread:
+                bounced_ticket_id = thread.get("ticket_id")
+                # Mark the outbound email as bounced
+                email_threads_collection.update_one(
+                    {"message_id": ref, "direction": "outbound"},
+                    {"$set": {"status": "bounced", "bounce_reason": subject[:200], "bounced_at": datetime.now(timezone.utc)}},
+                )
+                logger.warning(f"[BOUNCE] Ticket {bounced_ticket_id} — email to {thread.get('to_email')} bounced: {subject[:80]}")
+                break
+
+    # Also try to extract bounced address from body
+    if not bounced_ticket_id and body:
+        email_match = re.search(r"[\w.+-]+@[\w-]+\.[\w.]+", body)
+        if email_match:
+            bounced_addr = email_match.group(0).lower()
+            thread = email_threads_collection.find_one(
+                {"to_email": bounced_addr, "direction": "outbound"},
+                {"_id": 0, "ticket_id": 1, "message_id": 1},
+                sort=[("created_at", -1)],
+            )
+            if thread:
+                bounced_ticket_id = thread.get("ticket_id")
+                email_threads_collection.update_one(
+                    {"message_id": thread["message_id"], "direction": "outbound"},
+                    {"$set": {"status": "bounced", "bounce_reason": subject[:200], "bounced_at": datetime.now(timezone.utc)}},
+                )
+                logger.warning(f"[BOUNCE] Ticket {bounced_ticket_id} — email to {bounced_addr} bounced (body match): {subject[:80]}")
+
+    # Store the bounce record
+    email_threads_collection.insert_one({
+        "thread_id": f"eth_{uuid.uuid4().hex[:12]}",
+        "ticket_id": bounced_ticket_id,
+        "message_id": message_id,
+        "direction": "bounce",
+        "status": "processed",
+        "from_email": from_addr,
+        "subject": subject[:500],
+        "body_preview": body[:200] if body else "",
+        "created_at": datetime.now(timezone.utc),
+    })
+
+    if not bounced_ticket_id:
+        logger.info(f"[BOUNCE] Unmatched bounce from={from_addr} subject={subject[:60]}")
+
+
 def _process_email(mail, eid):
     """Process a single email by ID."""
     status, msg_data = mail.fetch(eid, "(RFC822)")
