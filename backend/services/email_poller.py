@@ -163,16 +163,7 @@ def _match_ticket(msg) -> dict:
             if thread and thread.get("ticket_id"):
                 return {"ticket_id": thread["ticket_id"], "match_method": "references"}
 
-    # 3. Fallback: sender email + most recent non-closed ticket
-    if from_addr:
-        ticket = tickets_collection.find_one(
-            {"customer_email": from_addr, "status": {"$nin": ["closed"]}},
-            {"_id": 0, "ticket_id": 1},
-            sort=[("updated_at", -1)],
-        )
-        if ticket:
-            return {"ticket_id": ticket["ticket_id"], "match_method": "sender_fallback"}
-
+    # 3. No fallback — only match via threading headers
     return None
 
 
