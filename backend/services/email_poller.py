@@ -136,27 +136,27 @@ def _extract_reply_body(msg) -> str:
 def _match_ticket(msg, gmail_thrid=None) -> dict:
     """
     Match an inbound email to a ticket.
-    Priority: In-Reply-To -> References -> Gmail Thread ID.
+    Priority: In-Reply-To -> References -> Gmail Thread ID -> References chain overlap.
     """
     in_reply_to = msg.get("In-Reply-To", "").strip()
     references_raw = msg.get("References", "")
     references = references_raw.split() if references_raw else []
 
-    # 1. Match by In-Reply-To
+    # 1. Match by In-Reply-To against any known email (outbound, outbound_gmail, inbound)
     if in_reply_to:
         thread = email_threads_collection.find_one(
-            {"message_id": in_reply_to, "direction": {"$in": ["outbound", "outbound_gmail"]}},
+            {"message_id": in_reply_to, "ticket_id": {"$ne": None}},
             {"_id": 0, "ticket_id": 1},
         )
         if thread and thread.get("ticket_id"):
             return {"ticket_id": thread["ticket_id"], "match_method": "in_reply_to"}
 
-    # 2. Match by References chain (newest first)
+    # 2. Match by References chain against any known email
     for ref in reversed(references):
         ref = ref.strip()
         if ref:
             thread = email_threads_collection.find_one(
-                {"message_id": ref, "direction": {"$in": ["outbound", "outbound_gmail"]}},
+                {"message_id": ref, "ticket_id": {"$ne": None}},
                 {"_id": 0, "ticket_id": 1},
             )
             if thread and thread.get("ticket_id"):
@@ -170,6 +170,15 @@ def _match_ticket(msg, gmail_thrid=None) -> dict:
         )
         if thread and thread.get("ticket_id"):
             return {"ticket_id": thread["ticket_id"], "match_method": "gmail_thread_id"}
+
+    # 4. Match by References chain overlap — find any existing email that shares references
+    if references:
+        thread = email_threads_collection.find_one(
+            {"references": {"$in": references}, "ticket_id": {"$ne": None}},
+            {"_id": 0, "ticket_id": 1},
+        )
+        if thread and thread.get("ticket_id"):
+            return {"ticket_id": thread["ticket_id"], "match_method": "references_overlap"}
 
     return None
 
