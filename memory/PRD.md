@@ -1,88 +1,196 @@
 # Trinity — Product Requirements Document
 
 ## Overview
-Trinity is a comprehensive customer help suite consisting of three main parts:
-1. **Knowledge Base** (`/`) — Public-facing documentation site
-2. **Help Portal** (`/portal`) — Customer-facing ticket triage funnel
-3. **Agent Dashboard** (`/dashboard`) — Internal tool for engineers to manage tickets and KB
+Trinity is a comprehensive customer help suite with three public surfaces and one internal tool:
+
+1. **Knowledge Base** (`/`, `/docs/:slug`) — Public documentation site with search, light/dark theme
+2. **Help Portal** (`/portal`) — Customer-facing ticket submission and tracking
+3. **Agent Dashboard** (`/dashboard`, `/all-tickets`) — Internal tool for agents to manage tickets, KB content, teams, analytics
+4. **CSAT** (`/csat/:token`) — Customer satisfaction survey page
 
 ## Tech Stack
-- **Frontend**: React + Tailwind CSS + Shadcn UI
-- **Backend**: FastAPI (Python)
-- **Database**: MongoDB
-- **AI**: Gemini (via emergentintegrations) for ticket summarization
-- **Email**: Amazon SES SMTP (sending) + Gmail IMAP (receiving)
+- **Frontend**: React 18 + Tailwind CSS + Shadcn UI
+- **Backend**: FastAPI (Python) + Socket.IO (real-time)
+- **Database**: MongoDB (pymongo)
+- **AI**: Gemini via `emergentintegrations` for ticket summarization
+- **Email Outbound**: Amazon SES SMTP (`smtplib`)
+- **Email Inbound**: Gmail IMAP (`imaplib`) polling `support@emergent.sh` (alias of `hey@emergent.sh`)
+- **Auth**: Emergent Google OAuth (dashboard), JWT-like sessions (portal)
 - **Brand Color**: `#00A1B2`
 
 ## Credentials
-- Admin: `test@example.com` / `test`
-- Portal: Self-registration (or kruthivas@emergent.sh / Password123)
+- **Dashboard**: Google OAuth (Emergent Auth). For testing: session cookie via MongoDB
+- **Portal**: Self-registration. Test account: `kruthivas@emergent.sh` / `Password123`
+
+---
+
+## Ticket Channels (3 Sources)
+
+| Channel | Source Value | How It Works |
+|---------|-------------|--------------|
+| **Portal** | `portal` | Customer submits via `/portal/submit` → ticket created → confirmation email sent |
+| **Dashboard** | `manual` | Agent creates via "+ New Ticket" in dashboard |
+| **Email** | `email` | Customer emails `support@emergent.sh` → IMAP poller reads it → creates ticket |
+
+---
 
 ## Email System Architecture
 
 ### Outbound (SES SMTP)
-- `smtplib` → `email-smtp.us-east-1.amazonaws.com:587`
-- From: `Emergent Support <support@emergent.sh>`
-- Threading: `Message-ID`, `In-Reply-To`, `References` headers
-- Triggers: ticket confirmation, agent reply (type='reply'), status change (resolved/closed/in_progress)
-- Rate limited: 10 emails/sec (SES allows 14)
-- Failed emails → retry queue with exponential backoff (max 5 retries, max 1hr backoff)
-- All Message-IDs stored in `email_threads` collection
+- **Endpoint**: `email-smtp.us-east-1.amazonaws.com:587` (auto-detected from 6 regions)
+- **From**: `Emergent Support <support@emergent.sh>`
+- **Threading**: `Message-ID`, `In-Reply-To`, `References` headers on every email
+- **Triggers**:
+  - Ticket confirmation → when customer submits via portal
+  - Agent reply notification → when agent sends a reply (type='reply') in dashboard
+  - Status update → when ticket status changes to resolved/closed/in_progress
+- **Rate limiting**: 10 emails/sec (sliding window, thread-safe)
+- **Retry queue**: Failed emails stored with exponential backoff (2^n seconds, max 1hr, max 5 attempts). Processed every ~2.5 min
+- **All Message-IDs stored** in `email_threads` collection for threading
 
 ### Inbound (IMAP Polling)
-- `imaplib` → `imap.gmail.com:993` (hey@emergent.sh, alias: support@emergent.sh)
-- Polls every 30s for UNSEEN emails
-- Ticket matching: In-Reply-To → References → sender + recent ticket fallback
-- Strips quoted text, sanitizes body (XSS prevention, null bytes, HTML stripping)
-- Deduplication via Message-ID tracking
-- Auto-reconnect with exponential backoff
-- Processes retry queue every 5 cycles (~2.5 min)
+- **Server**: `imap.gmail.com:993` SSL
+- **Account**: `hey@emergent.sh` (app password auth). `support@emergent.sh` is an alias to this mailbox
+- **Poll interval**: 30 seconds for UNSEEN emails
+- **Processing logic**:
+  - If email matches existing ticket via `In-Reply-To`/`References` headers → add as `customer_reply` to that ticket
+  - If no match → create new ticket with `source: "email"`, tagged `["email"]`
+  - Own emails (from `support@emergent.sh` or `hey@emergent.sh`) are skipped
+  - Duplicate emails are skipped (Message-ID dedup)
+- **Body processing**: Strips quoted text (`On ... wrote:`, `>` lines, `---`, `Original Message`), sanitizes HTML (XSS prevention, script/style removal, null byte removal)
+- **Resilience**: Auto-reconnect with exponential backoff on IMAP errors
 
 ### Dashboard Integration
-- Messages show "via email" (teal badge) or "via portal" (gray badge)
-- Source field on messages: `source: "email"` for IMAP, `source: "portal"` for portal
+- Messages show **"via email"** (teal badge) or **"via portal"** (gray badge) based on `source` field
+- Email-sourced tickets show `Source: Email` in ticket attributes
 
 ### Email Templates
 - Branded HTML with `#00A1B2` accent, responsive design
 - Plain text fallback included
 - Templates: ticket confirmation, agent reply, status update
 
-## Completed Work
+---
 
-### Feb 2026 — Email Phase 2
-- Production-grade email service with thread-safe rate limiting
-- Retry queue for failed emails with exponential backoff
-- IMAP connection resilience (graceful error recovery, auto-reconnect)
-- Input sanitization on inbound email body (XSS prevention, HTML stripping)
-- Structured logging ([SEND], [INBOUND], [POLL], [RETRY] prefixes)
-- "via email" / "via portal" source badges on ticket messages
-- 13 unit tests (all passing): SES region detection, send/fail flows, rate limiting, sanitization, threading, dedup, retry
-- Testing agent: 26/26 tests pass, zero critical issues
+## Backend Architecture
 
-### Feb 2026 — Email Phase 1
-- SES SMTP sending integration
-- IMAP inbox polling
-- Email threading (Message-ID, In-Reply-To, References)
-- MongoDB email_threads collection
+### Route Modules (`/app/backend/routes/`)
+| Module | Prefix | Purpose |
+|--------|--------|---------|
+| `auth.py` | `/api/auth` | Google OAuth session exchange, API keys |
+| `tickets.py` | `/api/tickets` | CRUD, notes, assignment, status changes |
+| `ticket_ops.py` | `/api/ticket-ops` | Bulk operations, merge, split |
+| `portal.py` | `/api/portal` | Customer auth, categories, ticket submission |
+| `kb.py` | `/api/kb` | Knowledge Base articles, navigation, images |
+| `knowledge_base.py` | `/api/knowledge-base` | Internal KB snippets for agents |
+| `admin.py` | `/api/admin` | Custom fields, routing rules, SLA policies |
+| `analytics.py` | `/api/analytics` | Dashboard analytics, exports |
+| `teams.py` | `/api/teams` | Team management |
+| `users.py` | `/api/users` | User management, profiles |
+| `customers.py` | `/api/customers` | Customer CRM, merge, link emails |
+| `filters.py` | `/api/filter` | Advanced ticket filtering, custom inboxes |
+| `canned_responses.py` | `/api/canned-responses` | Saved reply templates |
+| `csat.py` | `/api/csat` | Customer satisfaction surveys |
+| `feature_requests.py` | `/api/feature-requests` | Feature request tracking |
+| `webhooks.py` | `/api/webhooks` | Webhook subscriptions and delivery |
+| `email.py` | `/api/email` | Legacy email/import routes, image uploads |
+| `summaries.py` | `/api/summaries` | AI-powered ticket summaries |
+| `shifts.py` | `/api/shifts` | Agent shift management |
+| `sla.py` | `/api/sla` | SLA policy enforcement |
+| `leaves.py` | `/api/leaves` | Leave management |
+| `exports.py` | `/api/admin/export` | Data exports (tickets, customers, analytics) |
+| `search_presence.py` | `/api/search` | Search, presence tracking, notifications |
 
-### Feb 2026 — UI/UX Updates
+### Services (`/app/backend/services/`)
+| File | Purpose |
+|------|---------|
+| `email_service.py` | SES SMTP sending, threading, rate limiting, retry queue |
+| `email_poller.py` | IMAP polling, ticket matching/creation, body parsing |
+| `email_templates.py` | Branded HTML/text email templates |
+
+### Key MongoDB Collections
+| Collection | Docs | Purpose |
+|-----------|------|---------|
+| `tickets` | 1,632 | All tickets (portal, email, manual) |
+| `messages` | 1,393 | Ticket conversation messages |
+| `email_threads` | 8,172 | Email Message-ID tracking for threading and dedup |
+| `email_replies` | 552 | Legacy email replies |
+| `users` | 13 | Dashboard agents/admins |
+| `portal_customers` | 39 | Portal customer accounts |
+| `kb_articles` | 46 | Knowledge base articles |
+| `customers` | 29 | CRM customer records |
+| `custom_inboxes` | 16 | Saved filter views |
+| `portal_categories` | 10 | Help portal category structure |
+
+---
+
+## Frontend Architecture
+
+### Pages
+| Route | Component | Auth |
+|-------|-----------|------|
+| `/` | `PublicDocs.jsx` | Public |
+| `/docs/:slug` | `PublicDocs.jsx` | Public |
+| `/portal` | `PortalHome.js` | Public |
+| `/portal/login` | `PortalLogin.js` | Public |
+| `/portal/submit` | `PortalSubmit.js` | Portal auth |
+| `/portal/my-tickets` | `PortalTickets.js` | Portal auth |
+| `/portal/my-tickets/:id` | `PortalTicketDetail.js` | Portal auth |
+| `/portal/category/:slug` | `PortalCategory.js` | Portal auth |
+| `/login` | `LoginPage.js` | Public |
+| `/dashboard` | `MainLayout` | Google OAuth |
+| `/all-tickets` | `MainLayout` | Google OAuth |
+| `/dashboard/kb-editor` | `KBEditor.jsx` | Google OAuth |
+| `/csat/:token` | `CSATPage.js` | Public |
+
+### Key Frontend Components
+- **Knowledge Base**: `PublicDocs.jsx` (layout, theme, search, sidebar), `DocContent.jsx`, `Cards.jsx`, `Accordion.jsx`, `Steps.jsx`, `Tabs.jsx`
+- **Portal**: `PortalLayout.js` (header with dark mode sync), `PortalHome.js` (hero, cards, categories, search)
+- **Dashboard**: `MainLayout.js`, `TicketConversation.js`, `EmailMessage.js` (with source badges), `useTicketDrawer.js`
+- **Auth**: `ProtectedRoute.js` (cookie-based), `PortalAuthContext.js` (JWT-like token)
+
+### Design System
+- **Light theme**: White backgrounds, `border-gray-200`, `text-gray-900`
+- **Dark theme**: `bg-[#0a0a0a]`, `border-white/10`, text `#999999` (muted), `#787878` (secondary), white (headings)
+- **Cards**: `rounded-2xl`, `bg-white dark:bg-[#0a0a0a]`, `border-gray-200 dark:border-white/10`, `hover:border-[#00A1B2]`
+- **KB sidebar**: White bg (light), no icons on pages, collapsible groups with chevron, tabs as plain text headers
+
+---
+
+## Completed Work (This Session — Feb 2026)
+
+### Email System (Phase 1 + Phase 2)
+- SES SMTP outbound with auto-region detection
+- IMAP inbound polling with ticket creation from new emails
+- Email threading via Message-ID/In-Reply-To/References
+- Rate limiting (10/sec), retry queue (exponential backoff)
+- Body sanitization (XSS, quoted text stripping)
+- "via email" / "via portal" source badges
+- 13 unit tests passing
+
+### UI/UX Overhaul
 - KB sidebar redesign (collapsible groups, no icons, white bg)
-- Dark mode neutral grey text (#999999, #787878) across all components
-- Portal UI overhaul (consistent header, brand colors, 960px width, 3-col grid, search)
-- Portal dark mode page-load fix
+- Dark mode neutral greys (#999999, #787878) across all content components
+- Portal UI: consistent header, brand colors, 960px max-width, 3-col category grid, search
+- Portal dark mode page-load fix (dark class sync)
 - Portal auth body-stream bug fix
-- Docs header: "Need Help" as primary CTA
+- Docs header: "Need Help" as primary CTA (removed "Try Emergent")
+
+### Bug Fixes
+- Portal registration "body stream already read" error → `res.text()` + `JSON.parse()`
+- Sender fallback matching pollution → removed, cleaned 75 bogus messages
+- IMAP poller missing ticket creation → added `_create_ticket_from_email()`
+
+---
 
 ## Pending / Backlog
-
-### P0
-- Align Help Portal categories with user's list (4 discrepancies pending user input)
 
 ### P1
 - Bounce/complaint handling via SES notifications
 - Email delivery status tracking (delivered/bounced)
+- Portal category alignment with user's desired structure
 
 ### P2
 - Real-time notifications for agents
 - Refactor KBEditor.js into smaller components
 - Refactor portal categories to backend-managed
+- Email analytics dashboard (send/receive volumes, match rates)
