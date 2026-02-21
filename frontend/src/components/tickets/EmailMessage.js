@@ -197,6 +197,12 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
           {isReply && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">Reply</span>
           )}
+          {isCustomerMessage && source === 'email' && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-100 text-teal-700" data-testid="source-email-badge">via email</span>
+          )}
+          {isCustomerMessage && (!source || source === 'portal') && !isFirst && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500" data-testid="source-portal-badge">via portal</span>
+          )}
           <span className="text-[11px] text-muted-foreground ml-auto shrink-0 tabular-nums">
             {formatDate(timestamp)}
           </span>
