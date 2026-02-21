@@ -11,70 +11,67 @@ Trinity is a comprehensive customer help suite consisting of three main parts:
 - **Backend**: FastAPI (Python)
 - **Database**: MongoDB
 - **AI**: Gemini (via emergentintegrations) for ticket summarization
-- **Email**: Amazon SES (SMTP) for sending, Gmail IMAP for receiving
+- **Email**: Amazon SES SMTP (sending) + Gmail IMAP (receiving)
 - **Brand Color**: `#00A1B2`
 
 ## Credentials
 - Admin: `test@example.com` / `test`
-- Portal: Self-registration
+- Portal: Self-registration (or kruthivas@emergent.sh / Password123)
 
-## Architecture
+## Email System Architecture
 
-### Knowledge Base
-- Light/dark theme with `dark:` Tailwind variants
-- Categories in collapsible left sidebar (tabs → groups → pages)
-- Full-screen search modal with highlighted results
-- Brand color `#00A1B2` throughout
-- Dark mode text: `#999999` (muted), `#787878` (secondary), white (headings)
-- Sidebar: white bg in light mode, `#0a0a0a` in dark mode
-
-### Help Portal
-- Header consistent with docs (Logo, "Docs" CTA in brand color, theme toggle)
-- Content max-width: 960px
-- Cards: white bg, `border-gray-200`, `rounded-2xl`, `hover:border-[#00A1B2]`
-- 3-column category grid with search filtering
-- Brand color on primary actions, grey on secondary card CTAs
-
-### Email System (Phase 1 — Implemented Feb 2026)
-**Outbound (SES SMTP):**
+### Outbound (SES SMTP)
 - `smtplib` → `email-smtp.us-east-1.amazonaws.com:587`
-- From: `support@emergent.sh`
-- Threading headers: `Message-ID`, `In-Reply-To`, `References`
-- Triggers: ticket confirmation, agent reply, status change (resolved/closed/in_progress)
+- From: `Emergent Support <support@emergent.sh>`
+- Threading: `Message-ID`, `In-Reply-To`, `References` headers
+- Triggers: ticket confirmation, agent reply (type='reply'), status change (resolved/closed/in_progress)
+- Rate limited: 10 emails/sec (SES allows 14)
+- Failed emails → retry queue with exponential backoff (max 5 retries, max 1hr backoff)
 - All Message-IDs stored in `email_threads` collection
 
-**Inbound (IMAP Polling):**
-- `imaplib` → `imap.gmail.com:993` (hey@emergent.sh mailbox, support@emergent.sh alias)
+### Inbound (IMAP Polling)
+- `imaplib` → `imap.gmail.com:993` (hey@emergent.sh, alias: support@emergent.sh)
 - Polls every 30s for UNSEEN emails
 - Ticket matching: In-Reply-To → References → sender + recent ticket fallback
-- Strips quoted text, adds reply to ticket thread
+- Strips quoted text, sanitizes body (XSS prevention, null bytes, HTML stripping)
 - Deduplication via Message-ID tracking
 - Auto-reconnect with exponential backoff
+- Processes retry queue every 5 cycles (~2.5 min)
 
-**Email Templates:**
-- Branded HTML with `#00A1B2` accent
-- Responsive, clean design
+### Dashboard Integration
+- Messages show "via email" (teal badge) or "via portal" (gray badge)
+- Source field on messages: `source: "email"` for IMAP, `source: "portal"` for portal
+
+### Email Templates
+- Branded HTML with `#00A1B2` accent, responsive design
 - Plain text fallback included
+- Templates: ticket confirmation, agent reply, status update
 
 ## Completed Work
 
-### Feb 2026 — This Session
-- KB sidebar redesign (tabs as plain text, groups as collapsible dropdowns, no icons)
-- Sidebar bg changed to white in light mode
-- Dark mode text colors updated to neutral greys (#999999, #787878)
-- All slate colors replaced across DocContent, Accordion, Cards, Steps, Tabs
-- Portal UI overhaul: consistent header, brand colors, 960px max-width, 3-col grid
-- Portal search functionality for browsing topics
-- Portal page-load dark mode fix (dark class sync in PortalLayout)
-- Docs header: removed "Try Emergent", "Need Help" is primary CTA
-- Portal auth fix: res.text() + JSON.parse() to prevent body stream errors
-- **Email system Phase 1**: SES SMTP sending + IMAP receiving fully implemented
+### Feb 2026 — Email Phase 2
+- Production-grade email service with thread-safe rate limiting
+- Retry queue for failed emails with exponential backoff
+- IMAP connection resilience (graceful error recovery, auto-reconnect)
+- Input sanitization on inbound email body (XSS prevention, HTML stripping)
+- Structured logging ([SEND], [INBOUND], [POLL], [RETRY] prefixes)
+- "via email" / "via portal" source badges on ticket messages
+- 13 unit tests (all passing): SES region detection, send/fail flows, rate limiting, sanitization, threading, dedup, retry
+- Testing agent: 26/26 tests pass, zero critical issues
 
-### Previous Sessions
-- KB full redesign (light/dark theme, brand color, search modal, TOC, cards)
-- Help Portal ticket triage funnel
-- Agent Dashboard with AI summarization
-- CORS fix, webpack fix, escalation label simplification
+### Feb 2026 — Email Phase 1
+- SES SMTP sending integration
+- IMAP inbox polling
+- Email threading (Message-ID, In-Reply-To, References)
+- MongoDB email_threads collection
+
+### Feb 2026 — UI/UX Updates
+- KB sidebar redesign (collapsible groups, no icons, white bg)
+- Dark mode neutral grey text (#999999, #787878) across all components
+- Portal UI overhaul (consistent header, brand colors, 960px width, 3-col grid, search)
+- Portal dark mode page-load fix
+- Portal auth body-stream bug fix
+- Docs header: "Need Help" as primary CTA
 
 ## Pending / Backlog
 
@@ -82,12 +79,10 @@ Trinity is a comprehensive customer help suite consisting of three main parts:
 - Align Help Portal categories with user's list (4 discrepancies pending user input)
 
 ### P1
-- Email Phase 2: Dashboard UI for email status (sent/delivered/bounced)
-- Email thread visualization in ticket view
-- Failed email retry mechanism
+- Bounce/complaint handling via SES notifications
+- Email delivery status tracking (delivered/bounced)
 
 ### P2
 - Real-time notifications for agents
 - Refactor KBEditor.js into smaller components
 - Refactor portal categories to backend-managed
-- Bounce/complaint handling via SES notifications
