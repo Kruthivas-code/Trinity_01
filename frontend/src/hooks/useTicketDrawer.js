@@ -1037,7 +1037,8 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
       original_ticket_id: note.original_ticket_id || null,
       merge_color_index: note.merge_color_index,
       merged_ticket_title: note.merged_ticket_title,
-      emailData: null
+      emailData: null,
+      source: note.source || null
     }))
   ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) : [];
 
