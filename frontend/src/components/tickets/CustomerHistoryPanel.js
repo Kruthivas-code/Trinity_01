@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, Loader2 } from 'lucide-react';
 import { STATUSES, PRIORITIES } from '../../hooks/useTicketDrawer';
 
 const CustomerHistoryPanel = ({ ticket, users, relatedTickets, loadingRelated, assignee, getStatusConfig, getPriorityConfig }) => {
+  const navigate = useNavigate();
   return (
     <div className="w-[240px] bg-background border-l border-border/40 flex flex-col shrink-0" data-testid="customer-history-panel">
       {/* Customer History Header */}
