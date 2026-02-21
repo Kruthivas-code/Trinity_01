@@ -225,7 +225,7 @@ def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body
 
 
 def poll_inbox():
-    """Connect to IMAP, fetch unread emails, process them."""
+    """Connect to IMAP, fetch unread emails from INBOX and new sent emails."""
     host = _get_env("IMAP_HOST", "imap.gmail.com")
     user = _get_env("IMAP_USER")
     password = _get_env("IMAP_PASSWORD")
@@ -237,27 +237,21 @@ def poll_inbox():
     try:
         mail = imaplib.IMAP4_SSL(host, 993)
         mail.login(user, password)
+
+        # 1. Process INBOX (incoming customer emails)
         mail.select("INBOX")
-
         status, data = mail.search(None, "UNSEEN")
-        if status != "OK" or not data[0]:
-            return
+        if status == "OK" and data[0]:
+            email_ids = data[0].split()
+            logger.info(f"[POLL] INBOX: {len(email_ids)} unread")
+            for eid in email_ids:
+                try:
+                    _process_email(mail, eid, folder="inbox")
+                except Exception as e:
+                    logger.error(f"[POLL] INBOX error {eid}: {e}", exc_info=True)
 
-        email_ids = data[0].split()
-        logger.info(f"[POLL] {len(email_ids)} unread email(s)")
-
-        processed = 0
-        errors = 0
-        for eid in email_ids:
-            try:
-                _process_email(mail, eid)
-                processed += 1
-            except Exception as e:
-                errors += 1
-                logger.error(f"[POLL] Error processing email {eid}: {e}", exc_info=True)
-
-        if processed or errors:
-            logger.info(f"[POLL] Processed={processed} errors={errors}")
+        # 2. Process Sent Mail (detect agent replies from Gmail)
+        _poll_sent_folder(mail)
 
     except imaplib.IMAP4.abort as e:
         logger.error(f"[POLL] IMAP connection aborted: {e}")
@@ -273,6 +267,190 @@ def poll_inbox():
                 mail.logout()
             except Exception:
                 pass
+
+
+def _get_last_sent_uid():
+    """Get the last processed UID from the Sent folder."""
+    state = email_threads_collection.find_one(
+        {"_type": "sent_sync_state"},
+        {"_id": 0, "last_uid": 1},
+    )
+    return state.get("last_uid", 0) if state else 0
+
+
+def _set_last_sent_uid(uid):
+    """Store the last processed Sent folder UID."""
+    email_threads_collection.update_one(
+        {"_type": "sent_sync_state"},
+        {"$set": {"last_uid": uid, "updated_at": datetime.now(timezone.utc)}},
+        upsert=True,
+    )
+
+
+def _poll_sent_folder(mail):
+    """Poll Gmail Sent Mail for agent replies sent outside Trinity."""
+    try:
+        status, _ = mail.select('"[Gmail]/Sent Mail"', readonly=True)
+        if status != "OK":
+            return
+
+        last_uid = _get_last_sent_uid()
+
+        # Fetch emails with UID greater than our last processed
+        if last_uid > 0:
+            search_criteria = f"(UID {last_uid + 1}:*)"
+        else:
+            # First run: only look at emails from the last 24 hours
+            from datetime import timedelta
+            since_date = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%d-%b-%Y")
+            search_criteria = f'(SINCE "{since_date}")'
+
+        status, data = mail.uid("search", None, search_criteria)
+        if status != "OK" or not data[0]:
+            return
+
+        uids = data[0].split()
+        if not uids:
+            return
+
+        new_count = 0
+        max_uid = last_uid
+        for uid in uids:
+            uid_int = int(uid)
+            if uid_int <= last_uid:
+                continue
+            if uid_int > max_uid:
+                max_uid = uid_int
+            try:
+                _process_sent_email(mail, uid)
+                new_count += 1
+            except Exception as e:
+                logger.error(f"[SENT] Error processing UID {uid}: {e}", exc_info=True)
+
+        if max_uid > last_uid:
+            _set_last_sent_uid(max_uid)
+
+        if new_count:
+            logger.info(f"[SENT] Processed {new_count} sent email(s)")
+
+    except Exception as e:
+        logger.error(f"[SENT] Error polling sent folder: {e}", exc_info=True)
+
+
+def _process_sent_email(mail, uid):
+    """Process a sent email — detect if it's a reply to a ticket thread."""
+    status, msg_data = mail.uid("fetch", uid, "(RFC822 X-GM-THRID)")
+    if status != "OK" or not msg_data or not msg_data[0]:
+        return
+
+    # Extract Gmail Thread ID
+    gmail_thrid = None
+    if isinstance(msg_data[0][0], bytes):
+        thrid_match = re.search(rb"X-GM-THRID (\d+)", msg_data[0][0])
+        if thrid_match:
+            gmail_thrid = thrid_match.group(1).decode()
+
+    raw_email = msg_data[0][1]
+    msg = email.message_from_bytes(raw_email)
+
+    message_id = msg.get("Message-ID", "").strip()
+    if _is_already_processed(message_id):
+        return
+
+    from_name, from_addr = parseaddr(msg.get("From", ""))
+    sender_email = _get_env("SES_SENDER_EMAIL", "support@emergent.sh").lower()
+    imap_user = _get_env("IMAP_USER", "").lower()
+
+    # Only process emails sent FROM our support address
+    if from_addr.lower() not in (sender_email, imap_user):
+        return
+
+    in_reply_to = msg.get("In-Reply-To", "").strip()
+    references_raw = msg.get("References", "")
+    references = references_raw.split() if references_raw else []
+    subject = _decode_header_value(msg.get("Subject", ""))
+    to_addr = parseaddr(msg.get("To", ""))[1]
+    body = _extract_reply_body(msg)
+
+    # Match to ticket via threading headers
+    ticket_id = None
+    match_method = None
+
+    # 1. Check In-Reply-To against our inbound email records
+    if in_reply_to:
+        thread = email_threads_collection.find_one(
+            {"message_id": in_reply_to, "direction": "inbound"},
+            {"_id": 0, "ticket_id": 1},
+        )
+        if thread and thread.get("ticket_id"):
+            ticket_id = thread["ticket_id"]
+            match_method = "in_reply_to"
+
+    # 2. Check References
+    if not ticket_id:
+        for ref in reversed(references):
+            ref = ref.strip()
+            if ref:
+                thread = email_threads_collection.find_one(
+                    {"message_id": ref, "direction": "inbound"},
+                    {"_id": 0, "ticket_id": 1},
+                )
+                if thread and thread.get("ticket_id"):
+                    ticket_id = thread["ticket_id"]
+                    match_method = "references"
+                    break
+
+    # 3. Check Gmail Thread ID
+    if not ticket_id and gmail_thrid:
+        thread = email_threads_collection.find_one(
+            {"gmail_thread_id": gmail_thrid, "ticket_id": {"$ne": None}},
+            {"_id": 0, "ticket_id": 1},
+        )
+        if thread and thread.get("ticket_id"):
+            ticket_id = thread["ticket_id"]
+            match_method = "gmail_thread_id"
+
+    if ticket_id and body.strip():
+        from_name = _decode_header_value(from_name) or from_addr
+        logger.info(f"[SENT] Matched {ticket_id} via {match_method} to={to_addr}")
+
+        # Add as agent reply in the ticket
+        msg_id = f"msg_{uuid.uuid4().hex[:12]}"
+        messages_collection.insert_one({
+            "message_id": msg_id,
+            "ticket_id": ticket_id,
+            "type": "reply",
+            "content": body.strip()[:10000],
+            "author_id": None,
+            "author_name": from_name or "Support Agent",
+            "author_email": from_addr,
+            "source": "email",
+            "created_at": datetime.now(timezone.utc),
+        })
+
+        tickets_collection.update_one(
+            {"ticket_id": ticket_id},
+            {"$set": {"updated_at": datetime.now(timezone.utc)}},
+        )
+
+    # Store for dedup and threading
+    email_threads_collection.insert_one({
+        "thread_id": f"eth_{uuid.uuid4().hex[:12]}",
+        "ticket_id": ticket_id,
+        "message_id": message_id,
+        "in_reply_to": in_reply_to,
+        "references": references,
+        "gmail_thread_id": gmail_thrid,
+        "direction": "outbound_gmail",
+        "status": "processed",
+        "from_email": from_addr,
+        "to_email": to_addr,
+        "subject": subject[:500],
+        "body_preview": body[:200] if body else "",
+        "matched": ticket_id is not None,
+        "match_method": match_method,
+        "created_at": datetime.now(timezone.utc),
+    })
 
 
 BOUNCE_SENDERS = {
