@@ -181,6 +181,49 @@ def _is_own_email(msg) -> bool:
     return from_addr in (sender_email, imap_user)
 
 
+def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body: str):
+    """Create a new ticket from an inbound email that doesn't match any existing ticket."""
+    from utils import generate_ticket_id
+
+    if not from_addr or not body.strip():
+        return None
+
+    ticket_id = generate_ticket_id()
+    title = subject.strip()[:200] if subject.strip() else f"Email from {from_addr}"
+    now = datetime.now(timezone.utc)
+
+    tickets_collection.insert_one({
+        "ticket_id": ticket_id,
+        "uuid": str(uuid.uuid4()),
+        "title": title,
+        "description": body.strip()[:10000],
+        "status": "todo",
+        "priority": "medium",
+        "tags": ["email"],
+        "source": "email",
+        "customer_email": from_addr,
+        "customer_name": from_name or from_addr,
+        "created_at": now,
+        "updated_at": now,
+        "assignee_id": None,
+        "escalation_level": "L1",
+    })
+
+    messages_collection.insert_one({
+        "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+        "ticket_id": ticket_id,
+        "type": "original",
+        "content": body.strip()[:10000],
+        "author_id": None,
+        "author_name": from_name or from_addr,
+        "author_email": from_addr,
+        "source": "email",
+        "created_at": now,
+    })
+
+    return ticket_id
+
+
 def poll_inbox():
     """Connect to IMAP, fetch unread emails, process them."""
     host = _get_env("IMAP_HOST", "imap.gmail.com")
