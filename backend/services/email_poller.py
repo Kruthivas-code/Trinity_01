@@ -622,10 +622,11 @@ def _process_email(mail, eid, folder="inbox"):
 
     email_threads_collection.insert_one({
         "thread_id": f"eth_{uuid.uuid4().hex[:12]}",
-        "ticket_id": match["ticket_id"] if match else None,
+        "ticket_id": match["ticket_id"] if match else (ticket_id if not match else None),
         "message_id": message_id,
         "in_reply_to": in_reply_to,
         "references": references,
+        "gmail_thread_id": gmail_thrid,
         "direction": "inbound",
         "status": "processed",
         "from_email": from_addr,
@@ -633,7 +634,7 @@ def _process_email(mail, eid, folder="inbox"):
         "subject": subject[:500],
         "body_preview": body[:200],
         "matched": match is not None,
-        "match_method": match["match_method"] if match else None,
+        "match_method": match["match_method"] if match else "new_ticket",
         "created_at": datetime.now(timezone.utc),
     })
 
