@@ -97,7 +97,7 @@ const CustomerHistoryPanel = ({ ticket, users, relatedTickets, loadingRelated, a
                   key={related.id || related.ticket_id}
                   className="p-2.5 rounded-lg bg-secondary/30 border border-transparent hover:bg-secondary/50 hover:border-border cursor-pointer transition-colors duration-150"
                   onClick={() => {
-                    window.location.href = `/all-tickets?ticket=${related.ticket_id || related.id}`;
+                    navigate(`/all-tickets?ticket=${related.ticket_id || related.id}`);
                   }}
                   data-testid={`related-ticket-${related.ticket_id || related.id}`}
                 >
