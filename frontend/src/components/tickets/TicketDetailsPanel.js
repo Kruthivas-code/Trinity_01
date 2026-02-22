@@ -543,7 +543,7 @@ const TicketDetailsPanel = ({
                   <span className="text-muted-foreground shrink-0">Customer</span>
                   <button
                     onClick={() => { navigator.clipboard.writeText(ticket.customer_email); }}
-                    className="text-foreground/80 text-[10px] truncate max-w-[150px] hover:text-primary transition-colors cursor-pointer flex items-center gap-1"
+                    className="text-foreground/80 text-[10px] truncate max-w-[180px] hover:text-primary transition-colors cursor-pointer flex items-center gap-1"
                     title={`${ticket.customer_email} — Click to copy`}
                     data-testid="customer-email-copy"
                   >
