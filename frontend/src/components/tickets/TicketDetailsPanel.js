@@ -577,6 +577,20 @@ const TicketDetailsPanel = ({
                 </span>
               </div>
               <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Age</span>
+                <span className="text-foreground/80 text-[10px]">
+                  {(() => {
+                    const diff = Date.now() - new Date(ticket.created_at).getTime();
+                    const mins = Math.floor(diff / 60000);
+                    if (mins < 60) return `${mins}m`;
+                    const hrs = Math.floor(mins / 60);
+                    if (hrs < 24) return `${hrs}h`;
+                    const days = Math.floor(hrs / 24);
+                    return `${days}d`;
+                  })()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">URL</span>
                 <button
                   onClick={handleCopyLink}
