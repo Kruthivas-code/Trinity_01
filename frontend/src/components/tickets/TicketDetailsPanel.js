@@ -538,6 +538,18 @@ const TicketDetailsPanel = ({
                 <span className="text-muted-foreground">Source</span>
                 <span className="capitalize text-foreground/80">{ticket.source || 'manual'}</span>
               </div>
+              {ticket.source === 'email' && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Channel</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-400">Email</span>
+                </div>
+              )}
+              {ticket.source === 'portal' && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Channel</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400">Portal</span>
+                </div>
+              )}
               {ticket.customer_email && (
                 <div className="flex items-center justify-between gap-1">
                   <span className="text-muted-foreground shrink-0">Customer</span>
