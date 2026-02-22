@@ -1,433 +1,37 @@
 /**
- * KBEditor - Full-page Knowledge Base article editor
- * Ported from help.emergent.sh Editor.jsx reference
+ * KBEditor — Knowledge Base article editor
+ * Refactored: Components split into kb-editor/ directory
  */
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ChevronLeft, ChevronDown, ChevronRight, ArrowRight, Save, Eye, Code2,
-  Loader2, FileText, FolderOpen, Plus, Settings, Trash2, X,
-  Monitor, Smartphone, Tablet, Bold, Italic, Heading1, Heading2, Heading3,
-  List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon,
-  Info, AlertTriangle, Lightbulb, CheckCircle, Columns,
-  SplitSquareVertical, ExternalLink, Search, MoreHorizontal,
-  Youtube, ThumbsUp
+  ChevronLeft, Save, Eye, Code2, Loader2, FileText, Settings,
+  Monitor, Smartphone, Tablet, SplitSquareVertical, ExternalLink,
+  Image as ImageIcon
 } from 'lucide-react';
 import { DocContent } from '../components/docs/DocContent';
-import { getIcon } from '../components/docs/IconPicker';
+import { EditorToolbar } from './kb-editor/EditorToolbar';
+import { ArticleSidebar } from './kb-editor/ArticleSidebar';
+import { ConfigPanel } from './kb-editor/ConfigPanel';
+import { NavManager } from './kb-editor/NavManager';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
-// ===== Formatting Toolbar =====
-const ToolBtn = ({ onClick, active, disabled, children, title }) => (
-  <button onClick={onClick} disabled={disabled} title={title}
-    className={`p-1.5 rounded transition-all ${active ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'} ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}>
-    {children}
-  </button>
-);
-const Divider = () => <div className="w-px h-5 bg-slate-700/50 mx-1" />;
-
-const SNIPPET_MAP = {
-  callout_note: '<Callout type="NOTE" title="Note">\nYour content here\n</Callout>',
-  callout_tip: '<Callout type="TIP" title="Tip">\nYour content here\n</Callout>',
-  callout_warning: '<Callout type="WARNING" title="Warning">\nYour content here\n</Callout>',
-  steps: '<Steps>\n<Step title="Step 1">\nDescription\n</Step>\n<Step title="Step 2">\nDescription\n</Step>\n</Steps>',
-  card_group: '<CardGroup>\n<Card title="Card 1" icon="rocket">\nDescription\n</Card>\n<Card title="Card 2" icon="code">\nDescription\n</Card>\n</CardGroup>',
-  tabs: '<Tabs>\n<Tab label="Tab 1">\nContent\n</Tab>\n<Tab label="Tab 2">\nContent\n</Tab>\n</Tabs>',
-  accordion: '<Accordion>\n<AccordionItem title="Item 1">\nContent\n</AccordionItem>\n</Accordion>',
-  youtube: '<YouTube id="VIDEO_ID" title="Video Title" />',
-  columns: '<Columns cols={2}>\n<Card title="Left" icon="zap">\nContent\n</Card>\n<Card title="Right" icon="code">\nContent\n</Card>\n</Columns>',
-};
-
-const EditorToolbar = ({ textareaRef, content, setContent, onUploadImage }) => {
-  const [showInsert, setShowInsert] = useState(false);
-  const fileInputRef = useRef(null);
-
-  const wrap = (prefix, suffix = prefix) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    const selected = content.substring(start, end);
-    const before = content.substring(0, start);
-    const after = content.substring(end);
-    const newText = `${before}${prefix}${selected || 'text'}${suffix}${after}`;
-    setContent(newText);
-    setTimeout(() => { ta.focus(); ta.setSelectionRange(start + prefix.length, start + prefix.length + (selected || 'text').length); }, 0);
-  };
-
-  const insertLine = (prefix) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const pos = ta.selectionStart;
-    const before = content.substring(0, pos);
-    const after = content.substring(pos);
-    const needsNewline = before.length > 0 && !before.endsWith('\n') ? '\n' : '';
-    const text = `${before}${needsNewline}${prefix}`;
-    setContent(text + after);
-    setTimeout(() => { ta.focus(); ta.setSelectionRange(text.length, text.length); }, 0);
-  };
-
-  const insertSnippet = (key) => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const pos = ta.selectionStart;
-    const before = content.substring(0, pos);
-    const after = content.substring(pos);
-    const needsNewline = before.length > 0 && !before.endsWith('\n') ? '\n\n' : '';
-    const text = `${before}${needsNewline}${SNIPPET_MAP[key]}\n`;
-    setContent(text + after);
-    setShowInsert(false);
-    setTimeout(() => { ta.focus(); ta.setSelectionRange(text.length, text.length); }, 0);
-  };
-
-  const handleFileSelect = (e) => {
-    const files = e.target.files;
-    if (files?.length) onUploadImage(files[0]);
-    e.target.value = '';
-  };
-
-  return (
-    <div className="flex items-center gap-0.5 px-3 py-2 border-b border-slate-800 bg-slate-900/50 flex-wrap" data-testid="editor-toolbar">
-      <ToolBtn onClick={() => insertLine('# ')} title="Heading 1"><Heading1 className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => insertLine('## ')} title="Heading 2"><Heading2 className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => insertLine('### ')} title="Heading 3"><Heading3 className="w-4 h-4" /></ToolBtn>
-      <Divider />
-      <ToolBtn onClick={() => wrap('**')} title="Bold (Cmd+B)"><Bold className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => wrap('*')} title="Italic (Cmd+I)"><Italic className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => wrap('`')} title="Inline Code"><Code className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => wrap('\n```\n', '\n```\n')} title="Code Block"><Code2 className="w-4 h-4" /></ToolBtn>
-      <Divider />
-      <ToolBtn onClick={() => insertLine('- ')} title="Bullet List"><List className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => insertLine('1. ')} title="Numbered List"><ListOrdered className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => insertLine('> ')} title="Blockquote"><Quote className="w-4 h-4" /></ToolBtn>
-      <Divider />
-      <ToolBtn onClick={() => wrap('[', '](url)')} title="Link"><LinkIcon className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => fileInputRef.current?.click()} title="Upload Image"><ImageIcon className="w-4 h-4" /></ToolBtn>
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" data-testid="image-file-input" />
-      <ToolBtn onClick={() => insertLine('---\n')} title="Horizontal Rule"><MoreHorizontal className="w-4 h-4" /></ToolBtn>
-      <Divider />
-      <div className="relative">
-        <ToolBtn onClick={() => setShowInsert(!showInsert)} title="Insert Component">
-          <Plus className="w-4 h-4" />
-        </ToolBtn>
-        {showInsert && (
-          <>
-            <div className="fixed inset-0 z-40" onClick={() => setShowInsert(false)} />
-            <div className="absolute top-full left-0 mt-1 z-50 w-56 bg-slate-900 border border-slate-700 rounded-lg shadow-xl py-1" data-testid="insert-menu">
-              {[
-                { key: 'callout_note', label: 'Note Callout', icon: <Info className="w-4 h-4 text-blue-400" /> },
-                { key: 'callout_tip', label: 'Tip Callout', icon: <Lightbulb className="w-4 h-4 text-emerald-400" /> },
-                { key: 'callout_warning', label: 'Warning Callout', icon: <AlertTriangle className="w-4 h-4 text-amber-400" /> },
-                { key: 'steps', label: 'Steps', icon: <ListOrdered className="w-4 h-4 text-purple-400" /> },
-                { key: 'card_group', label: 'Card Group', icon: <Columns className="w-4 h-4 text-cyan-400" /> },
-                { key: 'tabs', label: 'Tabs', icon: <SplitSquareVertical className="w-4 h-4 text-indigo-400" /> },
-                { key: 'accordion', label: 'Accordion', icon: <ChevronDown className="w-4 h-4 text-orange-400" /> },
-                { key: 'youtube', label: 'YouTube Embed', icon: <Youtube className="w-4 h-4 text-red-400" /> },
-                { key: 'columns', label: 'Columns Layout', icon: <Columns className="w-4 h-4 text-teal-400" /> },
-              ].map(item => (
-                <button key={item.key} onClick={() => insertSnippet(item.key)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-                  data-testid={`insert-${item.key}`}>
-                  {item.icon}
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// ===== Document Nav Sidebar =====
-const NavGroup = ({ group, groupKey, articles, selectedSlug, onSelect, expanded, setExpanded, onDelete, deleting }) => {
-  const isExpanded = expanded[groupKey] !== false;
-
-  return (
-    <div>
-      <button onClick={() => setExpanded(prev => ({ ...prev, [groupKey]: !prev[groupKey] }))}
-        className="w-full flex items-center gap-2 px-2 py-1.5 text-slate-400 hover:text-white transition-colors">
-        {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        <FolderOpen className="w-3.5 h-3.5 text-slate-500" />
-        <span className="text-xs font-medium truncate">{group.group || group.label}</span>
-        <span className="text-[10px] text-slate-600 ml-auto">{articles.length}</span>
-      </button>
-      {isExpanded && (
-        <div className="ml-5 space-y-0.5">
-          {articles.map(art => {
-            const isActive = art.slug === selectedSlug;
-            const fbPct = art.feedback_total > 0 ? Math.round((art.feedback_helpful / art.feedback_total) * 100) : null;
-            return (
-              <div key={art.slug} className={`group flex items-center gap-1 rounded-lg transition-colors ${isActive ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}>
-                <button onClick={() => onSelect(art.slug)} className="flex-1 flex items-center gap-2 px-2 py-1.5 text-left min-w-0" data-testid={`nav-article-${art.slug}`}>
-                  <FileText className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span className="text-sm truncate">{art.title}</span>
-                </button>
-                {fbPct !== null && (
-                  <span className={`text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5 flex-shrink-0 ${fbPct >= 70 ? 'bg-emerald-500/15 text-emerald-400' : fbPct >= 40 ? 'bg-amber-500/15 text-amber-400' : 'bg-red-500/15 text-red-400'}`} data-testid={`feedback-stat-${art.slug}`} title={`${art.feedback_helpful}/${art.feedback_total} found helpful`}>
-                    <ThumbsUp className="w-2.5 h-2.5" />{fbPct}%
-                  </span>
-                )}
-                {!art.published && <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">draft</span>}
-                <button onClick={() => onDelete(art.slug)} disabled={deleting === art.slug}
-                  className="p-1 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 rounded transition-all flex-shrink-0">
-                  {deleting === art.slug ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ===== Icon Picker =====
-const COMMON_ICONS = [
-  'file-text', 'book-open', 'code', 'zap', 'rocket', 'wrench', 'globe', 'shield',
-  'terminal', 'database', 'layers', 'git-branch', 'package', 'cloud', 'server', 'cpu',
-  'smartphone', 'monitor', 'mail', 'message-square', 'users', 'key', 'lock', 'unlock',
-  'credit-card', 'dollar-sign', 'bar-chart', 'pie-chart', 'activity', 'trending-up',
-  'check-circle', 'alert-triangle', 'info', 'help-circle', 'star', 'heart', 'thumbs-up',
-  'play', 'music', 'image', 'video', 'camera', 'mic', 'volume-2', 'headphones',
-  'link', 'external-link', 'share-2', 'download', 'upload', 'folder', 'clipboard',
-  'calendar', 'clock', 'map-pin', 'navigation', 'compass', 'sun', 'moon', 'settings',
-];
-
-const IconPicker = ({ value, onChange }) => {
-  const [open, setOpen] = useState(false);
-  const CurrentIcon = value ? getIcon(value) : FileText;
-  return (
-    <div className="relative">
-      <button onClick={() => setOpen(!open)} className="flex items-center gap-2 px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white w-full hover:border-slate-600 transition-colors" data-testid="icon-picker-btn">
-        <CurrentIcon className="w-4 h-4 text-emerald-400" />
-        <span className="flex-1 text-left truncate">{value || 'No icon'}</span>
-        <ChevronDown className="w-3 h-3 text-slate-500" />
-      </button>
-      {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-2 max-h-48 overflow-y-auto" data-testid="icon-picker-grid">
-          <button onClick={() => { onChange(''); setOpen(false); }} className="w-full text-left px-2 py-1 text-xs text-slate-500 hover:text-white hover:bg-slate-800 rounded mb-1">No icon</button>
-          <div className="grid grid-cols-8 gap-1">
-            {COMMON_ICONS.map(icon => {
-              const Icon = getIcon(icon);
-              return (
-                <button key={icon} onClick={() => { onChange(icon); setOpen(false); }} title={icon}
-                  className={`p-1.5 rounded transition-all ${value === icon ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
-                  <Icon className="w-4 h-4" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// ===== Navigation Manager Modal =====
-const NavManager = ({ navGroups, onSave, onClose, onBulkMove }) => {
-  const [groups, setGroups] = useState(JSON.parse(JSON.stringify(navGroups)));
-  const [saving, setSaving] = useState(false);
-  const [moveTarget, setMoveTarget] = useState(null); // { gIdx, sIdx }
-
-  const addGroup = () => {
-    const key = `group-${Date.now()}`;
-    setGroups([...groups, { key, label: 'New Group', icon: 'file-text', sections: [{ key: 'default', label: 'Default' }] }]);
-  };
-  const removeGroup = (idx) => { if (window.confirm('Delete this nav group? Articles will remain but be unlinked.')) setGroups(groups.filter((_, i) => i !== idx)); };
-  const updateGroup = (idx, field, val) => { const g = [...groups]; g[idx] = { ...g[idx], [field]: val }; setGroups(g); };
-  const addSection = (gIdx) => { const g = [...groups]; g[gIdx].sections = [...(g[gIdx].sections || []), { key: `section-${Date.now()}`, label: 'New Section' }]; setGroups(g); };
-  const removeSection = (gIdx, sIdx) => { const g = [...groups]; g[gIdx].sections = g[gIdx].sections.filter((_, i) => i !== sIdx); setGroups(g); };
-  const updateSection = (gIdx, sIdx, field, val) => { const g = [...groups]; g[gIdx].sections[sIdx] = { ...g[gIdx].sections[sIdx], [field]: val }; setGroups(g); };
-  const moveGroup = (idx, dir) => { const g = [...groups]; const t = g[idx]; g[idx] = g[idx + dir]; g[idx + dir] = t; setGroups(g); };
-  const moveSection = (gIdx, sIdx, dir) => { const g = [...groups]; const secs = [...g[gIdx].sections]; const t = secs[sIdx]; secs[sIdx] = secs[sIdx + dir]; secs[sIdx + dir] = t; g[gIdx].sections = secs; setGroups(g); };
-
-  const handleSave = async () => {
-    setSaving(true);
-    await onSave(groups);
-    setSaving(false);
-  };
-
-  // Build move targets (all group+section combos except current)
-  const getMoveTargets = (gIdx, sIdx) => {
-    const targets = [];
-    groups.forEach((g, gi) => {
-      (g.sections || []).forEach((s, si) => {
-        if (gi !== gIdx || si !== sIdx) targets.push({ gIdx: gi, sIdx: si, groupKey: g.key, groupLabel: g.label, sectionKey: s.key, sectionLabel: s.label });
-      });
-    });
-    return targets;
-  };
-
-  const handleBulkMove = async (sourceGIdx, sourceSIdx, target) => {
-    const srcGroup = navGroups[sourceGIdx] || groups[sourceGIdx];
-    const srcSection = (srcGroup?.sections || [])[sourceSIdx] || groups[sourceGIdx]?.sections?.[sourceSIdx];
-    if (!srcGroup || !srcSection) return;
-    const count = await onBulkMove(srcGroup.key, srcSection.key, target.groupKey, target.groupLabel, target.sectionKey, target.sectionLabel);
-    setMoveTarget(null);
-    if (count > 0) alert(`Moved ${count} article(s) successfully.`);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" data-testid="nav-manager-modal">
-      <div className="bg-[#0f0f0f] border border-slate-800 rounded-xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800">
-          <h2 className="text-base font-semibold text-white">Navigation Structure</h2>
-          <div className="flex items-center gap-2">
-            <button onClick={addGroup} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors" data-testid="add-group-btn">
-              <Plus className="w-3 h-3" /> Add Tab
-            </button>
-            <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"><X className="w-4 h-4" /></button>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {groups.map((group, gIdx) => (
-            <div key={group.key} className="border border-slate-800 rounded-lg bg-slate-900/50" data-testid={`nav-group-${gIdx}`}>
-              <div className="flex items-center gap-2 p-3 border-b border-slate-800/50">
-                <div className="flex flex-col gap-0.5">
-                  <button disabled={gIdx === 0} onClick={() => moveGroup(gIdx, -1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▲</button>
-                  <button disabled={gIdx === groups.length - 1} onClick={() => moveGroup(gIdx, 1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▼</button>
-                </div>
-                <input value={group.label} onChange={e => updateGroup(gIdx, 'label', e.target.value)} placeholder="Tab name"
-                  className="flex-1 bg-transparent text-sm font-medium text-white placeholder:text-slate-600 outline-none border-b border-transparent focus:border-emerald-500 px-1 py-0.5" />
-                <input value={group.key} onChange={e => updateGroup(gIdx, 'key', e.target.value)} placeholder="key"
-                  className="w-36 bg-slate-800 text-xs font-mono text-slate-400 rounded px-2 py-1 border border-slate-700" />
-                <button onClick={() => removeGroup(gIdx)} className="p-1 text-slate-600 hover:text-red-400 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
-              </div>
-              <div className="p-3 space-y-2">
-                {(group.sections || []).map((sec, sIdx) => (
-                  <div key={sec.key} data-testid={`nav-section-${gIdx}-${sIdx}`}>
-                    <div className="flex items-center gap-2 pl-4">
-                      <div className="flex flex-col gap-0.5">
-                        <button disabled={sIdx === 0} onClick={() => moveSection(gIdx, sIdx, -1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▲</button>
-                        <button disabled={sIdx === (group.sections || []).length - 1} onClick={() => moveSection(gIdx, sIdx, 1)} className="text-slate-600 hover:text-white disabled:opacity-20 text-[10px]">▼</button>
-                      </div>
-                      <FolderOpen className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
-                      <input value={sec.label} onChange={e => updateSection(gIdx, sIdx, 'label', e.target.value)} placeholder="Section name"
-                        className="flex-1 bg-transparent text-sm text-slate-300 placeholder:text-slate-600 outline-none border-b border-transparent focus:border-emerald-500 px-1 py-0.5" />
-                      <input value={sec.key} onChange={e => updateSection(gIdx, sIdx, 'key', e.target.value)} placeholder="key"
-                        className="w-28 bg-slate-800 text-xs font-mono text-slate-400 rounded px-2 py-1 border border-slate-700" />
-                      <button onClick={() => setMoveTarget(moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx ? null : { gIdx, sIdx })}
-                        className={`p-1 rounded transition-colors ${moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx ? 'text-blue-400 bg-blue-400/10' : 'text-slate-600 hover:text-blue-400'}`}
-                        title="Move articles to another section" data-testid={`move-section-${gIdx}-${sIdx}`}>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => removeSection(gIdx, sIdx)} className="p-1 text-slate-600 hover:text-red-400 rounded"><Trash2 className="w-3 h-3" /></button>
-                    </div>
-                    {moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx && (
-                      <div className="ml-10 mt-2 p-2.5 bg-slate-800/50 border border-slate-700 rounded-lg" data-testid="move-target-picker">
-                        <p className="text-xs text-slate-400 mb-2">Move all articles in <strong className="text-white">{sec.label}</strong> to:</p>
-                        <div className="space-y-1 max-h-32 overflow-y-auto">
-                          {getMoveTargets(gIdx, sIdx).map((t, i) => (
-                            <button key={i} onClick={() => handleBulkMove(gIdx, sIdx, t)}
-                              className="w-full text-left px-2.5 py-1.5 text-xs rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors flex items-center gap-2"
-                              data-testid={`move-target-${i}`}>
-                              <ArrowRight className="w-3 h-3 text-blue-400" />
-                              <span className="text-slate-500">{t.groupLabel}</span>
-                              <span className="text-slate-600">/</span>
-                              <span>{t.sectionLabel}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <button onClick={() => addSection(gIdx)} className="flex items-center gap-1.5 ml-4 px-2 py-1 text-xs text-slate-500 hover:text-emerald-400 rounded hover:bg-slate-800/50 transition-colors" data-testid={`add-section-${gIdx}`}>
-                  <Plus className="w-3 h-3" /> Add Section
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-slate-800">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Cancel</button>
-          <button onClick={handleSave} disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors" data-testid="save-nav-btn">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Navigation
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ===== Config Panel =====
-const ConfigPanel = ({ form, setForm, navGroups, onClose }) => (
-  <div className="w-72 border-l border-slate-800 bg-[#0f0f0f] flex flex-col h-full overflow-y-auto" data-testid="config-panel">
-    <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800">
-      <h3 className="text-sm font-semibold text-white">Document Settings</h3>
-      <button onClick={onClose} className="text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
-    </div>
-    <div className="p-4 space-y-4">
-      <div>
-        <label className="block text-xs font-medium text-slate-400 mb-1.5">Slug</label>
-        <input value={form.slug || ''} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
-          className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white font-mono" data-testid="config-slug" />
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-slate-400 mb-1.5">Nav Group</label>
-        <select value={form.nav_group_key || ''} onChange={e => {
-          const g = navGroups.find(g => g.key === e.target.value);
-          setForm(f => ({ ...f, nav_group_key: e.target.value, nav_group_label: g?.label || '', section_key: g?.sections?.[0]?.key || '', section_label: g?.sections?.[0]?.label || '' }));
-        }} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white" data-testid="config-nav-group">
-          {navGroups.map(g => <option key={g.key} value={g.key}>{g.label}</option>)}
-        </select>
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-slate-400 mb-1.5">Section</label>
-        <select value={form.section_key || ''} onChange={e => {
-          const g = navGroups.find(g => g.key === form.nav_group_key);
-          const s = g?.sections?.find(s => s.key === e.target.value);
-          setForm(f => ({ ...f, section_key: e.target.value, section_label: s?.label || '' }));
-        }} className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white" data-testid="config-section">
-          {(navGroups.find(g => g.key === form.nav_group_key)?.sections || []).map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
-        </select>
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-slate-400 mb-1.5">Icon</label>
-        <IconPicker value={form.icon || ''} onChange={v => setForm(f => ({ ...f, icon: v }))} />
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-slate-400 mb-1.5">Order</label>
-        <input type="number" value={form.order ?? 0} onChange={e => setForm(f => ({ ...f, order: parseInt(e.target.value) || 0 }))}
-          className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white" data-testid="config-order" />
-      </div>
-      <div className="flex items-center gap-3 pt-2">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={form.published !== false} onChange={e => setForm(f => ({ ...f, published: e.target.checked }))}
-            className="rounded border-slate-600 bg-slate-800 text-emerald-500" data-testid="config-published" />
-          <span className="text-sm text-slate-300">Published</span>
-        </label>
-      </div>
-    </div>
-  </div>
-);
-
-// ===== MAIN EDITOR =====
 const KBEditor = () => {
   const { slug: paramSlug } = useParams();
   const navigate = useNavigate();
   const textareaRef = useRef(null);
 
-  // Data
   const [articles, setArticles] = useState([]);
   const [navGroups, setNavGroups] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Editor state
   const [form, setForm] = useState(null);
   const [originalSlug, setOriginalSlug] = useState(null);
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [isNew, setIsNew] = useState(false);
-
-  // UI state
-  const [viewMode, setViewMode] = useState('split'); // 'markdown' | 'split' | 'preview'
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [viewMode, setViewMode] = useState('split');
   const [configOpen, setConfigOpen] = useState(false);
   const [expanded, setExpanded] = useState({});
   const [previewDevice, setPreviewDevice] = useState('desktop');
@@ -477,29 +81,21 @@ const KBEditor = () => {
     }
   }, [paramSlug, articles, navGroups, navigate]);
 
-  // Save handler
+  // Save
   const handleSave = useCallback(async () => {
     if (!form || !form.title?.trim()) return;
     setSaving(true);
     try {
       const slug = form.slug?.trim() || slugify(form.title);
       const payload = { ...form, slug };
-      delete payload.created_at;
-      delete payload.updated_at;
-      delete payload.source_url;
-
+      delete payload.created_at; delete payload.updated_at; delete payload.source_url;
       const url = isNew ? `${API}/api/kb/admin/articles` : `${API}/api/kb/admin/articles/${originalSlug}`;
       const method = isNew ? 'POST' : 'PUT';
-
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload) });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || 'Save failed'); }
-
       setLastSaved(new Date());
-      if (isNew) {
+      if (isNew || slug !== originalSlug) {
         setIsNew(false);
-        setOriginalSlug(slug);
-        navigate(`/dashboard/kb-editor/${slug}`, { replace: true });
-      } else if (slug !== originalSlug) {
         setOriginalSlug(slug);
         navigate(`/dashboard/kb-editor/${slug}`, { replace: true });
       }
@@ -515,14 +111,13 @@ const KBEditor = () => {
     return () => window.removeEventListener('keydown', handler);
   }, [handleSave]);
 
-  // Keyboard shortcuts for formatting
+  // Cmd+B / Cmd+I formatting
   useEffect(() => {
     const handler = (e) => {
       if (!textareaRef.current || document.activeElement !== textareaRef.current) return;
       if (e.metaKey || e.ctrlKey) {
         const ta = textareaRef.current;
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
+        const start = ta.selectionStart, end = ta.selectionEnd;
         const selected = form?.content_markdown?.substring(start, end) || '';
         const before = form?.content_markdown?.substring(0, start) || '';
         const after = form?.content_markdown?.substring(end) || '';
@@ -531,8 +126,7 @@ const KBEditor = () => {
         else if (e.key === 'i') { prefix = '*'; suffix = '*'; }
         else return;
         e.preventDefault();
-        const newText = `${before}${prefix}${selected || 'text'}${suffix}${after}`;
-        setForm(f => ({ ...f, content_markdown: newText }));
+        setForm(f => ({ ...f, content_markdown: `${before}${prefix}${selected || 'text'}${suffix}${after}` }));
         setTimeout(() => { ta.focus(); ta.setSelectionRange(start + prefix.length, start + prefix.length + (selected || 'text').length); }, 0);
       }
     };
@@ -551,7 +145,7 @@ const KBEditor = () => {
     finally { setDeleting(null); }
   };
 
-  // Image upload: inserts markdown at cursor
+  // Image upload
   const uploadImage = useCallback(async (file) => {
     if (!file || !file.type.startsWith('image/')) return;
     setUploading(true);
@@ -559,7 +153,7 @@ const KBEditor = () => {
       const formData = new FormData();
       formData.append('file', file);
       const res = await fetch(`${API}/api/kb/admin/images`, { method: 'POST', credentials: 'include', body: formData });
-      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || 'Upload failed'); }
+      if (!res.ok) throw new Error('Upload failed');
       const { url } = await res.json();
       const altText = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
       const markdown = `![${altText}](${url})`;
@@ -578,40 +172,18 @@ const KBEditor = () => {
     finally { setUploading(false); }
   }, [form]);
 
-  // Drag & drop handler
-  const handleDrop = useCallback((e) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer?.files?.[0];
-    if (file?.type.startsWith('image/')) uploadImage(file);
-  }, [uploadImage]);
+  const handleDrop = useCallback((e) => { e.preventDefault(); setDragOver(false); const file = e.dataTransfer?.files?.[0]; if (file?.type.startsWith('image/')) uploadImage(file); }, [uploadImage]);
+  const handlePaste = useCallback((e) => { const items = e.clipboardData?.items; if (!items) return; for (const item of items) { if (item.type.startsWith('image/')) { e.preventDefault(); uploadImage(item.getAsFile()); return; } } }, [uploadImage]);
 
-  // Paste handler for images
-  const handlePaste = useCallback((e) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        e.preventDefault();
-        uploadImage(item.getAsFile());
-        return;
-      }
-    }
-  }, [uploadImage]);
-
-  const handleDocSelect = (slug) => navigate(`/dashboard/kb-editor/${slug}`);
-
-  // Save navigation structure
   const saveNavigation = async (newGroups) => {
     try {
       const res = await fetch(`${API}/api/kb/admin/navigation`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nav_groups: newGroups }) });
       if (!res.ok) throw new Error('Failed to save');
       await fetchAll();
       setNavManagerOpen(false);
-    } catch (e) { console.error(e); alert('Failed to save navigation: ' + e.message); }
+    } catch (e) { alert('Failed to save navigation: ' + e.message); }
   };
 
-  // Bulk move articles between sections
   const bulkMoveArticles = async (srcGroupKey, srcSectionKey, tgtGroupKey, tgtGroupLabel, tgtSectionKey, tgtSectionLabel) => {
     try {
       const res = await fetch(`${API}/api/kb/admin/articles/bulk-move`, {
@@ -622,7 +194,7 @@ const KBEditor = () => {
       const data = await res.json();
       await fetchAll();
       return data.moved;
-    } catch (e) { console.error(e); alert('Failed to move articles: ' + e.message); return 0; }
+    } catch (e) { alert('Failed to move articles: ' + e.message); return 0; }
   };
 
   // Build sidebar tree
@@ -637,13 +209,13 @@ const KBEditor = () => {
   const previewWidth = previewDevice === 'mobile' ? 'max-w-[375px]' : previewDevice === 'tablet' ? 'max-w-[768px]' : 'max-w-none';
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]"><Loader2 className="w-6 h-6 animate-spin text-emerald-500" /></div>;
+    return <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]"><Loader2 className="w-6 h-6 animate-spin text-[#00A1B2]" /></div>;
   }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col" data-testid="kb-editor-page">
-      {/* Top bar */}
-      <header className="h-14 flex items-center px-4 border-b border-slate-800 bg-[#0f0f0f] flex-shrink-0 gap-3 z-30" data-testid="editor-header">
+      {/* Header */}
+      <header className="h-14 flex items-center px-4 border-b border-slate-800/80 bg-[#0c0c0c] flex-shrink-0 gap-3 z-30" data-testid="editor-header">
         <button onClick={() => navigate('/dashboard/settings')} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors" data-testid="back-to-dashboard">
           <ChevronLeft className="w-4 h-4" /><span className="text-sm">Dashboard</span>
         </button>
@@ -655,22 +227,21 @@ const KBEditor = () => {
           }} placeholder="Article title..." className="flex-1 bg-transparent text-white text-lg font-medium placeholder:text-slate-600 outline-none min-w-0" data-testid="editor-title-input" />
         )}
         <div className="flex items-center gap-2 ml-auto flex-shrink-0">
-          {/* View mode toggles */}
-          <div className="flex items-center bg-slate-800 rounded-lg p-0.5" data-testid="view-mode-toggle">
+          <div className="flex items-center bg-slate-800/60 rounded-lg p-0.5" data-testid="view-mode-toggle">
             {[
               { mode: 'markdown', icon: <Code2 className="w-4 h-4" />, label: 'Code' },
               { mode: 'split', icon: <SplitSquareVertical className="w-4 h-4" />, label: 'Split' },
               { mode: 'preview', icon: <Eye className="w-4 h-4" />, label: 'Preview' },
             ].map(v => (
               <button key={v.mode} onClick={() => setViewMode(v.mode)} title={v.label}
-                className={`p-1.5 rounded-md transition-all ${viewMode === v.mode ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`p-1.5 rounded-md transition-all ${viewMode === v.mode ? 'bg-[#00A1B2] text-white' : 'text-slate-400 hover:text-white'}`}
                 data-testid={`view-${v.mode}`}>
                 {v.icon}
               </button>
             ))}
           </div>
           {viewMode === 'preview' && (
-            <div className="flex items-center bg-slate-800 rounded-lg p-0.5">
+            <div className="flex items-center bg-slate-800/60 rounded-lg p-0.5">
               {[
                 { d: 'desktop', icon: <Monitor className="w-4 h-4" /> },
                 { d: 'tablet', icon: <Tablet className="w-4 h-4" /> },
@@ -683,7 +254,7 @@ const KBEditor = () => {
               ))}
             </div>
           )}
-          <button onClick={() => setConfigOpen(!configOpen)} className={`p-2 rounded-lg transition-colors ${configOpen ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`} title="Settings" data-testid="config-toggle">
+          <button onClick={() => setConfigOpen(!configOpen)} className={`p-2 rounded-lg transition-colors ${configOpen ? 'bg-[#00A1B2] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`} title="Settings" data-testid="config-toggle">
             <Settings className="w-4 h-4" />
           </button>
           {form?.slug && (
@@ -694,7 +265,7 @@ const KBEditor = () => {
           <div className="w-px h-6 bg-slate-800" />
           {lastSaved && <span className="text-xs text-slate-500 hidden sm:block">Saved {lastSaved.toLocaleTimeString()}</span>}
           <button onClick={handleSave} disabled={saving || !form?.title?.trim()}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-[#00A1B2] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity"
             data-testid="save-btn">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span className="hidden sm:inline">Save</span>
@@ -703,60 +274,35 @@ const KBEditor = () => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
-        {sidebarOpen && (
-          <aside className="w-64 flex-shrink-0 border-r border-slate-800 bg-[#0f0f0f] flex flex-col overflow-hidden" data-testid="editor-sidebar">
-            <div className="px-3 py-3 flex items-center justify-between border-b border-slate-800">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Articles</span>
-              <div className="flex items-center gap-1">
-                <button onClick={() => setNavManagerOpen(true)} className="p-1 text-slate-500 hover:text-emerald-400 rounded transition-colors" title="Manage navigation" data-testid="manage-nav-btn">
-                  <Settings className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={() => navigate('/dashboard/kb-editor/new')} className="p-1 text-slate-500 hover:text-emerald-400 rounded transition-colors" title="New article" data-testid="new-article-btn">
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto px-2 py-2">
-              {tree.map(group => (
-                <div key={group.key} className="mb-3">
-                  <div className="px-2 py-1 text-[10px] font-semibold text-emerald-500/70 uppercase tracking-wider">{group.label}</div>
-                  {group.sections.map(sec => (
-                    <NavGroup key={sec.key} group={sec} groupKey={`${group.key}-${sec.key}`} articles={sec.articles} selectedSlug={paramSlug} onSelect={handleDocSelect} expanded={expanded} setExpanded={setExpanded} onDelete={handleDelete} deleting={deleting} />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </aside>
-        )}
+        {/* Sidebar */}
+        <ArticleSidebar tree={tree} selectedSlug={paramSlug} onSelect={(slug) => navigate(`/dashboard/kb-editor/${slug}`)} onDelete={handleDelete} deleting={deleting} expanded={expanded} setExpanded={setExpanded} onNewArticle={() => navigate('/dashboard/kb-editor/new')} onManageNav={() => setNavManagerOpen(true)} />
 
-        {/* Main Editor Area */}
+        {/* Editor Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {form && viewMode !== 'preview' && (
             <EditorToolbar textareaRef={textareaRef} content={form.content_markdown || ''} setContent={v => setForm(f => ({ ...f, content_markdown: v }))} onUploadImage={uploadImage} />
           )}
           <div className="flex-1 flex overflow-hidden">
-            {/* Markdown Editor */}
             {(viewMode === 'markdown' || viewMode === 'split') && (
-              <div className={`${viewMode === 'split' ? 'w-1/2 border-r border-slate-800' : 'w-full'} flex flex-col overflow-hidden relative`}
+              <div className={`${viewMode === 'split' ? 'w-1/2 border-r border-slate-800/80' : 'w-full'} flex flex-col overflow-hidden relative`}
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}>
                 {dragOver && (
-                  <div className="absolute inset-0 z-20 bg-emerald-500/10 border-2 border-dashed border-emerald-500 rounded-lg flex items-center justify-center pointer-events-none" data-testid="drag-overlay">
-                    <div className="text-emerald-400 text-sm font-medium flex items-center gap-2"><ImageIcon className="w-5 h-5" /> Drop image to upload</div>
+                  <div className="absolute inset-0 z-20 bg-[#00A1B2]/10 border-2 border-dashed border-[#00A1B2] rounded-lg flex items-center justify-center pointer-events-none">
+                    <div className="text-[#00A1B2] text-sm font-medium flex items-center gap-2"><ImageIcon className="w-5 h-5" /> Drop image to upload</div>
                   </div>
                 )}
                 {uploading && (
-                  <div className="absolute inset-0 z-20 bg-black/40 flex items-center justify-center" data-testid="upload-spinner">
-                    <div className="flex items-center gap-2 text-emerald-400 text-sm bg-slate-900 px-4 py-2 rounded-lg border border-slate-700"><Loader2 className="w-4 h-4 animate-spin" /> Uploading image...</div>
+                  <div className="absolute inset-0 z-20 bg-black/40 flex items-center justify-center">
+                    <div className="flex items-center gap-2 text-[#00A1B2] text-sm bg-slate-900 px-4 py-2 rounded-lg border border-slate-700"><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</div>
                   </div>
                 )}
                 {form ? (
                   <textarea ref={textareaRef} value={form.content_markdown || ''} onChange={e => setForm(f => ({ ...f, content_markdown: e.target.value }))}
                     onPaste={handlePaste}
                     className="flex-1 w-full px-6 py-6 bg-transparent text-slate-200 text-sm font-mono leading-relaxed resize-none outline-none"
-                    style={{ tabSize: 2 }} placeholder="Start writing markdown... (Drag, drop or paste images here)" spellCheck={false} data-testid="markdown-editor" />
+                    style={{ tabSize: 2 }} placeholder="Start writing markdown... (Drag, drop or paste images)" spellCheck={false} data-testid="markdown-editor" />
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-slate-500">
                     <div className="text-center"><FileText className="w-8 h-8 mx-auto mb-3 opacity-50" /><p>Select an article or create new</p></div>
@@ -764,12 +310,11 @@ const KBEditor = () => {
                 )}
               </div>
             )}
-            {/* Live Preview */}
             {(viewMode === 'preview' || viewMode === 'split') && (
               <div className={`${viewMode === 'split' ? 'w-1/2' : 'w-full'} overflow-y-auto bg-[#0a0a0a]`} data-testid="live-preview">
                 <div className={`${previewWidth} mx-auto px-6 py-8`}>
                   {form ? (
-                    <div className="prose prose-invert max-w-none prose-headings:font-semibold prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:leading-7 prose-a:text-[#188455] prose-code:text-[#188455] prose-code:bg-[#188455]/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-slate-900 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl">
+                    <div className="prose prose-invert max-w-none prose-headings:font-semibold prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:leading-7 prose-a:text-[#00A1B2] prose-code:text-[#00A1B2] prose-code:bg-[#00A1B2]/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-slate-900 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl">
                       <h1 className="text-3xl font-bold text-white mb-6">{form.title || 'Untitled'}</h1>
                       <DocContent content={form.content_markdown || ''} />
                     </div>
@@ -782,11 +327,9 @@ const KBEditor = () => {
           </div>
         </div>
 
-        {/* Config Panel */}
         {configOpen && form && <ConfigPanel form={form} setForm={setForm} navGroups={navGroups} onClose={() => setConfigOpen(false)} />}
       </div>
 
-      {/* Navigation Manager Modal */}
       {navManagerOpen && <NavManager navGroups={navGroups} onSave={saveNavigation} onBulkMove={bulkMoveArticles} onClose={() => setNavManagerOpen(false)} />}
     </div>
   );
