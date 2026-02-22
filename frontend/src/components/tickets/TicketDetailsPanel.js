@@ -725,6 +725,7 @@ const TicketDetailsPanel = ({
               )}
             </div>
           </>
+        )}
 
         {/* Divider */}
         <div className="h-px bg-border/30" />
