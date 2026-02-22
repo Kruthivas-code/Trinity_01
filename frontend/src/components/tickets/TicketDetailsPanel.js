@@ -92,7 +92,7 @@ const TicketDetailsPanel = ({
       </div>
 
       {/* Details Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {/* Escalation Level */}
         <div>
           <label className="text-[11px] text-foreground/60 font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
