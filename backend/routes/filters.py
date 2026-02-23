@@ -180,7 +180,7 @@ async def filter_tickets(
 
     tickets = list(
         tickets_collection.find(mongo_query)
-        .sort(req.sort_by, sort_dir)
+        .sort(sort_field, sort_dir)
         .skip(skip)
         .limit(req.limit)
     )
