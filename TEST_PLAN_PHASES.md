@@ -1,8 +1,8 @@
 # Trinity - Phased Screenshot Testing Plan
 
 **Created:** February 12, 2026  
-**App URL:** https://ticket-threads.preview.emergentagent.com  
-**API Docs:** https://ticket-threads.preview.emergentagent.com/api/docs  
+**App URL:** https://ticket-search-debug.preview.emergentagent.com  
+**API Docs:** https://ticket-search-debug.preview.emergentagent.com/api/docs  
 
 ## Test Credentials
 - **Admin User:** test@test.com (user_id: b1bbdaf9-5ac0-47a9-ac7d-31b0b149010e)
