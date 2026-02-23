@@ -115,7 +115,7 @@ const EmailViewer = ({
       } else if (!trimmedLine) {
         flushQuoteBuffer();
         if (!lastWasEmpty && elements.length > 0) {
-          elements.push(<div key={`space-${index}`} className="h-1" />);
+          elements.push(<div key={`space-${index}`} className="h-px" />);
           lastWasEmpty = true;
         }
       } else {
