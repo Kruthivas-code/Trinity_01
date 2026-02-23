@@ -26,7 +26,7 @@ export const formatDateTime = (dateString) => {
 // Short date: "Feb 23"
 export const formatDateShort = (dateString) => {
   if (!dateString) return '';
-  return new Date(dateString).toLocaleDateString('en-US', {
+  return new Date(ensureUTC(dateString)).toLocaleDateString('en-US', {
     timeZone: APP_TIMEZONE,
     month: 'short',
     day: 'numeric',
@@ -36,7 +36,7 @@ export const formatDateShort = (dateString) => {
 // Full date with year: "Feb 23, 2026"
 export const formatDateFull = (dateString) => {
   if (!dateString) return '';
-  return new Date(dateString).toLocaleDateString('en-US', {
+  return new Date(ensureUTC(dateString)).toLocaleDateString('en-US', {
     timeZone: APP_TIMEZONE,
     month: 'short',
     day: 'numeric',
@@ -47,7 +47,7 @@ export const formatDateFull = (dateString) => {
 // Date with weekday: "Sun, Feb 23, 9:30 AM"
 export const formatDateWithWeekday = (dateString) => {
   if (!dateString) return '';
-  return new Date(dateString).toLocaleString('en-US', {
+  return new Date(ensureUTC(dateString)).toLocaleString('en-US', {
     timeZone: APP_TIMEZONE,
     weekday: 'short',
     month: 'short',
@@ -57,3 +57,6 @@ export const formatDateWithWeekday = (dateString) => {
     hour12: true,
   });
 };
+
+// Re-export for use in inline calls
+export { ensureUTC };
