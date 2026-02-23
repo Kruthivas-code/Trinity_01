@@ -46,7 +46,7 @@ const getActivityColor = (field) => {
 // Format timestamp for display
 const formatRelativeTime = (timestamp) => {
   if (!timestamp) return '';
-  const date = new Date(timestamp);
+  const date = new Date(timestamp?.endsWith?.('Z') ? timestamp : timestamp + 'Z');
   
   return date.toLocaleString('en-US', {
     timeZone: 'Asia/Kolkata',
@@ -61,7 +61,7 @@ const formatRelativeTime = (timestamp) => {
 // Format full date for tooltip
 const formatFullDate = (timestamp) => {
   if (!timestamp) return '';
-  return new Date(timestamp).toLocaleString('en-US', {
+  return new Date(timestamp?.endsWith?.('Z') ? timestamp : timestamp + 'Z').toLocaleString('en-US', {
     timeZone: 'Asia/Kolkata',
     weekday: 'short',
     month: 'short',
