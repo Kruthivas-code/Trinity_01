@@ -102,8 +102,23 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
   const observerTarget = useRef(null);
   const [activeFilterTree, setActiveFilterTree] = useState(propFilterTree || null);
   const [showSaveModal, setShowSaveModal] = useState(false);
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const sortRef = useRef(null);
   
   const { onTicketUpdate } = useRealtime();
+
+  // Close sort menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sortRef.current && !sortRef.current.contains(e.target)) {
+        setShowSortMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Subscribe to real-time ticket updates
   useEffect(() => {
