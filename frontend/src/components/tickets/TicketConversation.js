@@ -261,7 +261,7 @@ const TicketConversation = ({
       </div>
 
       {/* Conversation Thread - Scrollable */}
-      <div ref={conversationRef} className="flex-1 overflow-y-auto p-3 space-y-1.5">
+      <div ref={conversationRef} className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
         {/* Metadata Tab Content */}
         {activeTab === 'activity' && (
           <div className="space-y-3">

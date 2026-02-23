@@ -178,9 +178,9 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
             [&_blockquote]:border-l-2 [&_blockquote]:border-primary/30 [&_blockquote]:pl-3 [&_blockquote]:italic
             [&_pre]:bg-secondary/50 [&_pre]:rounded [&_pre]:p-2 [&_pre]:text-xs [&_pre]:overflow-x-auto
             [&_code]:bg-secondary/50 [&_code]:rounded [&_code]:px-1 [&_code]:text-xs
-            [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:my-1
-            [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:my-1
-            [&_p]:my-1 [&_br]:my-0.5
+            [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:my-0.5
+            [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:my-0.5
+            [&_p]:my-0.5 [&_br]:my-0
             [&_img]:max-w-full [&_img]:rounded"
           dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
@@ -221,7 +221,7 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
   
   return (
     <div className={`${styles.alignment}`} data-testid="message-item">
-      <div className={`${styles.container} ${mergeStyles} px-2 py-1.5`}>
+      <div className={`${styles.container} ${mergeStyles} px-2 py-1`}>
         {/* Merged ticket indicator */}
         {isFromMergedTicket && (
           <div className={`flex items-center gap-1 mb-1 text-[9px] ${mergeColor.text}`}>
@@ -230,7 +230,7 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
           </div>
         )}
         {/* Message Header - Compact: avatar + sender + timestamp inline */}
-        <div className={`flex items-center gap-2 mb-1.5 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
+        <div className={`flex items-center gap-2 mb-0.5 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
           <div
             className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
             style={{
@@ -263,7 +263,7 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
         </div>
         
         {/* Message Body */}
-        <div className="text-[14px] text-foreground leading-relaxed pl-8">
+        <div className="text-[13px] text-foreground leading-snug pl-8">
           {emailData && (emailData.email_html || emailData.email_text) ? (
             <EmailViewer ticket={emailData} />
           ) : (
