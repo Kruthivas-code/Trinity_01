@@ -454,6 +454,13 @@ async def get_tickets(
     current_user: dict = Depends(get_current_user)
 ):
     """List tickets with filtering, pagination, and sorting. Supports multi-value status filter."""
+    ALLOWED_SORT_FIELDS = {
+        "created_at", "updated_at", "last_message_at",
+        "last_customer_message_at", "last_agent_message_at",
+        "priority", "status", "escalation_level", "title", "customer_email"
+    }
+    if sort_by not in ALLOWED_SORT_FIELDS:
+        sort_by = "created_at"
     query = {}
     status_values = request.query_params.getlist("status")
     if status_values:
