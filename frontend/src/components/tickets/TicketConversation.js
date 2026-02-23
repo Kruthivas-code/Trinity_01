@@ -8,7 +8,7 @@ import {
 import RichTextEditor from '../common/RichTextEditor';
 import MentionInput from '../common/MentionInput';
 import ActivityTimeline from '../common/ActivityTimeline';
-import EmailMessage, { getMergeColor, stripHtml } from './EmailMessage';
+import EmailMessage, { getMergeColor, stripHtml, getInitials, getAvatarColor } from './EmailMessage';
 
 const TicketConversation = ({
   ticket,
