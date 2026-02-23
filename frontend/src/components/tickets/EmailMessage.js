@@ -194,7 +194,6 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
       return {
         container: 'bg-amber-500/10 border border-amber-400/30 rounded-lg',
         alignment: 'mx-auto max-w-[90%]',
-        avatar: 'bg-amber-400/20 text-amber-400',
         badge: 'bg-amber-400/20 text-amber-400'
       };
     }
@@ -202,14 +201,12 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
       return {
         container: 'bg-primary/10 border border-primary/20 rounded-lg rounded-tr-sm',
         alignment: 'ml-auto max-w-[85%]',
-        avatar: 'bg-primary/30 text-primary',
         badge: 'bg-primary/20 text-primary'
       };
     }
     return {
       container: 'bg-secondary/30 border border-border/40 rounded-lg rounded-tl-sm',
       alignment: 'mr-auto max-w-[85%]',
-      avatar: 'bg-slate-500/30 text-slate-300',
       badge: null
     };
   };
