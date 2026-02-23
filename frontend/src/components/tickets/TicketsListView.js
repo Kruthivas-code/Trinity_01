@@ -1,11 +1,22 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Clock, User as UserIcon } from 'lucide-react';
+import { Clock, User as UserIcon, ArrowUpDown, ArrowUp, ArrowDown, Check } from 'lucide-react';
 import { useRealtime } from '../../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const FilterBuilder = React.lazy(() => import('./FilterBuilder'));
 const SaveInboxModal = React.lazy(() => import('../inbox/SaveInboxModal'));
 const ITEMS_PER_PAGE = 50;
+
+const SORT_OPTIONS = [
+  { value: 'created_at', label: 'Created' },
+  { value: 'updated_at', label: 'Updated' },
+  { value: 'last_message_at', label: 'Last message' },
+  { value: 'last_customer_message_at', label: 'Last customer msg' },
+  { value: 'last_agent_message_at', label: 'Last agent msg' },
+  { value: 'priority', label: 'Priority' },
+  { value: 'status', label: 'Status' },
+  { value: 'escalation_level', label: 'Escalation' },
+];
 
 // Get the best preview text for a ticket
 const getPreviewText = (ticket) => {
