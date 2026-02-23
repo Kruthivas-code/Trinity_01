@@ -89,7 +89,7 @@ export const stripHtml = (html) => {
 // Email-style message component with merge support
 const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, isFirst, isAgentMessage, originalTicketId, mergeColorIndex, isMergeDivider, mergedTicketTitle, currentTicketId, emailData, source, onSaveToKB }) => {
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
+    const date = new Date(dateString?.endsWith?.('Z') ? dateString : dateString + 'Z');
     return date.toLocaleString('en-US', { 
       timeZone: 'Asia/Kolkata',
       month: 'short', 
