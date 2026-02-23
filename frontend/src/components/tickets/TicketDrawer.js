@@ -10,7 +10,7 @@ import FeatureRequestModal from './FeatureRequestModal';
 import CannedResponsePicker from '../common/CannedResponsePicker';
 import KnowledgeBasePicker from '../common/KnowledgeBasePicker';
 
-const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, onDelete }) => {
+const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, onDelete, onTicketSwitch }) => {
   const state = useTicketDrawer({ ticket, users, currentUser, isOpen, onClose, onUpdate, onDelete });
 
   if ((!isOpen && !state.isClosing) || !ticket) return null;
@@ -43,6 +43,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           assignee={state.assignee}
           getStatusConfig={state.getStatusConfig}
           getPriorityConfig={state.getPriorityConfig}
+          onTicketSwitch={onTicketSwitch}
         />
 
         {/* Middle Panel - Conversation */}
