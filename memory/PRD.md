@@ -187,6 +187,13 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 
 ## Completed Work (Feb 23, 2026)
 
+### IST Timezone & Atlas Cleanup
+- All timestamps across the app now display in IST (Asia/Kolkata, UTC+5:30)
+- Updated 12+ files: EmailMessage, TicketsListView, StarredTicketsPage, TicketDetailsPanel, ActivityTimeline, AISummaryBadge, AnalyticsPage, FeatureRequestsPage, SearchResultsPage, ProfilePage, KnowledgeBasePage, SettingsPage, SLAPoliciesTab, PortalTicketDetail
+- Created centralized `utils/dateFormat.js` utility for future use
+- Converted 244 Manish (Atlas) messages from `reply` → `internal_note`
+- Deleted 5,968 Atlas messages older than 1 week (keeping 1,196 from Feb 16–22)
+
 ### Initial-Based Avatars in Ticket Conversation
 - Replaced generic single-character avatars with full initials (e.g., "Nikita C" → "NC", "Atlas Agent" → "AA")
 - Curated 8-color on-brand palette (Cyan, Blue, Indigo, Violet, Teal, Emerald, Amber, Rose) harmonizing with brand teal `#00A1B2`
