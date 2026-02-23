@@ -81,7 +81,8 @@ const groupActivitiesByDate = (activities) => {
 
   activities.forEach(activity => {
     if (!activity.timestamp) return;
-    const date = new Date(activity.timestamp);
+    const ts = activity.timestamp;
+    const date = new Date(ts?.endsWith?.('Z') ? ts : ts + 'Z');
     const dateStr = date.toDateString();
     
     let label;
