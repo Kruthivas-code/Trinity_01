@@ -388,14 +388,14 @@ const TicketDetailsPanel = ({
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Created</span>
                 <span className="text-foreground/80 text-[10px]">
-                  {new Date(ticket.created_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                  {new Date(ticket.created_at?.endsWith?.('Z') ? ticket.created_at : ticket.created_at + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Age</span>
                 <span className="text-foreground/80 text-[10px]">
                   {(() => {
-                    const diff = Date.now() - new Date(ticket.created_at).getTime();
+                    const diff = Date.now() - new Date(ticket.created_at?.endsWith?.('Z') ? ticket.created_at : ticket.created_at + 'Z').getTime();
                     const mins = Math.floor(diff / 60000);
                     if (mins < 60) return `${mins}m`;
                     const hrs = Math.floor(mins / 60);
@@ -577,7 +577,7 @@ const TicketDetailsPanel = ({
                       </p>
                     )}
                     <p className="text-[10px] text-muted-foreground/60 mt-2">
-                      by {csatData.customer_name} &middot; {new Date(csatData.submitted_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                      by {csatData.customer_name} &middot; {new Date(csatData.submitted_at?.endsWith?.('Z') ? csatData.submitted_at : csatData.submitted_at + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                     </p>
                   </div>
                 ) : csatData?.survey_sent ? (
@@ -587,7 +587,7 @@ const TicketDetailsPanel = ({
                       <span className="text-xs font-medium">Survey sent</span>
                     </div>
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      Awaiting response &middot; Expires {new Date(csatData.expires_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                      Awaiting response &middot; Expires {new Date(csatData.expires_at?.endsWith?.('Z') ? csatData.expires_at : csatData.expires_at + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                     </p>
                   </div>
                 ) : formData.status === 'resolved' ? (
