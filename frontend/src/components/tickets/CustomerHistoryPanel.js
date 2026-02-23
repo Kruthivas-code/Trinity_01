@@ -83,7 +83,7 @@ const CustomerHistoryPanel = ({ ticket, users, relatedTickets, loadingRelated, a
               </div>
               <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                 <span>
-                  {new Date(ticket.updated_at || ticket.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {new Date(ticket.updated_at || ticket.created_at).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric' })}
                 </span>
                 <span className="truncate max-w-[80px]">
                   {assignee?.name || 'Unassigned'}
