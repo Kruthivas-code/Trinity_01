@@ -231,6 +231,12 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - Files modified: `backend/routes/search_presence.py`
 - Tested by testing_agent: 100% pass rate (iteration_46, 8/8 tests)
 
+### Ticket Switching Bug Fix (Feb 23, 2026)
+- **Root cause**: Clicking a related ticket in CustomerHistoryPanel used `navigate()` to change URL, but the `useEffect` in MainLayout depended on the `searchParams` object reference which didn't reliably trigger re-renders for same-route query param changes
+- **Fix**: (1) Changed useEffect dependency from `searchParams` object to extracted `ticketIdFromUrl` string for reliable primitive comparison. (2) Added `onTicketSwitch` callback prop that bypasses URL-based navigation by directly calling `openTicketById()` to fetch and display the new ticket
+- Files modified: `MainLayout.js`, `TicketDrawer.js`, `CustomerHistoryPanel.js`, `DashboardContainer.js`
+- Tested by testing_agent: 100% pass rate (iteration_47, 5/5 tests)
+
 ---
 
 ## Pending / Backlog
