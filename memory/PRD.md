@@ -237,6 +237,13 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - Files modified: `MainLayout.js`, `TicketDrawer.js`, `CustomerHistoryPanel.js`, `DashboardContainer.js`
 - Tested by testing_agent: 100% pass rate (iteration_47, 5/5 tests)
 
+### Compact Header + Backend-Driven Sorting (Feb 23, 2026)
+- **UI Density**: Compacted tickets list header into single row — title+count on left, sort dropdown+filter button on right. Reduced padding from py-2 to py-1.5, removed subtitle row
+- **Sorting**: Added sort dropdown with 8 fields (created_at, updated_at, last_message_at, last_customer_message_at, last_agent_message_at, priority, status, escalation_level). All sorting is backend-driven (MongoDB query level). Click same field to toggle asc/desc
+- **Backend**: Added `last_message_at`, `last_customer_message_at`, `last_agent_message_at` field tracking to ticket note creation and IMAP poller. Whitelisted sort fields in both GET /api/tickets and POST /api/filter/tickets
+- Files modified: `TicketsListView.js`, `tickets.py`, `filters.py`, `email_poller.py`
+- Tested by testing_agent: 100% pass rate (iteration_48, 28/28 tests)
+
 ---
 
 ## Pending / Backlog
