@@ -4,7 +4,53 @@ import { GitMerge, BookOpen } from 'lucide-react';
 import { renderTextWithMentions } from '../common/MentionInput';
 import EmailViewer from '../common/EmailViewer';
 
-// Merge color palette for visual distinction of merged ticket sources
+// --- Avatar utilities ---
+
+// Curated palette harmonizing with brand teal (#00A1B2)
+// Cool-dominant with 2 warm accents — professional, scannable in light + dark
+const AVATAR_PALETTE = [
+  '#0891b2', // Cyan (brand family)
+  '#2563eb', // Blue
+  '#6366f1', // Indigo
+  '#8b5cf6', // Violet
+  '#0d9488', // Teal
+  '#059669', // Emerald
+  '#d97706', // Amber (warm accent)
+  '#be185d', // Rose (warm accent)
+];
+
+const hashName = (str) => {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h) + str.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+};
+
+export const getAvatarColor = (name) => {
+  if (!name) return AVATAR_PALETTE[0];
+  return AVATAR_PALETTE[hashName(name) % AVATAR_PALETTE.length];
+};
+
+export const getInitials = (name) => {
+  if (!name) return '?';
+  const display = name.includes('@') ? name.split('@')[0] : name;
+  const parts = display.trim().split(/[\s._-]+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  }
+  return parts[0]?.charAt(0)?.toUpperCase() || '?';
+};
+
+const hexToRgba = (hex, alpha) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+// --- Merge color palette for visual distinction of merged ticket sources ---
 export const MERGE_COLORS = [
   { bg: 'bg-cyan-500/10', border: 'border-l-cyan-500', text: 'text-cyan-400', label: 'Cyan' },
   { bg: 'bg-amber-500/10', border: 'border-l-amber-500', text: 'text-amber-400', label: 'Amber' },
@@ -187,8 +233,15 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
         )}
         {/* Message Header - Compact: avatar + sender + timestamp inline */}
         <div className={`flex items-center gap-2 mb-1.5 ${isAgent && !isNote ? 'flex-row-reverse' : ''}`}>
-          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-medium shrink-0 ${styles.avatar}`}>
-            {sender?.charAt(0).toUpperCase() || 'U'}
+          <div
+            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0"
+            style={{
+              backgroundColor: hexToRgba(getAvatarColor(sender), 0.15),
+              color: getAvatarColor(sender),
+            }}
+            data-testid="message-avatar"
+          >
+            {getInitials(sender)}
           </div>
           <span className="font-medium text-sm">{sender || 'Unknown'}</span>
           {isNote && (
