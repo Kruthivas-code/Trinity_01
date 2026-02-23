@@ -189,10 +189,18 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 
 ### IST Timezone & Atlas Cleanup
 - All timestamps across the app now display in IST (Asia/Kolkata, UTC+5:30)
-- Updated 12+ files: EmailMessage, TicketsListView, StarredTicketsPage, TicketDetailsPanel, ActivityTimeline, AISummaryBadge, AnalyticsPage, FeatureRequestsPage, SearchResultsPage, ProfilePage, KnowledgeBasePage, SettingsPage, SLAPoliciesTab, PortalTicketDetail
-- Created centralized `utils/dateFormat.js` utility for future use
+- Fixed root cause: backend sends naive UTC timestamps without Z suffix; added `ensureUTC()` helper that appends Z before JS Date parsing
+- Updated 15+ frontend files with `timeZone: 'Asia/Kolkata'` and UTC-aware date parsing
+- Created centralized `utils/dateFormat.js` utility with `ensureUTC`, `formatDateTime`, `formatDateShort`, `formatDateFull`, `formatDateWithWeekday`
 - Converted 244 Manish (Atlas) messages from `reply` → `internal_note`
 - Deleted 5,968 Atlas messages older than 1 week (keeping 1,196 from Feb 16–22)
+
+### UI Density Improvements (2x)
+- **Ticket list**: Combined preview+metadata into one row, reduced padding from `py-4` to `py-1.5`, font sizes from 13-15px to 11-13px — ~17 tickets visible vs ~9 before
+- **Conversation**: Reduced message spacing from `space-y-1.5` to `space-y-0.5`, container padding from `p-3` to `p-1.5`, message body font from 14px to 12px with `leading-snug`, tighter prose paragraph spacing
+- **Email content**: Reduced empty line spacer from `h-1` to `h-px`, font from 13px to 12px
+- Files modified: `TicketsListView.js`, `EmailMessage.js`, `TicketConversation.js`, `EmailViewer.js`
+- Tested by testing_agent: 100% pass rate (iteration_45)
 
 ### Initial-Based Avatars in Ticket Conversation
 - Replaced generic single-character avatars with full initials (e.g., "Nikita C" → "NC", "Atlas Agent" → "AA")
