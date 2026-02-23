@@ -751,25 +751,6 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
       }
 
       const recipientEmail = ticket.customer_email || ticket.email_sender;
-      if (inputMode === 'reply' && ticket.source === 'email' && recipientEmail) {
-        const emailResponse = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/reply`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            ticket_id: ticket.id,
-            to_email: recipientEmail,
-            subject: `Re: ${ticket.title}`,
-            body: plainText.trim(),
-            images: attachedImages.map(img => img.url)
-          })
-        });
-
-        if (!emailResponse.ok) {
-          const errorData = await emailResponse.json();
-          console.error('Failed to send email:', errorData);
-        }
-      }
 
       const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/notes`, {
         method: 'POST',
