@@ -195,6 +195,12 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - Converted 244 Manish (Atlas) messages from `reply` → `internal_note`
 - Deleted 5,968 Atlas messages older than 1 week (keeping 1,196 from Feb 16–22)
 
+### IMAP Poller Fix — Critical Email Processing Bug
+- **Root cause**: 53,867 unseen emails in inbox. Poller searched UNSEEN oldest-first, timing out before reaching new emails at position ~53,849
+- **Fix**: Changed to search by `SINCE <7 days ago>` (not UNSEEN), process **newest first** (reversed order)
+- Result: 11,262 emails from last 7 days, processed newest first — r44ohit@gmail.com emails immediately picked up
+- Files modified: `email_poller.py`
+
 ### Duplicate Reply Bug Fix
 - **Root cause**: Frontend was calling BOTH `/api/tickets/{id}/reply` (stores plain text message) AND `/api/tickets/{id}/notes` (stores HTML message + sends email) — creating 2 messages per reply
 - **Fix**: Removed the redundant `/reply` call; `/notes` endpoint already handles email sending
