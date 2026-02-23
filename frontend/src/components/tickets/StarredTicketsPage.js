@@ -46,6 +46,7 @@ const getStatusBadge = (status) => {
 const formatTimeAgo = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleString('en-US', {
+    timeZone: 'Asia/Kolkata',
     month: 'short',
     day: 'numeric',
     hour: 'numeric',

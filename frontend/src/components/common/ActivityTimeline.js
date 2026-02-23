@@ -49,6 +49,7 @@ const formatRelativeTime = (timestamp) => {
   const date = new Date(timestamp);
   
   return date.toLocaleString('en-US', {
+    timeZone: 'Asia/Kolkata',
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
@@ -61,6 +62,7 @@ const formatRelativeTime = (timestamp) => {
 const formatFullDate = (timestamp) => {
   if (!timestamp) return '';
   return new Date(timestamp).toLocaleString('en-US', {
+    timeZone: 'Asia/Kolkata',
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -88,7 +90,7 @@ const groupActivitiesByDate = (activities) => {
     } else if (dateStr === yesterday) {
       label = 'Yesterday';
     } else {
-      label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      label = date.toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', year: 'numeric' });
     }
 
     if (!groups[label]) {
