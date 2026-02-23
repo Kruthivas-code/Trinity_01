@@ -349,7 +349,7 @@ const SettingsPage = ({ user }) => {
                       <p className="font-medium text-sm">{key.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {key.key_prefix}... • Used {key.usage_count || 0} times
-                        {key.last_used_at && ` • Last used ${new Date(key.last_used_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}`}
+                        {key.last_used_at && ` • Last used ${new Date(key.last_used_at?.endsWith?.('Z') ? key.last_used_at : key.last_used_at + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}`}
                       </p>
                     </div>
                     <button

@@ -418,7 +418,7 @@ const FeatureRequestCard = ({ request, statusConfig, onClick, onStatusChange }) 
       <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           <Calendar size={12} />
-          <span>{new Date(request.created_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+          <span>{new Date(request.created_at?.endsWith?.('Z') ? request.created_at : request.created_at + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</span>
         </div>
         {request.linked_tickets?.length > 0 && (
           <div className="flex items-center gap-1">
@@ -684,9 +684,9 @@ const FeatureRequestDrawer = ({ request, onClose, onStatusChange, onRefresh }) =
 
           {/* Metadata */}
           <div className="text-xs text-muted-foreground space-y-1 border-t border-border/30 pt-4">
-            <p>Created: {new Date(request.created_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}</p>
+            <p>Created: {new Date(request.created_at?.endsWith?.('Z') ? request.created_at : request.created_at + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}</p>
             {request.updated_at && (
-              <p>Updated: {new Date(request.updated_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}</p>
+              <p>Updated: {new Date(request.updated_at?.endsWith?.('Z') ? request.updated_at : request.updated_at + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}</p>
             )}
           </div>
         </div>

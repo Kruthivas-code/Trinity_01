@@ -260,7 +260,7 @@ const ProfilePage = ({ user: currentUser }) => {
                       <p className="text-sm text-muted-foreground">Member Since</p>
                       <p className="font-medium">
                         {user.created_at 
-                          ? new Date(user.created_at).toLocaleDateString('en-US', { 
+                          ? new Date(user.created_at?.endsWith?.('Z') ? user.created_at : user.created_at + 'Z').toLocaleDateString('en-US', { 
                               timeZone: 'Asia/Kolkata',
                               year: 'numeric', 
                               month: 'long', 
