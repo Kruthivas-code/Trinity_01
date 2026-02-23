@@ -281,11 +281,15 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border">
-        <h1 className="text-lg font-semibold mb-0.5 text-foreground">{title}</h1>
-        <p className="text-xs text-muted-foreground mb-2">
-          {subtitle || `Showing ${tickets.length} of ${totalCount} tickets`}
-        </p>
+      <div className="px-4 py-2 border-b border-border">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-base font-semibold text-foreground">{title}</h1>
+            <p className="text-xs text-muted-foreground">
+              {subtitle || `${totalCount} tickets`}
+            </p>
+          </div>
+        </div>
         {showFilterBuilder && (
           <React.Suspense fallback={null}>
             <FilterBuilder
