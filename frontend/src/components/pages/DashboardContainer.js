@@ -691,6 +691,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
         }}
         onUpdate={handleUpdateTicket}
         onDelete={handleDeleteTicket}
+        onTicketSwitch={handleTicketSwitch}
       />
 
       <CreateTicketModal
