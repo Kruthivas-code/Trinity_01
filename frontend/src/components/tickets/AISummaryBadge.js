@@ -121,7 +121,7 @@ const AISummaryBadge = ({ ticketId }) => {
           {/* Metadata */}
           {summary.generated_at && (
             <div className="text-[9px] text-muted-foreground/50 text-right">
-              {summary.cached ? 'Cached' : 'Generated'} {new Date(summary.generated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+              {summary.cached ? 'Cached' : 'Generated'} {new Date(summary.generated_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
             </div>
           )}
         </div>

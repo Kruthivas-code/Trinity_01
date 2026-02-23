@@ -555,7 +555,7 @@ const AnalyticsPage = ({ user }) => {
                     <p className="text-xs text-red-300 mt-1 italic">&ldquo;{item.feedback}&rdquo;</p>
                   )}
                   <p className="text-[10px] text-muted-foreground/60 mt-1">
-                    {new Date(item.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+                    {new Date(item.created_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                   </p>
                 </div>
               ))}

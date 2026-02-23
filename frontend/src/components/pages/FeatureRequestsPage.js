@@ -418,7 +418,7 @@ const FeatureRequestCard = ({ request, statusConfig, onClick, onStatusChange }) 
       <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">
           <Calendar size={12} />
-          <span>{new Date(request.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+          <span>{new Date(request.created_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</span>
         </div>
         {request.linked_tickets?.length > 0 && (
           <div className="flex items-center gap-1">
