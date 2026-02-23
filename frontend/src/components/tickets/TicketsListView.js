@@ -323,12 +323,12 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
                 <button
                   key={ticket.id}
                   onClick={() => onTicketClick(ticket)}
-                  className="w-full px-4 py-2 hover:bg-secondary/60 active:bg-secondary/80 transition-colors duration-150 text-left group"
+                  className="w-full px-4 py-1.5 hover:bg-secondary/60 active:bg-secondary/80 transition-colors duration-150 text-left group"
                   data-testid={`ticket-row-${ticket.ticket_id || ticket.id}`}
                 >
                   <div className="flex items-start gap-2">
                     {/* Priority Indicator */}
-                    <div className={`shrink-0 w-1 self-stretch rounded-full ${priorityColor} mt-0.5 group-hover:w-1.5 transition-all duration-150`} style={{minHeight: '36px'}} />
+                    <div className={`shrink-0 w-1 self-stretch rounded-full ${priorityColor} mt-0.5 group-hover:w-1.5 transition-all duration-150`} style={{minHeight: '28px'}} />
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
@@ -351,26 +351,26 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
                         </div>
                       </div>
 
-                      {/* Preview */}
-                      {(ticket.description || ticket.email_preview || ticket.email_text) && (
-                        <p className="text-[12px] text-muted-foreground line-clamp-1 mb-0.5">
-                          {getPreviewText(ticket)}
-                        </p>
-                      )}
-
-                      {/* Metadata */}
+                      {/* Preview + Metadata on same row */}
                       <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <UserIcon size={11} />
-                          <span>{getUserName(ticket.assignee_id)}</span>
+                        {(ticket.description || ticket.email_preview || ticket.email_text) && (
+                          <span className="line-clamp-1 flex-1 min-w-0">
+                            {getPreviewText(ticket)}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-1">
+                            <UserIcon size={11} />
+                            <span>{getUserName(ticket.assignee_id)}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock size={11} />
+                            <span className="tabular-nums">{formatTimeAgo(ticket.created_at)}</span>
+                          </div>
+                          <span className="text-muted-foreground/70 font-mono text-[10px]">
+                            #{ticket.ticket_id || ticket.id?.slice(-6) || 'N/A'}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock size={11} />
-                          <span className="tabular-nums">{formatTimeAgo(ticket.created_at)}</span>
-                        </div>
-                        <span className="text-muted-foreground/70 font-mono text-[11px]">
-                          #{ticket.ticket_id || ticket.id?.slice(-6) || 'N/A'}
-                        </span>
                       </div>
                     </div>
                   </div>
