@@ -185,6 +185,20 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 
 ---
 
+## Completed Work (Feb 23, 2026)
+
+### Initial-Based Avatars in Ticket Conversation
+- Replaced generic single-character avatars with full initials (e.g., "Nikita C" → "NC", "Atlas Agent" → "AA")
+- Curated 8-color on-brand palette (Cyan, Blue, Indigo, Violet, Teal, Emerald, Amber, Rose) harmonizing with brand teal `#00A1B2`
+- Deterministic color assignment via name hashing — same sender always gets same color
+- Handles full names, single names, and email addresses as sender names
+- Works across all message types: customer (left-aligned), agent replies (right-aligned), internal notes (center)
+- Updated typing indicator to use same avatar system
+- Files modified: `EmailMessage.js`, `TicketConversation.js`
+- Tested by testing_agent: 100% pass rate (iteration_44)
+
+---
+
 ## Pending / Backlog
 
 ### P1
@@ -192,6 +206,5 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 
 ### P2
 - Real-time notifications for agents
-- Refactor KBEditor.js into smaller components
 - Refactor portal categories to backend-managed
 - Email analytics dashboard (send/receive volumes, match rates)
