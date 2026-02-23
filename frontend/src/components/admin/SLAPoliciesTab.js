@@ -574,6 +574,7 @@ const SLAPoliciesTab = () => {
                     className="flex items-center gap-2 px-3 py-1.5 bg-secondary rounded-lg text-sm"
                   >
                     <span>{new Date(date + 'T00:00:00').toLocaleDateString('en-US', { 
+                      timeZone: 'Asia/Kolkata',
                       month: 'short', 
                       day: 'numeric',
                       year: 'numeric'

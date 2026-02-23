@@ -73,6 +73,7 @@ const PortalTicketDetail = () => {
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     return new Date(dateStr).toLocaleString('en-US', {
+      timeZone: 'Asia/Kolkata',
       month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true,
     });
   };
