@@ -195,6 +195,12 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - Converted 244 Manish (Atlas) messages from `reply` → `internal_note`
 - Deleted 5,968 Atlas messages older than 1 week (keeping 1,196 from Feb 16–22)
 
+### Duplicate Reply Bug Fix
+- **Root cause**: Frontend was calling BOTH `/api/tickets/{id}/reply` (stores plain text message) AND `/api/tickets/{id}/notes` (stores HTML message + sends email) — creating 2 messages per reply
+- **Fix**: Removed the redundant `/reply` call; `/notes` endpoint already handles email sending
+- Cleaned up affected ticket TKT-035560
+- Files modified: `useTicketDrawer.js`
+
 ### UI Density Improvements (2x)
 - **Ticket list**: Combined preview+metadata into one row, reduced padding from `py-4` to `py-1.5`, font sizes from 13-15px to 11-13px — ~17 tickets visible vs ~9 before
 - **Conversation**: Reduced message spacing from `space-y-1.5` to `space-y-0.5`, container padding from `p-3` to `p-1.5`, message body font from 14px to 12px with `leading-snug`, tighter prose paragraph spacing
