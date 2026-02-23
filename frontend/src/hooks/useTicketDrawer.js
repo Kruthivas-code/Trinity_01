@@ -750,7 +750,6 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
         finalContent = finalContent ? `${finalContent}<br><br>${imageHtml}` : imageHtml;
       }
 
-      const recipientEmail = ticket.customer_email || ticket.email_sender;
 
       const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/notes`, {
         method: 'POST',
