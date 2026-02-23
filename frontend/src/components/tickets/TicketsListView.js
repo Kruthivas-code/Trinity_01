@@ -281,9 +281,9 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-border">
-        <h1 className="text-xl font-semibold mb-1 text-foreground">{title}</h1>
-        <p className="text-sm text-muted-foreground mb-3">
+      <div className="px-4 py-3 border-b border-border">
+        <h1 className="text-lg font-semibold mb-0.5 text-foreground">{title}</h1>
+        <p className="text-xs text-muted-foreground mb-2">
           {subtitle || `Showing ${tickets.length} of ${totalCount} tickets`}
         </p>
         {showFilterBuilder && (
@@ -323,18 +323,18 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
                 <button
                   key={ticket.id}
                   onClick={() => onTicketClick(ticket)}
-                  className="w-full px-6 py-4 hover:bg-secondary/60 active:bg-secondary/80 transition-colors duration-150 text-left group"
+                  className="w-full px-4 py-2 hover:bg-secondary/60 active:bg-secondary/80 transition-colors duration-150 text-left group"
                   data-testid={`ticket-row-${ticket.ticket_id || ticket.id}`}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-2">
                     {/* Priority Indicator */}
-                    <div className={`shrink-0 w-1 self-stretch rounded-full ${priorityColor} mt-1 group-hover:w-1.5 transition-all duration-150`} style={{minHeight: '48px'}} />
+                    <div className={`shrink-0 w-1 self-stretch rounded-full ${priorityColor} mt-0.5 group-hover:w-1.5 transition-all duration-150`} style={{minHeight: '36px'}} />
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       {/* Title Row */}
-                      <div className="flex items-center justify-between gap-3 mb-1">
-                        <h3 className="text-[15px] font-medium text-foreground line-clamp-1">
+                      <div className="flex items-center justify-between gap-2 mb-0">
+                        <h3 className="text-[13px] font-medium text-foreground line-clamp-1">
                           {ticket.title}
                         </h3>
                         <div className="flex items-center gap-2 shrink-0">
@@ -353,19 +353,19 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
 
                       {/* Preview */}
                       {(ticket.description || ticket.email_preview || ticket.email_text) && (
-                        <p className="text-[13px] text-muted-foreground line-clamp-1 mb-2">
+                        <p className="text-[12px] text-muted-foreground line-clamp-1 mb-0.5">
                           {getPreviewText(ticket)}
                         </p>
                       )}
 
                       {/* Metadata */}
-                      <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                          <UserIcon size={13} />
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <UserIcon size={11} />
                           <span>{getUserName(ticket.assignee_id)}</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
-                          <Clock size={13} />
+                        <div className="flex items-center gap-1">
+                          <Clock size={11} />
                           <span className="tabular-nums">{formatTimeAgo(ticket.created_at)}</span>
                         </div>
                         <span className="text-muted-foreground/70 font-mono text-[11px]">
