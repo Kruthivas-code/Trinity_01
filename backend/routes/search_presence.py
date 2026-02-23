@@ -51,16 +51,35 @@ async def mark_notification_read(
 
 
 @router.post("/search")
-async def search_tickets(
+async def search_tickets_post(
     query: SearchQuery,
     current_user: dict = Depends(get_current_user)
 ):
-    """Search tickets using text search"""
+    """Search tickets using text search (POST)"""
     search_engine = get_search_engine(db)
     results = search_engine.search_all(
         query=query.query,
-        limit_per_category=query.limit if hasattr(query, 'limit') else 20,
-        current_user_id=current_user.get("user_id")
+        limit_per_category=query.limit_per_category if hasattr(query, 'limit_per_category') else 20,
+        current_user_id=current_user.get("user_id"),
+        type_filter=query.type_filter
+    )
+    return results
+
+
+@router.get("/search")
+async def search_tickets_get(
+    q: str = Query("", min_length=1),
+    limit: int = Query(20, ge=1, le=50),
+    type: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """Search tickets using text search (GET - used by frontend)"""
+    search_engine = get_search_engine(db)
+    results = search_engine.search_all(
+        query=q,
+        limit_per_category=limit,
+        current_user_id=current_user.get("user_id"),
+        type_filter=type
     )
     return results
 
