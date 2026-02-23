@@ -294,6 +294,19 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
     onSaveInbox({ name, color, filter_tree: activeFilterTree });
   }, [activeFilterTree, onSaveInbox]);
 
+  const handleSortChange = useCallback((field) => {
+    if (field === sortBy) {
+      setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+    setShowSortMenu(false);
+    setPage(1);
+    setTickets([]);
+    setHasMore(true);
+  }, [sortBy]);
+
   if (loading && page === 1 && !activeFilterTree) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -304,27 +317,63 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
     );
   }
 
+  const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Created';
+
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="px-4 py-2 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-base font-semibold text-foreground">{title}</h1>
-            <p className="text-xs text-muted-foreground">
-              {subtitle || `${totalCount} tickets`}
-            </p>
+      {/* Compact Header — title + controls on one line */}
+      <div className="px-4 py-1.5 border-b border-border">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-sm font-semibold text-foreground truncate">{title}</h1>
+            <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">{totalCount}</span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Sort dropdown */}
+            <div ref={sortRef} className="relative">
+              <button
+                onClick={() => setShowSortMenu(!showSortMenu)}
+                className="flex items-center gap-1 h-7 px-2 rounded-md border border-border text-[12px] text-foreground hover:bg-muted transition-colors"
+                data-testid="sort-toggle-btn"
+              >
+                {sortOrder === 'desc' ? <ArrowDown size={12} /> : <ArrowUp size={12} />}
+                <span>{currentSortLabel}</span>
+              </button>
+              {showSortMenu && (
+                <div className="absolute right-0 top-full mt-1 w-52 bg-background border border-border rounded-lg shadow-lg z-50 py-1" data-testid="sort-menu">
+                  {SORT_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => handleSortChange(opt.value)}
+                      className={`w-full flex items-center justify-between px-3 py-1.5 text-[12px] hover:bg-muted transition-colors ${
+                        opt.value === sortBy ? 'text-foreground font-medium' : 'text-muted-foreground'
+                      }`}
+                      data-testid={`sort-option-${opt.value}`}
+                    >
+                      <span>{opt.label}</span>
+                      {opt.value === sortBy && (
+                        <div className="flex items-center gap-1">
+                          {sortOrder === 'desc' ? <ArrowDown size={11} /> : <ArrowUp size={11} />}
+                          <Check size={11} />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* Filter builder inline */}
+            {showFilterBuilder && (
+              <React.Suspense fallback={null}>
+                <FilterBuilder
+                  onFilter={handleFilterApply}
+                  onSaveInbox={onSaveInbox ? () => setShowSaveModal(true) : null}
+                  initialFilters={propFilterTree}
+                />
+              </React.Suspense>
+            )}
           </div>
         </div>
-        {showFilterBuilder && (
-          <React.Suspense fallback={null}>
-            <FilterBuilder
-              onFilter={handleFilterApply}
-              onSaveInbox={onSaveInbox ? () => setShowSaveModal(true) : null}
-              initialFilters={propFilterTree}
-            />
-          </React.Suspense>
-        )}
       </div>
 
       <React.Suspense fallback={null}>
