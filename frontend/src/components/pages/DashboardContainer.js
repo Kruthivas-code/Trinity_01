@@ -160,6 +160,21 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
     setIsDrawerOpen(true);
   };
 
+  const handleTicketSwitch = async (ticketId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${ticketId}`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const ticket = await response.json();
+        setSelectedTicket(ticket);
+        setIsDrawerOpen(true);
+      }
+    } catch (error) {
+      console.error('Failed to switch ticket:', error);
+    }
+  };
+
   const handleCreateTicket = async (ticketData) => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/tickets`, {
