@@ -179,8 +179,8 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
             filter_tree: activeFilterTree,
             page: pageNum,
             limit: ITEMS_PER_PAGE,
-            sort_by: 'created_at',
-            sort_order: 'desc',
+            sort_by: sortBy,
+            sort_order: sortOrder,
           }),
         });
         if (!response.ok) throw new Error('Failed to filter tickets');
@@ -196,8 +196,8 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
         }
         params.set('page', pageNum);
         params.set('limit', ITEMS_PER_PAGE);
-        params.set('sort_by', 'created_at');
-        params.set('sort_order', 'desc');
+        params.set('sort_by', sortBy);
+        params.set('sort_order', sortOrder);
         
         const url = `${BACKEND_URL}/api/tickets?${params.toString()}`;
         const response = await fetch(url, { credentials: 'include' });
