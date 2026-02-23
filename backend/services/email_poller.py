@@ -14,7 +14,7 @@ import html as html_lib
 import logging
 import time
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from database import email_threads_collection, tickets_collection, messages_collection
 
