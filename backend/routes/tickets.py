@@ -220,7 +220,15 @@ async def add_internal_note(
         "created_at": datetime.now(timezone.utc)
     }
     messages_collection.insert_one(note_doc)
-    update_fields = {"updated_at": datetime.now(timezone.utc)}
+    now = datetime.now(timezone.utc)
+    update_fields = {"updated_at": now, "last_message_at": now}
+
+    # Track agent vs customer message timestamps
+    msg_type = note.type or "internal_note"
+    if msg_type == "reply":
+        update_fields["last_agent_message_at"] = now
+    elif msg_type == "customer_reply":
+        update_fields["last_customer_message_at"] = now
 
     # Send email notification to customer when agent replies
     if (note.type or "internal_note") == "reply" and ticket.get("customer_email"):
