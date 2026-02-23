@@ -263,7 +263,7 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
         </div>
         
         {/* Message Body */}
-        <div className="text-[13px] text-foreground leading-snug pl-8">
+        <div className="text-[12px] text-foreground leading-snug pl-8">
           {emailData && (emailData.email_html || emailData.email_text) ? (
             <EmailViewer ticket={emailData} />
           ) : (
