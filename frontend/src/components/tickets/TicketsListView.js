@@ -228,7 +228,7 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
     setTickets([]);
     setHasMore(true);
     fetchTickets(1);
-  }, [escalationLevel, activeFilterTree]);
+  }, [escalationLevel, activeFilterTree, sortBy, sortOrder]);
 
   // Sync propFilterTree changes
   useEffect(() => {
