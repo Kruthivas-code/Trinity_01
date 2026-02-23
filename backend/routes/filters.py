@@ -162,6 +162,12 @@ async def filter_tickets(
     current_user: dict = Depends(get_current_user)
 ):
     """Filter tickets using a complex filter tree (AND/OR conditions). Supports pagination and sorting."""
+    ALLOWED_SORT_FIELDS = {
+        "created_at", "updated_at", "last_message_at",
+        "last_customer_message_at", "last_agent_message_at",
+        "priority", "status", "escalation_level", "title", "customer_email"
+    }
+    sort_field = req.sort_by if req.sort_by in ALLOWED_SORT_FIELDS else "created_at"
     mongo_query = filter_tree_to_mongo(req.filter_tree.dict())
     if mongo_query:
         mongo_query = {"$and": [mongo_query, {"status": {"$ne": "merged"}}]}
