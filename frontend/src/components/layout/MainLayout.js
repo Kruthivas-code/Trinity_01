@@ -67,15 +67,13 @@ const MainLayout = ({ user, view }) => {
     }
   }, [urlTicketId, openTicketById]);
 
-  // Handle URL query param for opening a ticket (legacy support)
+  // Handle URL query param for opening a ticket
+  const ticketIdFromUrl = searchParams.get('ticket');
   useEffect(() => {
-    const ticketId = searchParams.get('ticket');
-    if (ticketId) {
-      openTicketById(ticketId);
-      // Clear the param from URL to prevent re-opening on refresh
-      // (optional - comment out if you want ticket links to be shareable)
+    if (ticketIdFromUrl) {
+      openTicketById(ticketIdFromUrl);
     }
-  }, [searchParams, openTicketById]);
+  }, [ticketIdFromUrl, openTicketById]);
 
   // Listen for open ticket events from search
   useEffect(() => {
