@@ -342,6 +342,7 @@ const MainLayout = ({ user, view }) => {
           onClose={handleCloseDrawer}
           onUpdate={handleUpdateTicket}
           onDelete={handleDeleteTicket}
+          onTicketSwitch={openTicketById}
         />
       )}
 
