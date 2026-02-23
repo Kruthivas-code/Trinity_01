@@ -624,6 +624,8 @@ def _process_email(mail, eid, folder="inbox"):
                 "status": "todo",
                 "updated_at": datetime.now(timezone.utc),
                 "last_customer_reply_at": datetime.now(timezone.utc),
+                "last_message_at": datetime.now(timezone.utc),
+                "last_customer_message_at": datetime.now(timezone.utc),
             }},
         )
     else:
