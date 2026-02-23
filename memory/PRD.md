@@ -224,6 +224,13 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - Files modified: `EmailMessage.js`, `TicketConversation.js`
 - Tested by testing_agent: 100% pass rate (iteration_44)
 
+### Search API Method Fix (Feb 23, 2026)
+- **Root cause**: Frontend (GlobalHeader, CommandPalette, SearchResultsPage) all call `GET /api/search?q=...&limit=...` but backend only had `POST /api/search` handler — returned 405 Method Not Allowed
+- **Fix**: Added `GET /api/search` endpoint in `search_presence.py` accepting query params `q`, `limit`, `type`
+- Both GET and POST handlers now work, calling the same `SearchEngine.search_all()` method
+- Files modified: `backend/routes/search_presence.py`
+- Tested by testing_agent: 100% pass rate (iteration_46, 8/8 tests)
+
 ---
 
 ## Pending / Backlog
@@ -234,4 +241,6 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 ### P2
 - Real-time notifications for agents
 - Refactor portal categories to backend-managed
+- On-demand full thread fetch from Gmail
+- Recurring job for auto-closing stale tickets
 - Email analytics dashboard (send/receive volumes, match rates)
