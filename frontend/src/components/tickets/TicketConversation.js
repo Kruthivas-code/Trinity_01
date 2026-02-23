@@ -514,15 +514,23 @@ const TicketConversation = ({
         <div className="shrink-0 px-3 py-2 border-t border-border/20 bg-secondary/20">
           <div className="flex items-center gap-2">
             <div className="flex -space-x-1">
-              {othersTyping.slice(0, 3).map((typer, idx) => (
-                <div 
-                  key={typer.user_id || idx}
-                  className="w-6 h-6 rounded-full bg-primary/30 flex items-center justify-center text-[10px] font-medium text-primary ring-2 ring-background"
-                  title={typer.name || typer.user_id}
-                >
-                  {(typer.name || typer.user_id || '?').charAt(0).toUpperCase()}
-                </div>
-              ))}
+              {othersTyping.slice(0, 3).map((typer, idx) => {
+                const typerName = typer.name || typer.user_id || '?';
+                const color = getAvatarColor(typerName);
+                return (
+                  <div 
+                    key={typer.user_id || idx}
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold ring-2 ring-background"
+                    style={{
+                      backgroundColor: `${color}26`,
+                      color: color,
+                    }}
+                    title={typerName}
+                  >
+                    {getInitials(typerName)}
+                  </div>
+                );
+              })}
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">
