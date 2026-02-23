@@ -221,6 +221,8 @@ def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body
         "customer_name": from_name or from_addr,
         "created_at": now,
         "updated_at": now,
+        "last_message_at": now,
+        "last_customer_message_at": now,
         "assignee_id": None,
         "escalation_level": "L1",
     })
