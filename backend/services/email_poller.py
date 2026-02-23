@@ -241,7 +241,7 @@ def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body
 
 
 def poll_inbox():
-    """Connect to IMAP, fetch unread emails from INBOX and new sent emails."""
+    """Connect to IMAP, fetch emails from INBOX (last 7 days, newest first) and sent emails."""
     host = _get_env("IMAP_HOST", "imap.gmail.com")
     user = _get_env("IMAP_USER")
     password = _get_env("IMAP_PASSWORD")
@@ -254,12 +254,14 @@ def poll_inbox():
         mail = imaplib.IMAP4_SSL(host, 993)
         mail.login(user, password)
 
-        # 1. Process INBOX (incoming customer emails)
+        # 1. Process INBOX — ALL emails from last 7 days (not just UNSEEN), newest first
         mail.select("INBOX")
-        status, data = mail.search(None, "UNSEEN")
+        since_date = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%d-%b-%Y")
+        status, data = mail.search(None, f'SINCE {since_date}')
         if status == "OK" and data[0]:
             email_ids = data[0].split()
-            logger.info(f"[POLL] INBOX: {len(email_ids)} unread")
+            email_ids.reverse()  # newest first
+            logger.info(f"[POLL] INBOX: {len(email_ids)} emails (last 7d, newest first)")
             for eid in email_ids:
                 try:
                     _process_email(mail, eid, folder="inbox")
