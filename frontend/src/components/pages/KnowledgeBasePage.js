@@ -380,7 +380,7 @@ export default function KnowledgeBasePage({ user }) {
                       </a>
                     )}
                     <span className="text-[10px] text-muted-foreground/60">
-                      by {snippet.created_by_name} · {new Date(snippet.created_at).toLocaleDateString()}
+                      by {snippet.created_by_name} · {new Date(snippet.created_at).toLocaleDateString('en-US', { timeZone: 'Asia/Kolkata' })}
                     </span>
                   </div>
                 </div>

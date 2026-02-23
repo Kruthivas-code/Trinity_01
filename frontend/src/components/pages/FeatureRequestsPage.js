@@ -684,9 +684,9 @@ const FeatureRequestDrawer = ({ request, onClose, onStatusChange, onRefresh }) =
 
           {/* Metadata */}
           <div className="text-xs text-muted-foreground space-y-1 border-t border-border/30 pt-4">
-            <p>Created: {new Date(request.created_at).toLocaleString()}</p>
+            <p>Created: {new Date(request.created_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}</p>
             {request.updated_at && (
-              <p>Updated: {new Date(request.updated_at).toLocaleString()}</p>
+              <p>Updated: {new Date(request.updated_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}</p>
             )}
           </div>
         </div>

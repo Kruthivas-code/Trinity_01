@@ -261,6 +261,7 @@ const ProfilePage = ({ user: currentUser }) => {
                       <p className="font-medium">
                         {user.created_at 
                           ? new Date(user.created_at).toLocaleDateString('en-US', { 
+                              timeZone: 'Asia/Kolkata',
                               year: 'numeric', 
                               month: 'long', 
                               day: 'numeric' 
