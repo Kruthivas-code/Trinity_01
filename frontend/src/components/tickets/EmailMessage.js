@@ -91,6 +91,7 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', { 
+      timeZone: 'Asia/Kolkata',
       month: 'short', 
       day: 'numeric',
       hour: 'numeric',
