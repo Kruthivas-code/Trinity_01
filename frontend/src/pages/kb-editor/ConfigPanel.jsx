@@ -21,7 +21,7 @@ const IconPicker = ({ value, onChange, theme }) => {
   const CurrentIcon = value ? getIcon(value) : FileText;
   return (
     <div className="relative">
-      <button onClick={() => setOpen(!open)} className={`flex items-center gap-2 px-3 py-2 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} w-full hover:border-[#00A1B2]/50 transition-colors`} data-testid="icon-picker-btn">
+      <button onClick={() => setOpen(!open)} className={`flex items-center gap-2 px-3 py-2 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} w-full hover:border-[#00A1B2]/50 transition-colors`} style={theme.inputBgStyle} data-testid="icon-picker-btn">
         <CurrentIcon className="w-4 h-4 text-[#00A1B2]" />
         <span className="flex-1 text-left truncate">{value || 'No icon'}</span>
         <ChevronDown className={`w-3 h-3 ${theme.textSecondary}`} />
