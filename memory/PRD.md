@@ -244,6 +244,16 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - Files modified: `TicketsListView.js`, `tickets.py`, `filters.py`, `email_poller.py`
 - Tested by testing_agent: 100% pass rate (iteration_48, 28/28 tests)
 
+### KB Editor Light/Dark Theme Toggle (Feb 24, 2026)
+- Added self-contained theme system to `/dashboard/kb-editor` with Sun/Moon toggle in header navbar
+- Two themes: Dark (existing look) and Light (white/gray backgrounds, dark text)
+- Theme stored in `localStorage('kb-editor-theme')` — independent of PublicDocs theme system
+- Uses inline styles to override app-level dark CSS variables for guaranteed light bg
+- All sub-components themed: ArticleSidebar, EditorToolbar, ConfigPanel, NavManager
+- **PublicDocs page completely unaffected** — uses separate `kb-theme` localStorage key
+- Files: `KBEditor.jsx`, `editorTheme.js` (new), `ArticleSidebar.jsx`, `EditorToolbar.jsx`, `ConfigPanel.jsx`, `NavManager.jsx`
+- Tested by testing_agent: 100% pass rate (iteration_49, 9/9 features)
+
 ---
 
 ## Pending / Backlog
