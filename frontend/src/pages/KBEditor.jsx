@@ -226,10 +226,14 @@ const KBEditor = () => {
     return <div className={`min-h-screen flex items-center justify-center ${theme.bg}`}><Loader2 className="w-6 h-6 animate-spin text-[#00A1B2]" /></div>;
   }
 
+  // Inline background styles for light theme to override app's CSS variable system
+  const bgStyle = isDark ? {} : { backgroundColor: '#ffffff' };
+  const panelBgStyle = isDark ? {} : { backgroundColor: '#f9fafb' };
+
   return (
-    <div className={`min-h-screen ${theme.bg} flex flex-col`} data-testid="kb-editor-page">
+    <div className={`min-h-screen ${theme.bg} flex flex-col`} style={bgStyle} data-testid="kb-editor-page">
       {/* Header */}
-      <header className={`h-14 flex items-center px-4 border-b ${theme.border} ${theme.panelBg} flex-shrink-0 gap-3 z-30`} data-testid="editor-header">
+      <header className={`h-14 flex items-center px-4 border-b ${theme.border} ${theme.panelBg} flex-shrink-0 gap-3 z-30`} style={panelBgStyle} data-testid="editor-header">
         <button onClick={() => navigate('/dashboard/settings')} className={`flex items-center gap-2 ${theme.textMuted} ${theme.hoverText} transition-colors`} data-testid="back-to-dashboard">
           <ChevronLeft className="w-4 h-4" /><span className="text-sm">Dashboard</span>
         </button>
