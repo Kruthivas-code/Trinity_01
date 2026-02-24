@@ -320,8 +320,8 @@ const KBEditor = () => {
             <EditorToolbar textareaRef={textareaRef} content={form.content_markdown || ''} setContent={v => setForm(f => ({ ...f, content_markdown: v }))} onUploadImage={uploadImage} theme={theme} />
           )}
           <div className="flex-1 flex overflow-hidden">
-            {(viewMode === 'markdown' || viewMode === 'split') && (
-              <div className={`${viewMode === 'split' ? `w-1/2 border-r ${theme.border}` : 'w-full'} flex flex-col overflow-hidden relative`}
+            {viewMode === 'markdown' && (
+              <div className="w-full flex flex-col overflow-hidden relative"
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}>
@@ -347,8 +347,8 @@ const KBEditor = () => {
                 )}
               </div>
             )}
-            {(viewMode === 'preview' || viewMode === 'split') && (
-              <div className={`${viewMode === 'split' ? 'w-1/2' : 'w-full'} overflow-y-auto ${theme.bg}`} style={bgStyle} data-testid="live-preview">
+            {viewMode === 'preview' && (
+              <div className="w-full overflow-y-auto" style={bgStyle} data-testid="live-preview">
                 <div className={`${previewWidth} mx-auto px-6 py-8`}>
                   {form ? (
                     <div className={`prose ${theme.proseClass} max-w-none`}>
