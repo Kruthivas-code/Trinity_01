@@ -250,6 +250,13 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Verified**: Dark heading=`rgb(255,255,255)`, Light heading=`rgb(17,24,39)`. Cards, borders, backgrounds all correct. PublicDocs page confirmed independent
 - Tested: 100% pass (iteration_50, 9/9 features)
 
+### KB Editor Independent Scrollbars (Feb 24, 2026)
+- **Fix**: Left sidebar and markdown editor now scroll independently. Previously, both sections scrolled together because the root container used `min-h-screen` (allows growth beyond viewport). Changed to `h-screen` (fixed viewport height) so `overflow-y-auto` on child containers is properly constrained.
+- **Sidebar scrollbar**: Only visible on hover via custom CSS (`.scrollbar-on-hover`). Uses `scrollbar-color: transparent transparent` by default, shows `rgba(150,150,150,0.4)` on hover. Webkit and Firefox both supported.
+- **Textarea**: Added explicit `overflow-y-auto` to the markdown editor textarea.
+- Files modified: `KBEditor.jsx`, `ArticleSidebar.jsx`, `index.css`
+- Tested: Programmatic verification — sidebar scrollTop=300 stays put when textarea scrolls to 200, and vice versa.
+
 ---
 
 ## Pending / Backlog
