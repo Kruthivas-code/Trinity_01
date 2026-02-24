@@ -242,7 +242,7 @@ const KBEditor = () => {
   const panelBgStyle = isDark ? {} : { backgroundColor: '#f9fafb' };
 
   return (
-    <div className={`min-h-screen ${theme.bg} flex flex-col`} style={bgStyle} data-testid="kb-editor-page">
+    <div className={`h-screen ${theme.bg} flex flex-col`} style={bgStyle} data-testid="kb-editor-page">
       {/* Header */}
       <header className={`h-14 flex items-center px-4 border-b ${theme.border} ${theme.panelBg} flex-shrink-0 gap-3 z-30`} style={panelBgStyle} data-testid="editor-header">
         <button onClick={() => navigate('/dashboard/settings')} className={`flex items-center gap-2 ${theme.textMuted} ${theme.hoverText} transition-colors`} data-testid="back-to-dashboard">
@@ -338,7 +338,7 @@ const KBEditor = () => {
                 {form ? (
                   <textarea ref={textareaRef} value={form.content_markdown || ''} onChange={e => setForm(f => ({ ...f, content_markdown: e.target.value }))}
                     onPaste={handlePaste}
-                    className={`flex-1 w-full px-6 py-6 bg-transparent ${theme.editorText} text-sm font-mono leading-relaxed resize-none outline-none`}
+                    className={`flex-1 w-full px-6 py-6 bg-transparent ${theme.editorText} text-sm font-mono leading-relaxed resize-none outline-none overflow-y-auto`}
                     style={{ tabSize: 2 }} placeholder="Start writing markdown... (Drag, drop or paste images)" spellCheck={false} data-testid="markdown-editor" />
                 ) : (
                   <div className={`flex-1 flex items-center justify-center ${theme.textSecondary}`}>

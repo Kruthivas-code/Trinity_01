@@ -61,7 +61,7 @@ export const ArticleSidebar = ({ tree, selectedSlug, onSelect, onDelete, deletin
         </button>
       </div>
     </div>
-    <div className="flex-1 overflow-y-auto px-2 py-2">
+    <div className="flex-1 overflow-y-auto scrollbar-on-hover px-2 py-2">
       {tree.map(group => (
         <div key={group.key} className="mb-3">
           <div className="px-2 py-1 text-[10px] font-semibold text-[#00A1B2]/70 uppercase tracking-wider">{group.label}</div>
