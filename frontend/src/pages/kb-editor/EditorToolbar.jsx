@@ -113,7 +113,7 @@ export const EditorToolbar = ({ textareaRef, content, setContent, onUploadImage,
         {showInsert && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setShowInsert(false)} />
-            <div className={`absolute z-50 top-full mt-1 left-0 ${theme.dropdownBg} border ${theme.dropdownBorder} rounded-xl shadow-2xl py-1.5 w-52`} data-testid="insert-menu">
+            <div className={`absolute z-50 top-full mt-1 left-0 ${theme.dropdownBg} border ${theme.dropdownBorder} rounded-xl shadow-2xl py-1.5 w-52`} style={theme.dropdownBgStyle} data-testid="insert-menu">
               {INSERT_ITEMS.map(item => (
                 <button key={item.key} onClick={() => insertSnippet(item.key)}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm ${theme.textMuted} ${theme.hover} ${theme.hoverText} transition-colors`}
