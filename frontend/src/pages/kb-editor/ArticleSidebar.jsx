@@ -49,7 +49,7 @@ const NavGroup = ({ group, groupKey, articles, selectedSlug, onSelect, expanded,
 };
 
 export const ArticleSidebar = ({ tree, selectedSlug, onSelect, onDelete, deleting, expanded, setExpanded, onNewArticle, onManageNav, theme }) => (
-  <aside className={`w-64 flex-shrink-0 border-r ${theme.border} ${theme.panelBg} flex flex-col overflow-hidden`} data-testid="editor-sidebar">
+  <aside className={`w-64 flex-shrink-0 border-r ${theme.border} ${theme.panelBg} flex flex-col overflow-hidden`} style={theme.panelBgStyle} data-testid="editor-sidebar">
     <div className={`px-3 py-3 flex items-center justify-between border-b ${theme.border}`}>
       <span className={`text-xs font-semibold ${theme.textSecondary} uppercase tracking-wider`}>Articles</span>
       <div className="flex items-center gap-1">
