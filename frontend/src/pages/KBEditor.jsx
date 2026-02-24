@@ -347,10 +347,12 @@ const KBEditor = () => {
                   </div>
                 )}
                 {form ? (
-                  <textarea ref={textareaRef} value={form.content_markdown || ''} onChange={e => setForm(f => ({ ...f, content_markdown: e.target.value }))}
-                    onPaste={handlePaste}
-                    className={`flex-1 w-full px-6 py-6 bg-transparent ${theme.editorText} text-sm font-mono leading-relaxed resize-none outline-none overflow-y-auto`}
-                    style={{ tabSize: 2 }} placeholder="Start writing markdown... (Drag, drop or paste images)" spellCheck={false} data-testid="markdown-editor" />
+                  <div className="flex-1 min-h-0 relative">
+                    <textarea ref={textareaRef} value={form.content_markdown || ''} onChange={e => setForm(f => ({ ...f, content_markdown: e.target.value }))}
+                      onPaste={handlePaste}
+                      className={`absolute inset-0 w-full h-full px-6 py-6 bg-transparent ${theme.editorText} text-sm font-mono leading-relaxed resize-none outline-none overflow-y-auto`}
+                      style={{ tabSize: 2 }} placeholder="Start writing markdown... (Drag, drop or paste images)" spellCheck={false} data-testid="markdown-editor" />
+                  </div>
                 ) : (
                   <div className={`flex-1 flex items-center justify-center ${theme.textSecondary}`}>
                     <div className="text-center"><FileText className="w-8 h-8 mx-auto mb-3 opacity-50" /><p>Select an article or create new</p></div>
