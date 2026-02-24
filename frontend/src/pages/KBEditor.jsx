@@ -258,14 +258,13 @@ const KBEditor = () => {
         <div className="flex items-center gap-2 ml-auto flex-shrink-0">
           <div className={`flex items-center ${isDark ? 'bg-slate-800/60' : 'bg-gray-200/60'} rounded-lg p-0.5`} data-testid="view-mode-toggle">
             {[
-              { mode: 'markdown', icon: <Code2 className="w-4 h-4" />, label: 'Code' },
-              { mode: 'split', icon: <SplitSquareVertical className="w-4 h-4" />, label: 'Split' },
+              { mode: 'markdown', icon: <Code2 className="w-4 h-4" />, label: 'Editor' },
               { mode: 'preview', icon: <Eye className="w-4 h-4" />, label: 'Preview' },
             ].map(v => (
               <button key={v.mode} onClick={() => setViewMode(v.mode)} title={v.label}
-                className={`p-1.5 rounded-md transition-all ${viewMode === v.mode ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText}`}`}
+                className={`px-2.5 py-1.5 rounded-md transition-all flex items-center gap-1.5 text-xs font-medium ${viewMode === v.mode ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText}`}`}
                 data-testid={`view-${v.mode}`}>
-                {v.icon}
+                {v.icon}<span>{v.label}</span>
               </button>
             ))}
           </div>
