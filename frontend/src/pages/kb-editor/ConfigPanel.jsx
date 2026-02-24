@@ -27,7 +27,7 @@ const IconPicker = ({ value, onChange, theme }) => {
         <ChevronDown className={`w-3 h-3 ${theme.textSecondary}`} />
       </button>
       {open && (
-        <div className={`absolute z-50 top-full mt-1 left-0 right-0 ${theme.dropdownBg} border ${theme.dropdownBorder} rounded-lg shadow-xl p-2 max-h-48 overflow-y-auto`} data-testid="icon-picker-grid">
+        <div className={`absolute z-50 top-full mt-1 left-0 right-0 ${theme.dropdownBg} border ${theme.dropdownBorder} rounded-lg shadow-xl p-2 max-h-48 overflow-y-auto`} style={theme.dropdownBgStyle} data-testid="icon-picker-grid">
           <button onClick={() => { onChange(''); setOpen(false); }} className={`w-full text-left px-2 py-1 text-xs ${theme.textSecondary} ${theme.hoverText} ${theme.hover} rounded mb-1`}>No icon</button>
           <div className="grid grid-cols-8 gap-1">
             {COMMON_ICONS.map(icon => {
