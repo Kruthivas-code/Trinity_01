@@ -26,7 +26,7 @@ import os
 import uuid
 
 # Use the public URL from frontend/.env for testing
-BASE_URL = "https://ticket-search-debug.preview.emergentagent.com"
+BASE_URL = "https://kb-management-hub.preview.emergentagent.com"
 
 # Test credentials
 SESSION_TOKEN = "7N_TW_9vqeefrLlsBi_s9cZyXCYznDfSPaSt8iwcJic"
