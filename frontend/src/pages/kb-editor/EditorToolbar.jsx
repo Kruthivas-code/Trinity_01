@@ -89,7 +89,7 @@ export const EditorToolbar = ({ textareaRef, content, setContent, onUploadImage,
   };
 
   return (
-    <div className={`flex items-center gap-0.5 px-4 py-2 border-b ${theme.border} ${theme.panelBg} flex-shrink-0 flex-wrap`} data-testid="editor-toolbar">
+    <div className={`flex items-center gap-0.5 px-4 py-2 border-b ${theme.border} ${theme.panelBg} flex-shrink-0 flex-wrap`} style={theme.panelBgStyle} data-testid="editor-toolbar">
       <ToolBtn onClick={() => insertLine('# ')} title="Heading 1" theme={theme}><Heading1 className="w-4 h-4" /></ToolBtn>
       <ToolBtn onClick={() => insertLine('## ')} title="Heading 2" theme={theme}><Heading2 className="w-4 h-4" /></ToolBtn>
       <ToolBtn onClick={() => insertLine('### ')} title="Heading 3" theme={theme}><Heading3 className="w-4 h-4" /></ToolBtn>
