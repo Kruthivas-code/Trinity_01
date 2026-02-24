@@ -7,16 +7,16 @@ import {
   FolderOpen, FileText, Trash2, Loader2, ThumbsUp
 } from 'lucide-react';
 
-const NavGroup = ({ group, groupKey, articles, selectedSlug, onSelect, expanded, setExpanded, onDelete, deleting }) => {
+const NavGroup = ({ group, groupKey, articles, selectedSlug, onSelect, expanded, setExpanded, onDelete, deleting, theme }) => {
   const isExpanded = expanded[groupKey] !== false;
   return (
     <div>
       <button onClick={() => setExpanded(prev => ({ ...prev, [groupKey]: !prev[groupKey] }))}
-        className="w-full flex items-center gap-2 px-2 py-1.5 text-slate-400 hover:text-white transition-colors">
+        className={`w-full flex items-center gap-2 px-2 py-1.5 ${theme.textMuted} ${theme.hoverText} transition-colors`}>
         {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        <FolderOpen className="w-3.5 h-3.5 text-slate-500" />
+        <FolderOpen className={`w-3.5 h-3.5 ${theme.textSecondary}`} />
         <span className="text-xs font-medium truncate">{group.group || group.label}</span>
-        <span className="text-[10px] text-slate-600 ml-auto">{articles.length}</span>
+        <span className={`text-[10px] ${theme.textTertiary} ml-auto`}>{articles.length}</span>
       </button>
       {isExpanded && (
         <div className="ml-5 space-y-0.5">
@@ -24,7 +24,7 @@ const NavGroup = ({ group, groupKey, articles, selectedSlug, onSelect, expanded,
             const isActive = art.slug === selectedSlug;
             const fbPct = art.feedback_total > 0 ? Math.round((art.feedback_helpful / art.feedback_total) * 100) : null;
             return (
-              <div key={art.slug} className={`group flex items-center gap-1 rounded-lg transition-colors ${isActive ? 'bg-[#00A1B2]/15 text-white' : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'}`}>
+              <div key={art.slug} className={`group flex items-center gap-1 rounded-lg transition-colors ${isActive ? theme.activeItem : `${theme.textMuted} ${theme.hover} ${theme.hoverText}`}`}>
                 <button onClick={() => onSelect(art.slug)} className="flex-1 flex items-center gap-2 px-2 py-1.5 text-left min-w-0" data-testid={`nav-article-${art.slug}`}>
                   <FileText className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="text-sm truncate">{art.title}</span>
@@ -36,7 +36,7 @@ const NavGroup = ({ group, groupKey, articles, selectedSlug, onSelect, expanded,
                 )}
                 {!art.published && <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">draft</span>}
                 <button onClick={() => onDelete(art.slug)} disabled={deleting === art.slug}
-                  className="p-1 opacity-0 group-hover:opacity-100 text-slate-500 hover:text-red-400 rounded transition-all flex-shrink-0">
+                  className={`p-1 opacity-0 group-hover:opacity-100 ${theme.textSecondary} hover:text-red-400 rounded transition-all flex-shrink-0`}>
                   {deleting === art.slug ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                 </button>
               </div>
@@ -48,15 +48,15 @@ const NavGroup = ({ group, groupKey, articles, selectedSlug, onSelect, expanded,
   );
 };
 
-export const ArticleSidebar = ({ tree, selectedSlug, onSelect, onDelete, deleting, expanded, setExpanded, onNewArticle, onManageNav }) => (
-  <aside className="w-64 flex-shrink-0 border-r border-slate-800/80 bg-[#0c0c0c] flex flex-col overflow-hidden" data-testid="editor-sidebar">
-    <div className="px-3 py-3 flex items-center justify-between border-b border-slate-800/80">
-      <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Articles</span>
+export const ArticleSidebar = ({ tree, selectedSlug, onSelect, onDelete, deleting, expanded, setExpanded, onNewArticle, onManageNav, theme }) => (
+  <aside className={`w-64 flex-shrink-0 border-r ${theme.border} ${theme.panelBg} flex flex-col overflow-hidden`} data-testid="editor-sidebar">
+    <div className={`px-3 py-3 flex items-center justify-between border-b ${theme.border}`}>
+      <span className={`text-xs font-semibold ${theme.textSecondary} uppercase tracking-wider`}>Articles</span>
       <div className="flex items-center gap-1">
-        <button onClick={onManageNav} className="p-1 text-slate-500 hover:text-[#00A1B2] rounded transition-colors" title="Manage navigation" data-testid="manage-nav-btn">
+        <button onClick={onManageNav} className={`p-1 ${theme.textSecondary} hover:text-[#00A1B2] rounded transition-colors`} title="Manage navigation" data-testid="manage-nav-btn">
           <Settings className="w-3.5 h-3.5" />
         </button>
-        <button onClick={onNewArticle} className="p-1 text-slate-500 hover:text-[#00A1B2] rounded transition-colors" title="New article" data-testid="new-article-btn">
+        <button onClick={onNewArticle} className={`p-1 ${theme.textSecondary} hover:text-[#00A1B2] rounded transition-colors`} title="New article" data-testid="new-article-btn">
           <Plus className="w-4 h-4" />
         </button>
       </div>
@@ -66,7 +66,7 @@ export const ArticleSidebar = ({ tree, selectedSlug, onSelect, onDelete, deletin
         <div key={group.key} className="mb-3">
           <div className="px-2 py-1 text-[10px] font-semibold text-[#00A1B2]/70 uppercase tracking-wider">{group.label}</div>
           {group.sections.map(sec => (
-            <NavGroup key={sec.key} group={sec} groupKey={`${group.key}-${sec.key}`} articles={sec.articles} selectedSlug={selectedSlug} onSelect={onSelect} expanded={expanded} setExpanded={setExpanded} onDelete={onDelete} deleting={deleting} />
+            <NavGroup key={sec.key} group={sec} groupKey={`${group.key}-${sec.key}`} articles={sec.articles} selectedSlug={selectedSlug} onSelect={onSelect} expanded={expanded} setExpanded={setExpanded} onDelete={onDelete} deleting={deleting} theme={theme} />
           ))}
         </div>
       ))}

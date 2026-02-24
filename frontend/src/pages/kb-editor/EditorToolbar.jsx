@@ -9,11 +9,9 @@ import {
   Columns, Youtube
 } from 'lucide-react';
 
-const BRAND = '#00A1B2';
-
-const ToolBtn = ({ onClick, active, disabled, children, title }) => (
+const ToolBtn = ({ onClick, active, disabled, children, title, theme }) => (
   <button onClick={onClick} disabled={disabled} title={title}
-    className={`p-1.5 rounded-md transition-all ${active ? `bg-[${BRAND}] text-white` : 'text-slate-400 hover:text-white hover:bg-slate-700/60'} ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}>
+    className={`p-1.5 rounded-md transition-all ${active ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText} ${theme.hover}`} ${disabled ? 'opacity-30 cursor-not-allowed' : ''}`}>
     {children}
   </button>
 );
@@ -42,7 +40,7 @@ const INSERT_ITEMS = [
   { key: 'columns', label: 'Columns', icon: <Columns className="w-4 h-4 text-teal-400" /> },
 ];
 
-export const EditorToolbar = ({ textareaRef, content, setContent, onUploadImage }) => {
+export const EditorToolbar = ({ textareaRef, content, setContent, onUploadImage, theme }) => {
   const [showInsert, setShowInsert] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -91,34 +89,34 @@ export const EditorToolbar = ({ textareaRef, content, setContent, onUploadImage 
   };
 
   return (
-    <div className="flex items-center gap-0.5 px-4 py-2 border-b border-slate-800/80 bg-[#0c0c0c] flex-shrink-0 flex-wrap" data-testid="editor-toolbar">
-      <ToolBtn onClick={() => insertLine('# ')} title="Heading 1"><Heading1 className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => insertLine('## ')} title="Heading 2"><Heading2 className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => insertLine('### ')} title="Heading 3"><Heading3 className="w-4 h-4" /></ToolBtn>
-      <div className="w-px h-5 bg-slate-700/40 mx-1" />
-      <ToolBtn onClick={() => wrap('**')} title="Bold (Cmd+B)"><Bold className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => wrap('*')} title="Italic (Cmd+I)"><Italic className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => wrap('`')} title="Inline Code"><Code className="w-4 h-4" /></ToolBtn>
-      <div className="w-px h-5 bg-slate-700/40 mx-1" />
-      <ToolBtn onClick={() => insertLine('- ')} title="Bullet List"><List className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => insertLine('1. ')} title="Numbered List"><ListOrdered className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => insertLine('> ')} title="Blockquote"><Quote className="w-4 h-4" /></ToolBtn>
-      <div className="w-px h-5 bg-slate-700/40 mx-1" />
-      <ToolBtn onClick={() => wrap('[', '](url)')} title="Link"><LinkIcon className="w-4 h-4" /></ToolBtn>
-      <ToolBtn onClick={() => fileInputRef.current?.click()} title="Upload Image"><ImageIcon className="w-4 h-4" /></ToolBtn>
+    <div className={`flex items-center gap-0.5 px-4 py-2 border-b ${theme.border} ${theme.panelBg} flex-shrink-0 flex-wrap`} data-testid="editor-toolbar">
+      <ToolBtn onClick={() => insertLine('# ')} title="Heading 1" theme={theme}><Heading1 className="w-4 h-4" /></ToolBtn>
+      <ToolBtn onClick={() => insertLine('## ')} title="Heading 2" theme={theme}><Heading2 className="w-4 h-4" /></ToolBtn>
+      <ToolBtn onClick={() => insertLine('### ')} title="Heading 3" theme={theme}><Heading3 className="w-4 h-4" /></ToolBtn>
+      <div className={`w-px h-5 ${theme.divider} mx-1`} />
+      <ToolBtn onClick={() => wrap('**')} title="Bold (Cmd+B)" theme={theme}><Bold className="w-4 h-4" /></ToolBtn>
+      <ToolBtn onClick={() => wrap('*')} title="Italic (Cmd+I)" theme={theme}><Italic className="w-4 h-4" /></ToolBtn>
+      <ToolBtn onClick={() => wrap('`')} title="Inline Code" theme={theme}><Code className="w-4 h-4" /></ToolBtn>
+      <div className={`w-px h-5 ${theme.divider} mx-1`} />
+      <ToolBtn onClick={() => insertLine('- ')} title="Bullet List" theme={theme}><List className="w-4 h-4" /></ToolBtn>
+      <ToolBtn onClick={() => insertLine('1. ')} title="Numbered List" theme={theme}><ListOrdered className="w-4 h-4" /></ToolBtn>
+      <ToolBtn onClick={() => insertLine('> ')} title="Blockquote" theme={theme}><Quote className="w-4 h-4" /></ToolBtn>
+      <div className={`w-px h-5 ${theme.divider} mx-1`} />
+      <ToolBtn onClick={() => wrap('[', '](url)')} title="Link" theme={theme}><LinkIcon className="w-4 h-4" /></ToolBtn>
+      <ToolBtn onClick={() => fileInputRef.current?.click()} title="Upload Image" theme={theme}><ImageIcon className="w-4 h-4" /></ToolBtn>
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-      <div className="w-px h-5 bg-slate-700/40 mx-1" />
+      <div className={`w-px h-5 ${theme.divider} mx-1`} />
       <div className="relative">
-        <ToolBtn onClick={() => setShowInsert(!showInsert)} active={showInsert} title="Insert component">
+        <ToolBtn onClick={() => setShowInsert(!showInsert)} active={showInsert} title="Insert component" theme={theme}>
           <MoreHorizontal className="w-4 h-4" />
         </ToolBtn>
         {showInsert && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setShowInsert(false)} />
-            <div className="absolute z-50 top-full mt-1 left-0 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-1.5 w-52" data-testid="insert-menu">
+            <div className={`absolute z-50 top-full mt-1 left-0 ${theme.dropdownBg} border ${theme.dropdownBorder} rounded-xl shadow-2xl py-1.5 w-52`} data-testid="insert-menu">
               {INSERT_ITEMS.map(item => (
                 <button key={item.key} onClick={() => insertSnippet(item.key)}
-                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm ${theme.textMuted} ${theme.hover} ${theme.hoverText} transition-colors`}
                   data-testid={`insert-${item.key}`}>
                   {item.icon}
                   <span>{item.label}</span>
