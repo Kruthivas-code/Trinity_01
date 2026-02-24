@@ -7,13 +7,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Save, Eye, Code2, Loader2, FileText, Settings,
   Monitor, Smartphone, Tablet, SplitSquareVertical, ExternalLink,
-  Image as ImageIcon
+  Image as ImageIcon, Sun, Moon
 } from 'lucide-react';
 import { DocContent } from '../components/docs/DocContent';
 import { EditorToolbar } from './kb-editor/EditorToolbar';
 import { ArticleSidebar } from './kb-editor/ArticleSidebar';
 import { ConfigPanel } from './kb-editor/ConfigPanel';
 import { NavManager } from './kb-editor/NavManager';
+import { EDITOR_THEMES } from './kb-editor/editorTheme';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -38,6 +39,19 @@ const KBEditor = () => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [navManagerOpen, setNavManagerOpen] = useState(false);
+
+  // Theme state — persisted to localStorage
+  const [editorTheme, setEditorTheme] = useState(() => localStorage.getItem('kb-editor-theme') || 'dark');
+  const isDark = editorTheme === 'dark';
+  const theme = isDark ? EDITOR_THEMES.dark : EDITOR_THEMES.light;
+
+  const toggleTheme = useCallback(() => {
+    setEditorTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('kb-editor-theme', next);
+      return next;
+    });
+  }, []);
 
   const slugify = (t) => t.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-');
 
@@ -209,61 +223,70 @@ const KBEditor = () => {
   const previewWidth = previewDevice === 'mobile' ? 'max-w-[375px]' : previewDevice === 'tablet' ? 'max-w-[768px]' : 'max-w-none';
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]"><Loader2 className="w-6 h-6 animate-spin text-[#00A1B2]" /></div>;
+    return <div className={`min-h-screen flex items-center justify-center ${theme.bg}`}><Loader2 className="w-6 h-6 animate-spin text-[#00A1B2]" /></div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col" data-testid="kb-editor-page">
+    <div className={`min-h-screen ${theme.bg} flex flex-col`} data-testid="kb-editor-page">
       {/* Header */}
-      <header className="h-14 flex items-center px-4 border-b border-slate-800/80 bg-[#0c0c0c] flex-shrink-0 gap-3 z-30" data-testid="editor-header">
-        <button onClick={() => navigate('/dashboard/settings')} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors" data-testid="back-to-dashboard">
+      <header className={`h-14 flex items-center px-4 border-b ${theme.border} ${theme.panelBg} flex-shrink-0 gap-3 z-30`} data-testid="editor-header">
+        <button onClick={() => navigate('/dashboard/settings')} className={`flex items-center gap-2 ${theme.textMuted} ${theme.hoverText} transition-colors`} data-testid="back-to-dashboard">
           <ChevronLeft className="w-4 h-4" /><span className="text-sm">Dashboard</span>
         </button>
-        <div className="w-px h-6 bg-slate-800" />
+        <div className={`w-px h-6 ${theme.divider}`} />
         {form && (
           <input value={form.title || ''} onChange={e => {
             const title = e.target.value;
             setForm(f => ({ ...f, title, slug: isNew || f.slug === slugify(f.title || '') ? slugify(title) : f.slug }));
-          }} placeholder="Article title..." className="flex-1 bg-transparent text-white text-lg font-medium placeholder:text-slate-600 outline-none min-w-0" data-testid="editor-title-input" />
+          }} placeholder="Article title..." className={`flex-1 bg-transparent ${theme.text} text-lg font-medium ${theme.placeholder} outline-none min-w-0`} data-testid="editor-title-input" />
         )}
         <div className="flex items-center gap-2 ml-auto flex-shrink-0">
-          <div className="flex items-center bg-slate-800/60 rounded-lg p-0.5" data-testid="view-mode-toggle">
+          <div className={`flex items-center ${isDark ? 'bg-slate-800/60' : 'bg-gray-200/60'} rounded-lg p-0.5`} data-testid="view-mode-toggle">
             {[
               { mode: 'markdown', icon: <Code2 className="w-4 h-4" />, label: 'Code' },
               { mode: 'split', icon: <SplitSquareVertical className="w-4 h-4" />, label: 'Split' },
               { mode: 'preview', icon: <Eye className="w-4 h-4" />, label: 'Preview' },
             ].map(v => (
               <button key={v.mode} onClick={() => setViewMode(v.mode)} title={v.label}
-                className={`p-1.5 rounded-md transition-all ${viewMode === v.mode ? 'bg-[#00A1B2] text-white' : 'text-slate-400 hover:text-white'}`}
+                className={`p-1.5 rounded-md transition-all ${viewMode === v.mode ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText}`}`}
                 data-testid={`view-${v.mode}`}>
                 {v.icon}
               </button>
             ))}
           </div>
           {viewMode === 'preview' && (
-            <div className="flex items-center bg-slate-800/60 rounded-lg p-0.5">
+            <div className={`flex items-center ${isDark ? 'bg-slate-800/60' : 'bg-gray-200/60'} rounded-lg p-0.5`}>
               {[
                 { d: 'desktop', icon: <Monitor className="w-4 h-4" /> },
                 { d: 'tablet', icon: <Tablet className="w-4 h-4" /> },
                 { d: 'mobile', icon: <Smartphone className="w-4 h-4" /> },
               ].map(v => (
                 <button key={v.d} onClick={() => setPreviewDevice(v.d)}
-                  className={`p-1.5 rounded-md transition-all ${previewDevice === v.d ? 'bg-slate-700 text-white' : 'text-slate-500 hover:text-white'}`}>
+                  className={`p-1.5 rounded-md transition-all ${previewDevice === v.d ? (isDark ? 'bg-slate-700 text-white' : 'bg-gray-300 text-gray-900') : `${theme.textSecondary} ${theme.hoverText}`}`}>
                   {v.icon}
                 </button>
               ))}
             </div>
           )}
-          <button onClick={() => setConfigOpen(!configOpen)} className={`p-2 rounded-lg transition-colors ${configOpen ? 'bg-[#00A1B2] text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`} title="Settings" data-testid="config-toggle">
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            data-testid="kb-editor-theme-toggle"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <button onClick={() => setConfigOpen(!configOpen)} className={`p-2 rounded-lg transition-colors ${configOpen ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText} ${theme.hover}`}`} title="Settings" data-testid="config-toggle">
             <Settings className="w-4 h-4" />
           </button>
           {form?.slug && (
-            <a href={`/docs/${form.slug}`} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" title="Preview live" data-testid="live-preview-link">
+            <a href={`/docs/${form.slug}`} target="_blank" rel="noopener noreferrer" className={`p-2 ${theme.textMuted} ${theme.hoverText} rounded-lg ${theme.hover} transition-colors`} title="Preview live" data-testid="live-preview-link">
               <ExternalLink className="w-4 h-4" />
             </a>
           )}
-          <div className="w-px h-6 bg-slate-800" />
-          {lastSaved && <span className="text-xs text-slate-500 hidden sm:block">Saved {lastSaved.toLocaleTimeString()}</span>}
+          <div className={`w-px h-6 ${theme.divider}`} />
+          {lastSaved && <span className={`text-xs ${theme.textSecondary} hidden sm:block`}>Saved {lastSaved.toLocaleTimeString()}</span>}
           <button onClick={handleSave} disabled={saving || !form?.title?.trim()}
             className="flex items-center gap-2 px-4 py-2 bg-[#00A1B2] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity"
             data-testid="save-btn">
@@ -275,16 +298,16 @@ const KBEditor = () => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <ArticleSidebar tree={tree} selectedSlug={paramSlug} onSelect={(slug) => navigate(`/dashboard/kb-editor/${slug}`)} onDelete={handleDelete} deleting={deleting} expanded={expanded} setExpanded={setExpanded} onNewArticle={() => navigate('/dashboard/kb-editor/new')} onManageNav={() => setNavManagerOpen(true)} />
+        <ArticleSidebar tree={tree} selectedSlug={paramSlug} onSelect={(slug) => navigate(`/dashboard/kb-editor/${slug}`)} onDelete={handleDelete} deleting={deleting} expanded={expanded} setExpanded={setExpanded} onNewArticle={() => navigate('/dashboard/kb-editor/new')} onManageNav={() => setNavManagerOpen(true)} theme={theme} />
 
         {/* Editor Area */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {form && viewMode !== 'preview' && (
-            <EditorToolbar textareaRef={textareaRef} content={form.content_markdown || ''} setContent={v => setForm(f => ({ ...f, content_markdown: v }))} onUploadImage={uploadImage} />
+            <EditorToolbar textareaRef={textareaRef} content={form.content_markdown || ''} setContent={v => setForm(f => ({ ...f, content_markdown: v }))} onUploadImage={uploadImage} theme={theme} />
           )}
           <div className="flex-1 flex overflow-hidden">
             {(viewMode === 'markdown' || viewMode === 'split') && (
-              <div className={`${viewMode === 'split' ? 'w-1/2 border-r border-slate-800/80' : 'w-full'} flex flex-col overflow-hidden relative`}
+              <div className={`${viewMode === 'split' ? `w-1/2 border-r ${theme.border}` : 'w-full'} flex flex-col overflow-hidden relative`}
                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}>
@@ -301,25 +324,25 @@ const KBEditor = () => {
                 {form ? (
                   <textarea ref={textareaRef} value={form.content_markdown || ''} onChange={e => setForm(f => ({ ...f, content_markdown: e.target.value }))}
                     onPaste={handlePaste}
-                    className="flex-1 w-full px-6 py-6 bg-transparent text-slate-200 text-sm font-mono leading-relaxed resize-none outline-none"
+                    className={`flex-1 w-full px-6 py-6 bg-transparent ${theme.editorText} text-sm font-mono leading-relaxed resize-none outline-none`}
                     style={{ tabSize: 2 }} placeholder="Start writing markdown... (Drag, drop or paste images)" spellCheck={false} data-testid="markdown-editor" />
                 ) : (
-                  <div className="flex-1 flex items-center justify-center text-slate-500">
+                  <div className={`flex-1 flex items-center justify-center ${theme.textSecondary}`}>
                     <div className="text-center"><FileText className="w-8 h-8 mx-auto mb-3 opacity-50" /><p>Select an article or create new</p></div>
                   </div>
                 )}
               </div>
             )}
             {(viewMode === 'preview' || viewMode === 'split') && (
-              <div className={`${viewMode === 'split' ? 'w-1/2' : 'w-full'} overflow-y-auto bg-[#0a0a0a]`} data-testid="live-preview">
+              <div className={`${viewMode === 'split' ? 'w-1/2' : 'w-full'} overflow-y-auto ${theme.bg}`} data-testid="live-preview">
                 <div className={`${previewWidth} mx-auto px-6 py-8`}>
                   {form ? (
-                    <div className="prose prose-invert max-w-none prose-headings:font-semibold prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:leading-7 prose-a:text-[#00A1B2] prose-code:text-[#00A1B2] prose-code:bg-[#00A1B2]/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-slate-900 prose-pre:border prose-pre:border-white/10 prose-pre:rounded-xl">
-                      <h1 className="text-3xl font-bold text-white mb-6">{form.title || 'Untitled'}</h1>
+                    <div className={`prose ${theme.proseClass} max-w-none`}>
+                      <h1 className={`text-3xl font-bold ${theme.text} mb-6`}>{form.title || 'Untitled'}</h1>
                       <DocContent content={form.content_markdown || ''} />
                     </div>
                   ) : (
-                    <div className="text-slate-500 text-center py-20">No content to preview</div>
+                    <div className={`${theme.textSecondary} text-center py-20`}>No content to preview</div>
                   )}
                 </div>
               </div>
@@ -327,10 +350,10 @@ const KBEditor = () => {
           </div>
         </div>
 
-        {configOpen && form && <ConfigPanel form={form} setForm={setForm} navGroups={navGroups} onClose={() => setConfigOpen(false)} />}
+        {configOpen && form && <ConfigPanel form={form} setForm={setForm} navGroups={navGroups} onClose={() => setConfigOpen(false)} theme={theme} />}
       </div>
 
-      {navManagerOpen && <NavManager navGroups={navGroups} onSave={saveNavigation} onBulkMove={bulkMoveArticles} onClose={() => setNavManagerOpen(false)} />}
+      {navManagerOpen && <NavManager navGroups={navGroups} onSave={saveNavigation} onBulkMove={bulkMoveArticles} onClose={() => setNavManagerOpen(false)} theme={theme} />}
     </div>
   );
 };
