@@ -244,15 +244,11 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - Files modified: `TicketsListView.js`, `tickets.py`, `filters.py`, `email_poller.py`
 - Tested by testing_agent: 100% pass rate (iteration_48, 28/28 tests)
 
-### KB Editor Light/Dark Theme Toggle (Feb 24, 2026)
-- Added self-contained theme system to `/dashboard/kb-editor` with Sun/Moon toggle in header navbar
-- Two themes: Dark (existing look) and Light (white/gray backgrounds, dark text)
-- Theme stored in `localStorage('kb-editor-theme')` — independent of PublicDocs theme system
-- Uses inline styles to override app-level dark CSS variables for guaranteed light bg
-- All sub-components themed: ArticleSidebar, EditorToolbar, ConfigPanel, NavManager
-- **PublicDocs page completely unaffected** — uses separate `kb-theme` localStorage key
-- Files: `KBEditor.jsx`, `editorTheme.js` (new), `ArticleSidebar.jsx`, `EditorToolbar.jsx`, `ConfigPanel.jsx`, `NavManager.jsx`
-- Tested by testing_agent: 100% pass rate (iteration_49, 9/9 features)
+### KB Editor Theme - Content Color Fix (Feb 24, 2026)
+- **Root cause**: DocContent, Cards, Tabs, Steps, Accordion all use Tailwind `dark:` variants (e.g. `dark:text-white`, `dark:bg-slate-800`). These respond to `.dark` class on `<html>`. The KB Editor was toggling its own theme state but never synced it to `document.documentElement.classList`
+- **Fix**: Added `useEffect` to toggle `.dark` class on `<html>` based on editor theme, with cleanup on unmount. Now content colors and card styles match the Docs page exactly
+- **Verified**: Dark heading=`rgb(255,255,255)`, Light heading=`rgb(17,24,39)`. Cards, borders, backgrounds all correct. PublicDocs page confirmed independent
+- Tested: 100% pass (iteration_50, 9/9 features)
 
 ---
 
