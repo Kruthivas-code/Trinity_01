@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Save, Eye, Code2, Loader2, FileText, Settings,
-  Monitor, Smartphone, Tablet, SplitSquareVertical, ExternalLink,
+  Monitor, Smartphone, Tablet, ExternalLink,
   Image as ImageIcon, Sun, Moon
 } from 'lucide-react';
 import { DocContent } from '../components/docs/DocContent';
