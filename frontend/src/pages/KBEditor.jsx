@@ -64,6 +64,17 @@ const KBEditor = () => {
     return () => { document.documentElement.classList.remove('dark'); };
   }, [isDark]);
 
+  // Lock body/html overflow so the page itself never scrolls —
+  // only the sidebar and editor panels should scroll independently.
+  useEffect(() => {
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   const slugify = (t) => t.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-');
 
   // Fetch data
