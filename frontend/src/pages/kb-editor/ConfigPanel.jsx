@@ -47,7 +47,7 @@ const IconPicker = ({ value, onChange, theme }) => {
 };
 
 export const ConfigPanel = ({ form, setForm, navGroups, onClose, theme }) => (
-  <div className={`w-72 border-l ${theme.border} ${theme.panelBg} flex flex-col h-full overflow-y-auto`} data-testid="config-panel">
+  <div className={`w-72 border-l ${theme.border} ${theme.panelBg} flex flex-col h-full overflow-y-auto`} style={theme.panelBgStyle} data-testid="config-panel">
     <div className={`flex items-center justify-between px-4 py-3 border-b ${theme.border}`}>
       <h3 className={`text-sm font-semibold ${theme.text}`}>Document Settings</h3>
       <button onClick={onClose} className={`${theme.textMuted} ${theme.hoverText} transition-colors`}><X className="w-4 h-4" /></button>
