@@ -28,6 +28,11 @@ export const EDITOR_THEMES = {
     selectBg: 'bg-slate-800',
     modalOverlay: 'bg-black/60',
     cardBg: 'bg-slate-900/30',
+    // Inline styles for guaranteed override
+    bgStyle: {},
+    panelBgStyle: {},
+    inputBgStyle: {},
+    dropdownBgStyle: {},
   },
   light: {
     id: 'light',
@@ -54,5 +59,10 @@ export const EDITOR_THEMES = {
     selectBg: 'bg-white',
     modalOverlay: 'bg-white/60',
     cardBg: 'bg-gray-50',
+    // Inline styles for guaranteed override of app-level dark CSS variables
+    bgStyle: { backgroundColor: '#ffffff' },
+    panelBgStyle: { backgroundColor: '#f9fafb' },
+    inputBgStyle: { backgroundColor: '#ffffff' },
+    dropdownBgStyle: { backgroundColor: '#ffffff' },
   },
 };
