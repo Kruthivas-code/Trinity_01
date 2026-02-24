@@ -32,7 +32,7 @@ const KBEditor = () => {
   const [lastSaved, setLastSaved] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [isNew, setIsNew] = useState(false);
-  const [viewMode, setViewMode] = useState('split');
+  const [viewMode, setViewMode] = useState('markdown');
   const [configOpen, setConfigOpen] = useState(false);
   const [expanded, setExpanded] = useState({});
   const [previewDevice, setPreviewDevice] = useState('desktop');
