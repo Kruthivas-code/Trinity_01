@@ -53,6 +53,17 @@ const KBEditor = () => {
     });
   }, []);
 
+  // Sync the global 'dark' class on <html> so Tailwind dark: variants in
+  // DocContent, Cards, Tabs, Accordion, Steps etc. all respond correctly.
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    return () => { document.documentElement.classList.remove('dark'); };
+  }, [isDark]);
+
   const slugify = (t) => t.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-');
 
   // Fetch data
