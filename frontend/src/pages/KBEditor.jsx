@@ -338,7 +338,7 @@ const KBEditor = () => {
               </div>
             )}
             {(viewMode === 'preview' || viewMode === 'split') && (
-              <div className={`${viewMode === 'split' ? 'w-1/2' : 'w-full'} overflow-y-auto ${theme.bg}`} data-testid="live-preview">
+              <div className={`${viewMode === 'split' ? 'w-1/2' : 'w-full'} overflow-y-auto ${theme.bg}`} style={bgStyle} data-testid="live-preview">
                 <div className={`${previewWidth} mx-auto px-6 py-8`}>
                   {form ? (
                     <div className={`prose ${theme.proseClass} max-w-none`}>
