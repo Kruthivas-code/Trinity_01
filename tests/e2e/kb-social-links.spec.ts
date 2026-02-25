@@ -3,6 +3,206 @@ import { test, expect } from '@playwright/test';
 const BASE_URL = 'https://conversation-rebuild.preview.emergentagent.com';
 const SESSION_TOKEN = 'd32ac462-b0ff-435e-832d-9d068479737e';
 
+test.describe('KB Docs Page Header & Navigation', () => {
+
+  test.describe('Search Icon in Header', () => {
+
+    test('header shows search as simple icon button, not full search bar', async ({ page }) => {
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      // Search should be an icon button
+      const searchButton = page.getByTestId('topnav-search');
+      await expect(searchButton).toBeVisible();
+
+      // Should be a button element with small size (icon)
+      const boundingBox = await searchButton.boundingBox();
+      expect(boundingBox?.width).toBeLessThan(100); // Icon button is small, not a full search bar
+
+      // Verify it has the search icon title
+      await expect(searchButton).toHaveAttribute('title', /Search/);
+    });
+
+    test('clicking search icon opens search dialog', async ({ page }) => {
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      // Click the search icon
+      await page.getByTestId('topnav-search').click();
+
+      // Search dialog should open
+      await expect(page.getByTestId('search-input')).toBeVisible();
+    });
+
+    test('Cmd+K shortcut still opens search dialog', async ({ page }) => {
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      // Press Cmd+K (Mac) / Ctrl+K (Windows)
+      await page.keyboard.press('Meta+k');
+
+      // Search dialog should open
+      await expect(page.getByTestId('search-input')).toBeVisible();
+    });
+
+  });
+
+  test.describe('Breadcrumb Bar', () => {
+
+    test('breadcrumb bar appears below main header', async ({ page }) => {
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      // Breadcrumb bar should exist
+      const breadcrumbBar = page.getByTestId('kb-breadcrumb-bar');
+      await expect(breadcrumbBar).toBeVisible();
+
+      // Verify positioning - breadcrumb bar should be below the header
+      const header = page.getByTestId('kb-header');
+      const headerBox = await header.boundingBox();
+      const breadcrumbBox = await breadcrumbBar.boundingBox();
+
+      // Breadcrumb bar top should be at or below header bottom
+      expect(breadcrumbBox?.y).toBeGreaterThanOrEqual((headerBox?.y ?? 0) + (headerBox?.height ?? 0) - 5);
+    });
+
+    test('breadcrumb shows section > article title format', async ({ page }) => {
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      // Breadcrumb nav should show the section and title
+      const breadcrumb = page.getByTestId('kb-breadcrumb');
+      await expect(breadcrumb).toBeVisible();
+
+      // Should contain the section name and article title
+      const breadcrumbText = await breadcrumb.textContent();
+      expect(breadcrumbText).toMatch(/Introduction/);
+      expect(breadcrumbText).toMatch(/Welcome/);
+    });
+
+    test('breadcrumb bar has backdrop blur styling', async ({ page }) => {
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      const breadcrumbBar = page.getByTestId('kb-breadcrumb-bar');
+
+      // Verify backdrop-filter is set (blur effect)
+      const backdropFilter = await breadcrumbBar.evaluate((el) => 
+        window.getComputedStyle(el).backdropFilter || window.getComputedStyle(el).webkitBackdropFilter
+      );
+      expect(backdropFilter).toMatch(/blur/);
+    });
+
+    test('breadcrumb bar adapts to dark theme', async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem('kb-theme', 'dark');
+      });
+
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      const breadcrumbBar = page.getByTestId('kb-breadcrumb-bar');
+      await expect(breadcrumbBar).toBeVisible();
+
+      // Check background has dark theme styling (rgba with low lightness)
+      const bgColor = await breadcrumbBar.evaluate((el) => 
+        window.getComputedStyle(el).backgroundColor
+      );
+      expect(bgColor).toMatch(/rgba?\(10|0,/); // Dark theme uses rgba(10,10,10,0.75)
+    });
+
+    test('breadcrumb bar adapts to light theme', async ({ page }) => {
+      await page.addInitScript(() => {
+        localStorage.setItem('kb-theme', 'light');
+      });
+
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      const breadcrumbBar = page.getByTestId('kb-breadcrumb-bar');
+      await expect(breadcrumbBar).toBeVisible();
+
+      // Check background has light theme styling (rgba with high lightness)
+      const bgColor = await breadcrumbBar.evaluate((el) => 
+        window.getComputedStyle(el).backgroundColor
+      );
+      expect(bgColor).toMatch(/rgba?\(255/); // Light theme uses rgba(255,255,255,0.75)
+    });
+
+  });
+
+  test.describe('Mobile Hamburger Menu', () => {
+
+    test('hamburger menu icon is visible on mobile in breadcrumb bar', async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      // Hamburger menu in breadcrumb bar should be visible on mobile
+      const hamburgerMenu = page.getByTestId('breadcrumb-menu-toggle');
+      await expect(hamburgerMenu).toBeVisible();
+    });
+
+    test('hamburger menu icon is hidden on desktop', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      // Hamburger menu should be hidden on desktop (lg breakpoint)
+      const hamburgerMenu = page.getByTestId('breadcrumb-menu-toggle');
+      await expect(hamburgerMenu).not.toBeVisible();
+    });
+
+    test('hamburger menu toggles sidebar on mobile', async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 812 });
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      // Initially sidebar should be hidden on mobile (translated off screen)
+      const sidebar = page.getByTestId('kb-sidebar');
+
+      // Click hamburger to open sidebar
+      await page.getByTestId('breadcrumb-menu-toggle').click();
+
+      // Sidebar should become visible/translated into view
+      await expect(sidebar).toBeVisible();
+    });
+
+  });
+
+  test.describe('Layout Positioning', () => {
+
+    test('sidebar positioned correctly below both headers on desktop', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 720 });
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      const sidebar = page.getByTestId('kb-sidebar');
+      await expect(sidebar).toBeVisible();
+
+      // Sidebar should be positioned at top-24 (96px) to account for both headers
+      const sidebarBox = await sidebar.boundingBox();
+      // Header (56px/h-14) + Breadcrumb bar (40px/h-10) = 96px
+      expect(sidebarBox?.y).toBeGreaterThanOrEqual(90);
+      expect(sidebarBox?.y).toBeLessThanOrEqual(100);
+    });
+
+    test('main content positioned correctly below both headers', async ({ page }) => {
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+
+      const articleTitle = page.getByTestId('kb-page-title');
+      await expect(articleTitle).toBeVisible();
+
+      // Title should be positioned well below both headers (pt-24 = 96px padding-top)
+      const titleBox = await articleTitle.boundingBox();
+      expect(titleBox?.y).toBeGreaterThan(90); // Below both headers
+    });
+
+  });
+
+});
+
 test.describe('KB Social Links Feature', () => {
 
   test.describe('Public Docs Page - Social Links Display', () => {
