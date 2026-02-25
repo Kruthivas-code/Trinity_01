@@ -280,10 +280,20 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 
 ---
 
+### Social Links on Docs Pages (Feb 25, 2026)
+- Added social links (Twitter/X, LinkedIn, Discord, YouTube, Reddit) below the Next/Previous CTAs on all public docs pages
+- Backend: `GET /api/kb/social-links` (public) and `PUT /api/kb/admin/social-links` (admin) endpoints using `kb_settings` collection
+- Frontend: `SocialLinks` component in `PublicDocs.jsx` renders SVG icons, theme-adaptive (muted gray → bright on hover), hidden when no links configured
+- KB Editor: `SocialLinksPanel.jsx` modal accessible via Share2 icon button in editor header — manage all 5 platform URLs
+- Tested: 100% pass (28/28 tests, iteration_52)
+
+---
+
 ## Pending / Backlog
 
 ### P1
 - Portal category alignment with user's desired structure
+- KB Editor/Docs page logic gaps: strip duplicate H1, add TOC in editor preview, refactor docs search to backend API
 
 ### P2
 - Real-time notifications for agents
