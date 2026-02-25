@@ -198,7 +198,7 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
       {/* Desktop: below both headers. Mobile: full screen overlay from top */}
       <aside
         className={`fixed z-[46] ${theme.sidebarBg} border-r ${theme.border} flex flex-col transform transition-transform duration-300 ease-out
-          lg:top-24 lg:bottom-0 lg:left-0 lg:w-64 lg:translate-x-0
+          lg:top-14 lg:bottom-0 lg:left-0 lg:w-64 lg:translate-x-0
           top-0 bottom-0 left-0 w-[80%] max-w-[320px]
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
         data-testid="kb-sidebar"
