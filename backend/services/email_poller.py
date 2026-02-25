@@ -69,52 +69,63 @@ def _sanitize_body(text: str) -> str:
     return text.strip()[:10000]
 
 
-def _extract_reply_body(msg) -> str:
-    """Extract the reply body, stripping quoted text."""
-    body = ""
+def _extract_email_parts(msg) -> dict:
+    """Extract plain text, HTML, and a stripped summary from an email message.
+
+    Returns:
+        {
+            "content":    cleaned plain text (quotes stripped) – for search/preview,
+            "email_html": full HTML body (or "") – for rich rendering,
+            "email_text": full plain text (or "") – for fallback rendering,
+        }
+    """
+    text_body = ""
+    html_body = ""
 
     if msg.is_multipart():
         for part in msg.walk():
             ct = part.get_content_type()
             cd = str(part.get("Content-Disposition", ""))
-            if ct == "text/plain" and "attachment" not in cd:
+            if "attachment" in cd:
+                continue
+            if ct == "text/plain" and not text_body:
                 try:
                     payload = part.get_payload(decode=True)
                     if payload:
-                        body = payload.decode("utf-8", errors="replace")
+                        text_body = payload.decode("utf-8", errors="replace")
                 except Exception:
                     try:
-                        body = part.get_payload(decode=True).decode("latin-1", errors="replace")
+                        text_body = part.get_payload(decode=True).decode("latin-1", errors="replace")
                     except Exception:
                         pass
-                break
-        # Fallback to HTML if no plain text
-        if not body.strip():
-            for part in msg.walk():
-                ct = part.get_content_type()
-                cd = str(part.get("Content-Disposition", ""))
-                if ct == "text/html" and "attachment" not in cd:
-                    try:
-                        payload = part.get_payload(decode=True)
-                        if payload:
-                            body = payload.decode("utf-8", errors="replace")
-                    except Exception:
-                        pass
-                    break
+            elif ct == "text/html" and not html_body:
+                try:
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        html_body = payload.decode("utf-8", errors="replace")
+                except Exception:
+                    pass
     else:
         try:
             payload = msg.get_payload(decode=True)
             if payload:
-                body = payload.decode("utf-8", errors="replace")
+                raw = payload.decode("utf-8", errors="replace")
+                ct = msg.get_content_type()
+                if ct == "text/html":
+                    html_body = raw
+                else:
+                    text_body = raw
         except Exception:
-            body = str(msg.get_payload() or "")
+            text_body = str(msg.get_payload() or "")
 
-    # Strip quoted text
-    lines = body.split("\n")
+    # Use whichever is available as the base for stripping
+    base = text_body or html_body
+
+    # Strip quoted text for the clean content field
+    lines = base.split("\n")
     clean_lines = []
     for line in lines:
         stripped = line.strip()
-        # Stop at common quote markers
         if re.match(r"^On .+ wrote:\s*$", stripped):
             break
         if stripped.startswith(">"):
@@ -129,8 +140,19 @@ def _extract_reply_body(msg) -> str:
             break
         clean_lines.append(line)
 
-    result = "\n".join(clean_lines).strip()
-    return _sanitize_body(result if result else body)
+    content = "\n".join(clean_lines).strip()
+    content = _sanitize_body(content if content else base)
+
+    return {
+        "content": content,
+        "email_html": html_body,
+        "email_text": text_body,
+    }
+
+
+def _extract_reply_body(msg) -> str:
+    """Legacy wrapper — returns only the stripped content string."""
+    return _extract_email_parts(msg)["content"]
 
 
 def _match_ticket(msg, gmail_thrid=None) -> dict:
