@@ -375,7 +375,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
           <div>
             <button
               onClick={() => setIsEscalationExpanded(!isEscalationExpanded)}
-              className="w-full flex items-center justify-between px-3 h-9 rounded-lg text-[14px] text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05] transition-colors duration-150"
+              className="w-full flex items-center justify-between px-3 h-7 rounded-lg text-[14px] text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05] transition-colors duration-150"
               data-testid="nav-escalation-toggle"
             >
               <div className="flex items-center gap-2.5">
@@ -386,7 +386,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
             </button>
 
             {isEscalationExpanded && (
-              <div className="mt-1 space-y-0.5">
+              <div className="mt-0.5 space-y-px">
                 {escalationFolders.map(folder => {
                   const Icon = folder.icon;
                   const active = isActive(folder.path);
@@ -397,7 +397,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
                       key={folder.id}
                       onClick={() => handleNavigate(folder.path)}
                       className={`
-                        w-full flex items-center gap-2.5 px-3 ml-4 h-10 rounded-lg text-[14px] overflow-hidden relative
+                        w-full flex items-center gap-2.5 px-3 ml-4 h-7 rounded-lg text-[14px] overflow-hidden relative
                         transition-colors duration-150
                         ${active 
                           ? 'bg-foreground/8 text-foreground font-semibold' 
