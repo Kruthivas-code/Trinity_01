@@ -17,6 +17,7 @@ kb_articles = db["kb_articles"]
 kb_navigation = db["kb_navigation"]
 kb_image_files = db["kb_image_files"]
 kb_feedback = db["kb_feedback"]
+kb_settings = db["kb_settings"]
 
 
 # ── Image serving ─────────────────────────────────────────────
