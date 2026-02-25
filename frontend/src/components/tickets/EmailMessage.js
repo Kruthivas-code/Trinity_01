@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
-import { GitMerge, BookOpen } from 'lucide-react';
+import { GitMerge, BookOpen, Check, AlertTriangle } from 'lucide-react';
 import { renderTextWithMentions } from '../common/MentionInput';
 import EmailViewer from '../common/EmailViewer';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 // --- Avatar utilities ---
 
