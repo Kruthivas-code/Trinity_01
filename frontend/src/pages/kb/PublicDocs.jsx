@@ -671,12 +671,12 @@ const PublicDocs = () => {
 
   const getBreadcrumb = () => {
     const currentTab = tabs.find(t => t.id === activeTab);
-    if (!currentTab) return null;
+    if (!currentTab || !selectedDoc) return null;
     for (const group of currentTab.groups || []) {
       const page = group.pages?.find(p => (typeof p === 'string' ? p : p.page)?.toLowerCase() === selectedDoc?.slug?.toLowerCase());
-      if (page) return group.group;
+      if (page) return { section: group.group, title: selectedDoc.title };
     }
-    return currentTab.label;
+    return { section: currentTab.label, title: selectedDoc?.title };
   };
 
   const currentIndex = documents.findIndex(d => d.id === selectedDoc?.id);
