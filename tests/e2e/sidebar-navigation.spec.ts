@@ -5,8 +5,8 @@ test.describe('Sidebar Navigation - Density Fix', () => {
   
   test.beforeEach(async ({ page }) => {
     await authenticateAndNavigate(page, '/all-tickets');
-    // Wait for sidebar to be visible
-    await page.waitForSelector('[data-testid="nav-dashboard"]', { timeout: 10000 });
+    // Wait for page to fully load
+    await page.waitForLoadState('networkidle');
   });
 
   test('Nav items have h-7 height for denser layout', async ({ page }) => {
@@ -28,96 +28,124 @@ test.describe('Sidebar Navigation - Density Fix', () => {
     }
   });
 
-  test('Tickets section nav items are visible', async ({ page }) => {
+  test('Tickets section nav items are visible and dense', async ({ page }) => {
     // Verify key nav items exist (use .first() to get desktop sidebar)
-    await expect(page.locator('[data-testid="nav-all-tickets"]').first()).toBeVisible();
+    const allTicketsNav = page.locator('[data-testid="nav-all-tickets"]').first();
+    await expect(allTicketsNav).toBeVisible();
+    
+    // Verify h-7 class for dense layout
+    const hasH7Class = await allTicketsNav.evaluate(el => el.classList.contains('h-7'));
+    expect(hasH7Class).toBe(true);
+    
+    // Also check starred and open
     await expect(page.locator('[data-testid="nav-starred-tickets"]').first()).toBeVisible();
     await expect(page.locator('[data-testid="nav-open-tickets"]').first()).toBeVisible();
   });
 
-  test('Escalation folders are visible', async ({ page }) => {
-    // Wait for sidebar to load
-    await page.waitForSelector('text=Escalation', { timeout: 10000 });
+  test('Escalation folders with L1 L2 L3 are visible', async ({ page }) => {
+    // Use role-based locators for more stability
+    const l1 = page.getByRole('button', { name: /L1/i }).first();
+    const l2 = page.getByRole('button', { name: /L2/i }).first();
+    const l3 = page.getByRole('button', { name: /L3/i }).first();
     
-    // L1, L2, L3 should be visible in escalation section
-    const escalationSection = page.locator('text=Escalation').locator('..');
-    await expect(escalationSection).toBeVisible();
-    
-    // Check for L1, L2, L3 items
-    const l1 = page.locator('text=L1').first();
-    const l2 = page.locator('text=L2').first();
-    const l3 = page.locator('text=L3').first();
-    
-    await expect(l1).toBeVisible();
+    // At least L1 should be visible (may need to expand escalation)
+    await expect(l1).toBeVisible({ timeout: 10000 });
     await expect(l2).toBeVisible();
     await expect(l3).toBeVisible();
   });
 
 });
 
-test.describe('Custom Inbox Deletion Navigation', () => {
+test.describe('Custom Inbox Features', () => {
   
   test.beforeEach(async ({ page }) => {
     await authenticateAndNavigate(page, '/all-tickets');
-    // Wait for sidebar
-    await page.waitForSelector('[data-testid="nav-all-tickets"]', { timeout: 10000 });
+    // Wait for full page load including inboxes
+    await page.waitForLoadState('networkidle');
   });
 
   test('Custom inboxes are shown in sidebar', async ({ page }) => {
-    // Look for custom inbox items (they have sidebar-inbox- prefix in testid)
-    // These are under the Tickets section in the desktop sidebar
+    // Wait for sidebar to stabilize
+    await page.waitForSelector('[data-testid="nav-all-tickets"]', { timeout: 10000 });
+    
+    // Scroll sidebar to reveal custom inboxes if needed
+    const sidebar = page.locator('[data-testid="sidebar"]').first();
+    if (await sidebar.isVisible()) {
+      await sidebar.evaluate(el => {
+        const scrollableArea = el.querySelector('.overflow-y-auto');
+        if (scrollableArea) scrollableArea.scrollTop = 500;
+      });
+    }
+    
+    // Wait a bit for scroll to settle
+    await page.waitForTimeout(500);
+    
+    // Look for custom inbox items
     const customInboxes = page.locator('[data-testid^="sidebar-inbox-"]');
     const inboxCount = await customInboxes.count();
     
-    // Should have at least one custom inbox (based on screenshot showing TEST_ inboxes)
+    // Should have at least one custom inbox
     expect(inboxCount).toBeGreaterThan(0);
   });
 
-  test('Custom inbox menu has delete option', async ({ page }) => {
+  test('Custom inbox menu shows correct options', async ({ page }) => {
     // Wait for page to fully load
     await page.waitForLoadState('networkidle');
     
-    // Find a custom inbox (use first() to avoid desktop/mobile duplicate)
+    // Scroll to reveal custom inboxes
+    const sidebar = page.locator('[data-testid="sidebar"]').first();
+    if (await sidebar.isVisible()) {
+      await sidebar.evaluate(el => {
+        const scrollableArea = el.querySelector('.overflow-y-auto');
+        if (scrollableArea) scrollableArea.scrollTop = 300;
+      });
+    }
+    
+    await page.waitForTimeout(500);
+    
+    // Find a custom inbox
     const customInboxes = page.locator('[data-testid^="sidebar-inbox-"]');
     const firstInbox = customInboxes.first();
     
-    if (await firstInbox.isVisible()) {
+    if (await firstInbox.isVisible({ timeout: 5000 }).catch(() => false)) {
       // Hover to show menu trigger
       await firstInbox.hover();
-      
-      // Wait for hover effect
       await page.waitForTimeout(300);
       
-      // Look for the menu trigger (3-dot button) - it should become visible on hover
+      // Click menu trigger
       const menuTrigger = firstInbox.locator('[data-testid^="inbox-menu-trigger-"]');
-      
-      if (await menuTrigger.isVisible({ timeout: 3000 }).catch(() => false)) {
+      if (await menuTrigger.isVisible({ timeout: 2000 }).catch(() => false)) {
         await menuTrigger.click();
         
-        // Menu should appear with delete option
-        const menu = page.locator('[data-testid^="inbox-menu-"]').first();
-        await expect(menu).toBeVisible({ timeout: 5000 });
+        // Verify menu appears with correct options
+        await expect(page.locator('text=Rename').first()).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('text=Edit filters').first()).toBeVisible();
+        await expect(page.locator('text=Share').first()).toBeVisible();
+        await expect(page.locator('text=Delete').first()).toBeVisible();
         
-        // Should have Rename, Edit filters, Share, and Delete options
-        await expect(menu.locator('text=Rename')).toBeVisible();
-        await expect(menu.locator('text=Delete')).toBeVisible();
-        
-        // Close menu by clicking elsewhere
+        // Close menu
         await page.keyboard.press('Escape');
       }
     }
   });
 
-  test('Navigation to /all-tickets works from sidebar', async ({ page }) => {
-    // Click All Tickets (use .first() to get desktop sidebar)
+  test('Navigation from sidebar works correctly', async ({ page }) => {
+    // Click Dashboard (use .first())
+    const dashboardNav = page.locator('[data-testid="nav-dashboard"]').first();
+    await dashboardNav.click();
+    
+    // Verify navigation to dashboard
+    await expect(page).toHaveURL(/\/dashboard/);
+    
+    // Navigate back to all-tickets
     const allTicketsNav = page.locator('[data-testid="nav-all-tickets"]').first();
     await allTicketsNav.click();
     
     // Verify URL
     await expect(page).toHaveURL(/\/all-tickets/);
     
-    // Verify tickets list is visible
-    await expect(page.locator('text=All Tickets')).toBeVisible();
+    // Verify page title in header
+    await expect(page.getByRole('heading', { name: 'All Tickets' })).toBeVisible();
   });
 
 });
