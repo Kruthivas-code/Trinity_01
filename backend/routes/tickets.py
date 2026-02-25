@@ -273,7 +273,7 @@ async def get_ticket_notes(
     current_user: dict = Depends(get_current_user)
 ):
     """Get paginated notes and messages for a ticket."""
-    query = {"ticket_id": ticket_id, "type": {"$in": ["internal_note", "reply", "merge_divider", "system", "customer_reply"]}}
+    query = {"ticket_id": ticket_id, "type": {"$in": ["original", "internal_note", "reply", "merge_divider", "system", "customer_reply"]}}
     total = messages_collection.count_documents(query)
     skip = (page - 1) * limit
     notes = list(messages_collection.find(query, {"_id": 0}).sort("created_at", ASCENDING).skip(skip).limit(limit))
