@@ -990,38 +990,25 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
   const priorityConfig = getPriorityConfig(formData.priority);
   const assignee = getAssignee();
 
-  // Build conversation thread
+  // Build conversation thread from messages only (single source of truth).
+  // The notes API now includes type: "original", so we don't inject ticket.description.
   const conversationThread = ticket ? [
-    {
-      type: 'original',
-      sender: ticket.customer_name || ticket.created_by_name || ticket.email_sender_name || 'Customer',
-      senderEmail: ticket.customer_email || null,
-      subject: ticket.title,
-      content: ticket.email_text || ticket.description || '',
-      timestamp: ticket.created_at,
-      isAgentMessage: false,
-      original_ticket_id: null,
-      merge_color_index: null,
-      emailData: ticket.source === 'email' ? {
-        email_html: ticket.email_html,
-        email_text: ticket.email_text,
-        email_sender: ticket.email_sender,
-        email_to: ticket.email_to,
-        email_date: ticket.email_date
-      } : null
-    },
     ...notes.map(note => ({
       type: note.type || 'internal_note',
       sender: note.author_name || 'Unknown',
-      senderEmail: null,
-      subject: null,
+      senderEmail: note.author_email || null,
+      subject: note.type === 'original' ? ticket.title : null,
       content: note.content || note.text,
       timestamp: note.created_at,
-      isAgentMessage: note.type !== 'customer_reply',
+      isAgentMessage: note.type !== 'customer_reply' && note.type !== 'original',
       original_ticket_id: note.original_ticket_id || null,
       merge_color_index: note.merge_color_index,
       merged_ticket_title: note.merged_ticket_title,
-      emailData: null,
+      emailData: (note.email_html || note.source === 'email') ? {
+        email_html: note.email_html || '',
+        email_text: note.email_text || '',
+        email_sender: note.author_email,
+      } : null,
       source: note.source || null
     }))
   ].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)) : [];
