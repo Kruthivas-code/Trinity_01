@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X, Trash2, Send, ChevronDown, Loader2, Star, MoreHorizontal,
   Mail, PenLine, Command, Copy, Printer, BellOff, Merge, ExternalLink,
@@ -9,6 +9,8 @@ import RichTextEditor from '../common/RichTextEditor';
 import MentionInput from '../common/MentionInput';
 import ActivityTimeline from '../common/ActivityTimeline';
 import EmailMessage, { getMergeColor, stripHtml, getInitials, getAvatarColor } from './EmailMessage';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const TicketConversation = ({
   ticket,
