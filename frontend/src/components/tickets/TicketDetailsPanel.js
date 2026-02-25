@@ -404,9 +404,23 @@ const TicketDetailsPanel = ({
                   Copy URL
                 </button>
               </div>
-              {ticket.customer_email && (
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-muted-foreground shrink-0">Customer</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="h-px bg-border/30" />
+
+        {/* Tags Section */}
+        <div>
+          <div className="flex items-center justify-between py-1">
+            <div className="flex items-center gap-2">
+              <Tag size={12} className="text-muted-foreground" />
+              <span className="text-[11px] font-semibold text-foreground/60 uppercase tracking-wider">Tags</span>
+            </div>
+            {loadingTags && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
+          </div>
           
           {/* Current Tags */}
           <div className="mt-2 flex flex-wrap gap-1.5">
