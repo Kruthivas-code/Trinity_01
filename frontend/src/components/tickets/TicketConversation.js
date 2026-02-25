@@ -52,6 +52,15 @@ const TicketConversation = ({
   handleCannedResponseSelect,
   handleImageUpload, removeAttachedImage,
 }) => {
+  const [emailStats, setEmailStats] = useState(null);
+  useEffect(() => {
+    if (!ticket?.ticket_id) return;
+    fetch(`${BACKEND_URL}/api/tickets/${ticket.ticket_id}/email-stats`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setEmailStats(d); })
+      .catch(() => {});
+  }, [ticket?.ticket_id]);
+
   return (
     <div className="flex-1 bg-card border-l border-r border-border/40 flex flex-col min-w-0">
       {/* Header - Compact */}
