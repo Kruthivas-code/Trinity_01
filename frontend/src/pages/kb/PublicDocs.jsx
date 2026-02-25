@@ -711,22 +711,22 @@ const PublicDocs = () => {
 
   const currentIndex = documents.findIndex(d => d.id === selectedDoc?.id);
 
-  // Tab-scoped prev/next: navigate within the active tab's articles only
-  const tabDocSlugs = useMemo(() => {
-    const currentTab = tabs.find(t => t.id === activeTab);
-    if (!currentTab) return [];
+  // Global prev/next: flatten all tabs → groups → pages for seamless cross-category navigation
+  const allNavSlugs = useMemo(() => {
     const slugs = [];
-    for (const group of currentTab.groups || []) {
-      for (const page of group.pages || []) {
-        slugs.push(typeof page === 'string' ? page : page.page);
+    for (const tab of tabs) {
+      for (const group of tab.groups || []) {
+        for (const page of group.pages || []) {
+          slugs.push((typeof page === 'string' ? page : page.page)?.toLowerCase());
+        }
       }
     }
     return slugs;
-  }, [tabs, activeTab]);
+  }, [tabs]);
 
-  const tabDocIndex = tabDocSlugs.indexOf(selectedDoc?.slug);
-  const prevDoc = tabDocIndex > 0 ? documents.find(d => d.slug === tabDocSlugs[tabDocIndex - 1]) : null;
-  const nextDoc = tabDocIndex < tabDocSlugs.length - 1 ? documents.find(d => d.slug === tabDocSlugs[tabDocIndex + 1]) : null;
+  const navIndex = allNavSlugs.indexOf(selectedDoc?.slug?.toLowerCase());
+  const prevDoc = navIndex > 0 ? documents.find(d => d.slug?.toLowerCase() === allNavSlugs[navIndex - 1]) : null;
+  const nextDoc = navIndex < allNavSlugs.length - 1 ? documents.find(d => d.slug?.toLowerCase() === allNavSlugs[navIndex + 1]) : null;
 
   if (loading) {
     return (
