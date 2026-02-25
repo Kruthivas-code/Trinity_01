@@ -163,19 +163,48 @@ const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle, mobileMe
 };
 
 // ============= LEFT SIDEBAR =============
-const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect, theme, onSearchOpen, mobileOpen, onMobileClose }) => {
+const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect, theme, onSearchOpen, mobileOpen, onMobileClose, isDark }) => {
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
   const toggleGroup = (key) => {
     setCollapsedGroups(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   return (
     <>
-      {mobileOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onMobileClose} />}
-      <aside className={`fixed top-24 bottom-0 left-0 z-40 w-64 ${theme.sidebarBg} border-r ${theme.border} transform transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`} data-testid="kb-sidebar">
-        <div className="lg:hidden p-4">
-          <button onClick={onSearchOpen} className={`w-full flex items-center gap-3 px-3 py-2.5 ${theme.inputBg} rounded-lg text-sm ${theme.textMuted} transition-colors`} data-testid="sidebar-search">
+      {/* Mobile overlay backdrop with close button */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-[45] lg:hidden" onClick={onMobileClose} data-testid="sidebar-backdrop">
+          <div className="absolute inset-0 bg-black/40" />
+          <button
+            onClick={onMobileClose}
+            className="absolute top-4 right-4 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-white/15 text-gray-600 dark:text-white shadow-lg transition-transform hover:scale-105"
+            data-testid="sidebar-close-btn"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+      {/* Desktop: below both headers. Mobile: full screen overlay from top */}
+      <aside
+        className={`fixed z-[46] ${theme.sidebarBg} border-r ${theme.border} flex flex-col transform transition-transform duration-300 ease-out
+          lg:top-24 lg:bottom-0 lg:left-0 lg:w-64 lg:translate-x-0
+          top-0 bottom-0 left-0 w-[80%] max-w-[320px]
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        data-testid="kb-sidebar"
+      >
+        <div className="lg:hidden p-4 flex items-center gap-3">
+          <button onClick={onSearchOpen} className={`flex-1 flex items-center gap-3 px-3 py-2.5 ${theme.inputBg} rounded-lg text-sm ${theme.textMuted} transition-colors`} data-testid="sidebar-search">
             <Search className="w-4 h-4" />
             <span className="flex-1 text-left">Search...</span>
             <kbd className={`px-1.5 py-0.5 text-xs rounded ${theme.kbdBg}`}>&#8984;K</kbd>
