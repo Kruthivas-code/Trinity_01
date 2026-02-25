@@ -257,6 +257,12 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - Files modified: `KBEditor.jsx`, `ArticleSidebar.jsx`, `index.css`
 - Tested: Mouse wheel simulation — sidebar scrollTop=500 stays put when textarea scrolls to 500, page scroll always 0.
 
+### Custom Inbox Delete Navigation Fix + Sidebar Density (Feb 25, 2026)
+- **Bug fix**: Deleting a custom inbox while viewing it now navigates to `/all-tickets` instead of staying on the stale deleted inbox view.
+- **Sidebar density**: Reduced nav item height from `h-9` (36px) to `h-7` (28px), tightened section spacing and divider margins for more text density.
+- Files modified: `Sidebar.js`
+- Tested: E2E Playwright — created inbox, navigated to it, deleted it, confirmed redirect to `/all-tickets`
+
 ---
 
 ## Pending / Backlog
