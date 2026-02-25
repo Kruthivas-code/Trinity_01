@@ -127,10 +127,10 @@ const TopNavigation = ({ theme, onThemeToggle, isDark, onSearchOpen }) => {
 };
 
 // ============= BREADCRUMB BAR =============
-const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle }) => {
+const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle, mobileMenuOpen }) => {
   return (
     <div
-      className={`fixed top-14 left-0 right-0 z-40 border-b ${theme.border}`}
+      className={`fixed top-14 left-0 right-0 z-40 border-b ${theme.border} transition-opacity duration-200 ${mobileMenuOpen ? 'lg:opacity-100 opacity-0 pointer-events-none lg:pointer-events-auto' : 'opacity-100'}`}
       style={{
         backgroundColor: isDark ? 'rgba(10,10,10,0.75)' : 'rgba(255,255,255,0.75)',
         backdropFilter: 'blur(12px)',
