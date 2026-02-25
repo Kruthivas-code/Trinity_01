@@ -346,6 +346,36 @@ async def delete_kb_image(filename: str, current_user: dict = Depends(get_curren
     return {"message": "Deleted"}
 
 
+# ── Social Links ──────────────────────────────────────────────
+
+SOCIAL_PLATFORMS = ["linkedin", "twitter", "discord", "youtube", "reddit"]
+
+
+@router.get("/social-links")
+async def get_social_links():
+    """Public endpoint: return configured social links."""
+    doc = kb_settings.find_one({"type": "social_links"}, {"_id": 0})
+    if not doc:
+        return {"links": {p: "" for p in SOCIAL_PLATFORMS}}
+    return {"links": doc.get("links", {})}
+
+
+class SocialLinksUpdate(BaseModel):
+    links: dict
+
+
+@router.put("/admin/social-links")
+async def update_social_links(body: SocialLinksUpdate, current_user: dict = Depends(get_current_user)):
+    """Admin endpoint: update social links."""
+    # Only keep known platforms, strip empty values
+    clean = {k: v.strip() for k, v in body.links.items() if k in SOCIAL_PLATFORMS}
+    kb_settings.update_one(
+        {"type": "social_links"},
+        {"$set": {"links": clean, "updated_at": datetime.now(timezone.utc)}},
+        upsert=True,
+    )
+    return {"links": clean}
+
 
 # ── Bulk move articles between nav groups/sections ────────────
 
