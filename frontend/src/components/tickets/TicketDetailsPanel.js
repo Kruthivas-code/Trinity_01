@@ -404,7 +404,6 @@ const TicketDetailsPanel = ({
                   Copy URL
                 </button>
               </div>
-              </div>
             </div>
           )}
         </div>
