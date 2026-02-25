@@ -301,7 +301,7 @@ const RightSidebar = ({ headings, theme }) => {
   if (validHeadings.length === 0) return null;
 
   return (
-    <aside className={`hidden xl:block fixed top-24 right-0 bottom-0 w-64 overflow-y-auto z-10`} data-testid="kb-toc">
+    <aside className={`hidden xl:block fixed top-14 right-0 bottom-0 w-64 overflow-y-auto z-10`} data-testid="kb-toc">
       <div className="p-4 pt-6">
         <h4 className={`text-xs font-semibold ${theme.text} mb-4 flex items-center gap-2`}>
           <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="10" y2="8"/><line x1="2" y1="12" x2="12" y2="12"/></svg>
