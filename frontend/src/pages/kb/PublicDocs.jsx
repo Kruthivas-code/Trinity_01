@@ -147,12 +147,12 @@ const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle, mobileMe
           <Menu className="w-4 h-4" />
         </button>
         {breadcrumb && (
-          <nav className={`flex items-center gap-1.5 text-sm ${theme.textMuted}`} data-testid="kb-breadcrumb">
-            <span>{breadcrumb.section}</span>
+          <nav className={`flex items-center gap-1.5 text-sm ${theme.textMuted} min-w-0`} data-testid="kb-breadcrumb">
+            <span className="flex-shrink-0">{breadcrumb.section}</span>
             {breadcrumb.title && (
               <>
-                <ChevronDown className="w-3 h-3 -rotate-90" />
-                <span className={theme.text}>{breadcrumb.title}</span>
+                <ChevronDown className="w-3 h-3 -rotate-90 flex-shrink-0" />
+                <span className={`${theme.text} truncate`}>{breadcrumb.title}</span>
               </>
             )}
           </nav>
