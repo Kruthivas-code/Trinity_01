@@ -219,7 +219,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
             ? 'bg-foreground/8 text-foreground font-semibold' 
             : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'
           }
-          ${!isExpanded && !nested ? 'justify-center px-2 h-9' : nested ? 'px-3 ml-4 h-9' : 'px-3 h-9'}
+          ${!isExpanded && !nested ? 'justify-center px-2 h-7' : nested ? 'px-3 ml-4 h-7' : 'px-3 h-7'}
         `}
         data-testid={`nav-${item.id}`}
         title={!isExpanded ? item.label : undefined}
@@ -235,7 +235,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
 
   const renderDesktopNav = () => (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden">
-      <nav className="px-2 py-3 space-y-0.5">
+      <nav className="px-2 py-2 space-y-px">
         {/* Dashboard */}
         <button
           onClick={() => handleNavigate('/dashboard')}
@@ -246,7 +246,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
               ? 'bg-foreground/8 text-foreground font-semibold' 
               : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'
             }
-            ${!isExpanded ? 'justify-center px-2 h-9' : 'px-3 h-9'}
+            ${!isExpanded ? 'justify-center px-2 h-7' : 'px-3 h-7'}
           `}
           data-testid="nav-dashboard"
           title={!isExpanded ? 'Dashboard' : undefined}
@@ -264,7 +264,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
             <button
               onClick={() => setIsTicketsExpanded(!isTicketsExpanded)}
               className={`
-                w-full flex items-center justify-between px-3 h-9 rounded-lg text-[14px] overflow-hidden
+                w-full flex items-center justify-between px-3 h-7 rounded-lg text-[14px] overflow-hidden
                 transition-colors duration-150
                 ${isTicketViewActive ? 'text-foreground font-semibold' : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'}
               `}
@@ -278,7 +278,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
             </button>
             
             {isTicketsExpanded && (
-              <div className="mt-0.5 space-y-0.5">
+              <div className="mt-0.5 space-y-px">
                 {ticketViews.map(view => renderNavItem(view, true))}
                 
                 {/* Custom Inboxes */}
@@ -293,7 +293,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
                           <button
                             onClick={() => handleNavigate(inboxPath)}
                             className={`
-                              w-full flex items-center gap-2.5 px-3 ml-4 h-9 rounded-lg text-[14px] overflow-hidden relative
+                              w-full flex items-center gap-2.5 px-3 ml-4 h-7 rounded-lg text-[14px] overflow-hidden relative
                               transition-colors duration-150
                               ${active 
                                 ? 'bg-foreground/8 text-foreground font-semibold' 
@@ -368,7 +368,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
         )}
 
         {/* Divider */}
-        <div className="!my-3 h-px bg-border/60" />
+        <div className="!my-2 h-px bg-border/60" />
 
         {/* L1 / L2 / L3 Escalation Folders */}
         {isExpanded && (
@@ -425,7 +425,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
         )}
 
         {/* Divider */}
-        <div className="!my-3 h-px bg-border/60" />
+        <div className="!my-2 h-px bg-border/60" />
 
         {/* Other Items */}
         {mainItems.map(item => renderNavItem(item, false))}
