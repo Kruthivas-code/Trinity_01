@@ -353,18 +353,6 @@ const TicketDetailsPanel = ({
                 <span className="text-muted-foreground">Source</span>
                 <span className="capitalize text-foreground/80">{ticket.source || 'manual'}</span>
               </div>
-              {ticket.source === 'email' && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Channel</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/15 text-teal-400">Email</span>
-                </div>
-              )}
-              {ticket.source === 'portal' && (
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Channel</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400">Portal</span>
-                </div>
-              )}
               {ticket.customer_email && (
                 <div className="flex items-center justify-between gap-1">
                   <span className="text-muted-foreground shrink-0">Customer</span>
@@ -417,24 +405,8 @@ const TicketDetailsPanel = ({
                 </button>
               </div>
               {ticket.customer_email && (
-                <EmailDeliveryStatus ticketId={ticket.ticket_id} />
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Divider */}
-        <div className="h-px bg-border/30" />
-
-        {/* Tags Section */}
-        <div>
-          <div className="flex items-center justify-between py-1">
-            <div className="flex items-center gap-2">
-              <Tag size={12} className="text-muted-foreground" />
-              <span className="text-[11px] font-semibold text-foreground/60 uppercase tracking-wider">Tags</span>
-            </div>
-            {loadingTags && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
-          </div>
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-muted-foreground shrink-0">Customer</span>
           
           {/* Current Tags */}
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -443,7 +415,7 @@ const TicketDetailsPanel = ({
                 key={i} 
                 className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-full bg-primary/20 text-primary group"
               >
-                #{tag}
+                {tag}
                 <button
                   onClick={() => handleRemoveTag(tag)}
                   className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
@@ -912,7 +884,6 @@ const TicketDetailsPanel = ({
 
         {/* Divider */}
         <div className="h-px bg-border/30" />
-        )}
       </div>
 
       {/* Delete Confirmation Modal */}
