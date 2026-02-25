@@ -219,7 +219,7 @@ def _is_own_email(msg) -> bool:
     return from_addr in (sender_email, imap_user)
 
 
-def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body: str):
+def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body: str, email_parts: dict = None):
     """Create a new ticket from an inbound email that doesn't match any existing ticket."""
     from utils import generate_ticket_id
 
@@ -249,11 +249,14 @@ def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body
         "escalation_level": "L1",
     })
 
+    parts = email_parts or {}
     messages_collection.insert_one({
         "message_id": f"msg_{uuid.uuid4().hex[:12]}",
         "ticket_id": ticket_id,
         "type": "original",
         "content": body.strip()[:10000],
+        "email_html": parts.get("email_html", ""),
+        "email_text": parts.get("email_text", ""),
         "author_id": None,
         "author_name": from_name or from_addr,
         "author_email": from_addr,
