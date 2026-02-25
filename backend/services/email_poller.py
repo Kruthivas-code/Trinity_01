@@ -611,7 +611,8 @@ def _process_email(mail, eid, folder="inbox"):
     from_name, from_addr = parseaddr(msg.get("From", ""))
     from_name = _decode_header_value(from_name) or from_addr
     subject = _decode_header_value(msg.get("Subject", ""))
-    body = _extract_reply_body(msg)
+    parts = _extract_email_parts(msg)
+    body = parts["content"]
 
     # Detect bounce/delivery failure notifications
     if _is_bounce_email(from_addr, subject):
@@ -633,6 +634,8 @@ def _process_email(mail, eid, folder="inbox"):
             "ticket_id": ticket_id,
             "type": "customer_reply",
             "content": body.strip()[:10000],
+            "email_html": parts["email_html"],
+            "email_text": parts["email_text"],
             "author_id": None,
             "author_name": from_name,
             "author_email": from_addr,
