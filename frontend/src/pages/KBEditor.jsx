@@ -7,7 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Save, Eye, Code2, Loader2, FileText, Settings,
   Monitor, Smartphone, Tablet, ExternalLink,
-  Image as ImageIcon, Sun, Moon
+  Image as ImageIcon, Sun, Moon, Share2
 } from 'lucide-react';
 import { DocContent } from '../components/docs/DocContent';
 import { EditorToolbar } from './kb-editor/EditorToolbar';
