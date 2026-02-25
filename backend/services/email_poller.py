@@ -658,7 +658,7 @@ def _process_email(mail, eid, folder="inbox"):
         )
     else:
         # Create a new ticket from this email
-        ticket_id = _create_ticket_from_email(from_name, from_addr, subject, body)
+        ticket_id = _create_ticket_from_email(from_name, from_addr, subject, body, email_parts=parts)
         if ticket_id:
             match = {"ticket_id": ticket_id, "match_method": "new_ticket"}
             logger.info(f"[INBOUND] New ticket {ticket_id} from={from_addr} subject={subject[:60]}")
