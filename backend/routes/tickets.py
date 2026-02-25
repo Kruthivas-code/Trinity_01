@@ -515,6 +515,21 @@ async def create_ticket(
     }
     tickets_collection.insert_one(ticket_doc)
     log_ticket_change(ticket_id=ticket_id, uuid_str=ticket_uuid, field="ticket", old_value=None, new_value=ticket_doc.get("title"), changed_by=current_user["user_id"], change_type="create")
+
+    # Create the original message so the conversation thread has a first entry
+    if ticket_data.description:
+        messages_collection.insert_one({
+            "message_id": f"msg_{uuid4().hex[:12]}",
+            "ticket_id": ticket_id,
+            "type": "original",
+            "content": ticket_data.description[:10000],
+            "author_id": current_user["user_id"],
+            "author_name": current_user.get("name", "Agent"),
+            "author_email": current_user.get("email"),
+            "source": ticket_data.source or "manual",
+            "created_at": now,
+        })
+
     routing_result = run_routing_rules(ticket_doc)
     final_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     result = serialize_doc(final_ticket)
