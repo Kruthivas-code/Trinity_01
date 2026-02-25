@@ -345,7 +345,10 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
                                   setInboxMenuOpen(null);
                                   if (!window.confirm(`Delete "${inbox.name}"?`)) return;
                                   const res = await fetch(`${BACKEND_URL}/api/inboxes/${inbox.inbox_id}`, { method: 'DELETE', credentials: 'include' });
-                                  if (res.ok && onInboxesChange) onInboxesChange();
+                                  if (res.ok) {
+                                    if (onInboxesChange) onInboxesChange();
+                                    if (location.pathname === `/inbox/${inbox.inbox_id}`) navigate('/all-tickets');
+                                  }
                                 }}
                                 className="w-full flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-muted text-left text-red-500"
                                 data-testid={`inbox-delete-${inbox.inbox_id}`}
