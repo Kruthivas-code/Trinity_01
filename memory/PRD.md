@@ -261,7 +261,14 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Bug fix**: Deleting a custom inbox while viewing it now navigates to `/all-tickets` instead of staying on the stale deleted inbox view.
 - **Sidebar density**: Reduced nav item height from `h-9` (36px) to `h-7` (28px), tightened section spacing and divider margins for more text density.
 - Files modified: `Sidebar.js`
-- Tested: E2E Playwright — created inbox, navigated to it, deleted it, confirmed redirect to `/all-tickets`
+
+### Ticket Drawer UI Fixes (Feb 25, 2026)
+- **Issue 1 — Stable ticket order**: Rewrote `CustomerHistoryPanel.js` to render all tickets (current + related) in a single flat list sorted by `created_at` desc. Only the highlight moves when switching tickets — order never changes.
+- **Issue 2 — WhatsApp-style delivery ticks**: Removed `EmailDeliveryStatus` from Attributes section. Added delivery indicators to agent reply messages in conversation: ✓✓ (sent via email), ✓ (sent), ⚠ (failed/bounced). Shows tooltip on hover.
+- **Issue 3 — Tags without #**: Removed hardcoded `#` prefix from tag display.
+- **Issue 4 — Stray brackets**: Deleted orphaned `)}` text on line 915 of `TicketDetailsPanel.js`.
+- **Issue 5 — Removed Channel field**: Removed redundant "Channel" row from Attributes (Source already shows the same info).
+- Files modified: `CustomerHistoryPanel.js`, `TicketDetailsPanel.js`, `EmailMessage.js`, `TicketConversation.js`
 
 ---
 
