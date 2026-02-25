@@ -14,6 +14,7 @@ import { EditorToolbar } from './kb-editor/EditorToolbar';
 import { ArticleSidebar } from './kb-editor/ArticleSidebar';
 import { ConfigPanel } from './kb-editor/ConfigPanel';
 import { NavManager } from './kb-editor/NavManager';
+import { SocialLinksPanel } from './kb-editor/SocialLinksPanel';
 import { EDITOR_THEMES } from './kb-editor/editorTheme';
 
 const API = process.env.REACT_APP_BACKEND_URL;
