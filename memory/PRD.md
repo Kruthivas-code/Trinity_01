@@ -262,12 +262,20 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Sidebar density**: Reduced nav item height from `h-9` (36px) to `h-7` (28px), tightened section spacing and divider margins for more text density.
 - Files modified: `Sidebar.js`
 
+### Conversation Thread Refactor — Single Source of Truth (Feb 25, 2026)
+- **Duplicate message fix**: Conversation thread now built entirely from `messages` collection (single source of truth). Removed synthetic `ticket.description` injection from frontend. Notes API updated to include `type: "original"`. Cleaned up 368 original+customer_reply duplicates and 617 duplicate customer_reply records.
+- **Email HTML preservation**: Refactored `_extract_reply_body` → `_extract_email_parts` returning `{content, email_html, email_text}`. Messages now store all three fields. `EmailViewer` renders rich HTML when available.
+- **Backfill**: Created `original` messages for 6125 legacy tickets that only had `ticket.description`.
+- **All ticket creation paths now create original messages**: email (already did), portal tickets (already did), portal inquiries (added), manual agent tickets (added).
+- Files modified: `email_poller.py`, `tickets.py`, `portal.py`, `useTicketDrawer.js`, `EmailMessage.js`, `TicketConversation.js`
+- Tested: 100% pass (8 backend + 16 frontend tests)
+
 ### Ticket Drawer UI Fixes (Feb 25, 2026)
-- **Issue 1 — Stable ticket order**: Rewrote `CustomerHistoryPanel.js` to render all tickets (current + related) in a single flat list sorted by `created_at` desc. Only the highlight moves when switching tickets — order never changes.
-- **Issue 2 — WhatsApp-style delivery ticks**: Removed `EmailDeliveryStatus` from Attributes section. Added delivery indicators to agent reply messages in conversation: ✓✓ (sent via email), ✓ (sent), ⚠ (failed/bounced). Shows tooltip on hover.
+- **Issue 1 — Stable ticket order**: Rewrote `CustomerHistoryPanel.js` to render all tickets in a single flat list sorted by `created_at` desc. Only the highlight moves when switching tickets — order never changes.
+- **Issue 2 — WhatsApp-style delivery ticks**: Removed `EmailDeliveryStatus` from Attributes section. Added delivery indicators to agent reply messages: ✓✓ (sent via email), ✓ (sent), ⚠ (failed/bounced). Shows tooltip on hover.
 - **Issue 3 — Tags without #**: Removed hardcoded `#` prefix from tag display.
-- **Issue 4 — Stray brackets**: Deleted orphaned `)}` text on line 915 of `TicketDetailsPanel.js`.
-- **Issue 5 — Removed Channel field**: Removed redundant "Channel" row from Attributes (Source already shows the same info).
+- **Issue 4 — Stray brackets**: Deleted orphaned `)}` text.
+- **Issue 5 — Removed Channel field**: Removed redundant "Channel" row from Attributes.
 - Files modified: `CustomerHistoryPanel.js`, `TicketDetailsPanel.js`, `EmailMessage.js`, `TicketConversation.js`
 
 ---
