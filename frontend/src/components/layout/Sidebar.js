@@ -436,7 +436,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
       {/* User Section */}
       <div className="p-2 border-t border-border/40">
         {isExpanded && user && (
-          <div className="px-3 py-2.5 mb-1">
+          <div className="px-3 py-1.5 mb-1">
             <div className="flex items-center gap-2.5">
               {user.picture ? (
                 <img src={user.picture} alt={user.name} className="w-8 h-8 rounded-full" />
@@ -456,7 +456,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
         <button
           onClick={handleLogout}
           className={`
-            w-full flex items-center gap-2.5 h-9 rounded-lg text-[14px]
+            w-full flex items-center gap-2.5 h-7 rounded-lg text-[14px]
             text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05]
             transition-colors duration-150
             ${!isExpanded ? 'justify-center px-2' : 'px-3'}
