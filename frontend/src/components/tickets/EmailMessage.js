@@ -285,6 +285,43 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
             </button>
           </div>
         )}
+        {/* WhatsApp-style delivery status for agent replies */}
+        {isAgent && !isNote && emailStats && (
+          <div className="flex justify-end pr-1 -mt-0.5" data-testid="delivery-status-indicator">
+            {emailStats.failed > 0 || emailStats.bounced > 0 ? (
+              <div className="group relative cursor-default">
+                <AlertTriangle size={12} className="text-amber-500" />
+                <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block z-50">
+                  <div className="bg-popover border border-border text-popover-foreground text-[10px] px-2 py-1 rounded shadow-md whitespace-nowrap">
+                    {emailStats.failed > 0 && <div>{emailStats.failed} failed</div>}
+                    {emailStats.bounced > 0 && <div>{emailStats.bounced} bounced</div>}
+                  </div>
+                </div>
+              </div>
+            ) : emailStats.outbound > 0 ? (
+              <div className="group relative cursor-default">
+                <div className="flex -space-x-1.5">
+                  <Check size={12} className="text-muted-foreground/60" />
+                  <Check size={12} className="text-muted-foreground/60" />
+                </div>
+                <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block z-50">
+                  <div className="bg-popover border border-border text-popover-foreground text-[10px] px-2 py-1 rounded shadow-md whitespace-nowrap">
+                    Sent via email
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="group relative cursor-default">
+                <Check size={12} className="text-muted-foreground/40" />
+                <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block z-50">
+                  <div className="bg-popover border border-border text-popover-foreground text-[10px] px-2 py-1 rounded shadow-md whitespace-nowrap">
+                    Sent
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
