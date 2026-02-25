@@ -783,12 +783,12 @@ const PublicDocs = () => {
         href="https://app.emergent.sh/?utm_source=emergent-badge"
         target="_blank"
         rel="noopener noreferrer"
-        className={`fixed bottom-5 right-5 z-[9999] flex items-center gap-2.5 px-3.5 py-2 rounded-[10px] no-underline shadow-lg transition-all hover:scale-105`}
+        className={`fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-[9999] flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-[10px] no-underline shadow-lg transition-all hover:scale-105`}
         style={{ background: theme.badgeBg, border: theme.badgeBorder }}
         data-testid="made-with-emergent-badge"
       >
-        <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" alt="" className="w-[22px] h-[22px] rounded" />
-        <span className={`${theme.badgeText} text-sm font-medium tracking-[0.01em]`}>Made with Emergent</span>
+        <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" alt="" className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px] rounded" />
+        <span className={`${theme.badgeText} text-xs sm:text-sm font-medium tracking-[0.01em]`}>Made with Emergent</span>
       </a>
     </div>
   );
