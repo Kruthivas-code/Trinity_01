@@ -226,7 +226,7 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
             return (
               <div key={tab.id} className="mb-4" data-testid={`sidebar-tab-${tab.id}`}>
                 {tabs.length > 1 && (
-                  <div className={`px-3 mb-3 text-base font-bold ${theme.text}`} data-testid={`sidebar-tab-label-${tab.id}`}>
+                  <div className={`px-3 mb-3 font-bold ${theme.text}`} style={{ fontSize: '14px', lineHeight: '20px' }} data-testid={`sidebar-tab-label-${tab.id}`}>
                     {tab.label}
                   </div>
                 )}
