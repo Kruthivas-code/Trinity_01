@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260225_193433/results.json' }],
   ],
   use: {
-    baseURL: 'https://kb-management-hub.preview.emergentagent.com',
+    baseURL: 'https://conversation-rebuild.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,
