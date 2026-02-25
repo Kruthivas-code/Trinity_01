@@ -2,13 +2,13 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: '/app/tests/e2e',
-  outputDir: '/root/.emergent/automation_output/20260225_193341/test-results',
+  outputDir: '/root/.emergent/automation_output/20260225_193433/test-results',
   timeout: 60000,
   retries: 0,
   workers: 1,
   reporter: [
     ['line'],
-    ['json', { outputFile: '/root/.emergent/automation_output/20260225_193341/results.json' }],
+    ['json', { outputFile: '/root/.emergent/automation_output/20260225_193433/results.json' }],
   ],
   use: {
     baseURL: 'https://kb-management-hub.preview.emergentagent.com',
