@@ -746,9 +746,9 @@ const PublicDocs = () => {
 
       <main className="lg:ml-64 xl:mr-64 min-h-screen pt-24 min-[810px]:pt-14 relative z-10 overflow-x-hidden">
         {selectedDoc ? (
-          <article key={selectedDoc.id} className="max-w-[800px] mx-auto px-4 sm:px-6 py-10 animate-fadeIn">
-            <div className="flex items-start justify-between gap-4 mb-8">
-              <h1 className={`text-3xl sm:text-4xl font-bold ${theme.text} tracking-tight`} data-testid="kb-page-title">{selectedDoc.title}</h1>
+          <article key={selectedDoc.id} className="max-w-[800px] mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-20 animate-fadeIn">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-8">
+              <h1 className={`text-2xl sm:text-3xl md:text-4xl font-bold ${theme.text} tracking-tight`} data-testid="kb-page-title">{selectedDoc.title}</h1>
               <CopyButton text={window.location.href} theme={theme} />
             </div>
             <div className={`prose ${theme.proseClass} max-w-none overflow-hidden prose-headings:font-semibold prose-headings:text-inherit prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:leading-7 prose-p:break-words prose-a:text-[#00A1B2] prose-a:no-underline hover:prose-a:underline prose-code:text-[#00A1B2] prose-code:bg-[#00A1B2]/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:break-words prose-pre:rounded-xl prose-pre:overflow-x-auto`} data-testid="kb-article-body">
