@@ -280,6 +280,14 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 
 ---
 
+### Docs Page Header Refactor + Breadcrumb Bar (Feb 25, 2026)
+- Replaced full center search bar in header with a simple search icon button (opens search dialog on click, Cmd+K shortcut still works)
+- Added a secondary breadcrumb bar below the main header showing "Section > Article Title" with subtle backdrop blur and semi-transparent fill
+- Breadcrumb bar has a hamburger menu icon on mobile (lg:hidden) that toggles the sidebar
+- Adjusted layout offsets: sidebar, right TOC, and main content all start below both headers (top-24 / pt-24)
+- Theme-adaptive: light uses rgba(255,255,255,0.75), dark uses rgba(10,10,10,0.75) with 12px blur
+- Tested: 100% pass (31/31 docs page tests, iteration_53)
+
 ### Social Links on Docs Pages (Feb 25, 2026)
 - Added social links (Twitter/X, LinkedIn, Discord, YouTube, Reddit) below the Next/Previous CTAs on all public docs pages
 - Backend: `GET /api/kb/social-links` (public) and `PUT /api/kb/admin/social-links` (admin) endpoints using `kb_settings` collection
