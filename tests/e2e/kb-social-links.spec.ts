@@ -59,6 +59,45 @@ test.describe('KB Social Links Feature', () => {
 
   });
 
+  test.describe('Public Docs Page - Social Links Visibility', () => {
+
+    test('social links section is hidden when all URLs are empty', async ({ page, request }) => {
+      // First clear all social links via API
+      await request.put(`${BASE_URL}/api/kb/admin/social-links`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': `session_token=${SESSION_TOKEN}`
+        },
+        data: { links: {} }
+      });
+      
+      await page.goto('/docs/introduction', { waitUntil: 'domcontentloaded' });
+      await page.waitForLoadState('networkidle');
+      
+      // Social links section should NOT be visible when all empty
+      const socialLinks = page.getByTestId('kb-social-links');
+      await expect(socialLinks).not.toBeVisible();
+      
+      // Restore social links for other tests
+      await request.put(`${BASE_URL}/api/kb/admin/social-links`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Cookie': `session_token=${SESSION_TOKEN}`
+        },
+        data: {
+          links: {
+            twitter: 'https://x.com/emergentsh',
+            linkedin: 'https://linkedin.com/company/emergent',
+            discord: 'https://discord.gg/emergent',
+            youtube: 'https://youtube.com/@emergent',
+            reddit: 'https://reddit.com/r/emergent'
+          }
+        }
+      });
+    });
+
+  });
+
   test.describe('Public Docs Page - Theme Adaptation', () => {
 
     test('social links adapt to dark theme', async ({ page }) => {
