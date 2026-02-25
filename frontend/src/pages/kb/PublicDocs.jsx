@@ -739,9 +739,9 @@ const PublicDocs = () => {
     <div className={`min-h-screen ${theme.bg} relative`} data-testid="kb-docs">
 
       <TopNavigation theme={theme} onThemeToggle={toggleKbTheme} isDark={isDark} onSearchOpen={() => setSearchOpen(true)} />
-      <BreadcrumbBar breadcrumb={getBreadcrumb()} theme={theme} isDark={isDark} onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
+      <BreadcrumbBar breadcrumb={getBreadcrumb()} theme={theme} isDark={isDark} onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} mobileMenuOpen={mobileMenuOpen} />
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} documents={documents} onSelect={handleDocSelect} theme={theme} config={config} />
-      <LeftSidebar activeTab={activeTab} tabs={tabs} documents={documents} selectedDocSlug={selectedDoc?.slug} onDocSelect={handleDocSelect} theme={theme} onSearchOpen={() => setSearchOpen(true)} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
+      <LeftSidebar activeTab={activeTab} tabs={tabs} documents={documents} selectedDocSlug={selectedDoc?.slug} onDocSelect={handleDocSelect} theme={theme} onSearchOpen={() => setSearchOpen(true)} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} isDark={isDark} />
 
       <main className="lg:ml-64 xl:mr-64 min-h-screen pt-24 relative z-10 overflow-x-hidden">
         {selectedDoc ? (
