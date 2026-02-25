@@ -90,7 +90,7 @@ const THEMES = {
 };
 
 // ============= TOP NAVIGATION =============
-const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onThemeToggle, isDark, onSearchOpen }) => {
+const TopNavigation = ({ theme, onThemeToggle, isDark, onSearchOpen }) => {
   return (
     <header className={`fixed top-0 left-0 right-0 z-50 ${theme.navBg} border-b ${theme.border}`} data-testid="kb-header">
       <div className="h-14 px-4 sm:px-6 flex items-center justify-between">
@@ -98,15 +98,15 @@ const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onTh
           <img src="/images/emergent-logo-dark.png" alt="Emergent" className={`h-6 ${theme.logoInvert ? 'invert' : ''}`} />
         </a>
 
-        <div className="hidden lg:flex flex-1 justify-center px-8">
-          <button onClick={onSearchOpen} className={`w-full max-w-[548px] flex items-center gap-3 px-4 py-2 ${theme.inputBg} rounded-lg text-sm ${theme.textMuted} transition-colors`} data-testid="topnav-search">
-            <Search className="w-4 h-4" />
-            <span className="flex-1 text-left">Search...</span>
-            <kbd className={`px-1.5 py-0.5 text-xs rounded ${theme.kbdBg}`}>&#8984;K</kbd>
-          </button>
-        </div>
-
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <button
+            onClick={onSearchOpen}
+            className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`}
+            data-testid="topnav-search"
+            title="Search (⌘K)"
+          >
+            <Search className="w-[18px] h-[18px]" />
+          </button>
           <Link to="/portal"
             className="hidden sm:flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#00A1B2] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
             data-testid="need-help-button">
@@ -120,12 +120,45 @@ const TopNavigation = ({ config, theme, mobileMenuOpen, onMobileMenuToggle, onTh
           >
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <button className={`lg:hidden p-2 rounded-lg ${theme.hover} ${theme.text}`} onClick={onMobileMenuToggle} data-testid="mobile-nav-toggle">
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
         </div>
       </div>
     </header>
+  );
+};
+
+// ============= BREADCRUMB BAR =============
+const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle }) => {
+  return (
+    <div
+      className={`fixed top-14 left-0 right-0 z-40 border-b ${theme.border}`}
+      style={{
+        backgroundColor: isDark ? 'rgba(10,10,10,0.75)' : 'rgba(255,255,255,0.75)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+      }}
+      data-testid="kb-breadcrumb-bar"
+    >
+      <div className="h-10 px-4 sm:px-6 lg:pl-[17.5rem] flex items-center gap-2.5">
+        <button
+          className={`lg:hidden p-1 rounded ${theme.textSecondary} ${theme.hoverText} transition-colors`}
+          onClick={onMobileMenuToggle}
+          data-testid="breadcrumb-menu-toggle"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+        {breadcrumb && (
+          <nav className={`flex items-center gap-1.5 text-sm ${theme.textMuted}`} data-testid="kb-breadcrumb">
+            <span>{breadcrumb.section}</span>
+            {breadcrumb.title && (
+              <>
+                <ChevronDown className="w-3 h-3 -rotate-90" />
+                <span className={theme.text}>{breadcrumb.title}</span>
+              </>
+            )}
+          </nav>
+        )}
+      </div>
+    </div>
   );
 };
 
