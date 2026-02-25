@@ -304,6 +304,9 @@ const KBEditor = () => {
           >
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
+          <button onClick={() => setSocialLinksOpen(!socialLinksOpen)} className={`p-2 rounded-lg transition-colors ${socialLinksOpen ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText} ${theme.hover}`}`} title="Social Links" data-testid="social-links-toggle">
+            <Share2 className="w-4 h-4" />
+          </button>
           <button onClick={() => setConfigOpen(!configOpen)} className={`p-2 rounded-lg transition-colors ${configOpen ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText} ${theme.hover}`}`} title="Settings" data-testid="config-toggle">
             <Settings className="w-4 h-4" />
           </button>
