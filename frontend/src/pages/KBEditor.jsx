@@ -386,6 +386,7 @@ const KBEditor = () => {
       </div>
 
       {navManagerOpen && <NavManager navGroups={navGroups} onSave={saveNavigation} onBulkMove={bulkMoveArticles} onClose={() => setNavManagerOpen(false)} theme={theme} />}
+      {socialLinksOpen && <SocialLinksPanel onClose={() => setSocialLinksOpen(false)} theme={theme} />}
     </div>
   );
 };
