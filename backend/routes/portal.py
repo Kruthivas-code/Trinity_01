@@ -361,6 +361,20 @@ async def submit_inquiry(body: InquirySubmit):
         "updated_at": datetime.now(timezone.utc),
     }
     tickets_collection.insert_one(ticket_doc)
+
+    # Create original message for conversation thread
+    messages_collection.insert_one({
+        "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+        "ticket_id": ticket_id,
+        "type": "original",
+        "content": f"Name: {body.name}\nEmail: {body.email}\nCompany: {body.company or 'N/A'}\n\n{body.message}",
+        "author_id": None,
+        "author_name": body.name,
+        "author_email": body.email,
+        "source": "portal",
+        "created_at": datetime.now(timezone.utc),
+    })
+
     return {"status": "ok", "ticket_id": ticket_id}
 
 
