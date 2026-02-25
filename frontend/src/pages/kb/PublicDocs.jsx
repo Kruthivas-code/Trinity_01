@@ -706,6 +706,7 @@ const PublicDocs = () => {
                 </button>
               )}
             </div>
+            <SocialLinks theme={theme} />
           </article>
         ) : (
           <div className="flex items-center justify-center h-[60vh]"><p className={theme.textMuted}>Select a document</p></div>
