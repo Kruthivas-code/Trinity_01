@@ -755,17 +755,17 @@ const PublicDocs = () => {
               <DocContent content={selectedDoc.content?.replace(new RegExp(`^#\\s*${selectedDoc.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\n+`, 'i'), '') || selectedDoc.content} onHeadings={setToc} />
             </div>
             <FeedbackWidget slug={selectedDoc.slug} theme={theme} />
-            <div className={`flex flex-col sm:flex-row justify-between gap-4 mt-16 pt-8 border-t ${theme.border}`} data-testid="kb-prev-next">
+            <div className={`flex flex-col sm:flex-row justify-between gap-3 sm:gap-4 mt-12 sm:mt-16 pt-8 border-t ${theme.border}`} data-testid="kb-prev-next">
               {prevDoc ? (
-                <button onClick={() => handleDocSelect(prevDoc.slug)} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${theme.border} ${theme.hover} transition-colors`} data-testid="prev-doc-btn">
-                  <ArrowLeft className={`w-4 h-4 ${theme.navArrowColor}`} />
-                  <div className="text-left"><span className={`block text-xs ${theme.navArrowColor}`}>Previous</span><span className={`text-sm font-medium ${theme.text}`}>{prevDoc.title}</span></div>
+                <button onClick={() => handleDocSelect(prevDoc.slug)} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${theme.border} ${theme.hover} transition-colors w-full sm:w-auto`} data-testid="prev-doc-btn">
+                  <ArrowLeft className={`w-4 h-4 flex-shrink-0 ${theme.navArrowColor}`} />
+                  <div className="text-left min-w-0"><span className={`block text-xs ${theme.navArrowColor}`}>Previous</span><span className={`text-sm font-medium ${theme.text} truncate block`}>{prevDoc.title}</span></div>
                 </button>
               ) : <div />}
               {nextDoc && (
-                <button onClick={() => handleDocSelect(nextDoc.slug)} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${theme.border} ${theme.hover} transition-colors`} data-testid="next-doc-btn">
-                  <div className="text-right"><span className={`block text-xs ${theme.navArrowColor}`}>Next</span><span className={`text-sm font-medium ${theme.text}`}>{nextDoc.title}</span></div>
-                  <ArrowRight className={`w-4 h-4 ${theme.navArrowColor}`} />
+                <button onClick={() => handleDocSelect(nextDoc.slug)} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${theme.border} ${theme.hover} transition-colors w-full sm:w-auto sm:ml-auto`} data-testid="next-doc-btn">
+                  <div className="text-right min-w-0 flex-1 sm:flex-initial"><span className={`block text-xs ${theme.navArrowColor}`}>Next</span><span className={`text-sm font-medium ${theme.text} truncate block`}>{nextDoc.title}</span></div>
+                  <ArrowRight className={`w-4 h-4 flex-shrink-0 ${theme.navArrowColor}`} />
                 </button>
               )}
             </div>
