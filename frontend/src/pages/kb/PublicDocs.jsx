@@ -679,6 +679,7 @@ const PublicDocs = () => {
     if (doc && doc.id !== selectedDoc?.id) {
       setIsNavigating(true);
       setSelectedDoc(doc);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       requestAnimationFrame(() => { navigate(`/docs/${slug}`); setTimeout(() => setIsNavigating(false), 100); });
     }
   }, [documents, navigate, selectedDoc, isNavigating]);
