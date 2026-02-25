@@ -5,14 +5,13 @@ test.describe('Sidebar Navigation - Density Fix', () => {
   
   test.beforeEach(async ({ page }) => {
     await authenticateAndNavigate(page, '/all-tickets');
+    // Wait for sidebar to be visible
+    await page.waitForSelector('[data-testid="nav-dashboard"]', { timeout: 10000 });
   });
 
   test('Nav items have h-7 height for denser layout', async ({ page }) => {
-    // Wait for sidebar
-    await page.waitForSelector('[data-testid="nav-dashboard"]', { timeout: 10000 });
-    
-    // Get the dashboard nav item
-    const dashboardNav = page.locator('[data-testid="nav-dashboard"]');
+    // Get the desktop sidebar dashboard nav item (first one)
+    const dashboardNav = page.locator('[data-testid="nav-dashboard"]').first();
     await expect(dashboardNav).toBeVisible();
     
     // Check that it has the h-7 class (28px height)
@@ -30,17 +29,21 @@ test.describe('Sidebar Navigation - Density Fix', () => {
   });
 
   test('Tickets section nav items are visible', async ({ page }) => {
-    // Verify key nav items exist
-    await expect(page.locator('[data-testid="nav-all-tickets"]')).toBeVisible();
-    await expect(page.locator('[data-testid="nav-starred-tickets"]')).toBeVisible();
-    await expect(page.locator('[data-testid="nav-open-tickets"]')).toBeVisible();
+    // Verify key nav items exist (use .first() to get desktop sidebar)
+    await expect(page.locator('[data-testid="nav-all-tickets"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid="nav-starred-tickets"]').first()).toBeVisible();
+    await expect(page.locator('[data-testid="nav-open-tickets"]').first()).toBeVisible();
   });
 
   test('Escalation folders are visible', async ({ page }) => {
     // Wait for sidebar to load
     await page.waitForSelector('text=Escalation', { timeout: 10000 });
     
-    // L1, L2, L3 should be visible
+    // L1, L2, L3 should be visible in escalation section
+    const escalationSection = page.locator('text=Escalation').locator('..');
+    await expect(escalationSection).toBeVisible();
+    
+    // Check for L1, L2, L3 items
     const l1 = page.locator('text=L1').first();
     const l2 = page.locator('text=L2').first();
     const l3 = page.locator('text=L3').first();
@@ -56,17 +59,13 @@ test.describe('Custom Inbox Deletion Navigation', () => {
   
   test.beforeEach(async ({ page }) => {
     await authenticateAndNavigate(page, '/all-tickets');
+    // Wait for sidebar
+    await page.waitForSelector('[data-testid="nav-all-tickets"]', { timeout: 10000 });
   });
 
   test('Custom inboxes are shown in sidebar', async ({ page }) => {
-    // Wait for sidebar
-    await page.waitForSelector('[data-testid="nav-all-tickets"]', { timeout: 10000 });
-    
-    // Expand tickets section if needed
-    const ticketsToggle = page.locator('[data-testid="nav-tickets-toggle"]');
-    await ticketsToggle.click();
-    
     // Look for custom inbox items (they have sidebar-inbox- prefix in testid)
+    // These are under the Tickets section in the desktop sidebar
     const customInboxes = page.locator('[data-testid^="sidebar-inbox-"]');
     const inboxCount = await customInboxes.count();
     
@@ -75,14 +74,10 @@ test.describe('Custom Inbox Deletion Navigation', () => {
   });
 
   test('Custom inbox menu has delete option', async ({ page }) => {
-    // Wait for sidebar
-    await page.waitForSelector('[data-testid="nav-all-tickets"]', { timeout: 10000 });
+    // Wait for page to fully load
+    await page.waitForLoadState('networkidle');
     
-    // Expand tickets section
-    const ticketsToggle = page.locator('[data-testid="nav-tickets-toggle"]');
-    await ticketsToggle.click();
-    
-    // Find a custom inbox
+    // Find a custom inbox (use first() to avoid desktop/mobile duplicate)
     const customInboxes = page.locator('[data-testid^="sidebar-inbox-"]');
     const firstInbox = customInboxes.first();
     
@@ -90,14 +85,16 @@ test.describe('Custom Inbox Deletion Navigation', () => {
       // Hover to show menu trigger
       await firstInbox.hover();
       
-      // Look for the menu trigger (3-dot button)
+      // Wait for hover effect
+      await page.waitForTimeout(300);
+      
+      // Look for the menu trigger (3-dot button) - it should become visible on hover
       const menuTrigger = firstInbox.locator('[data-testid^="inbox-menu-trigger-"]');
       
-      if (await menuTrigger.isVisible()) {
+      if (await menuTrigger.isVisible({ timeout: 3000 }).catch(() => false)) {
         await menuTrigger.click();
         
         // Menu should appear with delete option
-        // Note: We won't actually delete to avoid breaking other tests
         const menu = page.locator('[data-testid^="inbox-menu-"]').first();
         await expect(menu).toBeVisible({ timeout: 5000 });
         
@@ -112,8 +109,8 @@ test.describe('Custom Inbox Deletion Navigation', () => {
   });
 
   test('Navigation to /all-tickets works from sidebar', async ({ page }) => {
-    // Click All Tickets
-    const allTicketsNav = page.locator('[data-testid="nav-all-tickets"]');
+    // Click All Tickets (use .first() to get desktop sidebar)
+    const allTicketsNav = page.locator('[data-testid="nav-all-tickets"]').first();
     await allTicketsNav.click();
     
     // Verify URL
