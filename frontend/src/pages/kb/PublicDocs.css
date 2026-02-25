@@ -181,3 +181,26 @@ aside::-webkit-scrollbar-track { background: transparent; }
 .callout-body li {
   margin-bottom: 0.25rem;
 }
+
+
+/* Responsive: constrain media embeds (iframes, videos) on mobile */
+.prose iframe,
+.prose video,
+.prose embed,
+.prose object {
+  max-width: 100% !important;
+  height: auto;
+  aspect-ratio: 16/9;
+}
+
+/* Responsive: prevent tables from overflowing on mobile */
+.prose table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive: prevent long URLs/words from overflowing on mobile */
+.prose a {
+  word-break: break-word;
+}
