@@ -40,6 +40,7 @@ const KBEditor = () => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [navManagerOpen, setNavManagerOpen] = useState(false);
+  const [socialLinksOpen, setSocialLinksOpen] = useState(false);
 
   // Theme state — persisted to localStorage
   const [editorTheme, setEditorTheme] = useState(() => localStorage.getItem('kb-editor-theme') || 'dark');
