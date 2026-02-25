@@ -173,7 +173,7 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
   return (
     <>
       {mobileOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onMobileClose} />}
-      <aside className={`fixed top-14 bottom-0 left-0 z-40 w-64 ${theme.sidebarBg} border-r ${theme.border} transform transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`} data-testid="kb-sidebar">
+      <aside className={`fixed top-24 bottom-0 left-0 z-40 w-64 ${theme.sidebarBg} border-r ${theme.border} transform transition-transform duration-300 lg:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} flex flex-col`} data-testid="kb-sidebar">
         <div className="lg:hidden p-4">
           <button onClick={onSearchOpen} className={`w-full flex items-center gap-3 px-3 py-2.5 ${theme.inputBg} rounded-lg text-sm ${theme.textMuted} transition-colors`} data-testid="sidebar-search">
             <Search className="w-4 h-4" />
