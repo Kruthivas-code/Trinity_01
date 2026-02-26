@@ -657,7 +657,7 @@ def _process_email(mail, eid, folder="inbox"):
     if not body.strip():
         return
 
-    match = _match_ticket(msg, gmail_thrid=gmail_thrid)
+    match = _match_ticket(msg, gmail_thrid=gmail_thrid, body_text=parts.get("email_text") or body)
 
     if match:
         ticket_id = match["ticket_id"]
