@@ -379,6 +379,52 @@ async def update_social_links(body: SocialLinksUpdate, current_user: dict = Depe
     return {"links": clean}
 
 
+# ── Global Docs Settings ──────────────────────────────────────
+
+class DocsSettingsUpdate(BaseModel):
+    meta_title: Optional[str] = None
+    meta_description: Optional[str] = None
+    favicon_url: Optional[str] = None
+    og_image_url: Optional[str] = None
+    logo_url: Optional[str] = None
+    footer_text: Optional[str] = None
+    custom_domain: Optional[str] = None
+
+
+@router.get("/admin/docs-settings")
+async def get_docs_settings(current_user: dict = Depends(get_current_user)):
+    """Admin endpoint: get global docs site settings."""
+    doc = kb_settings.find_one({"type": "docs_settings"}, {"_id": 0})
+    if not doc:
+        return {
+            "meta_title": "Emergent Docs",
+            "meta_description": "Documentation and guides for building with Emergent",
+            "favicon_url": "",
+            "og_image_url": "",
+            "logo_url": "",
+            "footer_text": "",
+            "custom_domain": "",
+        }
+    settings = {k: v for k, v in doc.items() if k not in ("type", "updated_at")}
+    return settings
+
+
+@router.put("/admin/docs-settings")
+async def update_docs_settings(body: DocsSettingsUpdate, current_user: dict = Depends(get_current_user)):
+    """Admin endpoint: update global docs site settings."""
+    updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
+    updates["type"] = "docs_settings"
+    updates["updated_at"] = datetime.now(timezone.utc)
+    kb_settings.update_one(
+        {"type": "docs_settings"},
+        {"$set": updates},
+        upsert=True,
+    )
+    doc = kb_settings.find_one({"type": "docs_settings"}, {"_id": 0})
+    settings = {k: v for k, v in doc.items() if k not in ("type", "updated_at")}
+    return settings
+
+
 # ── Bulk move articles between nav groups/sections ────────────
 
 class BulkMoveRequest(BaseModel):
