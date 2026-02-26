@@ -480,19 +480,28 @@
   margin: 1.5rem 0;
 }
 
-.ProseMirror [data-type="columns-block"] {
+/* Ensure TipTap's node-view-wrappers inside columns participate in grid layout */
+.columns-block-wrapper [data-node-view-content] {
   display: grid;
   gap: 1rem;
 }
 
-.ProseMirror [data-type="columns-block"][data-cols="1"] {
+.columns-block-wrapper[data-cols="1"] [data-node-view-content],
+.columns-block-wrapper [data-node-view-content].grid-cols-1 {
   grid-template-columns: 1fr;
 }
 
-.ProseMirror [data-type="columns-block"][data-cols="2"] {
+.columns-block-wrapper[data-cols="2"] [data-node-view-content],
+.columns-block-wrapper [data-node-view-content].grid-cols-2 {
   grid-template-columns: 1fr 1fr;
 }
 
-.ProseMirror [data-type="columns-block"][data-cols="3"] {
+.columns-block-wrapper[data-cols="3"] [data-node-view-content],
+.columns-block-wrapper [data-node-view-content].grid-cols-3 {
   grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* TipTap wraps each child NodeView in data-node-view-wrapper — make them grid-friendly */
+.columns-block-wrapper [data-node-view-wrapper] {
+  min-width: 0;
 }
