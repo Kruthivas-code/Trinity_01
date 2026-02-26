@@ -19,6 +19,16 @@ import {
   Columns, Youtube, Minus
 } from 'lucide-react';
 
+// Convert markdown to HTML for TipTap initial content loading
+const mdToHtml = (md) => {
+  if (!md) return '';
+  try {
+    return marked.parse(md, { breaks: false, gfm: true });
+  } catch {
+    return md;
+  }
+};
+
 const API = process.env.REACT_APP_BACKEND_URL;
 
 const HEADING_OPTIONS = [
