@@ -310,6 +310,13 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Additional**: Bounce detection, retry queue with exponential backoff, rate limiting
 - All 6 unit tests passing
 
+### Ticket Merge & Search Bug Fixes (Feb 26, 2026)
+- **Bug 1 — One-click "Accept Merge"**: Rewired the merge suggestion banner's "Merge" button (now "Accept Merge") to call `handleAcceptMergeSuggestion` which directly merges the suggested ticket INTO the current ticket via `POST /api/tickets/{suggestedId}/merge`. Previously opened the manual search modal.
+- **Bug 2 — Merge modal search broken**: Fixed `MergeTicketModal.js` — changed API param from `types=tickets` (wrong) to `type=ticket` (correct) and response parsing from `data.tickets` to `data.by_category?.tickets`.
+- **Bug 3 — Numeric ticket ID search**: Added direct `ticket_id` lookup in `search.py` `search_tickets()` for numeric-only queries. Searching "042237" now automatically finds "TKT-042237".
+- **Bug 4 — 3+ duplicate detection**: Backend already returned all duplicates. Fixed frontend to display count ("2 possible duplicates detected") and each suggestion gets its own one-click merge button.
+- Tested: 100% pass (7/7 backend + all frontend tests, iteration_56)
+
 ---
 
 ## Pending / Backlog
