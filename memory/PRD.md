@@ -297,23 +297,18 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 
 ---
 
-### KB Editor Redesign — Single-Page WYSIWYG Layout (Feb 26, 2026)
-- **Complete UI redesign** of `/dashboard/kb-editor` from split-panel markdown editor to a single-page scrollable layout
-- **Document Section**: Title (required), Description (new field), Slug (required, with live URL preview), Category dropdown, optional Subcategory dropdown
-- **Draft/Publish Toggle**: New articles default to Draft; toggle to Published when ready
-- **Save Validation**: Save button disabled when Title or Slug is empty
-- **WYSIWYG Rich Text Editor**: Replaced raw markdown textarea with TipTap-based WYSIWYG editor
-  - Toolbar: Insert menu (11 component types: Callouts, Steps, Cards, Tabs, Accordion, YouTube, Columns, Code Block, HR), Heading dropdown (H1-H6), Bold, Italic, Link, Blockquote, Inline Code, Bullet/Ordered Lists, Image upload, Undo/Redo
-  - Uses `marked` for markdown→HTML conversion on load, `tiptap-markdown` for HTML→markdown on save
-  - Custom JSX components (Callout, Steps, etc.) preserved in code blocks for editing
-- **Global Docs Settings Modal**: Meta title, meta description, favicon URL, OG image URL, logo URL, footer text, custom domain — stored in `kb_settings` collection
-- **Auto-select first article** on page load
-- **Backend**: Added `description` field to ArticleCreate/ArticleUpdate models; `GET/PUT /api/kb/admin/docs-settings` endpoints
-- **New packages**: `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-link`, `@tiptap/extension-image`, `@tiptap/extension-placeholder`, `@tiptap/extension-underline`, `tiptap-markdown`, `marked`, `@tailwindcss/typography`
-- Files created: `RichTextEditor.jsx`, `GlobalSettingsModal.jsx`
-- Files modified: `KBEditor.jsx` (major rewrite), `kb.py` (new endpoints + description field), `tailwind.config.js` (typography plugin)
-- **Bug Fix (Feb 26)**: Fixed custom component code blocks splitting into individual blocks. Root cause: regex matched inner components (Card, Step, Tab) individually instead of capturing the outer wrapper (Columns, Steps, Tabs) as a complete block. Fixed by matching only wrapper-level components with their own closing tags, then handling orphan inner components separately.
-- Tested: 100% pass (14/14 backend + 28/28 frontend tests, iteration_54)
+### P1 Improvements (Feb 26, 2026)
+- **Strip Duplicate H1**: When loading an article into the editor, if the content starts with `# Title` matching the article title, it's stripped (since title is shown separately in Document Section)
+- **"On This Page" TOC**: Added TOC section between Publishing and Content in the editor, showing H2/H3 headings extracted from the markdown content. Hidden when no headings exist.
+- **Backend Search Refactor**: Replaced client-side FlexSearch with backend `GET /api/kb/search?q=query`. Returns results with contextual snippets (±60/100 chars around match) and category/section info. Frontend uses 200ms debounced API calls. Snippets show highlighted match text.
+- Tested: 100% pass (29/29 backend + 46/46 frontend tests, iteration_55)
+
+### Email Threading Fix — Production-Grade (Feb 26, 2026)
+- **Root cause**: `get_thread_context()` only looked at outbound emails. First agent reply sent without In-Reply-To/References headers → customer reply created new ticket.
+- **Primary pipeline** (99% coverage): Proper In-Reply-To + References chain on ALL outbound emails. DB indexes on message_id, gmail_thread_id, ticket_id for fast lookups.
+- **Matching pipeline**: In-Reply-To → References → Gmail Thread ID → References overlap → X-Ticket-ID header → Body ticket ID extraction → Subject+email match (multi-layer Re:/Fwd: stripping)
+- **Additional**: Bounce detection, retry queue with exponential backoff, rate limiting
+- All 6 unit tests passing
 
 ---
 
@@ -321,7 +316,6 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 
 ### P1
 - Portal category alignment with user's desired structure
-- KB Editor/Docs page logic gaps: strip duplicate H1, add TOC in editor preview, refactor docs search to backend API
 
 ### P2
 - Real-time notifications for agents
