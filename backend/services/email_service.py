@@ -1,6 +1,12 @@
 """
 Email service for Trinity — handles sending via SES SMTP and receiving via IMAP.
 Production-grade with retry queue, rate limiting, and structured logging.
+
+Threading strategy:
+  - Every outbound email carries In-Reply-To (latest msg in thread) + References (full chain)
+  - Message-IDs use the IMAP domain so SES preserves them (SES rewrites IDs on mismatched domains)
+  - A custom X-Ticket-ID header is added for internal tracing
+  - email_threads_collection stores every email's message_id for bidirectional lookup
 """
 import smtplib
 from email.mime.text import MIMEText
@@ -54,6 +60,17 @@ def _check_rate_limit():
     return True
 
 
+def _make_message_id():
+    """Generate a well-formed Message-ID using the sender domain.
+
+    SES preserves custom Message-IDs when the domain part matches a verified
+    domain.  Using the sender's domain maximises the chance SES keeps it.
+    """
+    sender_email = _get_env("SES_SENDER_EMAIL", "support@emergent.sh")
+    domain = sender_email.split("@")[-1] if "@" in sender_email else "emergent.sh"
+    return make_msgid(domain=domain)
+
+
 def detect_ses_region():
     """Try each SES SMTP region and return the first that connects."""
     global _working_smtp_host
@@ -80,6 +97,49 @@ def detect_ses_region():
     logger.error("[SES] No SMTP region could connect")
     return None
 
+
+# ──────────────────────────────────────────────────────────────
+# Thread context — the single source of truth for reply headers
+# ──────────────────────────────────────────────────────────────
+
+def get_thread_context(ticket_id: str) -> dict:
+    """Build In-Reply-To and References for the next outbound email.
+
+    Includes ALL emails (inbound + outbound + outbound_gmail) for the ticket,
+    oldest first. This ensures:
+      * The very first agent reply threads with the customer's original email.
+      * Subsequent replies build a full References chain.
+    """
+    all_emails = list(email_threads_collection.find(
+        {
+            "ticket_id": ticket_id,
+            "direction": {"$in": ["outbound", "inbound", "outbound_gmail"]},
+            "message_id": {"$exists": True, "$ne": ""},
+        },
+        {"_id": 0, "message_id": 1, "created_at": 1},
+    ).sort("created_at", 1))
+
+    if not all_emails:
+        return {"in_reply_to": None, "references": []}
+
+    ref_chain = [e["message_id"] for e in all_emails if e.get("message_id")]
+    # Deduplicate while preserving order
+    seen = set()
+    unique_refs = []
+    for r in ref_chain:
+        if r not in seen:
+            seen.add(r)
+            unique_refs.append(r)
+
+    return {
+        "in_reply_to": all_emails[-1].get("message_id"),
+        "references": unique_refs,
+    }
+
+
+# ──────────────────────────────────────────────────────────────
+# Core send function
+# ──────────────────────────────────────────────────────────────
 
 def send_email(
     to_email: str,
@@ -117,7 +177,7 @@ def send_email(
 
     # Build MIME message
     msg = MIMEMultipart("alternative")
-    threading_msg_id = make_msgid(domain="emergent.sh")
+    threading_msg_id = _make_message_id()
 
     msg["From"] = formataddr((sender_name, sender_email))
     msg["To"] = to_email
@@ -125,10 +185,15 @@ def send_email(
     msg["Message-ID"] = threading_msg_id
     msg["Reply-To"] = sender_email
 
+    # Threading headers — these are critical for correct thread matching
     if in_reply_to:
         msg["In-Reply-To"] = in_reply_to
     if references:
         msg["References"] = " ".join(references)
+
+    # Custom header for internal tracing (survives SES, aids debugging)
+    if ticket_id:
+        msg["X-Ticket-ID"] = ticket_id
 
     if text_body:
         msg.attach(MIMEText(text_body, "plain", "utf-8"))
@@ -141,20 +206,20 @@ def send_email(
         server.sendmail(sender_email, [to_email], msg.as_string())
         server.quit()
 
-        logger.info(f"[SEND] OK to={to_email} ticket={ticket_id} subject={subject[:60]}")
+        logger.info(f"[SEND] OK to={to_email} ticket={ticket_id} msgid={threading_msg_id[:50]} subject={subject[:60]}")
 
         # Store outbound thread record
         email_threads_collection.insert_one({
             "thread_id": f"eth_{uuid.uuid4().hex[:12]}",
             "ticket_id": ticket_id,
             "message_id": threading_msg_id,
-            "in_reply_to": in_reply_to,
+            "in_reply_to": in_reply_to or "",
             "references": references or [],
             "direction": "outbound",
             "status": "sent",
             "from_email": sender_email,
             "to_email": to_email,
-            "subject": subject,
+            "subject": subject[:500],
             "created_at": datetime.now(timezone.utc),
         })
 
@@ -192,7 +257,7 @@ def _store_failed_email(to_email, subject, html_body, text_body, ticket_id, in_r
             "subject": subject,
             "html_body": html_body,
             "text_body": text_body,
-            "in_reply_to": in_reply_to,
+            "in_reply_to": in_reply_to or "",
             "references": references or [],
             "retry_count": 0,
             "max_retries": 5,
@@ -250,35 +315,9 @@ def retry_failed_emails():
     return retried
 
 
-def get_thread_context(ticket_id: str) -> dict:
-    """Get the latest Message-ID and full references chain for a ticket.
-    
-    Includes BOTH inbound and outbound emails so the first agent reply
-    properly threads with the customer's original email.
-    """
-    # Get ALL emails for this ticket (inbound + outbound), oldest first
-    all_emails = list(email_threads_collection.find(
-        {
-            "ticket_id": ticket_id,
-            "direction": {"$in": ["outbound", "inbound", "outbound_gmail"]},
-            "message_id": {"$exists": True, "$ne": ""},
-        },
-        {"_id": 0, "message_id": 1, "direction": 1, "created_at": 1},
-    ).sort("created_at", 1))
-
-    if not all_emails:
-        return {"in_reply_to": None, "references": []}
-
-    ref_chain = [t["message_id"] for t in all_emails if t.get("message_id")]
-
-    # in_reply_to should be the LATEST email's message_id (inbound or outbound)
-    latest = all_emails[-1]
-
-    return {
-        "in_reply_to": latest.get("message_id"),
-        "references": ref_chain,
-    }
-
+# ──────────────────────────────────────────────────────────────
+# Email stats
+# ──────────────────────────────────────────────────────────────
 
 def get_email_stats(ticket_id: str) -> dict:
     """Get email stats for a ticket (for dashboard display)."""
@@ -300,6 +339,10 @@ def get_email_stats(ticket_id: str) -> dict:
             stats["failed"] = r["count"]
     return stats
 
+
+# ──────────────────────────────────────────────────────────────
+# High-level send helpers  (each builds thread context first)
+# ──────────────────────────────────────────────────────────────
 
 def send_ticket_confirmation(ticket_id: str, customer_email: str, customer_name: str, subject: str):
     """Send ticket confirmation email to customer."""
