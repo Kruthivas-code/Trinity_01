@@ -9,6 +9,7 @@ import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import { Markdown } from 'tiptap-markdown';
+import { marked } from 'marked';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   Bold, Italic,
