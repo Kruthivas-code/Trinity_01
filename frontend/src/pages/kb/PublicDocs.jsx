@@ -391,7 +391,20 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
     }
     return () => { document.body.style.overflow = ''; };
   }, [open]);
-  useEffect(() => { if (query.length >= 2) setResults(search(query)); else setResults({ documents: [], headings: [] }); }, [query]);
+  useEffect(() => {
+    if (query.length < 2) { setResults({ documents: [], headings: [] }); return; }
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`${API}/api/kb/search?q=${encodeURIComponent(query)}`, { signal: controller.signal })
+        .then(r => r.json())
+        .then(data => {
+          const docs = (data.results || []).map(r => ({ slug: r.slug, title: r.title, snippet: r.snippet }));
+          setResults({ documents: docs, headings: [] });
+        })
+        .catch(() => {});
+    }, 200);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [query]);
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape' && open) onClose(); };
     document.addEventListener('keydown', handler);
