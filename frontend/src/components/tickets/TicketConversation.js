@@ -372,31 +372,35 @@ const TicketConversation = ({
           <>
         {/* Auto-merge Suggestions Banner */}
         {mergeSuggestions.length > 0 && mergeSuggestions.filter(s => !dismissedMergeSuggestions.includes(s.ticket_id)).length > 0 && (
-          <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <div className="mb-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30" data-testid="merge-suggestions-banner">
             <div className="flex items-start gap-2">
               <GitMerge size={16} className="text-amber-400 mt-0.5 shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-amber-400 mb-1">Possible duplicate detected</p>
+                <p className="text-xs font-medium text-amber-400 mb-1">
+                  {mergeSuggestions.filter(s => !dismissedMergeSuggestions.includes(s.ticket_id)).length === 1
+                    ? 'Possible duplicate detected'
+                    : `${mergeSuggestions.filter(s => !dismissedMergeSuggestions.includes(s.ticket_id)).length} possible duplicates detected`}
+                </p>
                 <p className="text-[11px] text-muted-foreground mb-2">
                   Same customer email within 2 hours
                 </p>
                 {mergeSuggestions.filter(s => !dismissedMergeSuggestions.includes(s.ticket_id)).map(suggestion => (
-                  <div key={suggestion.ticket_id} className="flex items-center gap-2 py-1.5 border-t border-amber-500/20 first:border-t-0">
+                  <div key={suggestion.ticket_id} className="flex items-center gap-2 py-1.5 border-t border-amber-500/20 first:border-t-0" data-testid={`merge-suggestion-${suggestion.ticket_id}`}>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs truncate">{suggestion.title}</p>
                       <p className="text-[10px] text-muted-foreground">{suggestion.ticket_id}</p>
                     </div>
                     <button
-                      onClick={() => {
-                        setShowMergeModal(true);
-                      }}
+                      onClick={() => handleAcceptMergeSuggestion(suggestion.ticket_id)}
                       className="text-[10px] px-2 py-1 rounded bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 transition-colors"
+                      data-testid={`accept-merge-${suggestion.ticket_id}`}
                     >
-                      Merge
+                      Accept Merge
                     </button>
                     <button
                       onClick={() => setDismissedMergeSuggestions(prev => [...prev, suggestion.ticket_id])}
                       className="text-[10px] px-2 py-1 rounded text-muted-foreground hover:bg-secondary/50 transition-colors"
+                      data-testid={`dismiss-merge-${suggestion.ticket_id}`}
                     >
                       Dismiss
                     </button>
