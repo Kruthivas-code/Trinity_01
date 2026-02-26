@@ -305,6 +305,7 @@ def send_ticket_confirmation(ticket_id: str, customer_email: str, customer_name:
     """Send ticket confirmation email to customer."""
     from services.email_templates import ticket_confirmation_html, ticket_confirmation_text
 
+    ctx = get_thread_context(ticket_id)
     html = ticket_confirmation_html(ticket_id, customer_name, subject)
     text = ticket_confirmation_text(ticket_id, customer_name, subject)
 
@@ -314,6 +315,8 @@ def send_ticket_confirmation(ticket_id: str, customer_email: str, customer_name:
         html_body=html,
         text_body=text,
         ticket_id=ticket_id,
+        in_reply_to=ctx["in_reply_to"],
+        references=ctx["references"],
     )
 
 
