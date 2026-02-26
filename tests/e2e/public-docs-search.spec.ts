@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'https://trinity-docs-v2.preview.emergentagent.com';
+const BASE_URL = 'https://support-merge.preview.emergentagent.com';
 
 test.describe('Public Docs Page Load', () => {
   test('Public docs page loads with main components', async ({ page }) => {

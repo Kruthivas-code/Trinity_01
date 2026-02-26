@@ -1,6 +1,6 @@
 import { Page, expect } from '@playwright/test';
 
-const BASE_URL = 'https://trinity-docs-v2.preview.emergentagent.com';
+const BASE_URL = 'https://support-merge.preview.emergentagent.com';
 const SESSION_TOKEN = 'playwright_test_session';
 
 export async function authenticateAndNavigate(page: Page, path: string = '/all-tickets') {
