@@ -75,6 +75,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           mergeSuggestions={state.mergeSuggestions}
           dismissedMergeSuggestions={state.dismissedMergeSuggestions}
           setDismissedMergeSuggestions={state.setDismissedMergeSuggestions}
+          handleAcceptMergeSuggestion={state.handleAcceptMergeSuggestion}
           mergedTickets={state.mergedTickets}
           showMergedPanel={state.showMergedPanel}
           setShowMergedPanel={state.setShowMergedPanel}
