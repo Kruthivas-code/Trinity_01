@@ -86,12 +86,12 @@ const mdToHtml = (md) => {
     let html = marked.parse(processed, { breaks: false, gfm: true });
     // Restore custom components as code blocks for editing
     placeholders.forEach((component, idx) => {
-      // Escape HTML entities and collapse blank lines so TipTap doesn't split the code block
+      // Escape HTML entities and collapse ALL blank lines so TipTap keeps as single code block
       const escaped = component
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/\n{3,}/g, '\n\n'); // collapse multiple blank lines
+        .replace(/\n\s*\n/g, '\n'); // collapse all blank lines to single newline
       const codeBlock = `<pre><code class="language-component">${escaped}</code></pre>`;
       // marked may wrap placeholder in <p> tags — handle both cases
       html = html.replace(`<p>COMPONENT_BLOCK_${idx}</p>`, codeBlock);
