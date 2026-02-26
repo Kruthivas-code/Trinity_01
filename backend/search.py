@@ -332,6 +332,43 @@ class SearchEngine:
                 mongo_query['updated_at'] = {'$gte': start, '$lt': end}
         
         try:
+            # Direct ticket ID match for numeric-only queries (e.g., "12345" → "TKT-12345")
+            if query:
+                stripped = query.strip()
+                if re.match(r'^\d+$', stripped):
+                    tkt_id = f'TKT-{stripped}'
+                    direct_ticket = self.tickets.find_one({
+                        'ticket_id': tkt_id,
+                        'status': {'$ne': 'merged'}
+                    })
+                    if direct_ticket:
+                        ticket_id = direct_ticket.get("ticket_id", str(direct_ticket.get("_id")))
+                        seen_ids.add(ticket_id)
+                        merged_info = direct_ticket.get("merged_tickets", [])
+                        results.append({
+                            "id": ticket_id,
+                            "ticket_id": ticket_id,
+                            "uuid": direct_ticket.get("uuid"),
+                            "type": "ticket",
+                            "result_type": "ticket",
+                            "category": "Tickets",
+                            "title": direct_ticket.get("title", "Untitled"),
+                            "subtitle": f"#{ticket_id} • {direct_ticket.get('status', 'unknown')}",
+                            "status": direct_ticket.get("status"),
+                            "priority": direct_ticket.get("priority"),
+                            "escalation_level": direct_ticket.get("escalation_level"),
+                            "assignee_id": direct_ticket.get("assignee_id"),
+                            "customer_email": direct_ticket.get("customer_email"),
+                            "associated_emails": direct_ticket.get("associated_emails", []),
+                            "domain": direct_ticket.get("domain"),
+                            "tags": direct_ticket.get("tags", []),
+                            "merged_tickets": merged_info,
+                            "contains_merged_ticket": len(merged_info) > 0,
+                            "created_at": direct_ticket.get("created_at").isoformat() if direct_ticket.get("created_at") else None,
+                            "action": f"/all-tickets?ticket={ticket_id}",
+                            "score": 25.0  # Highest score for exact numeric ID match
+                        })
+            
             # First check if query matches a search_identifier directly (merged ticket lookup)
             if query and len(query) >= 3:
                 identifier_match = self.tickets.find_one({
