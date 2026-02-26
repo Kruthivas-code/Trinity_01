@@ -1,20 +1,18 @@
 /**
  * KBEditor — Knowledge Base article editor
- * Refactored: Components split into kb-editor/ directory
+ * Single-page layout with Document Settings, Draft, and Rich Text Content sections.
  */
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ChevronLeft, Save, Eye, Code2, Loader2, FileText, Settings,
-  Monitor, Smartphone, Tablet, ExternalLink,
-  Image as ImageIcon, Sun, Moon, Share2
+  ChevronLeft, Save, Loader2, Settings,
+  Sun, Moon, Share2, Globe, ExternalLink
 } from 'lucide-react';
-import { DocContent } from '../components/docs/DocContent';
-import { EditorToolbar } from './kb-editor/EditorToolbar';
 import { ArticleSidebar } from './kb-editor/ArticleSidebar';
-import { ConfigPanel } from './kb-editor/ConfigPanel';
 import { NavManager } from './kb-editor/NavManager';
 import { SocialLinksPanel } from './kb-editor/SocialLinksPanel';
+import { GlobalSettingsModal } from './kb-editor/GlobalSettingsModal';
+import { RichTextEditor } from './kb-editor/RichTextEditor';
 import { EDITOR_THEMES } from './kb-editor/editorTheme';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -22,7 +20,6 @@ const API = process.env.REACT_APP_BACKEND_URL;
 const KBEditor = () => {
   const { slug: paramSlug } = useParams();
   const navigate = useNavigate();
-  const textareaRef = useRef(null);
 
   const [articles, setArticles] = useState([]);
   const [navGroups, setNavGroups] = useState([]);
@@ -33,16 +30,12 @@ const KBEditor = () => {
   const [lastSaved, setLastSaved] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [isNew, setIsNew] = useState(false);
-  const [viewMode, setViewMode] = useState('markdown');
-  const [configOpen, setConfigOpen] = useState(false);
   const [expanded, setExpanded] = useState({});
-  const [previewDevice, setPreviewDevice] = useState('desktop');
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
   const [navManagerOpen, setNavManagerOpen] = useState(false);
   const [socialLinksOpen, setSocialLinksOpen] = useState(false);
+  const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
 
-  // Theme state — persisted to localStorage
+  // Theme
   const [editorTheme, setEditorTheme] = useState(() => localStorage.getItem('kb-editor-theme') || 'dark');
   const isDark = editorTheme === 'dark';
   const theme = isDark ? EDITOR_THEMES.dark : EDITOR_THEMES.light;
@@ -55,26 +48,16 @@ const KBEditor = () => {
     });
   }, []);
 
-  // Sync the global 'dark' class on <html> so Tailwind dark: variants in
-  // DocContent, Cards, Tabs, Accordion, Steps etc. all respond correctly.
   useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    if (isDark) document.documentElement.classList.add('dark');
+    else document.documentElement.classList.remove('dark');
     return () => { document.documentElement.classList.remove('dark'); };
   }, [isDark]);
 
-  // Lock body/html overflow so the page itself never scrolls —
-  // only the sidebar and editor panels should scroll independently.
   useEffect(() => {
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
-    return () => {
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-    };
+    return () => { document.documentElement.style.overflow = ''; document.body.style.overflow = ''; };
   }, []);
 
   const slugify = (t) => t.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-');
@@ -99,13 +82,18 @@ const KBEditor = () => {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // Load article when slug changes
+  // Load article when slug changes or auto-select first
   useEffect(() => {
     if (!paramSlug || paramSlug === 'new') {
       if (paramSlug === 'new') {
         setIsNew(true);
         setOriginalSlug(null);
-        setForm({ title: '', slug: '', content_markdown: '', nav_group_key: navGroups[0]?.key || '', nav_group_label: navGroups[0]?.label || '', section_key: navGroups[0]?.sections?.[0]?.key || '', section_label: navGroups[0]?.sections?.[0]?.label || '', published: true, order: articles.length });
+        setForm({
+          title: '', slug: '', description: '', content_markdown: '',
+          nav_group_key: '', nav_group_label: '',
+          section_key: '', section_label: '',
+          published: false, order: articles.length
+        });
       } else if (articles.length > 0 && !form) {
         navigate(`/dashboard/kb-editor/${articles[0].slug}`, { replace: true });
       }
@@ -119,14 +107,18 @@ const KBEditor = () => {
     }
   }, [paramSlug, articles, navGroups, navigate]);
 
+  // Validation
+  const canSave = form && form.title?.trim() && form.slug?.trim();
+
   // Save
   const handleSave = useCallback(async () => {
-    if (!form || !form.title?.trim()) return;
+    if (!canSave) return;
     setSaving(true);
     try {
-      const slug = form.slug?.trim() || slugify(form.title);
+      const slug = form.slug.trim();
       const payload = { ...form, slug };
       delete payload.created_at; delete payload.updated_at; delete payload.source_url;
+      delete payload.feedback_total; delete payload.feedback_helpful;
       const url = isNew ? `${API}/api/kb/admin/articles` : `${API}/api/kb/admin/articles/${originalSlug}`;
       const method = isNew ? 'POST' : 'PUT';
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload) });
@@ -140,7 +132,7 @@ const KBEditor = () => {
       await fetchAll();
     } catch (e) { console.error(e); alert(e.message); }
     finally { setSaving(false); }
-  }, [form, isNew, originalSlug, navigate, fetchAll]);
+  }, [form, isNew, originalSlug, navigate, fetchAll, canSave]);
 
   // Cmd+S
   useEffect(() => {
@@ -149,69 +141,32 @@ const KBEditor = () => {
     return () => window.removeEventListener('keydown', handler);
   }, [handleSave]);
 
-  // Cmd+B / Cmd+I formatting
-  useEffect(() => {
-    const handler = (e) => {
-      if (!textareaRef.current || document.activeElement !== textareaRef.current) return;
-      if (e.metaKey || e.ctrlKey) {
-        const ta = textareaRef.current;
-        const start = ta.selectionStart, end = ta.selectionEnd;
-        const selected = form?.content_markdown?.substring(start, end) || '';
-        const before = form?.content_markdown?.substring(0, start) || '';
-        const after = form?.content_markdown?.substring(end) || '';
-        let prefix, suffix;
-        if (e.key === 'b') { prefix = '**'; suffix = '**'; }
-        else if (e.key === 'i') { prefix = '*'; suffix = '*'; }
-        else return;
-        e.preventDefault();
-        setForm(f => ({ ...f, content_markdown: `${before}${prefix}${selected || 'text'}${suffix}${after}` }));
-        setTimeout(() => { ta.focus(); ta.setSelectionRange(start + prefix.length, start + prefix.length + (selected || 'text').length); }, 0);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [form?.content_markdown]);
-
   const handleDelete = async (slug) => {
     if (!window.confirm('Delete this article permanently?')) return;
     setDeleting(slug);
     try {
       await fetch(`${API}/api/kb/admin/articles/${slug}`, { method: 'DELETE', credentials: 'include' });
-      if (paramSlug === slug) navigate('/dashboard/kb-editor', { replace: true });
+      if (paramSlug === slug) {
+        setForm(null);
+        navigate('/dashboard/kb-editor', { replace: true });
+      }
       await fetchAll();
     } catch (e) { console.error(e); }
     finally { setDeleting(null); }
   };
 
-  // Image upload
+  // Image upload — returns URL
   const uploadImage = useCallback(async (file) => {
-    if (!file || !file.type.startsWith('image/')) return;
-    setUploading(true);
+    if (!file || !file.type.startsWith('image/')) return null;
     try {
       const formData = new FormData();
       formData.append('file', file);
       const res = await fetch(`${API}/api/kb/admin/images`, { method: 'POST', credentials: 'include', body: formData });
       if (!res.ok) throw new Error('Upload failed');
       const { url } = await res.json();
-      const altText = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
-      const markdown = `![${altText}](${url})`;
-      const ta = textareaRef.current;
-      if (ta && form) {
-        const pos = ta.selectionStart;
-        const before = (form.content_markdown || '').substring(0, pos);
-        const after = (form.content_markdown || '').substring(pos);
-        const nl = before.length > 0 && !before.endsWith('\n') ? '\n' : '';
-        setForm(f => ({ ...f, content_markdown: `${before}${nl}${markdown}\n${after}` }));
-        setTimeout(() => { ta.focus(); }, 0);
-      } else {
-        setForm(f => ({ ...f, content_markdown: (f?.content_markdown || '') + `\n${markdown}\n` }));
-      }
-    } catch (e) { console.error(e); alert(`Image upload failed: ${e.message}`); }
-    finally { setUploading(false); }
-  }, [form]);
-
-  const handleDrop = useCallback((e) => { e.preventDefault(); setDragOver(false); const file = e.dataTransfer?.files?.[0]; if (file?.type.startsWith('image/')) uploadImage(file); }, [uploadImage]);
-  const handlePaste = useCallback((e) => { const items = e.clipboardData?.items; if (!items) return; for (const item of items) { if (item.type.startsWith('image/')) { e.preventDefault(); uploadImage(item.getAsFile()); return; } } }, [uploadImage]);
+      return url;
+    } catch (e) { console.error(e); alert(`Image upload failed: ${e.message}`); return null; }
+  }, []);
 
   const saveNavigation = async (newGroups) => {
     try {
@@ -244,15 +199,27 @@ const KBEditor = () => {
     })),
   })), [navGroups, articles]);
 
-  const previewWidth = previewDevice === 'mobile' ? 'max-w-[375px]' : previewDevice === 'tablet' ? 'max-w-[768px]' : 'max-w-none';
+  // Flatten sections for category dropdown
+  const categoryOptions = useMemo(() => {
+    const opts = [];
+    navGroups.forEach(g => {
+      opts.push({ type: 'group', key: g.key, label: g.label });
+      (g.sections || []).forEach(s => {
+        opts.push({ type: 'section', groupKey: g.key, groupLabel: g.label, key: s.key, label: s.label });
+      });
+    });
+    return opts;
+  }, [navGroups]);
 
   if (loading) {
     return <div className={`h-screen flex items-center justify-center ${theme.bg}`}><Loader2 className="w-6 h-6 animate-spin text-[#00A1B2]" /></div>;
   }
 
-  // Inline background styles for light theme to override app's CSS variable system
   const bgStyle = isDark ? {} : { backgroundColor: '#ffffff' };
   const panelBgStyle = isDark ? {} : { backgroundColor: '#f9fafb' };
+
+  // Get the preview URL for the slug
+  const docsBaseUrl = window.location.origin + '/docs/';
 
   return (
     <div className={`h-screen ${theme.bg} flex flex-col`} style={bgStyle} data-testid="kb-editor-page">
@@ -262,62 +229,28 @@ const KBEditor = () => {
           <ChevronLeft className="w-4 h-4" /><span className="text-sm">Dashboard</span>
         </button>
         <div className={`w-px h-6 ${theme.divider}`} />
-        {form && (
-          <input value={form.title || ''} onChange={e => {
-            const title = e.target.value;
-            setForm(f => ({ ...f, title, slug: isNew || f.slug === slugify(f.title || '') ? slugify(title) : f.slug }));
-          }} placeholder="Article title..." className={`flex-1 bg-transparent ${theme.text} text-lg font-medium ${theme.placeholder} outline-none min-w-0`} data-testid="editor-title-input" />
-        )}
+        <span className={`text-sm font-medium ${theme.text} truncate`}>
+          {form ? (isNew ? 'New Article' : form.title || 'Untitled') : 'Knowledge Base Editor'}
+        </span>
+
         <div className="flex items-center gap-2 ml-auto flex-shrink-0">
-          <div className={`flex items-center ${isDark ? 'bg-slate-800/60' : 'bg-gray-200/60'} rounded-lg p-0.5`} data-testid="view-mode-toggle">
-            {[
-              { mode: 'markdown', icon: <Code2 className="w-4 h-4" />, label: 'Editor' },
-              { mode: 'preview', icon: <Eye className="w-4 h-4" />, label: 'Preview' },
-            ].map(v => (
-              <button key={v.mode} onClick={() => setViewMode(v.mode)} title={v.label}
-                className={`px-2.5 py-1.5 rounded-md transition-all flex items-center gap-1.5 text-xs font-medium ${viewMode === v.mode ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText}`}`}
-                data-testid={`view-${v.mode}`}>
-                {v.icon}<span>{v.label}</span>
-              </button>
-            ))}
-          </div>
-          {viewMode === 'preview' && (
-            <div className={`flex items-center ${isDark ? 'bg-slate-800/60' : 'bg-gray-200/60'} rounded-lg p-0.5`}>
-              {[
-                { d: 'desktop', icon: <Monitor className="w-4 h-4" /> },
-                { d: 'tablet', icon: <Tablet className="w-4 h-4" /> },
-                { d: 'mobile', icon: <Smartphone className="w-4 h-4" /> },
-              ].map(v => (
-                <button key={v.d} onClick={() => setPreviewDevice(v.d)}
-                  className={`p-1.5 rounded-md transition-all ${previewDevice === v.d ? (isDark ? 'bg-slate-700 text-white' : 'bg-gray-300 text-gray-900') : `${theme.textSecondary} ${theme.hoverText}`}`}>
-                  {v.icon}
-                </button>
-              ))}
-            </div>
-          )}
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            data-testid="kb-editor-theme-toggle"
-          >
+          <button onClick={toggleTheme} className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'} data-testid="kb-editor-theme-toggle">
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
           <button onClick={() => setSocialLinksOpen(!socialLinksOpen)} className={`p-2 rounded-lg transition-colors ${socialLinksOpen ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText} ${theme.hover}`}`} title="Social Links" data-testid="social-links-toggle">
             <Share2 className="w-4 h-4" />
           </button>
-          <button onClick={() => setConfigOpen(!configOpen)} className={`p-2 rounded-lg transition-colors ${configOpen ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText} ${theme.hover}`}`} title="Settings" data-testid="config-toggle">
+          <button onClick={() => setGlobalSettingsOpen(true)} className={`p-2 rounded-lg transition-colors ${globalSettingsOpen ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText} ${theme.hover}`}`} title="Global Docs Settings" data-testid="global-settings-toggle">
             <Settings className="w-4 h-4" />
           </button>
-          {form?.slug && (
+          {form?.slug && !isNew && (
             <a href={`/docs/${form.slug}`} target="_blank" rel="noopener noreferrer" className={`p-2 ${theme.textMuted} ${theme.hoverText} rounded-lg ${theme.hover} transition-colors`} title="Preview live" data-testid="live-preview-link">
               <ExternalLink className="w-4 h-4" />
             </a>
           )}
           <div className={`w-px h-6 ${theme.divider}`} />
           {lastSaved && <span className={`text-xs ${theme.textSecondary} hidden sm:block`}>Saved {lastSaved.toLocaleTimeString()}</span>}
-          <button onClick={handleSave} disabled={saving || !form?.title?.trim()}
+          <button onClick={handleSave} disabled={saving || !canSave}
             className="flex items-center gap-2 px-4 py-2 bg-[#00A1B2] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity"
             data-testid="save-btn">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -330,63 +263,170 @@ const KBEditor = () => {
         {/* Sidebar */}
         <ArticleSidebar tree={tree} selectedSlug={paramSlug} onSelect={(slug) => navigate(`/dashboard/kb-editor/${slug}`)} onDelete={handleDelete} deleting={deleting} expanded={expanded} setExpanded={setExpanded} onNewArticle={() => navigate('/dashboard/kb-editor/new')} onManageNav={() => setNavManagerOpen(true)} theme={theme} />
 
-        {/* Editor Area */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {form && viewMode !== 'preview' && (
-            <EditorToolbar textareaRef={textareaRef} content={form.content_markdown || ''} setContent={v => setForm(f => ({ ...f, content_markdown: v }))} onUploadImage={uploadImage} theme={theme} />
-          )}
-          <div className="flex-1 flex min-h-0 overflow-hidden">
-            {viewMode === 'markdown' && (
-              <div className="w-full flex flex-col min-h-0 overflow-hidden relative"
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}>
-                {dragOver && (
-                  <div className="absolute inset-0 z-20 bg-[#00A1B2]/10 border-2 border-dashed border-[#00A1B2] rounded-lg flex items-center justify-center pointer-events-none">
-                    <div className="text-[#00A1B2] text-sm font-medium flex items-center gap-2"><ImageIcon className="w-5 h-5" /> Drop image to upload</div>
-                  </div>
-                )}
-                {uploading && (
-                  <div className="absolute inset-0 z-20 bg-black/40 flex items-center justify-center">
-                    <div className="flex items-center gap-2 text-[#00A1B2] text-sm bg-slate-900 px-4 py-2 rounded-lg border border-slate-700"><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</div>
-                  </div>
-                )}
-                {form ? (
-                  <div className="flex-1 min-h-0 relative">
-                    <textarea ref={textareaRef} value={form.content_markdown || ''} onChange={e => setForm(f => ({ ...f, content_markdown: e.target.value }))}
-                      onPaste={handlePaste}
-                      className={`absolute inset-0 w-full h-full px-6 py-6 bg-transparent ${theme.editorText} text-sm font-mono leading-relaxed resize-none outline-none overflow-y-auto`}
-                      style={{ tabSize: 2 }} placeholder="Start writing markdown... (Drag, drop or paste images)" spellCheck={false} data-testid="markdown-editor" />
-                  </div>
-                ) : (
-                  <div className={`flex-1 flex items-center justify-center ${theme.textSecondary}`}>
-                    <div className="text-center"><FileText className="w-8 h-8 mx-auto mb-3 opacity-50" /><p>Select an article or create new</p></div>
-                  </div>
-                )}
-              </div>
-            )}
-            {viewMode === 'preview' && (
-              <div className="w-full overflow-y-auto" style={bgStyle} data-testid="live-preview">
-                <div className={`${previewWidth} mx-auto px-6 py-8`}>
-                  {form ? (
-                    <div className={`prose ${theme.proseClass} max-w-none`}>
-                      <h1 className={`text-3xl font-bold ${theme.text} mb-6`}>{form.title || 'Untitled'}</h1>
-                      <DocContent content={form.content_markdown || ''} />
-                    </div>
-                  ) : (
-                    <div className={`${theme.textSecondary} text-center py-20`}>No content to preview</div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Main Content — Single Scrollable Page */}
+        <div className="flex-1 overflow-y-auto" data-testid="editor-main-area">
+          {form ? (
+            <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
 
-        {configOpen && form && <ConfigPanel form={form} setForm={setForm} navGroups={navGroups} onClose={() => setConfigOpen(false)} theme={theme} />}
+              {/* === Document Section === */}
+              <section data-testid="document-section">
+                <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-4`}>Document</h2>
+
+                {/* Title */}
+                <div className="mb-4">
+                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Title <span className="text-red-400">*</span></label>
+                  <input
+                    value={form.title || ''}
+                    onChange={e => {
+                      const title = e.target.value;
+                      setForm(f => ({
+                        ...f, title,
+                        slug: isNew || f.slug === slugify(f.title || '') ? slugify(title) : f.slug
+                      }));
+                    }}
+                    placeholder="Article title..."
+                    className={`w-full px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors`}
+                    style={theme.inputBgStyle}
+                    data-testid="editor-title-input"
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="mb-4">
+                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Description</label>
+                  <input
+                    value={form.description || ''}
+                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                    placeholder="Brief description of this article..."
+                    className={`w-full px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors`}
+                    style={theme.inputBgStyle}
+                    data-testid="editor-description-input"
+                  />
+                </div>
+
+                {/* Slug */}
+                <div className="mb-1">
+                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Slug <span className="text-red-400">*</span></label>
+                  <input
+                    value={form.slug || ''}
+                    onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
+                    placeholder="article-slug"
+                    className={`w-full px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} font-mono ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors`}
+                    style={theme.inputBgStyle}
+                    data-testid="editor-slug-input"
+                  />
+                </div>
+                {form.slug && (
+                  <div className={`flex items-center gap-2 text-xs ${theme.textSecondary} mt-1.5 mb-4`} data-testid="slug-preview">
+                    <Globe className="w-3.5 h-3.5" />
+                    <span className="font-mono">{docsBaseUrl}{form.slug}</span>
+                  </div>
+                )}
+
+                {/* Category */}
+                <div className="mb-4">
+                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Category</label>
+                  <select
+                    value={form.nav_group_key || ''}
+                    onChange={e => {
+                      const groupKey = e.target.value;
+                      const g = navGroups.find(g => g.key === groupKey);
+                      setForm(f => ({
+                        ...f,
+                        nav_group_key: groupKey,
+                        nav_group_label: g?.label || '',
+                        section_key: '',
+                        section_label: '',
+                      }));
+                    }}
+                    className={`w-full px-3 py-2.5 ${theme.selectBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} focus:border-[#00A1B2] focus:outline-none transition-colors`}
+                    data-testid="editor-category-select"
+                  >
+                    <option value="">No category</option>
+                    {navGroups.map(g => <option key={g.key} value={g.key}>{g.label}</option>)}
+                  </select>
+                </div>
+
+                {/* Subcategory (Section) — optional */}
+                {form.nav_group_key && (
+                  <div className="mb-4">
+                    <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Subcategory <span className={`${theme.textSecondary} font-normal`}>(optional)</span></label>
+                    <select
+                      value={form.section_key || ''}
+                      onChange={e => {
+                        const sectionKey = e.target.value;
+                        const g = navGroups.find(g => g.key === form.nav_group_key);
+                        const s = g?.sections?.find(s => s.key === sectionKey);
+                        setForm(f => ({
+                          ...f,
+                          section_key: sectionKey,
+                          section_label: s?.label || '',
+                        }));
+                      }}
+                      className={`w-full px-3 py-2.5 ${theme.selectBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} focus:border-[#00A1B2] focus:outline-none transition-colors`}
+                      data-testid="editor-subcategory-select"
+                    >
+                      <option value="">None (directly under category)</option>
+                      {(navGroups.find(g => g.key === form.nav_group_key)?.sections || []).map(s => (
+                        <option key={s.key} value={s.key}>{s.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </section>
+
+              {/* === Draft Section === */}
+              <section className={`border-t ${theme.border} pt-6`} data-testid="draft-section">
+                <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-4`}>Publishing</h2>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`text-sm font-medium ${theme.text}`}>
+                      {form.published ? 'Published' : 'Draft'}
+                    </p>
+                    <p className={`text-xs ${theme.textSecondary} mt-0.5`}>
+                      {form.published ? 'This article is visible to the public.' : 'This article is saved as a draft and not visible to the public.'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, published: !f.published }))}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${form.published ? 'bg-[#00A1B2]' : isDark ? 'bg-slate-700' : 'bg-gray-300'}`}
+                    role="switch"
+                    aria-checked={form.published}
+                    data-testid="publish-toggle"
+                  >
+                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${form.published ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+              </section>
+
+              {/* === Content Section === */}
+              <section className={`border-t ${theme.border} pt-6`} data-testid="content-section">
+                <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-4`}>Content</h2>
+                <RichTextEditor
+                  content={form.content_markdown || ''}
+                  onChange={(md) => setForm(f => ({ ...f, content_markdown: md }))}
+                  theme={theme}
+                  onUploadImage={uploadImage}
+                />
+              </section>
+
+            </div>
+          ) : (
+            <div className={`flex-1 flex items-center justify-center h-full ${theme.textSecondary}`}>
+              <div className="text-center">
+                <p className="text-lg mb-2">Select an article or create a new one</p>
+                <p className="text-sm">Use the sidebar to navigate your articles</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
+      {/* Modals */}
       {navManagerOpen && <NavManager navGroups={navGroups} onSave={saveNavigation} onBulkMove={bulkMoveArticles} onClose={() => setNavManagerOpen(false)} theme={theme} />}
       {socialLinksOpen && <SocialLinksPanel onClose={() => setSocialLinksOpen(false)} theme={theme} />}
+      {globalSettingsOpen && <GlobalSettingsModal onClose={() => setGlobalSettingsOpen(false)} theme={theme} />}
     </div>
   );
 };
