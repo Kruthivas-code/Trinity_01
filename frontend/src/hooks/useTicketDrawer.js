@@ -909,6 +909,30 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
     }
   };
 
+  // One-click merge: merges the SUGGESTED ticket into the CURRENT ticket
+  const handleAcceptMergeSuggestion = async (sourceTicketId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/tickets/${sourceTicketId}/merge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ target_ticket_id: ticket.id })
+      });
+      if (response.ok) {
+        // Remove merged suggestion from list
+        setMergeSuggestions(prev => prev.filter(s => s.ticket_id !== sourceTicketId));
+        // Refresh notes to show newly merged messages
+        fetchNotes(ticket.id);
+        fetchActivityFeed(ticket.id);
+        if (onUpdate) {
+          onUpdate(ticket.id, { _suggestionMerged: sourceTicketId });
+        }
+      }
+    } catch (error) {
+      console.error('Accept merge suggestion failed:', error);
+    }
+  };
+
   const handleLinkTicket = async (targetTicketId, linkType) => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/tickets/${ticket.id}/link`, {
@@ -1055,7 +1079,7 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
     showSplitModal, setShowSplitModal,
     showFeatureRequestModal, setShowFeatureRequestModal,
     splitMessageIndex, setSplitMessageIndex,
-    handleMerge, handleLinkTicket, handleLinkModalUnlink,
+    handleMerge, handleAcceptMergeSuggestion, handleLinkTicket, handleLinkModalUnlink,
     handleSplitTicket, handleLinkFeatureRequest,
     // Linked tickets
     linkedTickets, handleUnlinkTicket,

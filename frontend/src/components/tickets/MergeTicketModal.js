@@ -16,13 +16,14 @@ const MergeTicketModal = ({ ticket, onClose, onMerge }) => {
     }
     setLoading(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/search?q=${encodeURIComponent(query)}&types=tickets`, {
+      const response = await fetch(`${BACKEND_URL}/api/search?q=${encodeURIComponent(query)}&type=ticket`, {
         credentials: 'include'
       });
       if (response.ok) {
         const data = await response.json();
         // Filter out current ticket and merged tickets
-        setSearchResults((data.tickets || []).filter(t => 
+        const tickets = data.by_category?.tickets || data.results?.filter(r => r.type === 'ticket') || [];
+        setSearchResults(tickets.filter(t => 
           t.ticket_id !== ticket.ticket_id && t.status !== 'merged'
         ).slice(0, 10));
       }
