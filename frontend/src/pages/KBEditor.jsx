@@ -103,14 +103,8 @@ const KBEditor = () => {
     if (art) {
       setIsNew(false);
       setOriginalSlug(art.slug);
-      // Strip duplicate H1 if content starts with # Title matching the article title
+      // H1 is now part of the content itself — no stripping needed
       const artCopy = { ...art };
-      if (artCopy.content_markdown && artCopy.title) {
-        const escapedTitle = artCopy.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        artCopy.content_markdown = artCopy.content_markdown.replace(
-          new RegExp(`^#\\s*${escapedTitle}\\s*\\n+`, 'i'), ''
-        );
-      }
       setForm(artCopy);
     }
   }, [paramSlug, articles, navGroups, navigate]);
