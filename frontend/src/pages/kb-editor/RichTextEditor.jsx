@@ -8,20 +8,15 @@ import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { Markdown } from 'tiptap-markdown';
-import { common, createLowlight } from 'lowlight';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
-  Bold, Italic, Underline as UnderlineIcon, Strikethrough,
-  Heading1, Heading2, Heading3, Heading4, Heading5, Heading6,
+  Bold, Italic,
   List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon,
-  Minus, Undo2, Redo2, ChevronDown, Plus,
+  Undo2, Redo2, ChevronDown, Plus,
   Info, Lightbulb, AlertTriangle, CheckCircle, MoreHorizontal,
-  Columns, Youtube
+  Columns, Youtube, Minus
 } from 'lucide-react';
-
-const lowlight = createLowlight(common);
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
