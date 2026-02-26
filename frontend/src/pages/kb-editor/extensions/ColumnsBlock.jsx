@@ -329,7 +329,29 @@ export const ColumnsBlockNode = Node.create({
   addNodeView() {
     return ReactNodeViewRenderer(ColumnsBlockView);
   },
+
+  addStorage() {
+    return { markdown: { serialize: columnsBlockSerializer } };
+  },
 });
+
+function columnsBlockSerializer(state, node) {
+  const cols = node.attrs.cols || 2;
+  const cards = [];
+  node.content.forEach(child => {
+    if (child.type.name === 'columnCard') {
+      const a = child.attrs;
+      let cardAttrs = `title="${a.title || 'Card'}" icon="${a.icon || 'file-text'}"`;
+      if (a.url) cardAttrs += ` url="${a.url}"`;
+      if (a.imagePath) cardAttrs += ` imagePath="${a.imagePath}"`;
+      if (a.cta) cardAttrs += ` cta="${a.cta}"`;
+      if (a.horizontal) cardAttrs += ` horizontal="true"`;
+      cards.push(`<Card ${cardAttrs}>\n${a.description || 'Description'}\n</Card>`);
+    }
+  });
+  state.write(`<Columns cols={${cols}}>\n${cards.join('\n')}\n</Columns>\n\n`);
+  state.closeBlock(node);
+}
 
 // ============= TipTap Node: columnCard =============
 export const ColumnCardNode = Node.create({
@@ -341,13 +363,34 @@ export const ColumnCardNode = Node.create({
 
   addAttributes() {
     return {
-      title: { default: 'Card Title' },
-      description: { default: 'Description' },
-      icon: { default: 'file-text' },
-      url: { default: '' },
-      imagePath: { default: '' },
-      cta: { default: '' },
-      horizontal: { default: false },
+      title: {
+        default: 'Card Title',
+        parseHTML: el => el.getAttribute('data-title') || 'Card Title',
+      },
+      description: {
+        default: 'Description',
+        parseHTML: el => el.getAttribute('data-description') || 'Description',
+      },
+      icon: {
+        default: 'file-text',
+        parseHTML: el => el.getAttribute('data-icon') || 'file-text',
+      },
+      url: {
+        default: '',
+        parseHTML: el => el.getAttribute('data-url') || '',
+      },
+      imagePath: {
+        default: '',
+        parseHTML: el => el.getAttribute('data-image-path') || '',
+      },
+      cta: {
+        default: '',
+        parseHTML: el => el.getAttribute('data-cta') || '',
+      },
+      horizontal: {
+        default: false,
+        parseHTML: el => el.getAttribute('data-horizontal') === 'true',
+      },
     };
   },
 
@@ -356,10 +399,23 @@ export const ColumnCardNode = Node.create({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes(HTMLAttributes, { 'data-type': 'column-card' })];
+    return ['div', mergeAttributes(HTMLAttributes, {
+      'data-type': 'column-card',
+      'data-title': HTMLAttributes.title,
+      'data-description': HTMLAttributes.description,
+      'data-icon': HTMLAttributes.icon,
+      'data-url': HTMLAttributes.url,
+      'data-image-path': HTMLAttributes.imagePath,
+      'data-cta': HTMLAttributes.cta,
+      'data-horizontal': HTMLAttributes.horizontal,
+    })];
   },
 
   addNodeView() {
     return ReactNodeViewRenderer(ColumnCardView);
+  },
+
+  addStorage() {
+    return { markdown: { serialize() { /* handled by parent columnsBlock */ } } };
   },
 });
