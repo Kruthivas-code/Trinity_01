@@ -374,9 +374,9 @@ test.describe('New Article Creation', () => {
     const publishToggle = page.getByTestId('publish-toggle');
     await expect(publishToggle).toHaveAttribute('aria-checked', 'false');
     
-    // Should show "Draft" text
+    // Should show "Draft" text (using exact match for p tag with text Draft)
     const draftSection = page.getByTestId('draft-section');
-    await expect(draftSection.locator('text=Draft')).toBeVisible();
+    await expect(draftSection.getByText('Draft', { exact: true })).toBeVisible();
   });
 });
 
@@ -405,8 +405,8 @@ test.describe('Header Actions', () => {
     
     await socialLinksToggle.click();
     
-    // Panel should appear
-    await expect(page.locator('[data-testid*="social-links"]')).toBeVisible();
+    // Panel should appear (specific testid for the panel)
+    await expect(page.getByTestId('social-links-panel')).toBeVisible();
   });
 
   test('Back to dashboard link is present', async ({ page }) => {
