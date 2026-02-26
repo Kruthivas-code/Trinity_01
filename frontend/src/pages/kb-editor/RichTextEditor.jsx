@@ -81,11 +81,17 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
         transformCopiedText: true,
       }),
     ],
-    content: content || '',
+    content: '',
     editorProps: {
       attributes: {
         class: 'outline-none min-h-[400px] px-0 py-2',
       },
+    },
+    onCreate: ({ editor }) => {
+      // Set initial markdown content after editor is fully initialized
+      if (content) {
+        editor.commands.setContent(content);
+      }
     },
     onUpdate: ({ editor }) => {
       const md = editor.storage.markdown.getMarkdown();
