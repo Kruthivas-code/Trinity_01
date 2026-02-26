@@ -312,6 +312,7 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **New packages**: `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-link`, `@tiptap/extension-image`, `@tiptap/extension-placeholder`, `@tiptap/extension-underline`, `tiptap-markdown`, `marked`, `@tailwindcss/typography`
 - Files created: `RichTextEditor.jsx`, `GlobalSettingsModal.jsx`
 - Files modified: `KBEditor.jsx` (major rewrite), `kb.py` (new endpoints + description field), `tailwind.config.js` (typography plugin)
+- **Bug Fix (Feb 26)**: Fixed custom component code blocks splitting into individual blocks. Root cause: regex matched inner components (Card, Step, Tab) individually instead of capturing the outer wrapper (Columns, Steps, Tabs) as a complete block. Fixed by matching only wrapper-level components with their own closing tags, then handling orphan inner components separately.
 - Tested: 100% pass (14/14 backend + 28/28 frontend tests, iteration_54)
 
 ---
