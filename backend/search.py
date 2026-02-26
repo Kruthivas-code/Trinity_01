@@ -416,7 +416,7 @@ class SearchEngine:
                 # Just filter by operators
                 cursor = self.tickets.find(mongo_query).sort('created_at', -1).limit(limit)
             
-            seen_ids = {r['ticket_id'] for r in results}  # Don't duplicate identifier matches
+            seen_ids.update(r['ticket_id'] for r in results)  # Don't duplicate identifier matches
             
             for doc in cursor:
                 ticket_id = doc.get("ticket_id", str(doc.get("_id")))
