@@ -281,32 +281,45 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
       },
     },
     onUpdate: ({ editor }) => {
+      // First get the standard markdown output
       let md = editor.storage.markdown.getMarkdown();
+      
       // Restore component code blocks back to raw component syntax
       md = md.replace(/```component\n([\s\S]*?)\n```/g, (_, code) => {
         return code.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
       });
 
-      // Convert visual column/card nodes to markdown
+      // Serialize visual column/card nodes to markdown
       const { doc } = editor.state;
-      const visualParts = [];
-      doc.descendants((node, pos) => {
+      const columnsMarkdown = [];
+      doc.descendants((node) => {
         if (node.type.name === 'columnsBlock') {
-          visualParts.push({ pos, markdown: columnsToMarkdown(node) });
+          columnsMarkdown.push(columnsToMarkdown(node));
         }
       });
 
-      // Replace any placeholder text from visual nodes with actual markdown
-      // The markdown extension may output something generic for unknown nodes
-      // We need to ensure our columns are properly serialized
-      visualParts.forEach(part => {
-        // The markdown serializer may output empty content for custom nodes
-        // We'll handle this by checking if columns markdown is missing
-        if (part.markdown && !md.includes('<Columns')) {
-          // Append the columns blocks that weren't captured
-          md = md.replace(/\n{3,}/g, '\n\n');
+      // If we have visual columns that aren't in the markdown output, append them
+      // The markdown serializer outputs empty strings for unknown node types
+      if (columnsMarkdown.length > 0) {
+        // Clean up any empty lines that represent the custom nodes
+        // and inject the proper markdown
+        let columnIdx = 0;
+        md = md.replace(/\n{2,}/g, (match, offset) => {
+          // Check if this gap corresponds to a column block position
+          if (columnIdx < columnsMarkdown.length) {
+            const before = md.substring(0, offset);
+            const hasColumnHere = !before.includes('<Columns') || before.split('<Columns').length - 1 < columnIdx + 1;
+            if (hasColumnHere && match.length >= 3) {
+              return '\n\n' + columnsMarkdown[columnIdx++] + '\n\n';
+            }
+          }
+          return match;
+        });
+        // If columns weren't placed inline, append them
+        while (columnIdx < columnsMarkdown.length) {
+          md += '\n\n' + columnsMarkdown[columnIdx++];
         }
-      });
+      }
 
       onChange(md);
     },
