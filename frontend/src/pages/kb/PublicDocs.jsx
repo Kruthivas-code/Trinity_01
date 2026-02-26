@@ -753,7 +753,7 @@ const PublicDocs = () => {
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} documents={documents} onSelect={handleDocSelect} theme={theme} config={config} />
       <LeftSidebar activeTab={activeTab} tabs={tabs} documents={documents} selectedDocSlug={selectedDoc?.slug} onDocSelect={handleDocSelect} theme={theme} onSearchOpen={() => setSearchOpen(true)} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} isDark={isDark} />
 
-      <main className="lg:ml-64 xl:mr-64 min-h-screen pt-24 min-[810px]:pt-14 relative z-10 overflow-x-hidden">
+      <main className="lg:ml-64 xl:mr-64 min-h-screen pt-24 min-[810px]:pt-14 relative z-10">
         {selectedDoc ? (
           <article key={selectedDoc.id} className="max-w-[800px] mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-20 animate-fadeIn">
             {getBreadcrumb()?.section && (
