@@ -203,9 +203,17 @@ test.describe('Save Button Validation', () => {
     const titleInput = page.getByTestId('editor-title-input');
     const slugInput = page.getByTestId('editor-slug-input');
     
-    // Fill both required fields
+    // Fill title first - this auto-fills slug
     await titleInput.fill('Test Article Title');
+    // Wait for auto-slug to be generated
+    await expect(slugInput).toHaveValue(/test-article-title/i);
+    
+    // Optionally override slug
     await slugInput.fill('test-article-slug');
+    await expect(slugInput).toHaveValue('test-article-slug');
+    
+    // Both fields should have values now
+    await expect(titleInput).toHaveValue('Test Article Title');
     
     // Save should be enabled
     await expect(saveBtn).toBeEnabled();
