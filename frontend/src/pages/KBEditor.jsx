@@ -290,13 +290,13 @@ const KBEditor = () => {
           {form ? (
             <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
 
-              {/* === Document Section === */}
+              {/* === Document Section (Meta) === */}
               <section data-testid="document-section">
                 <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-4`}>Document</h2>
 
-                {/* Title */}
+                {/* Meta Title */}
                 <div className="mb-4">
-                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Title <span className="text-red-400">*</span></label>
+                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Meta Title <span className="text-red-400">*</span></label>
                   <input
                     value={form.title || ''}
                     onChange={e => {
@@ -306,20 +306,20 @@ const KBEditor = () => {
                         slug: isNew || f.slug === slugify(f.title || '') ? slugify(title) : f.slug
                       }));
                     }}
-                    placeholder="Article title..."
+                    placeholder="Article meta title..."
                     className={`w-full px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors`}
                     style={theme.inputBgStyle}
                     data-testid="editor-title-input"
                   />
                 </div>
 
-                {/* Description */}
+                {/* Meta Description */}
                 <div className="mb-4">
-                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Description</label>
+                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Meta Description</label>
                   <input
                     value={form.description || ''}
                     onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    placeholder="Brief description of this article..."
+                    placeholder="Brief meta description for SEO..."
                     className={`w-full px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors`}
                     style={theme.inputBgStyle}
                     data-testid="editor-description-input"
