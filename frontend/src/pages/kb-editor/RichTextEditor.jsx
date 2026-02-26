@@ -126,7 +126,11 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
       },
     },
     onUpdate: ({ editor }) => {
-      const md = editor.storage.markdown.getMarkdown();
+      let md = editor.storage.markdown.getMarkdown();
+      // Restore component code blocks back to raw component syntax
+      md = md.replace(/```component\n([\s\S]*?)\n```/g, (_, code) => {
+        return code.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      });
       onChange(md);
     },
   });
