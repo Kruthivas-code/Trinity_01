@@ -659,7 +659,9 @@ const PublicDocs = () => {
       setDocuments(data.documents);
       const navTabs = data.config?.navigation?.tabs;
       if (navTabs?.length > 0) setActiveTab(navTabs[0].id);
-      if (data.documents.length > 0) initializeSearch(data.documents);
+      if (data.documents.length > 0) {
+        // Documents loaded — no client-side index needed (search uses backend API)
+      }
     } catch (e) { console.error('Failed to fetch:', e); }
     finally { setLoading(false); }
   }, []);
