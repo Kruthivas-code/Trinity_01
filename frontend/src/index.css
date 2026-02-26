@@ -501,6 +501,17 @@
   grid-template-columns: 1fr 1fr 1fr;
 }
 
+/* TipTap wraps all child NodeViews in a single intermediate wrapper.
+   Make it transparent so cards become direct grid items. */
+.columns-block-wrapper [data-node-view-content] > [data-node-view-content-react] {
+  display: contents;
+}
+
+/* Each card's react-renderer wrapper should also be grid-friendly */
+.columns-block-wrapper .react-renderer.node-columnCard {
+  min-width: 0;
+}
+
 /* TipTap wraps each child NodeView in data-node-view-wrapper — make them grid-friendly */
 .columns-block-wrapper [data-node-view-wrapper] {
   min-width: 0;
