@@ -19,11 +19,38 @@ import {
   Columns, Youtube, Minus
 } from 'lucide-react';
 
+// Pre-process markdown to safely handle custom JSX-like components before parsing
+const preprocessMd = (md) => {
+  if (!md) return '';
+  // Replace custom component blocks with HTML comment placeholders
+  // so marked doesn't break on them, then restore after parsing
+  const placeholders = [];
+  let processed = md.replace(
+    /(<(?:Callout|Steps|Step|CardGroup|Card|Columns|Tabs|Tab|Accordion|AccordionItem|AccordionGroup|YouTube|Loom|Figure|Video|Info|Note|Tip|Warning|Caution|Error|Danger|Success)[\s\S]*?(?:\/>|<\/(?:Callout|Steps|Step|CardGroup|Card|Columns|Tabs|Tab|Accordion|AccordionItem|AccordionGroup|YouTube|Loom|Figure|Video|Info|Note|Tip|Warning|Caution|Error|Danger|Success)>))/gi,
+    (match) => {
+      const idx = placeholders.length;
+      placeholders.push(match);
+      return `\n\n<div data-component-placeholder="${idx}"></div>\n\n`;
+    }
+  );
+  return { processed, placeholders };
+};
+
 // Convert markdown to HTML for TipTap initial content loading
 const mdToHtml = (md) => {
   if (!md) return '';
   try {
-    return marked.parse(md, { breaks: false, gfm: true });
+    const { processed, placeholders } = preprocessMd(md);
+    let html = marked.parse(processed, { breaks: false, gfm: true });
+    // Restore custom components as code blocks for editing
+    placeholders.forEach((component, idx) => {
+      const escaped = component.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      html = html.replace(
+        `<div data-component-placeholder="${idx}"></div>`,
+        `<pre><code class="language-component">${escaped}</code></pre>`
+      );
+    });
+    return html;
   } catch {
     return md;
   }
