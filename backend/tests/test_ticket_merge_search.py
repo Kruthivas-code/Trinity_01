@@ -15,7 +15,7 @@ import time
 from datetime import datetime, timedelta
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://support-merge.preview.emergentagent.com').rstrip('/')
-SESSION_TOKEN = os.environ.get('TEST_SESSION_TOKEN', 'test_merge_session_1772120534406')
+SESSION_TOKEN = os.environ.get('TEST_SESSION_TOKEN', 'qa_test_admin_session_token_2026')
 
 
 class TestNumericTicketSearch:
