@@ -297,6 +297,25 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 
 ---
 
+### KB Editor Redesign — Single-Page WYSIWYG Layout (Feb 26, 2026)
+- **Complete UI redesign** of `/dashboard/kb-editor` from split-panel markdown editor to a single-page scrollable layout
+- **Document Section**: Title (required), Description (new field), Slug (required, with live URL preview), Category dropdown, optional Subcategory dropdown
+- **Draft/Publish Toggle**: New articles default to Draft; toggle to Published when ready
+- **Save Validation**: Save button disabled when Title or Slug is empty
+- **WYSIWYG Rich Text Editor**: Replaced raw markdown textarea with TipTap-based WYSIWYG editor
+  - Toolbar: Insert menu (11 component types: Callouts, Steps, Cards, Tabs, Accordion, YouTube, Columns, Code Block, HR), Heading dropdown (H1-H6), Bold, Italic, Link, Blockquote, Inline Code, Bullet/Ordered Lists, Image upload, Undo/Redo
+  - Uses `marked` for markdown→HTML conversion on load, `tiptap-markdown` for HTML→markdown on save
+  - Custom JSX components (Callout, Steps, etc.) preserved in code blocks for editing
+- **Global Docs Settings Modal**: Meta title, meta description, favicon URL, OG image URL, logo URL, footer text, custom domain — stored in `kb_settings` collection
+- **Auto-select first article** on page load
+- **Backend**: Added `description` field to ArticleCreate/ArticleUpdate models; `GET/PUT /api/kb/admin/docs-settings` endpoints
+- **New packages**: `@tiptap/react`, `@tiptap/pm`, `@tiptap/starter-kit`, `@tiptap/extension-link`, `@tiptap/extension-image`, `@tiptap/extension-placeholder`, `@tiptap/extension-underline`, `tiptap-markdown`, `marked`, `@tailwindcss/typography`
+- Files created: `RichTextEditor.jsx`, `GlobalSettingsModal.jsx`
+- Files modified: `KBEditor.jsx` (major rewrite), `kb.py` (new endpoints + description field), `tailwind.config.js` (typography plugin)
+- Tested: 100% pass (14/14 backend + 28/28 frontend tests, iteration_54)
+
+---
+
 ## Pending / Backlog
 
 ### P1
