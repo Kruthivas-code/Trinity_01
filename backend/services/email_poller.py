@@ -155,14 +155,17 @@ def _extract_reply_body(msg) -> str:
     return _extract_email_parts(msg)["content"]
 
 
-def _match_ticket(msg, gmail_thrid=None) -> dict:
+def _match_ticket(msg, gmail_thrid=None, body_text="") -> dict:
     """
     Match an inbound email to a ticket.
-    Priority: In-Reply-To -> References -> Gmail Thread ID -> References chain overlap.
+    Priority: In-Reply-To -> References -> Gmail Thread ID -> References chain overlap
+              -> Ticket ID in body -> Subject + sender email match.
     """
     in_reply_to = msg.get("In-Reply-To", "").strip()
     references_raw = msg.get("References", "")
     references = references_raw.split() if references_raw else []
+    from_addr = parseaddr(msg.get("From", ""))[1].lower()
+    subject = _decode_header_value(msg.get("Subject", ""))
 
     # 1. Match by In-Reply-To against any known email (outbound, outbound_gmail, inbound)
     if in_reply_to:
@@ -201,6 +204,35 @@ def _match_ticket(msg, gmail_thrid=None) -> dict:
         )
         if thread and thread.get("ticket_id"):
             return {"ticket_id": thread["ticket_id"], "match_method": "references_overlap"}
+
+    # 5. Extract ticket ID from email body (e.g., "Ticket: TKT-043248" in quoted text)
+    search_text = body_text or ""
+    ticket_id_match = re.search(r"(?:Ticket|TKT)[-:\s]*(TKT-\d+)", search_text, re.IGNORECASE)
+    if ticket_id_match:
+        candidate_id = ticket_id_match.group(1)
+        ticket = tickets_collection.find_one(
+            {"ticket_id": candidate_id},
+            {"_id": 0, "ticket_id": 1},
+        )
+        if ticket:
+            return {"ticket_id": candidate_id, "match_method": "body_ticket_id"}
+
+    # 6. Match by subject + sender email (strip "Re:", "Fwd:" prefixes)
+    if subject and from_addr:
+        clean_subject = re.sub(r"^(?:Re|Fwd|Fw)\s*:\s*", "", subject, flags=re.IGNORECASE).strip()
+        if clean_subject:
+            # Find a recent ticket from the same customer with matching subject
+            ticket = tickets_collection.find_one(
+                {
+                    "customer_email": from_addr,
+                    "title": clean_subject,
+                    "source": "email",
+                },
+                {"_id": 0, "ticket_id": 1},
+                sort=[("created_at", -1)],
+            )
+            if ticket:
+                return {"ticket_id": ticket["ticket_id"], "match_method": "subject_email_match"}
 
     return None
 
