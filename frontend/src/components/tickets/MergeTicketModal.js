@@ -95,6 +95,7 @@ const MergeTicketModal = ({ ticket, onClose, onMerge }) => {
               placeholder="Search by ticket ID, title, email, or content..."
               className="w-full h-10 px-3 rounded-lg bg-secondary/50 border border-border/40 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               autoFocus
+              data-testid="merge-search-input"
             />
           </div>
           
