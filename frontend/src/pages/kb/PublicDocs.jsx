@@ -437,7 +437,7 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
                 {results.documents?.map((r, i) => {
                   const bc = getBreadcrumb(r.slug);
                   const tabLabel = getTabLabel(r.slug);
-                  const snippet = r.snippet || (documents.find(d => d.slug === r.slug)?.content?.substring(0, 120) + '...');
+                  const snippet = r.snippet || '';
                   return (
                     <button key={`d-${i}`} onClick={() => { onSelect(r.slug); onClose(); }}
                       className={`w-full text-left px-5 py-3.5 ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'} transition-colors border-b ${isDark ? 'border-white/5' : 'border-gray-50'} last:border-0`}>
