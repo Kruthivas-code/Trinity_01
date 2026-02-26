@@ -1,8 +1,8 @@
 # Trinity - Phased Screenshot Testing Plan
 
 **Created:** February 12, 2026  
-**App URL:** https://conversation-rebuild.preview.emergentagent.com  
-**API Docs:** https://conversation-rebuild.preview.emergentagent.com/api/docs  
+**App URL:** https://trinity-docs-v2.preview.emergentagent.com  
+**API Docs:** https://trinity-docs-v2.preview.emergentagent.com/api/docs  
 
 ## Test Credentials
 - **Admin User:** test@test.com (user_id: b1bbdaf9-5ac0-47a9-ac7d-31b0b149010e)

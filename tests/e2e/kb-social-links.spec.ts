@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'https://conversation-rebuild.preview.emergentagent.com';
+const BASE_URL = 'https://trinity-docs-v2.preview.emergentagent.com';
 const SESSION_TOKEN = 'd32ac462-b0ff-435e-832d-9d068479737e';
 
 test.describe('KB Docs Page Header & Navigation', () => {

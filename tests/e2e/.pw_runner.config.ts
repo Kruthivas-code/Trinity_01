@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260225_205721/results.json' }],
   ],
   use: {
-    baseURL: 'https://conversation-rebuild.preview.emergentagent.com',
+    baseURL: 'https://trinity-docs-v2.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,

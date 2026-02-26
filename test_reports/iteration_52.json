@@ -34,7 +34,7 @@
     "backend": "100% (10/10 tests passed)",
     "frontend": "100% (18/18 tests passed)"
   },
-  "seed_data_creation": "Social links test data already seeded with all 5 platform URLs (twitter, linkedin, discord, youtube, reddit). Tests use session_token=d32ac462-b0ff-435e-832d-9d068479737e for authentication.",
+  "seed_data_creation": "Social links test data already seeded with all 5 platform URLs (twitter, linkedin, discord, youtube, reddit). Tests use session_token=trinity-docs-v2 for authentication.",
   "retest_needed": false,
   "should_main_agent_self_test": false,
   "context_for_next_testing_agent": "Social links feature comprehensively tested. Backend endpoints: GET /api/kb/social-links (public) and PUT /api/kb/admin/social-links (requires session_token cookie). Frontend components: SocialLinks on PublicDocs.jsx shows icons below prev/next nav when links populated, hidden when empty. SocialLinksPanel.jsx in KB Editor accessible via Share2 icon button in header. All 5 platforms: twitter, linkedin, discord, youtube, reddit. Theme adaptation works for both dark and light modes.",

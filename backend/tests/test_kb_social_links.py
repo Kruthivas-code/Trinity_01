@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://conversation-rebuild.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://trinity-docs-v2.preview.emergentagent.com')
 SESSION_TOKEN = "d32ac462-b0ff-435e-832d-9d068479737e"
 
 PLATFORMS = ["linkedin", "twitter", "discord", "youtube", "reddit"]
