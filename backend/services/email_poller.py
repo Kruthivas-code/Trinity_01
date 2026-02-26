@@ -2,6 +2,15 @@
 IMAP email poller for Trinity — reads inbound emails from Gmail and matches to tickets.
 Production-grade with connection resilience, sanitization, retry processing.
 Runs as a background daemon thread.
+
+Matching pipeline (designed so 99 % of replies match on steps 1-4):
+  1.  In-Reply-To  → exact match on stored message_ids
+  2.  References    → any ref in the chain matches a stored message_id
+  3.  Gmail Thread ID → same X-GM-THRID as an existing thread record
+  4.  References overlap → any stored record shares a reference
+  --- fallbacks (handle edge-cases / SES Message-ID rewrites) ---
+  5.  Ticket ID in body  → "TKT-XXXXXX" in the quoted text
+  6.  Subject + sender   → strip Re:/Fwd: and match title+customer_email
 """
 import imaplib
 import email
@@ -23,10 +32,21 @@ logger = logging.getLogger("email_poller")
 _poller_thread = None
 _stop_event = threading.Event()
 
+# ── DB indexes (idempotent, run once on import) ──────────────
+try:
+    email_threads_collection.create_index("message_id")
+    email_threads_collection.create_index("gmail_thread_id")
+    email_threads_collection.create_index("ticket_id")
+    email_threads_collection.create_index([("ticket_id", 1), ("direction", 1), ("created_at", 1)])
+except Exception:
+    pass  # non-critical if indexes already exist or collection missing
+
 
 def _get_env(key, default=""):
     return os.environ.get(key, default)
 
+
+# ── Header / body helpers ────────────────────────────────────
 
 def _decode_header_value(raw):
     """Decode an email header value that may be encoded."""
@@ -155,11 +175,15 @@ def _extract_reply_body(msg) -> str:
     return _extract_email_parts(msg)["content"]
 
 
+# ── Ticket matching pipeline ─────────────────────────────────
+
 def _match_ticket(msg, gmail_thrid=None, body_text="") -> dict:
     """
     Match an inbound email to a ticket.
-    Priority: In-Reply-To -> References -> Gmail Thread ID -> References chain overlap
-              -> Ticket ID in body -> Subject + sender email match.
+
+    The pipeline is ordered so that the most reliable signals come first.
+    Steps 1-4 rely on email-standard threading headers and Gmail metadata.
+    Steps 5-6 are defensive fallbacks for edge-cases (SES ID rewrites, header stripping).
     """
     in_reply_to = msg.get("In-Reply-To", "").strip()
     references_raw = msg.get("References", "")
@@ -167,7 +191,11 @@ def _match_ticket(msg, gmail_thrid=None, body_text="") -> dict:
     from_addr = parseaddr(msg.get("From", ""))[1].lower()
     subject = _decode_header_value(msg.get("Subject", ""))
 
-    # 1. Match by In-Reply-To against any known email (outbound, outbound_gmail, inbound)
+    # Also check X-Ticket-ID custom header (set by our outbound emails)
+    x_ticket_id = msg.get("X-Ticket-ID", "").strip()
+
+    # 1. In-Reply-To  — the customer's client sets this to the Message-ID
+    #    of the email they clicked "Reply" on.  Fastest, most precise match.
     if in_reply_to:
         thread = email_threads_collection.find_one(
             {"message_id": in_reply_to, "ticket_id": {"$ne": None}},
@@ -176,7 +204,8 @@ def _match_ticket(msg, gmail_thrid=None, body_text="") -> dict:
         if thread and thread.get("ticket_id"):
             return {"ticket_id": thread["ticket_id"], "match_method": "in_reply_to"}
 
-    # 2. Match by References chain against any known email
+    # 2. References chain — walk backwards (most-recent first) to find
+    #    any message_id we have on record.
     for ref in reversed(references):
         ref = ref.strip()
         if ref:
@@ -187,7 +216,8 @@ def _match_ticket(msg, gmail_thrid=None, body_text="") -> dict:
             if thread and thread.get("ticket_id"):
                 return {"ticket_id": thread["ticket_id"], "match_method": "references"}
 
-    # 3. Match by Gmail Thread ID
+    # 3. Gmail Thread ID — Gmail assigns a stable thread ID across the
+    #    entire conversation, even when headers are mangled.
     if gmail_thrid:
         thread = email_threads_collection.find_one(
             {"gmail_thread_id": gmail_thrid, "ticket_id": {"$ne": None}},
@@ -196,7 +226,8 @@ def _match_ticket(msg, gmail_thrid=None, body_text="") -> dict:
         if thread and thread.get("ticket_id"):
             return {"ticket_id": thread["ticket_id"], "match_method": "gmail_thread_id"}
 
-    # 4. Match by References chain overlap — find any existing email that shares references
+    # 4. References overlap — an existing record shares at least one
+    #    reference with this email (catches forwarded / CC'd threads).
     if references:
         thread = email_threads_collection.find_one(
             {"references": {"$in": references}, "ticket_id": {"$ne": None}},
@@ -205,9 +236,20 @@ def _match_ticket(msg, gmail_thrid=None, body_text="") -> dict:
         if thread and thread.get("ticket_id"):
             return {"ticket_id": thread["ticket_id"], "match_method": "references_overlap"}
 
-    # 5. Extract ticket ID from email body (e.g., "Ticket: TKT-043248" in quoted text)
-    search_text = body_text or ""
-    ticket_id_match = re.search(r"(?:Ticket|TKT)[-:\s]*(TKT-\d+)", search_text, re.IGNORECASE)
+    # ── Fallbacks ────────────────────────────────────────────
+
+    # 5a. X-Ticket-ID header (set by our outbound, may survive in reply)
+    if x_ticket_id:
+        ticket = tickets_collection.find_one(
+            {"ticket_id": x_ticket_id},
+            {"_id": 0, "ticket_id": 1},
+        )
+        if ticket:
+            return {"ticket_id": x_ticket_id, "match_method": "x_ticket_id_header"}
+
+    # 5b. Ticket ID in the email body (quoted reply text often includes "Ticket: TKT-XXXXXX")
+    full_text = body_text or ""
+    ticket_id_match = re.search(r"(?:Ticket|TKT)[-:\s]*(TKT-\d{4,})", full_text, re.IGNORECASE)
     if ticket_id_match:
         candidate_id = ticket_id_match.group(1)
         ticket = tickets_collection.find_one(
@@ -217,11 +259,14 @@ def _match_ticket(msg, gmail_thrid=None, body_text="") -> dict:
         if ticket:
             return {"ticket_id": candidate_id, "match_method": "body_ticket_id"}
 
-    # 6. Match by subject + sender email (strip "Re:", "Fwd:" prefixes)
+    # 6. Subject + sender — strip Re:/Fwd: and find a matching email-sourced
+    #    ticket from the same customer.
     if subject and from_addr:
         clean_subject = re.sub(r"^(?:Re|Fwd|Fw)\s*:\s*", "", subject, flags=re.IGNORECASE).strip()
+        # Strip multiple Re: layers  ("Re: Re: Re: ...")
+        while re.match(r"^(?:Re|Fwd|Fw)\s*:\s*", clean_subject, re.IGNORECASE):
+            clean_subject = re.sub(r"^(?:Re|Fwd|Fw)\s*:\s*", "", clean_subject, flags=re.IGNORECASE).strip()
         if clean_subject:
-            # Find a recent ticket from the same customer with matching subject
             ticket = tickets_collection.find_one(
                 {
                     "customer_email": from_addr,
@@ -237,6 +282,8 @@ def _match_ticket(msg, gmail_thrid=None, body_text="") -> dict:
     return None
 
 
+# ── Dedup / own-email helpers ────────────────────────────────
+
 def _is_already_processed(message_id: str) -> bool:
     if not message_id:
         return False
@@ -250,6 +297,8 @@ def _is_own_email(msg) -> bool:
     imap_user = _get_env("IMAP_USER", "").lower()
     return from_addr in (sender_email, imap_user)
 
+
+# ── New ticket creation ──────────────────────────────────────
 
 def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body: str, email_parts: dict = None):
     """Create a new ticket from an inbound email that doesn't match any existing ticket."""
@@ -299,6 +348,99 @@ def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body
     return ticket_id
 
 
+# ── Bounce handling ──────────────────────────────────────────
+
+BOUNCE_SENDERS = {
+    "mailer-daemon", "postmaster", "mail-daemon", "mailerdaemon",
+    "noreply", "no-reply", "auto-reply", "autoreply",
+}
+
+BOUNCE_SUBJECT_PATTERNS = [
+    r"delivery.*(?:fail|status|notification)",
+    r"undeliverable",
+    r"returned mail",
+    r"mail delivery.*failed",
+    r"failure notice",
+    r"bounce",
+    r"rejected",
+    r"could not.*deliver",
+]
+
+
+def _is_bounce_email(from_addr: str, subject: str) -> bool:
+    """Detect if an email is a bounce/delivery failure notification."""
+    local_part = from_addr.split("@")[0].lower() if "@" in from_addr else from_addr.lower()
+    if local_part in BOUNCE_SENDERS:
+        return True
+    subject_lower = subject.lower()
+    for pattern in BOUNCE_SUBJECT_PATTERNS:
+        if re.search(pattern, subject_lower):
+            return True
+    return False
+
+
+def _handle_bounce(msg, from_addr: str, subject: str, body: str, message_id: str):
+    """Process a bounce email — find the original outbound email and mark it as bounced."""
+    in_reply_to = msg.get("In-Reply-To", "").strip()
+    references_raw = msg.get("References", "")
+    references = references_raw.split() if references_raw else []
+
+    # Try to find the original outbound email that bounced
+    bounced_ticket_id = None
+    for ref in [in_reply_to] + references:
+        ref = ref.strip()
+        if ref:
+            thread = email_threads_collection.find_one(
+                {"message_id": ref, "direction": "outbound"},
+                {"_id": 0, "ticket_id": 1, "to_email": 1},
+            )
+            if thread:
+                bounced_ticket_id = thread.get("ticket_id")
+                # Mark the outbound email as bounced
+                email_threads_collection.update_one(
+                    {"message_id": ref, "direction": "outbound"},
+                    {"$set": {"status": "bounced", "bounce_reason": subject[:200], "bounced_at": datetime.now(timezone.utc)}},
+                )
+                logger.warning(f"[BOUNCE] Ticket {bounced_ticket_id} — email to {thread.get('to_email')} bounced: {subject[:80]}")
+                break
+
+    # Also try to extract bounced address from body
+    if not bounced_ticket_id and body:
+        email_match = re.search(r"[\w.+-]+@[\w-]+\.[\w.]+", body)
+        if email_match:
+            bounced_addr = email_match.group(0).lower()
+            thread = email_threads_collection.find_one(
+                {"to_email": bounced_addr, "direction": "outbound"},
+                {"_id": 0, "ticket_id": 1, "message_id": 1},
+                sort=[("created_at", -1)],
+            )
+            if thread:
+                bounced_ticket_id = thread.get("ticket_id")
+                email_threads_collection.update_one(
+                    {"message_id": thread["message_id"], "direction": "outbound"},
+                    {"$set": {"status": "bounced", "bounce_reason": subject[:200], "bounced_at": datetime.now(timezone.utc)}},
+                )
+                logger.warning(f"[BOUNCE] Ticket {bounced_ticket_id} — email to {bounced_addr} bounced (body match): {subject[:80]}")
+
+    # Store the bounce record
+    email_threads_collection.insert_one({
+        "thread_id": f"eth_{uuid.uuid4().hex[:12]}",
+        "ticket_id": bounced_ticket_id,
+        "message_id": message_id,
+        "direction": "bounce",
+        "status": "processed",
+        "from_email": from_addr,
+        "subject": subject[:500],
+        "body_preview": body[:200] if body else "",
+        "created_at": datetime.now(timezone.utc),
+    })
+
+    if not bounced_ticket_id:
+        logger.info(f"[BOUNCE] Unmatched bounce from={from_addr} subject={subject[:60]}")
+
+
+# ── Inbox processing ─────────────────────────────────────────
+
 def poll_inbox():
     """Connect to IMAP, fetch emails from INBOX (last 7 days, newest first) and sent emails."""
     host = _get_env("IMAP_HOST", "imap.gmail.com")
@@ -346,6 +488,8 @@ def poll_inbox():
                 pass
 
 
+# ── Sent-folder polling ──────────────────────────────────────
+
 def _get_last_sent_uid():
     """Get the last processed UID from the Sent folder."""
     state = email_threads_collection.find_one(
@@ -378,7 +522,6 @@ def _poll_sent_folder(mail):
             search_criteria = f"(UID {last_uid + 1}:*)"
         else:
             # First run: only look at emails from the last 24 hours
-            from datetime import timedelta
             since_date = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%d-%b-%Y")
             search_criteria = f'(SINCE "{since_date}")'
 
@@ -530,94 +673,7 @@ def _process_sent_email(mail, uid):
     })
 
 
-BOUNCE_SENDERS = {
-    "mailer-daemon", "postmaster", "mail-daemon", "mailerdaemon",
-    "noreply", "no-reply", "auto-reply", "autoreply",
-}
-
-BOUNCE_SUBJECT_PATTERNS = [
-    r"delivery.*(?:fail|status|notification)",
-    r"undeliverable",
-    r"returned mail",
-    r"mail delivery.*failed",
-    r"failure notice",
-    r"bounce",
-    r"rejected",
-    r"could not.*deliver",
-]
-
-
-def _is_bounce_email(from_addr: str, subject: str) -> bool:
-    """Detect if an email is a bounce/delivery failure notification."""
-    local_part = from_addr.split("@")[0].lower() if "@" in from_addr else from_addr.lower()
-    if local_part in BOUNCE_SENDERS:
-        return True
-    subject_lower = subject.lower()
-    for pattern in BOUNCE_SUBJECT_PATTERNS:
-        if re.search(pattern, subject_lower):
-            return True
-    return False
-
-
-def _handle_bounce(msg, from_addr: str, subject: str, body: str, message_id: str):
-    """Process a bounce email — find the original outbound email and mark it as bounced."""
-    in_reply_to = msg.get("In-Reply-To", "").strip()
-    references_raw = msg.get("References", "")
-    references = references_raw.split() if references_raw else []
-
-    # Try to find the original outbound email that bounced
-    bounced_ticket_id = None
-    for ref in [in_reply_to] + references:
-        ref = ref.strip()
-        if ref:
-            thread = email_threads_collection.find_one(
-                {"message_id": ref, "direction": "outbound"},
-                {"_id": 0, "ticket_id": 1, "to_email": 1},
-            )
-            if thread:
-                bounced_ticket_id = thread.get("ticket_id")
-                # Mark the outbound email as bounced
-                email_threads_collection.update_one(
-                    {"message_id": ref, "direction": "outbound"},
-                    {"$set": {"status": "bounced", "bounce_reason": subject[:200], "bounced_at": datetime.now(timezone.utc)}},
-                )
-                logger.warning(f"[BOUNCE] Ticket {bounced_ticket_id} — email to {thread.get('to_email')} bounced: {subject[:80]}")
-                break
-
-    # Also try to extract bounced address from body
-    if not bounced_ticket_id and body:
-        email_match = re.search(r"[\w.+-]+@[\w-]+\.[\w.]+", body)
-        if email_match:
-            bounced_addr = email_match.group(0).lower()
-            thread = email_threads_collection.find_one(
-                {"to_email": bounced_addr, "direction": "outbound"},
-                {"_id": 0, "ticket_id": 1, "message_id": 1},
-                sort=[("created_at", -1)],
-            )
-            if thread:
-                bounced_ticket_id = thread.get("ticket_id")
-                email_threads_collection.update_one(
-                    {"message_id": thread["message_id"], "direction": "outbound"},
-                    {"$set": {"status": "bounced", "bounce_reason": subject[:200], "bounced_at": datetime.now(timezone.utc)}},
-                )
-                logger.warning(f"[BOUNCE] Ticket {bounced_ticket_id} — email to {bounced_addr} bounced (body match): {subject[:80]}")
-
-    # Store the bounce record
-    email_threads_collection.insert_one({
-        "thread_id": f"eth_{uuid.uuid4().hex[:12]}",
-        "ticket_id": bounced_ticket_id,
-        "message_id": message_id,
-        "direction": "bounce",
-        "status": "processed",
-        "from_email": from_addr,
-        "subject": subject[:500],
-        "body_preview": body[:200] if body else "",
-        "created_at": datetime.now(timezone.utc),
-    })
-
-    if not bounced_ticket_id:
-        logger.info(f"[BOUNCE] Unmatched bounce from={from_addr} subject={subject[:60]}")
-
+# ── Inbound email processing ────────────────────────────────
 
 def _process_email(mail, eid, folder="inbox"):
     """Process a single inbound email by sequence ID."""
@@ -657,7 +713,9 @@ def _process_email(mail, eid, folder="inbox"):
     if not body.strip():
         return
 
-    match = _match_ticket(msg, gmail_thrid=gmail_thrid, body_text=parts.get("email_text") or body)
+    # Use the full email text (including quoted text) for ticket ID extraction
+    full_text = parts.get("email_text") or parts.get("email_html") or body
+    match = _match_ticket(msg, gmail_thrid=gmail_thrid, body_text=full_text)
 
     if match:
         ticket_id = match["ticket_id"]
@@ -704,7 +762,7 @@ def _process_email(mail, eid, folder="inbox"):
 
     email_threads_collection.insert_one({
         "thread_id": f"eth_{uuid.uuid4().hex[:12]}",
-        "ticket_id": match["ticket_id"] if match else (ticket_id if not match else None),
+        "ticket_id": match["ticket_id"] if match else None,
         "message_id": message_id,
         "in_reply_to": in_reply_to,
         "references": references,
@@ -716,10 +774,12 @@ def _process_email(mail, eid, folder="inbox"):
         "subject": subject[:500],
         "body_preview": body[:200],
         "matched": match is not None,
-        "match_method": match["match_method"] if match else "new_ticket",
+        "match_method": match["match_method"] if match else None,
         "created_at": datetime.now(timezone.utc),
     })
 
+
+# ── Background poller ────────────────────────────────────────
 
 def _poller_loop():
     """Background loop: polls IMAP + processes retry queue."""
