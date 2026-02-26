@@ -213,6 +213,7 @@ async def update_navigation(body: dict, current_user: dict = Depends(get_current
 class ArticleUpdate(BaseModel):
     title: Optional[str] = None
     slug: Optional[str] = None
+    description: Optional[str] = None
     section_key: Optional[str] = None
     section_label: Optional[str] = None
     nav_group_key: Optional[str] = None
@@ -226,12 +227,13 @@ class ArticleUpdate(BaseModel):
 class ArticleCreate(BaseModel):
     title: str
     slug: str
-    section_key: str
-    section_label: str
-    nav_group_key: str
-    nav_group_label: str
+    description: str = ""
+    section_key: str = ""
+    section_label: str = ""
+    nav_group_key: str = ""
+    nav_group_label: str = ""
     content_markdown: str = ""
-    published: bool = True
+    published: bool = False
     order: int = 0
     icon: str = ""
 
