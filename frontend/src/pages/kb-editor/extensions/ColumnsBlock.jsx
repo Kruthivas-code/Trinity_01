@@ -87,12 +87,14 @@ const ColumnsBlockView = ({ node, updateAttributes, deleteNode, editor, getPos }
         </div>
       </div>
 
-      {/* Columns Grid — grid is on NodeViewContent, items are TipTap's node-view-wrappers */}
+      {/* Columns Grid — use inline styles for reliable grid layout */}
       <NodeViewContent
         as="div"
-        className={`grid gap-4 ${
-          cols === 1 ? 'grid-cols-1' : cols === 2 ? 'grid-cols-2' : 'grid-cols-3'
-        }`}
+        style={{
+          display: 'grid',
+          gap: '1rem',
+          gridTemplateColumns: cols === 1 ? '1fr' : cols === 2 ? '1fr 1fr' : '1fr 1fr 1fr',
+        }}
         data-testid="columns-grid"
       />
     </NodeViewWrapper>
