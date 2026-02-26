@@ -268,6 +268,7 @@ class SearchEngine:
     def search_tickets(self, query: str, operators: Dict[str, str], limit: int = 20, current_user_id: str = None) -> List[Dict]:
         """Search tickets with operator support"""
         results = []
+        seen_ids = set()
         
         # Build MongoDB query
         mongo_query = {}
