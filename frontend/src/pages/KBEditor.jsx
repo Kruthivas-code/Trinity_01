@@ -408,6 +408,29 @@ const KBEditor = () => {
                 </div>
               </section>
 
+              {/* === On This Page (TOC) Section === */}
+              {tocHeadings.length > 0 && (
+                <section className={`border-t ${theme.border} pt-6`} data-testid="toc-section">
+                  <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-3 flex items-center gap-2`}>
+                    <List className="w-3.5 h-3.5" /> On This Page
+                  </h2>
+                  <nav className="relative pl-3">
+                    <div className={`absolute left-0 top-0 bottom-0 w-px ${isDark ? 'bg-white/10' : 'bg-gray-200'}`} />
+                    <div className="space-y-0.5">
+                      {tocHeadings.map((h, i) => (
+                        <div
+                          key={i}
+                          className={`text-sm py-1 ${h.level === 3 ? 'pl-3' : ''} ${theme.textMuted}`}
+                          data-testid={`toc-item-${i}`}
+                        >
+                          {h.text}
+                        </div>
+                      ))}
+                    </div>
+                  </nav>
+                </section>
+              )}
+
               {/* === Content Section === */}
               <section className={`border-t ${theme.border} pt-6`} data-testid="content-section">
                 <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-4`}>Content</h2>
