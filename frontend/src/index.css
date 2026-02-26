@@ -424,3 +424,75 @@
     scroll-behavior: auto !important;
   }
 }
+
+
+/* ============= KB Editor: Visual Columns & Cards ============= */
+.columns-block-wrapper {
+  position: relative;
+  user-select: none;
+}
+
+.columns-block-wrapper .contents > * {
+  min-width: 0;
+}
+
+.column-card-wrapper {
+  min-width: 0;
+}
+
+.column-card-visual {
+  min-height: 100px;
+  transition: all 0.15s ease;
+}
+
+.column-card-visual:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Slash command menu tippy theme */
+.tippy-box[data-theme~='slash-command'] {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.tippy-box[data-theme~='slash-command'] .tippy-content {
+  padding: 0;
+}
+
+.slash-command-menu::-webkit-scrollbar {
+  width: 4px;
+}
+
+.slash-command-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.slash-command-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+/* TipTap editor visual node styles */
+.ProseMirror .columns-block-wrapper {
+  margin: 1.5rem 0;
+}
+
+.ProseMirror [data-type="columns-block"] {
+  display: grid;
+  gap: 1rem;
+}
+
+.ProseMirror [data-type="columns-block"][data-cols="1"] {
+  grid-template-columns: 1fr;
+}
+
+.ProseMirror [data-type="columns-block"][data-cols="2"] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.ProseMirror [data-type="columns-block"][data-cols="3"] {
+  grid-template-columns: 1fr 1fr 1fr;
+}
