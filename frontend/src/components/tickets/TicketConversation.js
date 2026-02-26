@@ -30,6 +30,7 @@ const TicketConversation = ({
   activityFeed, loadingActivity,
   // Merge suggestions
   mergeSuggestions, dismissedMergeSuggestions, setDismissedMergeSuggestions,
+  handleAcceptMergeSuggestion,
   // Merged tickets
   mergedTickets, showMergedPanel, setShowMergedPanel,
   handleUnmerge,
