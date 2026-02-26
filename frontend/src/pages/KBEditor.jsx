@@ -219,6 +219,20 @@ const KBEditor = () => {
     return opts;
   }, [navGroups]);
 
+  // Extract headings from content for TOC
+  const tocHeadings = useMemo(() => {
+    const md = form?.content_markdown || '';
+    const headings = [];
+    const lines = md.split('\n');
+    for (const line of lines) {
+      const match = line.match(/^(#{2,3})\s+(.+)$/);
+      if (match) {
+        headings.push({ level: match[1].length, text: match[2].trim() });
+      }
+    }
+    return headings;
+  }, [form?.content_markdown]);
+
   if (loading) {
     return <div className={`h-screen flex items-center justify-center ${theme.bg}`}><Loader2 className="w-6 h-6 animate-spin text-[#00A1B2]" /></div>;
   }
