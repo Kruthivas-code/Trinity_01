@@ -19,20 +19,62 @@ import {
   Columns, Youtube, Minus
 } from 'lucide-react';
 
-// Pre-process markdown to safely handle custom JSX-like components before parsing
+// Extract top-level custom component blocks from markdown
+// Wrapper components are matched as complete blocks (including all children)
+const WRAPPER_TAGS = ['Columns', 'Callout', 'Steps', 'CardGroup', 'Tabs', 'Accordion', 'AccordionGroup'];
+const STANDALONE_TAGS = ['YouTube', 'Loom', 'Figure', 'Video', 'Info', 'Note', 'Tip', 'Warning', 'Caution', 'Error', 'Danger', 'Success'];
+const INNER_TAGS = ['Card', 'Step', 'Tab', 'AccordionItem'];
+
 const preprocessMd = (md) => {
-  if (!md) return '';
-  // Replace custom component blocks with HTML comment placeholders
-  // so marked doesn't break on them, then restore after parsing
+  if (!md) return { processed: '', placeholders: [] };
   const placeholders = [];
-  let processed = md.replace(
-    /(<(?:Callout|Steps|Step|CardGroup|Card|Columns|Tabs|Tab|Accordion|AccordionItem|AccordionGroup|YouTube|Loom|Figure|Video|Info|Note|Tip|Warning|Caution|Error|Danger|Success)[\s\S]*?(?:\/>|<\/(?:Callout|Steps|Step|CardGroup|Card|Columns|Tabs|Tab|Accordion|AccordionItem|AccordionGroup|YouTube|Loom|Figure|Video|Info|Note|Tip|Warning|Caution|Error|Danger|Success)>))/gi,
-    (match) => {
+  let processed = md;
+
+  // 1. Match wrapper components: <Wrapper ...>...</Wrapper>
+  // These don't nest within themselves, so lazy [\s\S]*? finds the correct close tag
+  WRAPPER_TAGS.forEach(tag => {
+    const regex = new RegExp(`<${tag}(?:\\s[\\s\\S]*?)?>[\\s\\S]*?<\\/${tag}>`, 'gi');
+    processed = processed.replace(regex, (match) => {
       const idx = placeholders.length;
       placeholders.push(match);
-      return `\n\n<div data-component-placeholder="${idx}"></div>\n\n`;
-    }
-  );
+      return `\n\nCOMPONENT_BLOCK_${idx}\n\n`;
+    });
+  });
+
+  // 2. Match standalone self-closing tags: <YouTube ... />
+  STANDALONE_TAGS.forEach(tag => {
+    const regex = new RegExp(`<${tag}[^>]*\\/?>`, 'gi');
+    processed = processed.replace(regex, (match) => {
+      const idx = placeholders.length;
+      placeholders.push(match);
+      return `\n\nCOMPONENT_BLOCK_${idx}\n\n`;
+    });
+  });
+
+  // 3. Match standalone iframe tags
+  processed = processed.replace(/<iframe[\s\S]*?(?:\/>|<\/iframe>)/gi, (match) => {
+    const idx = placeholders.length;
+    placeholders.push(match);
+    return `\n\nCOMPONENT_BLOCK_${idx}\n\n`;
+  });
+
+  // 4. Match orphan inner components not already inside a wrapper
+  INNER_TAGS.forEach(tag => {
+    const regex = new RegExp(`<${tag}(?:\\s[\\s\\S]*?)?>[\\s\\S]*?<\\/${tag}>`, 'gi');
+    processed = processed.replace(regex, (match) => {
+      const idx = placeholders.length;
+      placeholders.push(match);
+      return `\n\nCOMPONENT_BLOCK_${idx}\n\n`;
+    });
+  });
+
+  // 5. Match standalone div blocks (JSX-style with style={{ }})
+  processed = processed.replace(/<div[\s\S]*?<\/div>/gi, (match) => {
+    const idx = placeholders.length;
+    placeholders.push(match);
+    return `\n\nCOMPONENT_BLOCK_${idx}\n\n`;
+  });
+
   return { processed, placeholders };
 };
 
@@ -45,10 +87,10 @@ const mdToHtml = (md) => {
     // Restore custom components as code blocks for editing
     placeholders.forEach((component, idx) => {
       const escaped = component.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      html = html.replace(
-        `<div data-component-placeholder="${idx}"></div>`,
-        `<pre><code class="language-component">${escaped}</code></pre>`
-      );
+      const codeBlock = `<pre><code class="language-component">${escaped}</code></pre>`;
+      // marked may wrap placeholder in <p> tags — handle both cases
+      html = html.replace(`<p>COMPONENT_BLOCK_${idx}</p>`, codeBlock);
+      html = html.replace(`COMPONENT_BLOCK_${idx}`, codeBlock);
     });
     return html;
   } catch {
