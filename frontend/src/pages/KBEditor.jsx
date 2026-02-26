@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Save, Loader2, Settings,
-  Sun, Moon, Share2, Globe, ExternalLink
+  Sun, Moon, Share2, Globe, ExternalLink, List
 } from 'lucide-react';
 import { ArticleSidebar } from './kb-editor/ArticleSidebar';
 import { NavManager } from './kb-editor/NavManager';
