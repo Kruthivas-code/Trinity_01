@@ -180,8 +180,26 @@ async def search_articles(q: str = ""):
     regex = {"$regex": q, "$options": "i"}
     results = list(kb_articles.find(
         {"published": True, "$or": [{"title": regex}, {"content_markdown": regex}]},
-        {"_id": 0, "content_markdown": 0}
+        {"_id": 0, "slug": 1, "title": 1, "section_key": 1, "nav_group_key": 1,
+         "nav_group_label": 1, "section_label": 1, "content_markdown": 1}
     ).sort("order", 1).limit(20))
+    # Generate snippets
+    import re as _re
+    for r in results:
+        content = r.pop("content_markdown", "") or ""
+        # Find the query in content and extract a surrounding snippet
+        match = _re.search(_re.escape(q), content, _re.IGNORECASE)
+        if match:
+            start = max(0, match.start() - 60)
+            end = min(len(content), match.end() + 100)
+            snippet = content[start:end].replace("\n", " ").strip()
+            if start > 0:
+                snippet = "..." + snippet
+            if end < len(content):
+                snippet = snippet + "..."
+            r["snippet"] = snippet
+        else:
+            r["snippet"] = content[:160].replace("\n", " ").strip() + ("..." if len(content) > 160 else "")
     return {"results": results}
 
 
