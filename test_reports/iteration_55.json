@@ -1,0 +1,84 @@
+{
+  "summary": "UPDATE mode testing complete. All P1 improvements verified: (1) KB Editor TOC section shows H2/H3 headings from article content - working correctly with 'On This Page' section. (2) Public docs search refactored from client-side FlexSearch to backend GET /api/kb/search API with 200ms debounce - working. (3) Search results show snippets with context and category breadcrumbs - verified both in API response and UI. All existing KB Editor features continue to work (save, category selection, draft toggle, WYSIWYG editor).",
+  "mode": "update",
+  "baseline_commit": "ee96dbf05b04170df0e9540d427bcd013fd9e01d",
+  "head_commit": "fda901f38465d6637d3c1f409d4d58abeb849539",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "regression_results": {
+    "total_specs": 4,
+    "passed": 75,
+    "failed": 0,
+    "skipped": 0,
+    "breakdown": {
+      "backend_pytest": "29/29 passed (15 search API + 14 kb editor redesign)",
+      "frontend_playwright": "46/46 passed (30 kb-editor-redesign + 16 public-docs-search)"
+    }
+  },
+  "specs_created": [
+    "/app/tests/e2e/public-docs-search.spec.ts",
+    "/app/backend/tests/test_kb_search_api.py"
+  ],
+  "specs_updated": [
+    "/app/tests/e2e/kb-editor-redesign.spec.ts"
+  ],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/test_reports/pytest/kb_search_results.xml",
+    "/app/tests/e2e/kb-editor-redesign.spec.ts",
+    "/app/tests/e2e/public-docs-search.spec.ts"
+  ],
+  "action_items": [],
+  "updated_files": [
+    "/app/tests/e2e/kb-editor-redesign.spec.ts",
+    "/app/tests/e2e/public-docs-search.spec.ts",
+    "/app/backend/tests/test_kb_search_api.py"
+  ],
+  "success_rate": {
+    "backend": "100% (29/29 tests passed)",
+    "frontend": "100% (46/46 tests passed)"
+  },
+  "seed_data_creation": "None needed - existing articles used for testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "P1 improvements fully tested. Key data-testids: toc-section, toc-item-{n} for TOC in KB Editor. Search tests use search-input for the dialog. Backend search endpoint is GET /api/kb/search?q=query - returns results with slug, title, snippet, nav_group_key, section_key for breadcrumbs. Public docs page works with theme toggle (kb-theme-toggle), feedback widget (kb-feedback-widget). Auth uses session_token=test_kb_editor_session_2026 cookie.",
+  "features_tested": {
+    "kb_editor_toc_section": {
+      "toc_shows_h2_h3_headings": "PASS - TOC section displays H2/H3 headings extracted from content_markdown",
+      "toc_hidden_when_no_headings": "PASS - TOC section not shown when article has no H2/H3 headings"
+    },
+    "backend_search_api": {
+      "endpoint_accessible": "PASS - GET /api/kb/search works",
+      "returns_results_with_snippets": "PASS - Each result has snippet with context around match",
+      "returns_category_info": "PASS - nav_group_key and section_key returned for breadcrumbs",
+      "case_insensitive": "PASS - Search is case insensitive",
+      "respects_min_query_length": "PASS - Queries under 2 chars return empty",
+      "limits_results_to_20": "PASS - Results limited to prevent overwhelming responses"
+    },
+    "public_docs_search": {
+      "calls_backend_api": "PASS - Search uses GET /api/kb/search instead of client-side FlexSearch",
+      "debounces_calls": "PASS - 200ms debounce before API call",
+      "shows_snippets_in_ui": "PASS - Snippets displayed in search results dialog",
+      "shows_breadcrumbs_in_ui": "PASS - Category > Section breadcrumbs shown above each result",
+      "highlights_matches": "PASS - Query text highlighted in cyan in results",
+      "navigation_works": "PASS - Clicking result navigates to article"
+    },
+    "public_docs_regression": {
+      "page_loads": "PASS - /docs/welcome loads correctly",
+      "sidebar_navigation": "PASS - Sidebar shows categories and pages",
+      "prev_next_navigation": "PASS - Article navigation buttons work",
+      "theme_toggle": "PASS - Light/dark mode toggle works",
+      "feedback_widget": "PASS - Article feedback form present"
+    },
+    "kb_editor_regression": {
+      "all_existing_tests": "PASS - 30/30 tests including new TOC tests"
+    }
+  }
+}
