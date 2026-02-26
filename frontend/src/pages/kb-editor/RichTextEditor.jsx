@@ -67,10 +67,8 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        codeBlock: false,
         heading: { levels: [1, 2, 3, 4, 5, 6] },
       }),
-      CodeBlockLowlight.configure({ lowlight }),
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-[#00A1B2] underline' } }),
       Image.configure({ inline: false, allowBase64: true }),
       Underline,
