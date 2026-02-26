@@ -251,20 +251,28 @@ def retry_failed_emails():
 
 
 def get_thread_context(ticket_id: str) -> dict:
-    """Get the latest outbound Message-ID and full references chain for a ticket."""
-    latest = email_threads_collection.find_one(
-        {"ticket_id": ticket_id, "direction": "outbound", "status": "sent"},
-        {"_id": 0, "message_id": 1},
-        sort=[("created_at", -1)],
-    )
-    if not latest:
+    """Get the latest Message-ID and full references chain for a ticket.
+    
+    Includes BOTH inbound and outbound emails so the first agent reply
+    properly threads with the customer's original email.
+    """
+    # Get ALL emails for this ticket (inbound + outbound), oldest first
+    all_emails = list(email_threads_collection.find(
+        {
+            "ticket_id": ticket_id,
+            "direction": {"$in": ["outbound", "inbound", "outbound_gmail"]},
+            "message_id": {"$exists": True, "$ne": ""},
+        },
+        {"_id": 0, "message_id": 1, "direction": 1, "created_at": 1},
+    ).sort("created_at", 1))
+
+    if not all_emails:
         return {"in_reply_to": None, "references": []}
 
-    all_refs = list(email_threads_collection.find(
-        {"ticket_id": ticket_id, "direction": {"$in": ["outbound", "inbound"]}, "message_id": {"$exists": True}},
-        {"_id": 0, "message_id": 1},
-    ).sort("created_at", 1))
-    ref_chain = [t["message_id"] for t in all_refs if t.get("message_id")]
+    ref_chain = [t["message_id"] for t in all_emails if t.get("message_id")]
+
+    # in_reply_to should be the LATEST email's message_id (inbound or outbound)
+    latest = all_emails[-1]
 
     return {
         "in_reply_to": latest.get("message_id"),
