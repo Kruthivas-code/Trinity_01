@@ -317,6 +317,17 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Bug 4 — 3+ duplicate detection**: Backend already returned all duplicates. Fixed frontend to display count ("2 possible duplicates detected") and each suggestion gets its own one-click merge button.
 - Tested: 100% pass (7/7 backend + all frontend tests, iteration_56)
 
+### KB Editor v2 — Visual Columns, Cards & Slash Commands (Feb 26, 2026)
+- **Visual Columns & Cards**: Created custom TipTap extensions (`ColumnsBlockNode`, `ColumnCardNode`) that render `<Columns>` and `<Card>` markdown components as visual, editable cards in a grid layout (1/2/3 columns). Cards display icon, title, description with hover effects.
+- **Card Edit Popup**: Click any card to open "Edit Card Attributes" popup with fields: Title, Description, Icon, URL, Image Path, Call To Action, and Horizontal layout toggle. Includes Save/Delete buttons.
+- **Edit Columns Popup**: Hover over columns block reveals "Edit Columns" button. Popup lets user change column count (1/2/3) with a dropdown selector.
+- **Slash Command Menu**: Typing "/" triggers a floating menu with 19 items in 3 groups (Basic: Paragraph/Headings/Lists/Code/Divider, Layout: 2/3 Columns, Components: CardGroup/Callouts/Steps/Tabs/Accordion/YouTube). Keyboard nav (arrow keys + Enter).
+- **Meta Title & Description**: Renamed "Title" → "Meta Title", "Description" → "Meta Description" with updated placeholders. H1 is now part of content editor.
+- **Markdown Pipeline**: Columns/Cards serialized to/from `<Columns cols={N}><Card ...>` markdown syntax. Non-visual components (Callouts, Steps, etc.) still render as code blocks in editor.
+- **New files**: `extensions/SlashCommand.jsx`, `extensions/ColumnsBlock.jsx`. Rewrote `RichTextEditor.jsx`.
+- **Packages added**: `@tiptap/suggestion`, `tippy.js`
+- Tested: 100% pass (10/10 frontend tests, iteration_57)
+
 ---
 
 ## Pending / Backlog
