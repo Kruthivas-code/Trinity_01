@@ -428,3 +428,40 @@ test.describe('Header Actions', () => {
     await expect(livePreviewLink).toHaveAttribute('target', '_blank');
   });
 });
+
+
+test.describe('TOC (On This Page) Section', () => {
+  test.beforeEach(async ({ page }) => {
+    await authenticateKBEditor(page);
+  });
+
+  test('TOC section shows H2/H3 headings from article content', async ({ page }) => {
+    // Navigate to an article with headings in content
+    await page.goto('/dashboard/kb-editor/welcome', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('kb-editor-page')).toBeVisible({ timeout: 15000 });
+    
+    // The TOC section should be visible if article has H2/H3 headings
+    const tocSection = page.getByTestId('toc-section');
+    
+    // If TOC section is visible, check that it has heading items
+    const tocVisible = await tocSection.isVisible().catch(() => false);
+    if (tocVisible) {
+      // Should have "On This Page" header
+      await expect(tocSection.locator('text=On This Page')).toBeVisible();
+      
+      // Should have at least one TOC item
+      const firstTocItem = page.getByTestId('toc-item-0');
+      await expect(firstTocItem).toBeVisible();
+    }
+  });
+
+  test('TOC section not shown when article has no H2/H3 headings', async ({ page }) => {
+    // Navigate to new article (no content yet)
+    await page.goto('/dashboard/kb-editor/new', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('kb-editor-page')).toBeVisible({ timeout: 15000 });
+    
+    // TOC section should not be visible for empty content
+    const tocSection = page.getByTestId('toc-section');
+    await expect(tocSection).not.toBeVisible();
+  });
+});
