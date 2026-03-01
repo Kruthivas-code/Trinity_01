@@ -172,10 +172,12 @@ const ColumnCardView = ({ node, updateAttributes, deleteNode }) => {
         {showSettings && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setShowSettings(false)} />
-            <div className="absolute z-50 top-0 right-0 translate-x-[calc(100%+8px)] bg-[#1e1e1e] border border-white/10 rounded-xl shadow-2xl p-4 w-64" data-testid="card-settings-popup">
+            <div className={`absolute z-50 top-0 right-0 translate-x-[calc(100%+8px)] border rounded-xl shadow-2xl p-4 w-64 ${
+              isLight ? 'bg-white border-gray-200' : 'bg-[#1e1e1e] border-white/10'
+            }`} data-testid="card-settings-popup">
               <div className="flex items-center gap-2 mb-4">
-                <Settings2 className="w-4 h-4 text-slate-400" />
-                <span className="text-sm font-medium text-white">Edit Card Attributes</span>
+                <Settings2 className={`w-4 h-4 ${isLight ? 'text-gray-400' : 'text-slate-400'}`} />
+                <span className={`text-sm font-medium ${isLight ? 'text-gray-900' : 'text-white'}`}>Edit Card Attributes</span>
               </div>
 
               {/* Content Section */}
