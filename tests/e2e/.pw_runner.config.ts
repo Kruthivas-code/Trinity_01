@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260226_140038/results.json' }],
   ],
   use: {
-    baseURL: 'https://support-merge.preview.emergentagent.com',
+    baseURL: 'https://trinity-kb-update.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,
