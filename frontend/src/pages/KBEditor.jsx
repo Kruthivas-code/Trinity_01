@@ -14,6 +14,7 @@ import { SocialLinksPanel } from './kb-editor/SocialLinksPanel';
 import { GlobalSettingsModal } from './kb-editor/GlobalSettingsModal';
 import { RichTextEditor } from './kb-editor/RichTextEditor';
 import { EDITOR_THEMES } from './kb-editor/editorTheme';
+import { EditorThemeProvider } from './kb-editor/EditorThemeContext';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
