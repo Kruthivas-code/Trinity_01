@@ -344,6 +344,13 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Modified files**: `KBEditor.jsx`, `RichTextEditor.jsx`, `SlashCommand.jsx`, `index.css`
 - Tested: All features verified via screenshots (desktop/tablet/mobile viewports, light/dark themes, editing, slash commands, preview navigation)
 
+### KB Navigation Data Cleanup & Auto-Sync Guard (Mar 1, 2026)
+- **Removed phantom empty nav group**: Cleaned `kb_navigation` collection — removed a nav group with empty `key=""` that created an invisible empty tab on the Docs page sidebar.
+- **Removed test sections**: Removed 2 "Test Section Auto Sync" sections (`test-section-1771346655`, `test-section-1771346904`) from "The Beginner's Guide" group that had 0 articles.
+- **Auto-sync guard**: Added a check in the article create endpoint (`POST /api/kb/admin/articles`) to skip auto-sync of navigation when `nav_group_key` or `section_key` is empty, preventing phantom entries from being created in the future.
+- **Modified file**: `backend/routes/kb.py`
+- Tested: Verified via API checks and screenshots on both Docs and KB Editor pages
+
 ---
 
 ## Pending / Backlog
