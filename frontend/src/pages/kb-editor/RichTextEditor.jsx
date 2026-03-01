@@ -321,6 +321,7 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
         }
       }
 
+      lastExternalContent.current = md;
       onChange(md);
     },
   });

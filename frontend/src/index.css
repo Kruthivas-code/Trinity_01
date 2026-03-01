@@ -516,3 +516,13 @@
 .columns-block-wrapper [data-node-view-wrapper] {
   min-width: 0;
 }
+
+/* Responsive columns — stack on smaller devices */
+@media (max-width: 768px) {
+  .columns-block-wrapper[data-cols="2"] [data-node-view-content],
+  .columns-block-wrapper [data-node-view-content].grid-cols-2,
+  .columns-block-wrapper[data-cols="3"] [data-node-view-content],
+  .columns-block-wrapper [data-node-view-content].grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+}

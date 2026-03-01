@@ -26,6 +26,7 @@ const SLASH_ITEMS = [
   { key: 'blockquote', label: 'Blockquote', description: 'Quote block', icon: Quote, group: 'Basic' },
   { key: 'code_block', label: 'Code Block', description: 'Code snippet', icon: Code, group: 'Basic' },
   { key: 'horizontal_rule', label: 'Divider', description: 'Horizontal line', icon: Minus, group: 'Basic' },
+  { key: 'columns_1', label: '1 Column', description: 'Single column card', icon: Columns, group: 'Layout' },
   { key: 'columns_2', label: '2 Columns', description: 'Two column layout', icon: Columns, group: 'Layout' },
   { key: 'columns_3', label: '3 Columns', description: 'Three column layout', icon: LayoutGrid, group: 'Layout' },
   { key: 'card_group', label: 'Card Group', description: 'Group of cards', icon: LayoutGrid, group: 'Components' },
@@ -223,6 +224,15 @@ export const SlashCommand = Extension.create({
               break;
             case 'horizontal_rule':
               editor.chain().focus().setHorizontalRule().run();
+              break;
+            case 'columns_1':
+              editor.chain().focus().insertContent({
+                type: 'columnsBlock',
+                attrs: { cols: 1 },
+                content: [
+                  { type: 'columnCard', attrs: { title: 'Card 1', description: 'Description', icon: 'zap' } },
+                ],
+              }).run();
               break;
             case 'columns_2':
               editor.chain().focus().insertContent({
