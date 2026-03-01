@@ -476,10 +476,17 @@ const KBEditor = () => {
         />
       )}
 
-      {/* Modals */}
-      {navManagerOpen && <NavManager navGroups={navGroups} onSave={saveNavigation} onBulkMove={bulkMoveArticles} onClose={() => setNavManagerOpen(false)} theme={theme} />}
-      {socialLinksOpen && <SocialLinksPanel onClose={() => setSocialLinksOpen(false)} theme={theme} />}
-      {globalSettingsOpen && <GlobalSettingsModal onClose={() => setGlobalSettingsOpen(false)} theme={theme} />}
+      {/* Unified Settings */}
+      {showSettings && (
+        <UnifiedSettings
+          navGroups={navGroups}
+          onSaveNav={saveNavigation}
+          onBulkMove={bulkMoveArticles}
+          onClose={() => setShowSettings(false)}
+          theme={theme}
+          isDark={isDark}
+        />
+      )}
     </div>
   );
 };
