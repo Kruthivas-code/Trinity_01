@@ -132,15 +132,19 @@ const ColumnCardView = ({ node, updateAttributes, deleteNode }) => {
       <div className="relative group/card">
         {/* Card Visual */}
         <div
-          className={`column-card-visual p-5 rounded-xl border border-white/10 bg-[#1a1a1a] hover:border-white/20 transition-all cursor-pointer ${
-            horizontal ? 'flex items-start gap-4' : ''
-          }`}
+          className={`column-card-visual p-5 rounded-xl border transition-all cursor-pointer ${
+            isLight
+              ? 'border-gray-200 bg-gray-50 hover:border-gray-300'
+              : 'border-white/10 bg-[#1a1a1a] hover:border-white/20'
+          } ${horizontal ? 'flex items-start gap-4' : ''}`}
           onClick={openSettings}
           data-testid="card-visual"
         >
           {/* Three-dot menu */}
           <button
-            className="absolute top-2 right-2 p-1 rounded text-slate-500 hover:text-white hover:bg-white/10 opacity-0 group-hover/card:opacity-100 transition-all z-10"
+            className={`absolute top-2 right-2 p-1 rounded opacity-0 group-hover/card:opacity-100 transition-all z-10 ${
+              isLight ? 'text-gray-400 hover:text-gray-700 hover:bg-gray-200' : 'text-slate-500 hover:text-white hover:bg-white/10'
+            }`}
             onClick={(e) => { e.stopPropagation(); openSettings(); }}
             data-testid="card-menu-btn"
           >
