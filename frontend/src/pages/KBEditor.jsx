@@ -100,14 +100,19 @@ const KBEditor = () => {
       }
       return;
     }
-    const art = articles.find(a => a.slug === paramSlug);
-    if (art) {
-      setIsNew(false);
-      setOriginalSlug(art.slug);
-      // H1 is now part of the content itself — no stripping needed
-      const artCopy = { ...art };
-      setForm(artCopy);
-    }
+    // Lazy-load full article content (content_markdown excluded from listing)
+    const loadArticle = async () => {
+      try {
+        const res = await fetch(`${API}/api/kb/admin/articles/${paramSlug}`, { credentials: 'include' });
+        if (res.ok) {
+          const art = await res.json();
+          setIsNew(false);
+          setOriginalSlug(art.slug);
+          setForm({ ...art });
+        }
+      } catch (e) { console.error('Failed to load article:', e); }
+    };
+    loadArticle();
   }, [paramSlug, articles, navGroups, navigate]);
 
   // Validation
