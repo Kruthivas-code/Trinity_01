@@ -1,12 +1,13 @@
 /**
  * KBEditor — Knowledge Base article editor
  * Single-page layout with Document Settings, Draft, and Rich Text Content sections.
+ * Supports Visual Edit and Markdown modes with a full Preview page.
  */
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Save, Loader2, Settings,
-  Sun, Moon, Share2, Globe, ExternalLink, List
+  Sun, Moon, Share2, Globe, Eye
 } from 'lucide-react';
 import { ArticleSidebar } from './kb-editor/ArticleSidebar';
 import { NavManager } from './kb-editor/NavManager';
@@ -15,6 +16,7 @@ import { GlobalSettingsModal } from './kb-editor/GlobalSettingsModal';
 import { RichTextEditor } from './kb-editor/RichTextEditor';
 import { EDITOR_THEMES } from './kb-editor/editorTheme';
 import { EditorThemeProvider } from './kb-editor/EditorThemeContext';
+import { ArticlePreview } from './kb-editor/ArticlePreview';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -35,6 +37,8 @@ const KBEditor = () => {
   const [navManagerOpen, setNavManagerOpen] = useState(false);
   const [socialLinksOpen, setSocialLinksOpen] = useState(false);
   const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
+  const [editMode, setEditMode] = useState('visual');
+  const [showPreview, setShowPreview] = useState(false);
 
   // Theme
   const [editorTheme, setEditorTheme] = useState(() => localStorage.getItem('kb-editor-theme') || 'dark');
@@ -219,20 +223,6 @@ const KBEditor = () => {
     return opts;
   }, [navGroups]);
 
-  // Extract headings from content for TOC
-  const tocHeadings = useMemo(() => {
-    const md = form?.content_markdown || '';
-    const headings = [];
-    const lines = md.split('\n');
-    for (const line of lines) {
-      const match = line.match(/^(#{2,3})\s+(.+)$/);
-      if (match) {
-        headings.push({ level: match[1].length, text: match[2].trim() });
-      }
-    }
-    return headings;
-  }, [form?.content_markdown]);
-
   if (loading) {
     return <div className={`h-screen flex items-center justify-center ${theme.bg}`}><Loader2 className="w-6 h-6 animate-spin text-[#00A1B2]" /></div>;
   }
@@ -251,9 +241,28 @@ const KBEditor = () => {
           <ChevronLeft className="w-4 h-4" /><span className="text-sm">Dashboard</span>
         </button>
         <div className={`w-px h-6 ${theme.divider}`} />
-        <span className={`text-sm font-medium ${theme.text} truncate`}>
-          {form ? (isNew ? 'New Article' : form.title || 'Untitled') : 'Knowledge Base Editor'}
-        </span>
+
+        {/* Edit Mode Toggle */}
+        {form ? (
+          <div className={`flex items-center rounded-lg p-0.5 ${isDark ? 'bg-slate-800/80' : 'bg-gray-100'}`} data-testid="edit-mode-toggle">
+            <button
+              onClick={() => setEditMode('visual')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${editMode === 'visual' ? 'bg-[#00A1B2] text-white shadow-sm' : `${theme.textMuted} ${theme.hoverText}`}`}
+              data-testid="visual-edit-toggle"
+            >
+              Visual Edit
+            </button>
+            <button
+              onClick={() => setEditMode('markdown')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${editMode === 'markdown' ? 'bg-[#00A1B2] text-white shadow-sm' : `${theme.textMuted} ${theme.hoverText}`}`}
+              data-testid="markdown-edit-toggle"
+            >
+              Markdown
+            </button>
+          </div>
+        ) : (
+          <span className={`text-sm font-medium ${theme.text} truncate`}>Knowledge Base Editor</span>
+        )}
 
         <div className="flex items-center gap-2 ml-auto flex-shrink-0">
           <button onClick={toggleTheme} className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'} data-testid="kb-editor-theme-toggle">
@@ -265,10 +274,16 @@ const KBEditor = () => {
           <button onClick={() => setGlobalSettingsOpen(true)} className={`p-2 rounded-lg transition-colors ${globalSettingsOpen ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText} ${theme.hover}`}`} title="Global Docs Settings" data-testid="global-settings-toggle">
             <Settings className="w-4 h-4" />
           </button>
-          {form?.slug && !isNew && (
-            <a href={`/docs/${form.slug}`} target="_blank" rel="noopener noreferrer" className={`p-2 ${theme.textMuted} ${theme.hoverText} rounded-lg ${theme.hover} transition-colors`} title="Preview live" data-testid="live-preview-link">
-              <ExternalLink className="w-4 h-4" />
-            </a>
+          {form && (
+            <button
+              onClick={() => setShowPreview(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200'}`}
+              title="Preview article"
+              data-testid="preview-btn"
+            >
+              <Eye className="w-4 h-4" />
+              <span className="hidden sm:inline">Preview</span>
+            </button>
           )}
           <div className={`w-px h-6 ${theme.divider}`} />
           {lastSaved && <span className={`text-xs ${theme.textSecondary} hidden sm:block`}>Saved {lastSaved.toLocaleTimeString()}</span>}
@@ -422,40 +437,28 @@ const KBEditor = () => {
                 </div>
               </section>
 
-              {/* === On This Page (TOC) Section === */}
-              {tocHeadings.length > 0 && (
-                <section className={`border-t ${theme.border} pt-6`} data-testid="toc-section">
-                  <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-3 flex items-center gap-2`}>
-                    <List className="w-3.5 h-3.5" /> On This Page
-                  </h2>
-                  <nav className="relative pl-3">
-                    <div className={`absolute left-0 top-0 bottom-0 w-px ${isDark ? 'bg-white/10' : 'bg-gray-200'}`} />
-                    <div className="space-y-0.5">
-                      {tocHeadings.map((h, i) => (
-                        <div
-                          key={i}
-                          className={`text-sm py-1 ${h.level === 3 ? 'pl-3' : ''} ${theme.textMuted}`}
-                          data-testid={`toc-item-${i}`}
-                        >
-                          {h.text}
-                        </div>
-                      ))}
-                    </div>
-                  </nav>
-                </section>
-              )}
-
               {/* === Content Section === */}
               <section className={`border-t ${theme.border} pt-6`} data-testid="content-section">
                 <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-4`}>Content</h2>
-                <EditorThemeProvider value={editorTheme}>
-                  <RichTextEditor
-                    content={form.content_markdown || ''}
-                    onChange={(md) => setForm(f => ({ ...f, content_markdown: md }))}
-                    theme={theme}
-                    onUploadImage={uploadImage}
+                {editMode === 'visual' ? (
+                  <EditorThemeProvider value={editorTheme}>
+                    <RichTextEditor
+                      content={form.content_markdown || ''}
+                      onChange={(md) => setForm(f => ({ ...f, content_markdown: md }))}
+                      theme={theme}
+                      onUploadImage={uploadImage}
+                    />
+                  </EditorThemeProvider>
+                ) : (
+                  <textarea
+                    value={form.content_markdown || ''}
+                    onChange={(e) => setForm(f => ({ ...f, content_markdown: e.target.value }))}
+                    className={`w-full min-h-[500px] px-4 py-3 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm font-mono ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors resize-y leading-relaxed`}
+                    style={theme.inputBgStyle}
+                    placeholder="Write your article content in Markdown..."
+                    data-testid="markdown-textarea"
                   />
-                </EditorThemeProvider>
+                )}
               </section>
 
             </div>
@@ -469,6 +472,16 @@ const KBEditor = () => {
           )}
         </div>
       </div>
+
+      {/* Preview Overlay */}
+      {showPreview && (
+        <ArticlePreview
+          form={form}
+          theme={theme}
+          isDark={isDark}
+          onBack={() => setShowPreview(false)}
+        />
+      )}
 
       {/* Modals */}
       {navManagerOpen && <NavManager navGroups={navGroups} onSave={saveNavigation} onBulkMove={bulkMoveArticles} onClose={() => setNavManagerOpen(false)} theme={theme} />}
