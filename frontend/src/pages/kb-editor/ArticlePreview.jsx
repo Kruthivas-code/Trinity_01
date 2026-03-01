@@ -1,11 +1,11 @@
 /**
- * ArticlePreview — Full-page preview of KB article content
- * Renders content identically to PublicDocs using DocContent
- * Supports desktop, tablet, and mobile viewport previews
+ * ArticlePreview — Full-page preview that mirrors the actual Docs page
+ * Uses an iframe to render /docs/:slug for 100% layout fidelity
+ * Includes left sidebar, right TOC, main navbar, breadcrumb bar
+ * Supports desktop, tablet, and mobile viewport switching
  */
 import { useState } from 'react';
-import { ArrowLeft, Monitor, Tablet, Smartphone } from 'lucide-react';
-import { DocContent } from '../../components/docs/DocContent';
+import { ArrowLeft, Monitor, Tablet, Smartphone, AlertCircle } from 'lucide-react';
 
 const VIEWPORTS = [
   { key: 'desktop', label: 'Desktop', icon: Monitor, width: '100%' },
@@ -13,15 +13,18 @@ const VIEWPORTS = [
   { key: 'mobile', label: 'Mobile', icon: Smartphone, width: '375px' },
 ];
 
-export const ArticlePreview = ({ form, theme, isDark, onBack }) => {
+export const ArticlePreview = ({ form, isDark, onBack }) => {
   const [viewport, setViewport] = useState('desktop');
   const activeVP = VIEWPORTS.find(v => v.key === viewport);
 
+  const isPublished = form?.published && form?.slug;
+  const previewUrl = isPublished ? `/docs/${form.slug}` : null;
+
   return (
-    <div className={`fixed inset-0 z-50 flex flex-col ${isDark ? 'bg-[#0a0a0a]' : 'bg-gray-50'}`} data-testid="article-preview">
+    <div className={`fixed inset-0 z-50 flex flex-col ${isDark ? 'bg-[#0a0a0a]' : 'bg-gray-100'}`} data-testid="article-preview">
       {/* Preview Header */}
       <header
-        className={`h-14 flex items-center px-4 border-b flex-shrink-0 gap-3 ${isDark ? 'bg-[#0c0c0c] border-slate-800/80' : 'bg-white border-gray-200'}`}
+        className={`h-12 flex items-center px-4 border-b flex-shrink-0 gap-3 ${isDark ? 'bg-[#111] border-slate-800/80' : 'bg-white border-gray-200'}`}
         data-testid="preview-header"
       >
         <button
@@ -32,8 +35,8 @@ export const ArticlePreview = ({ form, theme, isDark, onBack }) => {
           <ArrowLeft className="w-4 h-4" />
           <span className="text-sm font-medium">Back to Editor</span>
         </button>
-        <div className={`w-px h-6 ${isDark ? 'bg-slate-700/40' : 'bg-gray-200'}`} />
-        <span className={`text-sm truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        <div className={`w-px h-5 ${isDark ? 'bg-slate-700/40' : 'bg-gray-200'}`} />
+        <span className={`text-sm truncate ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
           {form?.title || 'Untitled'}
         </span>
 
@@ -63,53 +66,54 @@ export const ArticlePreview = ({ form, theme, isDark, onBack }) => {
       </header>
 
       {/* Preview Content */}
-      <div className={`flex-1 overflow-y-auto flex justify-center ${viewport !== 'desktop' ? 'py-8 px-4' : ''}`}>
-        <div
-          className="transition-all duration-300 ease-in-out h-full"
-          style={{
-            width: activeVP.width,
-            maxWidth: '100%',
-            ...(viewport !== 'desktop' ? {
-              boxShadow: isDark
-                ? '0 0 0 1px rgba(255,255,255,0.1), 0 8px 32px rgba(0,0,0,0.4)'
-                : '0 0 0 1px rgba(0,0,0,0.08), 0 8px 32px rgba(0,0,0,0.1)',
-              borderRadius: '12px',
-              overflow: 'hidden',
-            } : {})
-          }}
-          data-testid="preview-viewport-container"
-        >
+      <div className={`flex-1 overflow-hidden flex justify-center ${viewport !== 'desktop' ? 'py-6 px-4' : ''}`}>
+        {isPublished ? (
           <div
-            className={`h-full overflow-y-auto ${isDark ? 'bg-[#0a0a0a]' : 'bg-white'}`}
+            className="transition-all duration-300 ease-in-out h-full"
+            style={{
+              width: activeVP.width,
+              maxWidth: '100%',
+              ...(viewport !== 'desktop' ? {
+                boxShadow: isDark
+                  ? '0 0 0 1px rgba(255,255,255,0.08), 0 12px 40px rgba(0,0,0,0.5)'
+                  : '0 0 0 1px rgba(0,0,0,0.06), 0 12px 40px rgba(0,0,0,0.12)',
+                borderRadius: '12px',
+                overflow: 'hidden',
+              } : {})
+            }}
+            data-testid="preview-viewport-container"
           >
-            <article className="max-w-[800px] mx-auto px-6 py-8 animate-fadeIn">
-              {form?.title && (
-                <h1
-                  className={`font-bold mb-8 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                  style={{ fontFamily: "'Brockmann', sans-serif", fontSize: '30px', lineHeight: '36px', letterSpacing: '-0.01em' }}
-                >
-                  {form.title}
-                </h1>
-              )}
-              <div
-                className={`docs-prose prose ${isDark ? 'prose-invert prose-p:text-[#999999] prose-li:text-[#999999] prose-strong:text-white prose-pre:bg-slate-900 prose-pre:border prose-pre:border-white/10' : 'prose-gray prose-pre:bg-gray-50 prose-pre:border prose-pre:border-gray-200'} max-w-none overflow-hidden prose-headings:font-semibold prose-headings:text-inherit prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-lg sm:prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:text-[15px] sm:prose-p:text-base prose-p:leading-7 prose-p:break-words prose-a:text-[#00A1B2] prose-a:no-underline hover:prose-a:underline prose-code:text-[#00A1B2] prose-code:bg-[#00A1B2]/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:break-words prose-code:text-[13px] sm:prose-code:text-sm prose-pre:rounded-xl prose-pre:overflow-x-auto prose-pre:text-[13px] sm:prose-pre:text-sm prose-img:rounded-lg prose-img:max-w-full prose-img:h-auto`}
-                data-testid="preview-article-body"
-              >
-                <DocContent
-                  content={
-                    form?.content_markdown
-                      ? form.content_markdown.replace(
-                          new RegExp(`^#\\s*${(form?.title || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\n+`, 'i'),
-                          ''
-                        )
-                      : ''
-                  }
-                  onHeadings={() => {}}
-                />
-              </div>
-            </article>
+            <iframe
+              src={previewUrl}
+              className="w-full h-full border-none bg-white"
+              title="Article Preview"
+              data-testid="preview-iframe"
+            />
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center justify-center h-full" data-testid="preview-unpublished-msg">
+            <div className={`flex flex-col items-center gap-4 px-6 py-8 rounded-2xl max-w-md text-center ${isDark ? 'bg-slate-900/50 border border-slate-800' : 'bg-white border border-gray-200'}`}>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
+                <AlertCircle className="w-6 h-6 text-amber-500" />
+              </div>
+              <div>
+                <h3 className={`text-base font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Preview Unavailable
+                </h3>
+                <p className={`text-sm leading-relaxed ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>
+                  Save and publish this article to preview how it will appear on the public documentation site.
+                </p>
+              </div>
+              <button
+                onClick={onBack}
+                className="px-4 py-2 bg-[#00A1B2] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+                data-testid="preview-go-back-btn"
+              >
+                Back to Editor
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
