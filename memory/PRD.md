@@ -333,6 +333,17 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Lazy article loading**: Backend `GET /api/kb/admin/articles` now excludes `content_markdown` (response ~19KB vs hundreds KB). Added `GET /api/kb/admin/articles/{slug}` for on-demand full content fetch. Frontend lazy-loads content when selecting articles.
 - Tested: 100% pass (8/8 tests, iteration_58)
 
+### KB Editor — Visual/Markdown Toggle, Preview Page & Editing Fix (Mar 1, 2026)
+- **Removed "On This Page" (TOC) section** from the editor sidebar, per user request.
+- **Visual Edit / Markdown toggle**: Replaced the page heading in the editor header with a segmented control toggle. Defaults to "Visual Edit" (WYSIWYG). "Markdown" mode shows a raw textarea for direct markdown editing.
+- **Fixed content editing bug**: Added `lastExternalContent.current = md` in the TipTap `onUpdate` handler to prevent the editor from resetting content on every keystroke (caused by the parent re-render cycle).
+- **Preview button**: Added "Preview" button in the header that opens a full-page overlay (`ArticlePreview.jsx`) rendering content identically to PublicDocs using `DocContent`. Supports Desktop (100%), Tablet (768px), and Mobile (375px) viewport switching with visual device frames. Includes a "Back to Editor" button.
+- **1 Column layout option**: Added "1 Column" to the slash command menu under Layout, alongside the existing 2/3 column options.
+- **Responsive columns CSS**: Added `@media (max-width: 768px)` rule to stack multi-column layouts into single columns on smaller screens.
+- **New file**: `kb-editor/ArticlePreview.jsx`
+- **Modified files**: `KBEditor.jsx`, `RichTextEditor.jsx`, `SlashCommand.jsx`, `index.css`
+- Tested: All features verified via code review and screenshots
+
 ---
 
 ## Pending / Backlog
