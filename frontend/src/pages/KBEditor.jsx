@@ -7,16 +7,14 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Save, Loader2, Settings,
-  Sun, Moon, Share2, Globe, Eye
+  Sun, Moon, Eye
 } from 'lucide-react';
 import { ArticleSidebar } from './kb-editor/ArticleSidebar';
-import { NavManager } from './kb-editor/NavManager';
-import { SocialLinksPanel } from './kb-editor/SocialLinksPanel';
-import { GlobalSettingsModal } from './kb-editor/GlobalSettingsModal';
 import { RichTextEditor } from './kb-editor/RichTextEditor';
 import { EDITOR_THEMES } from './kb-editor/editorTheme';
 import { EditorThemeProvider } from './kb-editor/EditorThemeContext';
 import { ArticlePreview } from './kb-editor/ArticlePreview';
+import { UnifiedSettings } from './kb-editor/UnifiedSettings';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
