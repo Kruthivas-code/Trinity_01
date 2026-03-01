@@ -280,7 +280,7 @@ const ColumnCardView = ({ node, updateAttributes, deleteNode }) => {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-between pt-3 border-t border-white/10">
+              <div className={`flex items-center justify-between pt-3 border-t ${isLight ? 'border-gray-200' : 'border-white/10'}`}>
                 <button
                   onClick={() => { setShowSettings(false); deleteNode(); }}
                   className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors"
