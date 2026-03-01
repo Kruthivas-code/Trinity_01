@@ -479,3 +479,45 @@ async def bulk_move_articles(body: BulkMoveRequest, current_user: dict = Depends
         }}
     )
     return {"moved": result.modified_count}
+
+
+# ── Design Configuration ──────────────────────────────────────
+
+class DesignConfigUpdate(BaseModel):
+    accent_color: Optional[str] = None
+    default_theme: Optional[str] = None
+    code_theme: Optional[str] = None
+    border_radius: Optional[str] = None
+    font_family: Optional[str] = None
+    custom_css: Optional[str] = None
+
+
+@router.get("/admin/design-config")
+async def get_design_config(current_user: dict = Depends(get_current_user)):
+    """Admin endpoint: get design configuration."""
+    doc = kb_settings.find_one({"type": "design_config"}, {"_id": 0})
+    if not doc:
+        return {
+            "accent_color": "#00A1B2",
+            "default_theme": "light",
+            "code_theme": "github-dark",
+            "border_radius": "rounded",
+            "font_family": "system",
+            "custom_css": "",
+        }
+    return {k: v for k, v in doc.items() if k not in ("type", "updated_at")}
+
+
+@router.put("/admin/design-config")
+async def update_design_config(body: DesignConfigUpdate, current_user: dict = Depends(get_current_user)):
+    """Admin endpoint: update design configuration."""
+    updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
+    updates["type"] = "design_config"
+    updates["updated_at"] = datetime.now(timezone.utc)
+    kb_settings.update_one(
+        {"type": "design_config"},
+        {"$set": updates},
+        upsert=True,
+    )
+    doc = kb_settings.find_one({"type": "design_config"}, {"_id": 0})
+    return {k: v for k, v in doc.items() if k not in ("type", "updated_at")}

@@ -48,18 +48,13 @@ const NavGroup = ({ group, groupKey, articles, selectedSlug, onSelect, expanded,
   );
 };
 
-export const ArticleSidebar = ({ tree, selectedSlug, onSelect, onDelete, deleting, expanded, setExpanded, onNewArticle, onManageNav, theme }) => (
+export const ArticleSidebar = ({ tree, selectedSlug, onSelect, onDelete, deleting, expanded, setExpanded, onNewArticle, theme }) => (
   <aside className={`w-64 flex-shrink-0 border-r ${theme.border} ${theme.panelBg} flex flex-col overflow-hidden`} style={theme.panelBgStyle} data-testid="editor-sidebar">
     <div className={`px-3 py-3 flex items-center justify-between border-b ${theme.border}`}>
       <span className={`text-xs font-semibold ${theme.textSecondary} uppercase tracking-wider`}>Articles</span>
-      <div className="flex items-center gap-1">
-        <button onClick={onManageNav} className={`p-1 ${theme.textSecondary} hover:text-[#00A1B2] rounded transition-colors`} title="Manage navigation" data-testid="manage-nav-btn">
-          <Settings className="w-3.5 h-3.5" />
-        </button>
-        <button onClick={onNewArticle} className={`p-1 ${theme.textSecondary} hover:text-[#00A1B2] rounded transition-colors`} title="New article" data-testid="new-article-btn">
-          <Plus className="w-4 h-4" />
-        </button>
-      </div>
+      <button onClick={onNewArticle} className={`p-1 ${theme.textSecondary} hover:text-[#00A1B2] rounded transition-colors`} title="New article" data-testid="new-article-btn">
+        <Plus className="w-4 h-4" />
+      </button>
     </div>
     <div className="flex-1 overflow-y-auto scrollbar-on-hover px-2 py-2">
       {tree.map(group => (
