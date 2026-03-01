@@ -40,7 +40,9 @@ const ColumnsBlockView = ({ node, updateAttributes, deleteNode, editor, getPos }
         <div className="relative">
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800 border border-white/10 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              isLight ? 'bg-white border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50' : 'bg-slate-800 border-white/10 text-slate-300 hover:text-white hover:bg-slate-700'
+            }`}
             data-testid="columns-settings-btn"
           >
             <Settings2 className="w-3.5 h-3.5" /> Edit Columns
@@ -48,19 +50,19 @@ const ColumnsBlockView = ({ node, updateAttributes, deleteNode, editor, getPos }
           {showSettings && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowSettings(false)} />
-              <div className="absolute z-50 top-full mt-1 right-0 bg-[#1e1e1e] border border-white/10 rounded-xl shadow-2xl p-4 w-56" data-testid="columns-settings-popup">
+              <div className={`absolute z-50 top-full mt-1 right-0 border rounded-xl shadow-2xl p-4 w-56 ${isLight ? 'bg-white border-gray-200' : 'bg-[#1e1e1e] border-white/10'}`} data-testid="columns-settings-popup">
                 <div className="flex items-center gap-2 mb-3">
-                  <Columns className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm font-medium text-white">Edit Columns Attributes</span>
+                  <Columns className={`w-4 h-4 ${isLight ? 'text-gray-400' : 'text-slate-400'}`} />
+                  <span className={`text-sm font-medium ${isLight ? 'text-gray-900' : 'text-white'}`}>Edit Columns Attributes</span>
                 </div>
                 <div className="mb-3">
-                  <label className="flex items-center gap-2 text-xs text-slate-400 mb-1.5">
+                  <label className={`flex items-center gap-2 text-xs mb-1.5 ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>
                     <Columns className="w-3.5 h-3.5" /> Cols
                   </label>
                   <select
                     value={cols}
                     onChange={(e) => setCols(parseInt(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:border-[#00A1B2] focus:outline-none"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm focus:border-[#00A1B2] focus:outline-none ${isLight ? 'bg-gray-50 border-gray-200 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'}`}
                     data-testid="columns-count-select"
                   >
                     <option value={1}>One</option>
@@ -68,7 +70,7 @@ const ColumnsBlockView = ({ node, updateAttributes, deleteNode, editor, getPos }
                     <option value={3}>Three</option>
                   </select>
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                <div className={`flex items-center justify-between pt-2 border-t ${isLight ? 'border-gray-200' : 'border-white/10'}`}>
                   <button
                     onClick={() => { setShowSettings(false); deleteNode(); }}
                     className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors"
@@ -78,7 +80,7 @@ const ColumnsBlockView = ({ node, updateAttributes, deleteNode, editor, getPos }
                   </button>
                   <button
                     onClick={() => setShowSettings(false)}
-                    className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-colors"
+                    className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${isLight ? 'bg-gray-100 hover:bg-gray-200 text-gray-900' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}
                     data-testid="columns-save-btn"
                   >
                     Save Changes
