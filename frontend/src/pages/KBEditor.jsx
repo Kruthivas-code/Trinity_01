@@ -477,7 +477,6 @@ const KBEditor = () => {
       {showPreview && (
         <ArticlePreview
           form={form}
-          theme={theme}
           isDark={isDark}
           onBack={() => setShowPreview(false)}
         />
