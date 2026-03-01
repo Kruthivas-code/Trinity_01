@@ -265,10 +265,7 @@ const KBEditor = () => {
           <button onClick={toggleTheme} className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'} data-testid="kb-editor-theme-toggle">
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-          <button onClick={() => setSocialLinksOpen(!socialLinksOpen)} className={`p-2 rounded-lg transition-colors ${socialLinksOpen ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText} ${theme.hover}`}`} title="Social Links" data-testid="social-links-toggle">
-            <Share2 className="w-4 h-4" />
-          </button>
-          <button onClick={() => setGlobalSettingsOpen(true)} className={`p-2 rounded-lg transition-colors ${globalSettingsOpen ? 'bg-[#00A1B2] text-white' : `${theme.textMuted} ${theme.hoverText} ${theme.hover}`}`} title="Global Docs Settings" data-testid="global-settings-toggle">
+          <button onClick={() => setShowSettings(true)} className={`p-2 rounded-lg transition-colors ${theme.textMuted} ${theme.hoverText} ${theme.hover}`} title="Settings" data-testid="settings-toggle">
             <Settings className="w-4 h-4" />
           </button>
           {form && (
