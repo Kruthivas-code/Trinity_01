@@ -290,7 +290,9 @@ const ColumnCardView = ({ node, updateAttributes, deleteNode }) => {
                 </button>
                 <button
                   onClick={saveEdits}
-                  className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white text-xs rounded-lg transition-colors"
+                  className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                    isLight ? 'bg-gray-100 hover:bg-gray-200 text-gray-900' : 'bg-slate-700 hover:bg-slate-600 text-white'
+                  }`}
                   data-testid="card-save-btn"
                 >
                   Save Changes
