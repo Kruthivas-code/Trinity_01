@@ -182,7 +182,6 @@ const KBEditor = () => {
       const res = await fetch(`${API}/api/kb/admin/navigation`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nav_groups: newGroups }) });
       if (!res.ok) throw new Error('Failed to save');
       await fetchAll();
-      setNavManagerOpen(false);
     } catch (e) { alert('Failed to save navigation: ' + e.message); }
   };
 
