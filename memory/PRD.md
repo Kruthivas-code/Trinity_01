@@ -328,6 +328,11 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Packages added**: `@tiptap/suggestion`, `tippy.js`
 - Tested: 100% pass (10/10 frontend tests, iteration_57)
 
+### KB Editor — Theme Fix & Performance Optimization (Mar 1, 2026)
+- **Theme-aware cards**: Cards, popups, and slash command menu now properly adapt to light/dark mode via `EditorThemeContext`. Light mode uses white/gray backgrounds with dark text; dark mode uses dark backgrounds with light text.
+- **Lazy article loading**: Backend `GET /api/kb/admin/articles` now excludes `content_markdown` (response ~19KB vs hundreds KB). Added `GET /api/kb/admin/articles/{slug}` for on-demand full content fetch. Frontend lazy-loads content when selecting articles.
+- Tested: 100% pass (8/8 tests, iteration_58)
+
 ---
 
 ## Pending / Backlog
