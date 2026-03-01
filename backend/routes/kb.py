@@ -287,19 +287,20 @@ async def create_article(body: ArticleCreate, current_user: dict = Depends(get_c
     doc["created_at"] = datetime.now(timezone.utc)
     doc["updated_at"] = datetime.now(timezone.utc)
     kb_articles.insert_one(doc)
-    # Auto-sync navigation: ensure nav group and section exist
-    nav_doc = kb_navigation.find_one({})
-    if nav_doc:
-        nav_groups = nav_doc.get("nav_groups", [])
-        group = next((g for g in nav_groups if g["key"] == doc["nav_group_key"]), None)
-        if not group:
-            nav_groups.append({"key": doc["nav_group_key"], "label": doc["nav_group_label"], "sections": [{"key": doc["section_key"], "label": doc["section_label"]}]})
-            kb_navigation.update_one({}, {"$set": {"nav_groups": nav_groups}})
-        else:
-            sec = next((s for s in group.get("sections", []) if s["key"] == doc["section_key"]), None)
-            if not sec:
-                group.setdefault("sections", []).append({"key": doc["section_key"], "label": doc["section_label"]})
+    # Auto-sync navigation: ensure nav group and section exist (skip if empty keys)
+    if doc.get("nav_group_key"):
+        nav_doc = kb_navigation.find_one({})
+        if nav_doc:
+            nav_groups = nav_doc.get("nav_groups", [])
+            group = next((g for g in nav_groups if g["key"] == doc["nav_group_key"]), None)
+            if not group:
+                nav_groups.append({"key": doc["nav_group_key"], "label": doc["nav_group_label"], "sections": [{"key": doc["section_key"], "label": doc["section_label"]}] if doc.get("section_key") else []})
                 kb_navigation.update_one({}, {"$set": {"nav_groups": nav_groups}})
+            elif doc.get("section_key"):
+                sec = next((s for s in group.get("sections", []) if s["key"] == doc["section_key"]), None)
+                if not sec:
+                    group.setdefault("sections", []).append({"key": doc["section_key"], "label": doc["section_label"]})
+                    kb_navigation.update_one({}, {"$set": {"nav_groups": nav_groups}})
     return kb_articles.find_one({"slug": body.slug}, {"_id": 0})
 
 
