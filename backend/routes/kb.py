@@ -207,7 +207,8 @@ async def search_articles(q: str = ""):
 
 @router.get("/admin/articles")
 async def admin_list_articles(current_user: dict = Depends(get_current_user)):
-    articles = list(kb_articles.find({}, {"_id": 0}).sort("order", 1))
+    # Exclude content_markdown from listing for performance (loaded on demand per-article)
+    articles = list(kb_articles.find({}, {"_id": 0, "content_markdown": 0}).sort("order", 1))
     nav = kb_navigation.find_one({}, {"_id": 0})
     # Attach feedback stats per article
     feedback_pipeline = [
@@ -219,6 +220,15 @@ async def admin_list_articles(current_user: dict = Depends(get_current_user)):
         a["feedback_total"] = s["total"]
         a["feedback_helpful"] = s["helpful"]
     return {"articles": articles, "nav_groups": (nav or {}).get("nav_groups", [])}
+
+
+@router.get("/admin/articles/{slug}")
+async def admin_get_article(slug: str, current_user: dict = Depends(get_current_user)):
+    """Fetch a single article with full content for editing."""
+    article = kb_articles.find_one({"slug": slug}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    return article
 
 
 @router.put("/admin/navigation")
