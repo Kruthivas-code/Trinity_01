@@ -6,10 +6,13 @@ import { Node, mergeAttributes } from '@tiptap/react';
 import { NodeViewWrapper, NodeViewContent, ReactNodeViewRenderer } from '@tiptap/react';
 import { useState, useCallback } from 'react';
 import { Columns, Trash2, GripVertical, MoreVertical, Settings2 } from 'lucide-react';
+import { useEditorTheme } from '../EditorThemeContext';
 
 // ============= Columns Block NodeView =============
 const ColumnsBlockView = ({ node, updateAttributes, deleteNode, editor, getPos }) => {
   const [showSettings, setShowSettings] = useState(false);
+  const themeId = useEditorTheme();
+  const isLight = themeId === 'light';
   const cols = node.attrs.cols || 2;
 
   const setCols = useCallback((newCols) => {
