@@ -292,7 +292,7 @@ const KBEditor = () => {
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
-        <ArticleSidebar tree={tree} selectedSlug={paramSlug} onSelect={(slug) => navigate(`/dashboard/kb-editor/${slug}`)} onDelete={handleDelete} deleting={deleting} expanded={expanded} setExpanded={setExpanded} onNewArticle={() => navigate('/dashboard/kb-editor/new')} onManageNav={() => setNavManagerOpen(true)} theme={theme} />
+        <ArticleSidebar tree={tree} selectedSlug={paramSlug} onSelect={(slug) => navigate(`/dashboard/kb-editor/${slug}`)} onDelete={handleDelete} deleting={deleting} expanded={expanded} setExpanded={setExpanded} onNewArticle={() => navigate('/dashboard/kb-editor/new')} theme={theme} />
 
         {/* Main Content — Single Scrollable Page */}
         <div className="flex-1 overflow-y-auto" data-testid="editor-main-area">
