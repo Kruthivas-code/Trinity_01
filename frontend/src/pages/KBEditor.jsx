@@ -443,12 +443,14 @@ const KBEditor = () => {
               {/* === Content Section === */}
               <section className={`border-t ${theme.border} pt-6`} data-testid="content-section">
                 <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-4`}>Content</h2>
-                <RichTextEditor
-                  content={form.content_markdown || ''}
-                  onChange={(md) => setForm(f => ({ ...f, content_markdown: md }))}
-                  theme={theme}
-                  onUploadImage={uploadImage}
-                />
+                <EditorThemeProvider value={editorTheme}>
+                  <RichTextEditor
+                    content={form.content_markdown || ''}
+                    onChange={(md) => setForm(f => ({ ...f, content_markdown: md }))}
+                    theme={theme}
+                    onUploadImage={uploadImage}
+                  />
+                </EditorThemeProvider>
               </section>
 
             </div>
