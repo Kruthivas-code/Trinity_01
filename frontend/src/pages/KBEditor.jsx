@@ -33,8 +33,7 @@ const KBEditor = () => {
   const [isNew, setIsNew] = useState(false);
   const [expanded, setExpanded] = useState({});
   const [navManagerOpen, setNavManagerOpen] = useState(false);
-  const [socialLinksOpen, setSocialLinksOpen] = useState(false);
-  const [globalSettingsOpen, setGlobalSettingsOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [editMode, setEditMode] = useState('visual');
   const [showPreview, setShowPreview] = useState(false);
 
