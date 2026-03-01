@@ -3,7 +3,7 @@
  */
 import { useState } from 'react';
 import {
-  ChevronDown, ChevronRight, Plus, Settings,
+  ChevronDown, ChevronRight, Plus,
   FolderOpen, FileText, Trash2, Loader2, ThumbsUp
 } from 'lucide-react';
 
