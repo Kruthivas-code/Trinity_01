@@ -160,8 +160,8 @@ const ColumnCardView = ({ node, updateAttributes, deleteNode }) => {
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-semibold text-white mb-1 leading-tight">{title || 'Untitled'}</h4>
-            <p className="text-xs text-slate-400 leading-relaxed">{description || 'Add a description...'}</p>
+            <h4 className={`text-sm font-semibold mb-1 leading-tight ${isLight ? 'text-gray-900' : 'text-white'}`}>{title || 'Untitled'}</h4>
+            <p className={`text-xs leading-relaxed ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>{description || 'Add a description...'}</p>
             {cta && (
               <span className="inline-block mt-2 text-xs text-[#00A1B2] font-medium">{cta}</span>
             )}
