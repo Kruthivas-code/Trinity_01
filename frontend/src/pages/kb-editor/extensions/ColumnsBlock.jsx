@@ -109,6 +109,8 @@ const ColumnsBlockView = ({ node, updateAttributes, deleteNode, editor, getPos }
 // ============= Column Card NodeView =============
 const ColumnCardView = ({ node, updateAttributes, deleteNode }) => {
   const [showSettings, setShowSettings] = useState(false);
+  const themeId = useEditorTheme();
+  const isLight = themeId === 'light';
   const { title, description, icon, url, imagePath, cta, horizontal } = node.attrs;
   const [editForm, setEditForm] = useState({ title, description, icon, url, imagePath, cta, horizontal });
 
