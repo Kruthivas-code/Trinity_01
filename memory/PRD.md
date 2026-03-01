@@ -351,6 +351,15 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Modified file**: `backend/routes/kb.py`
 - Tested: Verified via API checks and screenshots on both Docs and KB Editor pages
 
+### KB Editor — Unified Settings Panel (Mar 1, 2026)
+- **Consolidated all settings** into a single full-page panel accessed from the gear icon in the top navbar. Removed the separate Social Links, Global Settings, and Nav Manager buttons/modals.
+- **Settings sidebar** with 4 categories: **Global** (meta title, description, favicon, thumbnail, logo, footer, custom domain), **Navigation** (tab/section structure with reorder, add, delete, bulk move), **Design Configuration** (accent color presets + picker, default theme, font family, border radius, code block theme, custom CSS), **Social Links** (Twitter/X, LinkedIn, Discord, YouTube, Reddit with external link icons).
+- **Backend**: Added `GET/PUT /api/kb/admin/design-config` endpoint with `kb_settings` collection storage.
+- **Removed Settings from ArticleSidebar**: The gear icon in the left sidebar is gone; only "Articles" header with "+" button remains.
+- **New files**: `kb-editor/UnifiedSettings.jsx`
+- **Modified files**: `KBEditor.jsx`, `ArticleSidebar.jsx`, `backend/routes/kb.py`
+- Tested: All 4 tabs verified via screenshots in both dark and light themes
+
 ---
 
 ## Pending / Backlog
