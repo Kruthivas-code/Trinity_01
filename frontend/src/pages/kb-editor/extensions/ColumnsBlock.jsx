@@ -182,66 +182,78 @@ const ColumnCardView = ({ node, updateAttributes, deleteNode }) => {
 
               {/* Content Section */}
               <div className="mb-4">
-                <h5 className="text-xs font-semibold text-slate-300 mb-2">Content</h5>
+                <h5 className={`text-xs font-semibold mb-2 ${isLight ? 'text-gray-700' : 'text-slate-300'}`}>Content</h5>
 
                 <div className="space-y-2.5">
                   <div>
-                    <label className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">Title</label>
+                    <label className={`flex items-center gap-1.5 text-[11px] mb-1 ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>Title</label>
                     <input
                       value={editForm.title || ''}
                       onChange={(e) => setEditForm(f => ({ ...f, title: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white focus:border-[#00A1B2] focus:outline-none"
+                      className={`w-full px-2.5 py-1.5 border rounded-lg text-xs focus:border-[#00A1B2] focus:outline-none ${
+                        isLight ? 'bg-gray-50 border-gray-200 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'
+                      }`}
                       placeholder="Card title"
                       data-testid="card-edit-title"
                     />
                   </div>
                   <div>
-                    <label className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">Description</label>
+                    <label className={`flex items-center gap-1.5 text-[11px] mb-1 ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>Description</label>
                     <textarea
                       value={editForm.description || ''}
                       onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white focus:border-[#00A1B2] focus:outline-none resize-none"
+                      className={`w-full px-2.5 py-1.5 border rounded-lg text-xs focus:border-[#00A1B2] focus:outline-none resize-none ${
+                        isLight ? 'bg-gray-50 border-gray-200 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'
+                      }`}
                       rows={2}
                       placeholder="Card description"
                       data-testid="card-edit-description"
                     />
                   </div>
                   <div>
-                    <label className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">Icon</label>
+                    <label className={`flex items-center gap-1.5 text-[11px] mb-1 ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>Icon</label>
                     <input
                       value={editForm.icon || ''}
                       onChange={(e) => setEditForm(f => ({ ...f, icon: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white focus:border-[#00A1B2] focus:outline-none"
+                      className={`w-full px-2.5 py-1.5 border rounded-lg text-xs focus:border-[#00A1B2] focus:outline-none ${
+                        isLight ? 'bg-gray-50 border-gray-200 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'
+                      }`}
                       placeholder="e.g. rocket, code, zap"
                       data-testid="card-edit-icon"
                     />
                   </div>
                   <div>
-                    <label className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">URL</label>
+                    <label className={`flex items-center gap-1.5 text-[11px] mb-1 ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>URL</label>
                     <input
                       value={editForm.url || ''}
                       onChange={(e) => setEditForm(f => ({ ...f, url: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white focus:border-[#00A1B2] focus:outline-none"
+                      className={`w-full px-2.5 py-1.5 border rounded-lg text-xs focus:border-[#00A1B2] focus:outline-none ${
+                        isLight ? 'bg-gray-50 border-gray-200 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'
+                      }`}
                       placeholder="/features/mcp"
                       data-testid="card-edit-url"
                     />
                   </div>
                   <div>
-                    <label className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">Image Path</label>
+                    <label className={`flex items-center gap-1.5 text-[11px] mb-1 ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>Image Path</label>
                     <input
                       value={editForm.imagePath || ''}
                       onChange={(e) => setEditForm(f => ({ ...f, imagePath: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white focus:border-[#00A1B2] focus:outline-none"
+                      className={`w-full px-2.5 py-1.5 border rounded-lg text-xs focus:border-[#00A1B2] focus:outline-none ${
+                        isLight ? 'bg-gray-50 border-gray-200 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'
+                      }`}
                       placeholder="Enter Image Path"
                       data-testid="card-edit-image"
                     />
                   </div>
                   <div>
-                    <label className="flex items-center gap-1.5 text-[11px] text-slate-400 mb-1">Call To Action</label>
+                    <label className={`flex items-center gap-1.5 text-[11px] mb-1 ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>Call To Action</label>
                     <input
                       value={editForm.cta || ''}
                       onChange={(e) => setEditForm(f => ({ ...f, cta: e.target.value }))}
-                      className="w-full px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-white focus:border-[#00A1B2] focus:outline-none"
+                      className={`w-full px-2.5 py-1.5 border rounded-lg text-xs focus:border-[#00A1B2] focus:outline-none ${
+                        isLight ? 'bg-gray-50 border-gray-200 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'
+                      }`}
                       placeholder="Enter Call To Action"
                       data-testid="card-edit-cta"
                     />
