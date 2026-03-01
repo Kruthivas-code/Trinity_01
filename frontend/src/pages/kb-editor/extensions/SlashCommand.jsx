@@ -81,10 +81,12 @@ const CommandList = forwardRef(({ items, command }, ref) => {
   let flatIndex = 0;
 
   return (
-    <div ref={listRef} className="slash-command-menu bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl py-1.5 w-56 max-h-[320px] overflow-y-auto" data-testid="slash-command-menu">
+    <div ref={listRef} className={`slash-command-menu border rounded-xl shadow-2xl py-1.5 w-56 max-h-[320px] overflow-y-auto ${
+      isLight ? 'bg-white border-gray-200' : 'bg-[#1a1a1a] border-white/10'
+    }`} data-testid="slash-command-menu">
       {Object.entries(groups).map(([groupName, groupItems]) => (
         <div key={groupName}>
-          <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+          <div className={`px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider ${isLight ? 'text-gray-400' : 'text-slate-500'}`}>
             {groupName}
           </div>
           {groupItems.map(item => {
@@ -96,14 +98,16 @@ const CommandList = forwardRef(({ items, command }, ref) => {
                 data-index={idx}
                 onClick={() => command(item)}
                 className={`w-full flex items-center gap-3 px-3 py-2 text-sm transition-colors ${
-                  idx === selectedIndex ? 'bg-[#00A1B2]/20 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                  idx === selectedIndex
+                    ? (isLight ? 'bg-[#00A1B2]/10 text-gray-900' : 'bg-[#00A1B2]/20 text-white')
+                    : (isLight ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' : 'text-slate-300 hover:bg-white/5 hover:text-white')
                 }`}
                 data-testid={`slash-${item.key}`}
               >
-                <Icon className="w-4 h-4 text-slate-400 shrink-0" />
+                <Icon className={`w-4 h-4 shrink-0 ${isLight ? 'text-gray-400' : 'text-slate-400'}`} />
                 <div className="flex-1 text-left">
                   <div className="text-sm">{item.label}</div>
-                  <div className="text-[10px] text-slate-500">{item.description}</div>
+                  <div className={`text-[10px] ${isLight ? 'text-gray-400' : 'text-slate-500'}`}>{item.description}</div>
                 </div>
               </button>
             );
