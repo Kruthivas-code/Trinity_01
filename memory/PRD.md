@@ -337,12 +337,12 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Removed "On This Page" (TOC) section** from the editor sidebar, per user request.
 - **Visual Edit / Markdown toggle**: Replaced the page heading in the editor header with a segmented control toggle. Defaults to "Visual Edit" (WYSIWYG). "Markdown" mode shows a raw textarea for direct markdown editing.
 - **Fixed content editing bug**: Added `lastExternalContent.current = md` in the TipTap `onUpdate` handler to prevent the editor from resetting content on every keystroke (caused by the parent re-render cycle).
-- **Preview button**: Added "Preview" button in the header that opens a full-page overlay (`ArticlePreview.jsx`) rendering content identically to PublicDocs using `DocContent`. Supports Desktop (100%), Tablet (768px), and Mobile (375px) viewport switching with visual device frames. Includes a "Back to Editor" button.
+- **Preview button (iframe-based)**: Added "Preview" button in the header that opens a full-page overlay (`ArticlePreview.jsx`) rendering the actual `/docs/:slug` page inside an iframe. This gives 100% layout fidelity: includes left sidebar navigation, right-side "On This Page" TOC, main navbar (logo, search, Need Help, theme toggle), and secondary breadcrumb bar on tablet/mobile. Supports Desktop (100%), Tablet (768px), and Mobile (375px) viewport switching with visual device frames. Includes a "Back to Editor" button. For unpublished articles, shows a helpful "Preview Unavailable" message.
 - **1 Column layout option**: Added "1 Column" to the slash command menu under Layout, alongside the existing 2/3 column options.
 - **Responsive columns CSS**: Added `@media (max-width: 768px)` rule to stack multi-column layouts into single columns on smaller screens.
 - **New file**: `kb-editor/ArticlePreview.jsx`
 - **Modified files**: `KBEditor.jsx`, `RichTextEditor.jsx`, `SlashCommand.jsx`, `index.css`
-- Tested: All features verified via code review and screenshots
+- Tested: All features verified via screenshots (desktop/tablet/mobile viewports, light/dark themes, editing, slash commands, preview navigation)
 
 ---
 
