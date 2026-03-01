@@ -32,7 +32,6 @@ const KBEditor = () => {
   const [deleting, setDeleting] = useState(null);
   const [isNew, setIsNew] = useState(false);
   const [expanded, setExpanded] = useState({});
-  const [navManagerOpen, setNavManagerOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [editMode, setEditMode] = useState('visual');
   const [showPreview, setShowPreview] = useState(false);
