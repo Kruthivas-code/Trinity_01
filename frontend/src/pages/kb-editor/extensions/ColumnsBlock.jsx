@@ -263,9 +263,9 @@ const ColumnCardView = ({ node, updateAttributes, deleteNode }) => {
 
               {/* Appearance */}
               <div className="mb-4">
-                <h5 className="text-xs font-semibold text-slate-300 mb-2">Appearance</h5>
+                <h5 className={`text-xs font-semibold mb-2 ${isLight ? 'text-gray-700' : 'text-slate-300'}`}>Appearance</h5>
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-xs text-slate-400">Horizontal</span>
+                  <span className={`text-xs ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>Horizontal</span>
                   <button
                     type="button"
                     onClick={() => setEditForm(f => ({ ...f, horizontal: !f.horizontal }))}
