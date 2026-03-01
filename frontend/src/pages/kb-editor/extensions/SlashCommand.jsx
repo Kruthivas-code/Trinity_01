@@ -14,6 +14,8 @@ import {
   Columns, Youtube, MoreHorizontal, LayoutGrid
 } from 'lucide-react';
 
+import { useEditorTheme } from '../EditorThemeContext';
+
 const SLASH_ITEMS = [
   { key: 'paragraph', label: 'Paragraph', description: 'Plain text', icon: Type, group: 'Basic' },
   { key: 'heading1', label: 'Heading 1', description: 'Large heading', icon: Heading1, group: 'Basic' },
