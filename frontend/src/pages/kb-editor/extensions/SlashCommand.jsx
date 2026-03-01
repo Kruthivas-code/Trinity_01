@@ -41,6 +41,8 @@ const SLASH_ITEMS = [
 const CommandList = forwardRef(({ items, command }, ref) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const listRef = useRef(null);
+  const themeId = useEditorTheme();
+  const isLight = themeId === 'light';
 
   useEffect(() => setSelectedIndex(0), [items]);
 
