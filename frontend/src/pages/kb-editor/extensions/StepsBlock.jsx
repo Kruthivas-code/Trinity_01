@@ -137,9 +137,13 @@ export const StepsBlockNode = Node.create({
     return {
       markdown: {
         serialize(state, node) {
+          // Reset prefix to ensure clean output regardless of nesting context
+          const savedDelim = state.delim;
+          state.delim = '';
           state.write('<Steps>\n');
           state.renderContent(node);
           state.write('</Steps>\n\n');
+          state.delim = savedDelim;
         },
       },
     };
@@ -181,9 +185,12 @@ export const StepItemNode = Node.create({
       markdown: {
         serialize(state, node) {
           const title = (node.attrs.title || '').replace(/"/g, '&quot;');
+          const savedDelim = state.delim;
+          state.delim = '';
           state.write(`<Step title="${title}">\n`);
           state.renderContent(node);
           state.write('</Step>\n');
+          state.delim = savedDelim;
         },
       },
     };

@@ -394,6 +394,17 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - Made editor toolbar (Insert, Headings, formatting tools) sticky at top of scroll container with theme-aware background
 - **Modified files**: `KBEditor.jsx`, `kb-editor/RichTextEditor.jsx`
 
+### KB Editor: Visual Steps Component (Mar 2, 2026)
+- **New TipTap extensions**: `StepsBlockNode` (container) and `StepItemNode` (editable step with title + rich content area)
+- Steps render with numbered circles (CSS counters), editable titles via input, and rich content areas supporting "/" commands and toolbar formatting
+- Starts with Step 1, "+" button to add more steps, trash icons to delete individual steps or entire block
+- Clean markdown serialization: `<Steps><Step title="...">content</Step></Steps>` - compatible with Docs page parser
+- Full round-trip tested: Visual Edit → Markdown → Visual Edit preserves all step data
+- Insert via toolbar "Insert" menu or `/steps` slash command
+- Theme-aware (light/dark), responsive
+- **New files**: `kb-editor/extensions/StepsBlock.jsx`
+- **Modified files**: `kb-editor/RichTextEditor.jsx`, `kb-editor/extensions/SlashCommand.jsx`, `index.css`
+
 ---
 
 ## Pending / Backlog
