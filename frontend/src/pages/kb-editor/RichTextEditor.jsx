@@ -63,6 +63,28 @@ const preprocessMd = (md) => {
         imagePath: attrs.imagePath || attrs.image || '',
         cta: attrs.cta || '',
         horizontal: attrs.horizontal === 'true',
+        cardType: 'card',
+      });
+    }
+
+    // Also extract <iframe> elements as iframe-type cards
+    const iframeRegex2 = /<iframe[\s\S]*?(?:\/>|<\/iframe>)/gi;
+    let iframeMatch;
+    while ((iframeMatch = iframeRegex2.exec(match)) !== null) {
+      const iframeTag = iframeMatch[0];
+      const srcM = iframeTag.match(/src=["']([^"']+)["']/i);
+      const titleM = iframeTag.match(/title=["']([^"']+)["']/i);
+      cards.push({
+        title: titleM ? titleM[1] : 'Embedded Content',
+        description: '',
+        icon: 'play',
+        url: '',
+        imagePath: '',
+        cta: '',
+        horizontal: false,
+        cardType: 'iframe',
+        iframeSrc: srcM ? srcM[1] : '',
+        iframeHtml: iframeTag,
       });
     }
 
