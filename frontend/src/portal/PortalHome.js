@@ -259,8 +259,51 @@ const PortalHome = () => {
         </div>
       )}
 
-      {/* Category Grid */}
-      <div ref={categoriesRef} className="max-w-[960px] mx-auto px-6 pb-10 scroll-mt-20" data-testid="categories-section">
+      {/* Documentation Topics from KB */}
+      {helpTopics.length > 0 && (
+        <div className="max-w-[960px] mx-auto px-6 pb-10 scroll-mt-20" data-testid="docs-topics-section" ref={categoriesRef}>
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-foreground mb-1">Browse our documentation</h2>
+            <p className="text-sm text-muted-foreground">Find answers in our knowledge base — updated automatically.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {helpTopics.map(topic => {
+              const TopicIcon = KB_ICON_MAP[topic.icon] || FileText;
+              return (
+                <Link
+                  key={topic.key}
+                  to={`/portal/topic/${topic.key}`}
+                  className="group p-5 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-white/10 hover:border-[#00A1B2] dark:hover:border-[#00A1B2] hover:shadow-sm transition-all flex flex-col"
+                  data-testid={`docs-topic-card-${topic.key}`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="h-9 w-9 rounded-md bg-[#00A1B2]/10 flex items-center justify-center text-[#00A1B2] group-hover:bg-[#00A1B2]/20 transition-colors flex-shrink-0">
+                      <TopicIcon size={18} strokeWidth={1.5} />
+                    </div>
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/50">
+                      {topic.article_count} articles
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-medium text-foreground mb-1 group-hover:translate-x-0.5 transition-transform">
+                    {topic.label}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 flex-1">
+                    {topic.description}
+                  </p>
+                  <div className="mt-3 flex items-center gap-1 text-[10px] font-medium text-[#00A1B2]/60 group-hover:text-[#00A1B2] transition-colors">
+                    <span className="font-mono">browse articles</span>
+                    <ChevronRight size={10} />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Category Grid — Support ticket categories */}
+      <div className="max-w-[960px] mx-auto px-6 pb-10 scroll-mt-20" data-testid="categories-section">
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-foreground mb-1">Browse by topic</h2>
           <p className="text-sm text-muted-foreground">Find answers in our knowledge base or submit a ticket.</p>
