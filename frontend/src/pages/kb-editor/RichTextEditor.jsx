@@ -312,6 +312,7 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
       SlashCommand,
       ColumnsBlockNode,
       ColumnCardNode,
+      IframeEmbed,
     ],
     content: content ? mdToHtml(content) : '',
     editorProps: {
