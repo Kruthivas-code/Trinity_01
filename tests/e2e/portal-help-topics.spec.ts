@@ -275,7 +275,8 @@ test.describe('Portal Contact Cards', () => {
     await page.getByTestId('sales-card').click();
     
     await expect(page.getByTestId('modal-overlay')).toBeVisible();
-    await expect(page.getByText('Talk to sales')).toBeVisible();
+    // Modal content should be visible with the sales inquiry form
+    await expect(page.getByTestId('modal-content').getByRole('heading', { name: 'Talk to sales' })).toBeVisible();
   });
 
   test('Emergency card navigates to submit page', async ({ page }) => {
