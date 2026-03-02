@@ -103,6 +103,31 @@ const PortalCategory = () => {
 
       <p className="text-xs text-muted-foreground/60 mb-8 ml-15">Select the issue that best describes your problem</p>
 
+      {/* Related KB Articles */}
+      {relatedArticles.length > 0 && (
+        <div className="mb-8 p-5 rounded-xl border border-[#00A1B2]/20 bg-[#00A1B2]/5" data-testid="related-articles-section">
+          <div className="flex items-center gap-2 mb-3">
+            <BookOpen size={14} className="text-[#00A1B2]" />
+            <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide">Related documentation</h3>
+          </div>
+          <div className="space-y-1.5">
+            {relatedArticles.map(article => (
+              <a
+                key={article.slug}
+                href={`/docs/${article.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/50 dark:hover:bg-white/5 transition-colors"
+                data-testid={`related-article-${article.slug}`}
+              >
+                <span className="text-sm text-foreground group-hover:text-[#00A1B2] transition-colors truncate">{article.title}</span>
+                <ExternalLink size={12} className="text-muted-foreground/30 group-hover:text-[#00A1B2] transition-colors flex-shrink-0 ml-2" />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Subtopics as triage options */}
       <div className="space-y-3">
         {(category.subtopics || []).map((sub, i) => (
