@@ -204,6 +204,111 @@ async def get_category(slug: str):
     return cat
 
 
+# ==================== Help Topics (KB-derived) ====================
+
+KB_GROUP_ICONS = {
+    "beginners-guide": "BookOpen",
+    "features": "Boxes",
+    "building-your-app": "Code",
+    "deploy-and-manage": "Rocket",
+    "troubleshooting": "Wrench",
+}
+
+KB_GROUP_DESCRIPTIONS = {
+    "beginners-guide": "Get started with Emergent — setup, first app, plans, and FAQs",
+    "features": "Explore core and advanced platform features",
+    "building-your-app": "Guides on prompting, integrations, and custom agents",
+    "deploy-and-manage": "Deployment, domains, and app management",
+    "troubleshooting": "Fix common issues with design, functionality, and deployment",
+}
+
+
+@router.get("/help-topics")
+async def list_help_topics():
+    """Public endpoint: returns KB navigation groups as browsable help topics with articles."""
+    kb_navigation = db["kb_navigation"]
+    kb_articles = db["kb_articles"]
+
+    nav_doc = kb_navigation.find_one({}, {"_id": 0})
+    nav_groups = (nav_doc or {}).get("nav_groups", [])
+
+    all_articles = list(kb_articles.find(
+        {"published": True},
+        {"_id": 0, "slug": 1, "title": 1, "description": 1, "nav_group_key": 1,
+         "section_key": 1, "section_label": 1, "order": 1, "icon": 1}
+    ).sort("order", 1))
+
+    topics = []
+    for group in nav_groups:
+        group_articles = [a for a in all_articles if a.get("nav_group_key") == group["key"]]
+        sections = []
+        for section in group.get("sections", []):
+            sec_articles = [
+                {"slug": a["slug"], "title": a["title"], "description": a.get("description", "")}
+                for a in group_articles if a.get("section_key") == section["key"]
+            ]
+            if sec_articles:
+                sections.append({
+                    "key": section["key"],
+                    "label": section.get("label", section["key"]),
+                    "articles": sec_articles,
+                })
+
+        first_slug = group_articles[0]["slug"] if group_articles else None
+        topics.append({
+            "key": group["key"],
+            "label": group.get("label", group["key"]),
+            "icon": KB_GROUP_ICONS.get(group["key"], "FileText"),
+            "description": KB_GROUP_DESCRIPTIONS.get(group["key"], ""),
+            "article_count": len(group_articles),
+            "first_slug": first_slug,
+            "sections": sections,
+        })
+
+    return {"topics": topics}
+
+
+@router.get("/help-topics/{topic_key}")
+async def get_help_topic(topic_key: str):
+    """Public endpoint: get a single KB-derived help topic with full article details."""
+    kb_navigation = db["kb_navigation"]
+    kb_articles = db["kb_articles"]
+
+    nav_doc = kb_navigation.find_one({}, {"_id": 0})
+    nav_groups = (nav_doc or {}).get("nav_groups", [])
+    group = next((g for g in nav_groups if g["key"] == topic_key), None)
+    if not group:
+        raise HTTPException(status_code=404, detail="Topic not found")
+
+    group_articles = list(kb_articles.find(
+        {"published": True, "nav_group_key": topic_key},
+        {"_id": 0, "slug": 1, "title": 1, "description": 1, "section_key": 1,
+         "section_label": 1, "order": 1, "icon": 1}
+    ).sort("order", 1))
+
+    sections = []
+    for section in group.get("sections", []):
+        sec_articles = [
+            {"slug": a["slug"], "title": a["title"], "description": a.get("description", "")}
+            for a in group_articles if a.get("section_key") == section["key"]
+        ]
+        if sec_articles:
+            sections.append({
+                "key": section["key"],
+                "label": section.get("label", section["key"]),
+                "articles": sec_articles,
+            })
+
+    return {
+        "key": group["key"],
+        "label": group.get("label", group["key"]),
+        "icon": KB_GROUP_ICONS.get(group["key"], "FileText"),
+        "description": KB_GROUP_DESCRIPTIONS.get(group["key"], ""),
+        "article_count": len(group_articles),
+        "sections": sections,
+    }
+
+
 # ==================== Categories (Admin) ====================
 
 @router.post("/admin/categories")
