@@ -57,6 +57,7 @@ function AppRouter() {
         <Route path="/portal" element={<PortalHome />} />
         <Route path="/portal/categories" element={<PortalHome />} />
         <Route path="/portal/category/:slug" element={<PortalCategory />} />
+        <Route path="/portal/topic/:topicKey" element={<PortalHelpTopic />} />
         <Route path="/portal/submit" element={<PortalSubmit />} />
         <Route path="/portal/login" element={<PortalLogin />} />
         <Route path="/portal/my-tickets" element={<PortalTickets />} />
