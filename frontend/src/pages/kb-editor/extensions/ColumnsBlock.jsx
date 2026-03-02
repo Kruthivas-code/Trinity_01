@@ -553,10 +553,15 @@ export const ColumnCardNode = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(ColumnCardView);
-  },
-
-  addStorage() {
-    return { markdown: { serialize() { /* handled by parent columnsBlock */ } } };
+    return ReactNodeViewRenderer(ColumnCardView, {
+      stopEvent: ({ event }) => {
+        // Prevent ProseMirror from handling mouse events on this atom node
+        // to avoid "Selection passed to setSelection must point at the current document"
+        if (event.type === 'mousedown' || event.type === 'mouseup' || event.type === 'click') {
+          return true;
+        }
+        return false;
+      },
+    });
   },
 });

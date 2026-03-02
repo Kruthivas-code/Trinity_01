@@ -165,7 +165,16 @@ export const IframeEmbed = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(IframeEmbedView);
+    return ReactNodeViewRenderer(IframeEmbedView, {
+      stopEvent: ({ event }) => {
+        // Prevent ProseMirror from handling mouse events on this atom node
+        // to avoid "Selection passed to setSelection must point at the current document"
+        if (event.type === 'mousedown' || event.type === 'mouseup' || event.type === 'click') {
+          return true;
+        }
+        return false;
+      },
+    });
   },
 
   addStorage() {
