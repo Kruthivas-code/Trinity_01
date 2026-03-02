@@ -171,7 +171,7 @@ const preprocessMd = (md) => {
     return `\n\nCOMPONENT_BLOCK_${idx}\n\n`;
   });
 
-  return { processed, placeholders, columnsBlocks };
+  return { processed, placeholders, columnsBlocks, standaloneIframes };
 };
 
 const mdToHtml = (md) => {
