@@ -295,7 +295,7 @@ const KBEditor = () => {
         {/* Main Content — Single Scrollable Page */}
         <div className="flex-1 overflow-y-auto" data-testid="editor-main-area">
           {form ? (
-            <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+            <div className="max-w-[800px] mx-auto px-6 py-8 space-y-8">
 
               {/* === Document Section (Meta) === */}
               <section data-testid="document-section">

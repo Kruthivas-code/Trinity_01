@@ -389,6 +389,11 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Docs/Editor consistency verified**: Content round-trips correctly between markdown, editor, and public docs page
 - Tested: 8/8 pass (kb-editor-visual-edit-clicks.spec.ts)
 
+### KB Editor UX: Width Alignment & Sticky Toolbar (Mar 2, 2026)
+- Changed editor content area from `max-w-3xl` (768px) to `max-w-[800px]` to match Docs page width
+- Made editor toolbar (Insert, Headings, formatting tools) sticky at top of scroll container with theme-aware background
+- **Modified files**: `KBEditor.jsx`, `kb-editor/RichTextEditor.jsx`
+
 ---
 
 ## Pending / Backlog

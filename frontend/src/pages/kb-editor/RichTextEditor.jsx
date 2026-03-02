@@ -450,7 +450,7 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
   return (
     <div data-testid="rich-text-editor">
       {/* Toolbar */}
-      <div className={`flex items-center gap-1 flex-wrap py-2 mb-3 border-b ${theme.border}`} data-testid="editor-toolbar">
+      <div className={`flex items-center gap-1 flex-wrap py-2 mb-3 border-b ${theme.border} sticky top-0 z-20 ${theme.id === 'dark' ? 'bg-[#0a0a0a]' : 'bg-white'}`} data-testid="editor-toolbar">
         {/* Insert Button */}
         <div className="relative" ref={insertRef}>
           <button
