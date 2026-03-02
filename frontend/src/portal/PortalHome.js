@@ -305,8 +305,8 @@ const PortalHome = () => {
       {/* Category Grid — Support ticket categories */}
       <div className="max-w-[960px] mx-auto px-6 pb-10 scroll-mt-20" data-testid="categories-section">
         <div className="mb-6">
-          <h2 className="text-lg font-semibold text-foreground mb-1">Browse by topic</h2>
-          <p className="text-sm text-muted-foreground">Find answers in our knowledge base or submit a ticket.</p>
+          <h2 className="text-lg font-semibold text-foreground mb-1">Submit a ticket by topic</h2>
+          <p className="text-sm text-muted-foreground">Can't find your answer above? Choose a category to submit a support ticket.</p>
         </div>
 
         {/* Search */}
