@@ -177,7 +177,7 @@ const preprocessMd = (md) => {
 const mdToHtml = (md) => {
   if (!md) return '';
   try {
-    const { processed, placeholders, columnsBlocks } = preprocessMd(md);
+    const { processed, placeholders, columnsBlocks, standaloneIframes } = preprocessMd(md);
     let html = marked.parse(processed, { breaks: false, gfm: true });
 
     // Restore visual columns blocks as TipTap-compatible HTML
@@ -191,6 +191,18 @@ const mdToHtml = (md) => {
       const columnsHtml = `<div data-type="columns-block" data-cols="${block.cols}">${cardsHtml}</div>`;
       html = html.replace(`<p>COLUMNS_VISUAL_${idx}</p>`, columnsHtml);
       html = html.replace(`COLUMNS_VISUAL_${idx}`, columnsHtml);
+    });
+
+    // Restore standalone iframes as visual iframe embed nodes
+    standaloneIframes.forEach((raw, idx) => {
+      const srcMatch = raw.match(/src=["']([^"']+)["']/i);
+      const titleMatch = raw.match(/title=["']([^"']+)["']/i);
+      const src = srcMatch ? srcMatch[1] : '';
+      const title = titleMatch ? titleMatch[1] : '';
+      const safeRaw = raw.replace(/"/g, '&quot;');
+      const embedHtml = `<div data-type="iframe-embed" data-src="${src}" data-title="${title}" data-raw-html="${safeRaw}"></div>`;
+      html = html.replace(`<p>IFRAME_EMBED_${idx}</p>`, embedHtml);
+      html = html.replace(`IFRAME_EMBED_${idx}`, embedHtml);
     });
 
     // Restore code-block components
