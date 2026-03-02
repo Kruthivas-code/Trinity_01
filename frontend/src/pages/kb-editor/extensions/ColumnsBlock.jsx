@@ -564,4 +564,8 @@ export const ColumnCardNode = Node.create({
       },
     });
   },
+
+  addStorage() {
+    return { markdown: { serialize() { /* handled by parent columnsBlock */ } } };
+  },
 });
