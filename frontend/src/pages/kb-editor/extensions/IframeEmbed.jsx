@@ -167,4 +167,20 @@ export const IframeEmbed = Node.create({
   addNodeView() {
     return ReactNodeViewRenderer(IframeEmbedView);
   },
+
+  addStorage() {
+    return {
+      markdown: {
+        serialize(state, node) {
+          const { src, title, rawHtml } = node.attrs;
+          if (rawHtml) {
+            state.write(rawHtml + '\n\n');
+          } else if (src) {
+            state.write(`<iframe src="${src}" title="${title || 'Embedded content'}" frameborder="0" className="w-full aspect-video rounded-xl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>\n\n`);
+          }
+          state.closeBlock(node);
+        },
+      },
+    };
+  },
 });
