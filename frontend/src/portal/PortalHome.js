@@ -98,6 +98,7 @@ const InquiryForm = ({ type, onClose }) => {
 const PortalHome = () => {
   const [categories, setCategories] = useState([]);
   const [plans, setPlans] = useState([]);
+  const [helpTopics, setHelpTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [partnerModal, setPartnerModal] = useState(false);
   const [salesModal, setSalesModal] = useState(false);
@@ -109,9 +110,11 @@ const PortalHome = () => {
     Promise.all([
       fetch(`${BACKEND_URL}/api/portal/categories`).then(r => r.json()),
       fetch(`${BACKEND_URL}/api/portal/engineer-plans`).then(r => r.json()),
-    ]).then(([catData, planData]) => {
+      fetch(`${BACKEND_URL}/api/portal/help-topics`).then(r => r.json()),
+    ]).then(([catData, planData, topicData]) => {
       setCategories(catData.categories || []);
       setPlans(planData.plans || []);
+      setHelpTopics(topicData.topics || []);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
