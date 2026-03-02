@@ -367,16 +367,29 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Modified files**: `RichTextEditor.jsx` (preprocessMd + mdToHtml), `extensions/ColumnsBlock.jsx` (attributes, view, serializer)
 - Tested: Verified videos render in 2-column grid in KB Editor, and Docs page still works correctly
 
+### KB Editor — Standalone Iframe Extension (Mar 2, 2026)
+- Created `IframeEmbed.jsx` TipTap extension to render standalone `<iframe>` tags as video previews in the Visual Editor
+- Updated markdown preprocessor pipeline to detect and handle standalone iframes
+- Modified files: `RichTextEditor.jsx`, `extensions/IframeEmbed.jsx`
+
+### Portal Category Alignment with KB (Mar 2, 2026)
+- **New backend endpoints**: `GET /api/portal/help-topics` and `GET /api/portal/help-topics/{topic_key}` dynamically derive browsable help topics from KB navigation structure
+- **Portal home**: Added "Browse our documentation" section showing KB-derived topic cards (5 topics) with article counts, icons, and descriptions — automatically stays in sync with KB
+- **New page**: `PortalHelpTopic.js` for browsing KB articles organized by sections within each topic, with links to docs pages
+- **Category enrichment**: Each portal category page now shows "Related Documentation" section with relevant KB articles from mapped nav groups, encouraging self-service before ticket submission
+- **New files**: `frontend/src/portal/PortalHelpTopic.js`
+- **Modified files**: `backend/routes/portal.py`, `frontend/src/portal/PortalHome.js`, `frontend/src/portal/PortalCategory.js`, `frontend/src/App.js`
+- Tested: 100% pass (12 backend + 24 frontend tests, iteration_59)
+
 ---
 
 ## Pending / Backlog
 
 ### P1
-- Portal category alignment with user's desired structure
+- None
 
 ### P2
 - Real-time notifications for agents
-- Refactor portal categories to backend-managed
 - On-demand full thread fetch from Gmail
 - Recurring job for auto-closing stale tickets
 - Email analytics dashboard (send/receive volumes, match rates)
