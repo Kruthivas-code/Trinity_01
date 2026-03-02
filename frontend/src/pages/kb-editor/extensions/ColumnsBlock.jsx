@@ -111,8 +111,8 @@ const ColumnCardView = ({ node, updateAttributes, deleteNode }) => {
   const [showSettings, setShowSettings] = useState(false);
   const themeId = useEditorTheme();
   const isLight = themeId === 'light';
-  const { title, description, icon, url, imagePath, cta, horizontal } = node.attrs;
-  const [editForm, setEditForm] = useState({ title, description, icon, url, imagePath, cta, horizontal });
+  const { title, description, icon, url, imagePath, cta, horizontal, cardType, iframeSrc } = node.attrs;
+  const [editForm, setEditForm] = useState({ title, description, icon, url, imagePath, cta, horizontal, iframeSrc });
 
   const saveEdits = useCallback(() => {
     updateAttributes(editForm);
@@ -120,9 +120,98 @@ const ColumnCardView = ({ node, updateAttributes, deleteNode }) => {
   }, [editForm, updateAttributes]);
 
   const openSettings = useCallback(() => {
-    setEditForm({ title: node.attrs.title, description: node.attrs.description, icon: node.attrs.icon, url: node.attrs.url, imagePath: node.attrs.imagePath, cta: node.attrs.cta, horizontal: node.attrs.horizontal });
+    setEditForm({ title: node.attrs.title, description: node.attrs.description, icon: node.attrs.icon, url: node.attrs.url, imagePath: node.attrs.imagePath, cta: node.attrs.cta, horizontal: node.attrs.horizontal, iframeSrc: node.attrs.iframeSrc });
     setShowSettings(true);
   }, [node.attrs]);
+
+  // Iframe card rendering
+  if (cardType === 'iframe') {
+    return (
+      <NodeViewWrapper className="column-card-wrapper" data-testid="column-card-iframe">
+        <div className="relative group/card">
+          <div
+            className={`rounded-xl border overflow-hidden transition-all ${
+              isLight ? 'border-gray-200 bg-gray-50 hover:border-gray-300' : 'border-white/10 bg-[#1a1a1a] hover:border-white/20'
+            }`}
+          >
+            {iframeSrc ? (
+              <iframe
+                src={iframeSrc}
+                title={title || 'Embedded content'}
+                className="w-full aspect-video rounded-xl"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                data-testid="card-iframe-embed"
+              />
+            ) : (
+              <div className={`flex items-center justify-center aspect-video ${isLight ? 'text-gray-400' : 'text-slate-500'}`}>
+                <span className="text-sm">No iframe source</span>
+              </div>
+            )}
+          </div>
+          {/* Edit button */}
+          <button
+            className={`absolute top-2 right-2 p-1.5 rounded-lg opacity-0 group-hover/card:opacity-100 transition-all z-10 ${
+              isLight ? 'text-gray-600 bg-white/90 hover:bg-white shadow-sm' : 'text-white bg-black/60 hover:bg-black/80'
+            }`}
+            onClick={(e) => { e.stopPropagation(); openSettings(); }}
+            data-testid="iframe-edit-btn"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+          {/* Edit iframe popup */}
+          {showSettings && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowSettings(false)} />
+              <div className={`absolute z-50 top-0 right-0 translate-x-[calc(100%+8px)] border rounded-xl shadow-2xl p-4 w-64 ${
+                isLight ? 'bg-white border-gray-200' : 'bg-[#1e1e1e] border-white/10'
+              }`} data-testid="iframe-settings-popup">
+                <div className="flex items-center gap-2 mb-4">
+                  <Settings2 className={`w-4 h-4 ${isLight ? 'text-gray-400' : 'text-slate-400'}`} />
+                  <span className={`text-sm font-medium ${isLight ? 'text-gray-900' : 'text-white'}`}>Edit Embed</span>
+                </div>
+                <div className="space-y-2.5 mb-4">
+                  <div>
+                    <label className={`flex items-center gap-1.5 text-[11px] mb-1 ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>Embed URL</label>
+                    <input
+                      value={editForm.iframeSrc || ''}
+                      onChange={(e) => setEditForm(f => ({ ...f, iframeSrc: e.target.value }))}
+                      className={`w-full px-2.5 py-1.5 border rounded-lg text-xs focus:border-[#00A1B2] focus:outline-none ${
+                        isLight ? 'bg-gray-50 border-gray-200 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'
+                      }`}
+                      placeholder="https://www.youtube.com/embed/..."
+                      data-testid="iframe-edit-src"
+                    />
+                  </div>
+                  <div>
+                    <label className={`flex items-center gap-1.5 text-[11px] mb-1 ${isLight ? 'text-gray-500' : 'text-slate-400'}`}>Title</label>
+                    <input
+                      value={editForm.title || ''}
+                      onChange={(e) => setEditForm(f => ({ ...f, title: e.target.value }))}
+                      className={`w-full px-2.5 py-1.5 border rounded-lg text-xs focus:border-[#00A1B2] focus:outline-none ${
+                        isLight ? 'bg-gray-50 border-gray-200 text-gray-900' : 'bg-slate-800 border-slate-700 text-white'
+                      }`}
+                      placeholder="Video title"
+                      data-testid="iframe-edit-title"
+                    />
+                  </div>
+                </div>
+                <div className={`flex items-center justify-between pt-2 border-t ${isLight ? 'border-gray-200' : 'border-white/10'}`}>
+                  <button onClick={() => { setShowSettings(false); deleteNode(); }} className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded transition-colors" data-testid="iframe-delete-btn">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                  <button onClick={saveEdits} className="px-3 py-1.5 bg-[#00A1B2] text-white text-xs rounded-lg hover:opacity-90 transition-opacity" data-testid="iframe-save-btn">
+                    Save
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </NodeViewWrapper>
+    );
+  }
 
   // Get lucide icon component dynamically
   const IconComponent = getCardIcon(icon);
