@@ -381,6 +381,14 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Modified files**: `backend/routes/portal.py`, `frontend/src/portal/PortalHome.js`, `frontend/src/portal/PortalCategory.js`, `frontend/src/App.js`
 - Tested: 100% pass (12 backend + 24 frontend tests, iteration_59)
 
+### Bug Fix: KB Editor Card/Iframe Click Error (Mar 2, 2026)
+- **Root cause**: ProseMirror's `selectClickedLeaf` tried to create a `NodeSelection` on `atom: true` nodes (cards, iframes) but the position was stale due to React re-render cycle
+- **Fix**: Added `stopEvent` to `ReactNodeViewRenderer` for `ColumnCardNode` and `IframeEmbed` to prevent ProseMirror from handling mouse events on these atom nodes
+- **Data integrity fix**: `columnsToMarkdown()` now properly serializes iframe-type cards back to `<iframe>` HTML (previously only Card type was handled, iframes in columns would lose their data on save)
+- **Modified files**: `IframeEmbed.jsx`, `ColumnsBlock.jsx`, `RichTextEditor.jsx`
+- **Docs/Editor consistency verified**: Content round-trips correctly between markdown, editor, and public docs page
+- Tested: 8/8 pass (kb-editor-visual-edit-clicks.spec.ts)
+
 ---
 
 ## Pending / Backlog
