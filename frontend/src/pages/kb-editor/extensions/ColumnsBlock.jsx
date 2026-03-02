@@ -537,6 +537,9 @@ export const ColumnCardNode = Node.create({
       'data-image-path': HTMLAttributes.imagePath,
       'data-cta': HTMLAttributes.cta,
       'data-horizontal': HTMLAttributes.horizontal,
+      'data-card-type': HTMLAttributes.cardType,
+      'data-iframe-src': HTMLAttributes.iframeSrc,
+      'data-iframe-html': HTMLAttributes.iframeHtml,
     })];
   },
 
