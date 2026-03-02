@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, CreditCard, Receipt, Globe, Boxes, UserCog, ShieldCheck, Rocket, Bot, Database, Smartphone } from 'lucide-react';
+import { ArrowLeft, ChevronRight, CreditCard, Receipt, Globe, Boxes, UserCog, ShieldCheck, Rocket, Bot, Database, Smartphone, ExternalLink, BookOpen } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -9,17 +9,47 @@ const ICON_MAP = {
   Rocket, Bot, Database, Smartphone,
 };
 
+// Map portal categories to KB search terms for related articles
+const CATEGORY_KB_TERMS = {
+  'credits-pricing': 'credits pricing plans',
+  'subscription-management': 'plans subscription',
+  'custom-domain': 'custom domain',
+  'features': 'features',
+  'account-management': 'account',
+  'security-compliance': 'security',
+  'deployments': 'deployment deploy',
+  'agent-ai': 'agent',
+  'database': 'database',
+  'mobile-builds': 'mobile app',
+};
+
 const PortalCategory = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const [category, setCategory] = useState(null);
+  const [relatedArticles, setRelatedArticles] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/portal/categories/${slug}`)
-      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
-      .then(d => { setCategory(d); setLoading(false); })
-      .catch(() => setLoading(false));
+    const fetchData = async () => {
+      try {
+        const catRes = await fetch(`${BACKEND_URL}/api/portal/categories/${slug}`);
+        if (!catRes.ok) throw new Error();
+        const catData = await catRes.json();
+        setCategory(catData);
+
+        // Fetch related KB articles
+        const searchTerms = CATEGORY_KB_TERMS[slug] || catData.title || slug;
+        const firstTerm = searchTerms.split(' ')[0];
+        const searchRes = await fetch(`${BACKEND_URL}/api/kb/search?q=${encodeURIComponent(firstTerm)}`);
+        if (searchRes.ok) {
+          const searchData = await searchRes.json();
+          setRelatedArticles((searchData.results || []).slice(0, 5));
+        }
+      } catch { /* silent */ }
+      setLoading(false);
+    };
+    fetchData();
   }, [slug]);
 
   if (loading) {
