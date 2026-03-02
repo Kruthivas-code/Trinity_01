@@ -93,10 +93,14 @@ export const DOC_ICONS = {
 
 export const getIcon = (iconName) => {
   if (!iconName) return LucideIcons.FileText;
+  // Try DOC_ICONS map first (fast path)
   if (DOC_ICONS[iconName]) return DOC_ICONS[iconName];
   const lowerName = iconName.toLowerCase();
   if (DOC_ICONS[lowerName]) return DOC_ICONS[lowerName];
   const kebabName = iconName.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
   if (DOC_ICONS[kebabName]) return DOC_ICONS[kebabName];
+  // Fallback: resolve any Lucide icon by converting kebab-case to PascalCase
+  const pascal = iconName.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('');
+  if (LucideIcons[pascal]) return LucideIcons[pascal];
   return LucideIcons.FileText;
 };

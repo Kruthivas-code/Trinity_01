@@ -405,6 +405,14 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **New files**: `kb-editor/extensions/StepsBlock.jsx`
 - **Modified files**: `kb-editor/RichTextEditor.jsx`, `kb-editor/extensions/SlashCommand.jsx`, `index.css`
 
+### KB Editor: Icon Picker Dropdown (Mar 2, 2026)
+- **New reusable `IconPicker.jsx` component** with search, grid of 1666+ Lucide icons, popular icons shown first, infinite scroll, theme-aware
+- Replaced text input for card icons in ColumnsBlock with visual icon picker dropdown
+- Updated `getCardIcon()` to dynamically resolve any Lucide icon (PascalCase lookup from kebab-case)
+- Updated Docs page `getIcon()` with fallback to dynamic Lucide resolution for icons not in the static map
+- **New files**: `kb-editor/components/IconPicker.jsx`
+- **Modified files**: `kb-editor/extensions/ColumnsBlock.jsx`, `components/docs/IconPicker.jsx`
+
 ---
 
 ## Pending / Backlog
