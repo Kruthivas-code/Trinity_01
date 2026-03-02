@@ -9,18 +9,18 @@ const ICON_MAP = {
   Rocket, Bot, Database, Smartphone,
 };
 
-// Map portal categories to KB search terms for related articles
-const CATEGORY_KB_TERMS = {
-  'credits-pricing': 'credits pricing plans',
-  'subscription-management': 'plans subscription',
-  'custom-domain': 'custom domain',
+// Map portal categories to KB nav group keys for relevant articles
+const CATEGORY_KB_GROUPS = {
+  'credits-pricing': 'beginners-guide',
+  'subscription-management': 'beginners-guide',
+  'custom-domain': 'deploy-and-manage',
   'features': 'features',
-  'account-management': 'account',
-  'security-compliance': 'security',
-  'deployments': 'deployment deploy',
-  'agent-ai': 'agent',
-  'database': 'database',
-  'mobile-builds': 'mobile app',
+  'account-management': 'beginners-guide',
+  'security-compliance': null,
+  'deployments': 'deploy-and-manage',
+  'agent-ai': 'building-your-app',
+  'database': 'building-your-app',
+  'mobile-builds': 'features',
 };
 
 const PortalCategory = () => {
@@ -38,13 +38,14 @@ const PortalCategory = () => {
         const catData = await catRes.json();
         setCategory(catData);
 
-        // Fetch related KB articles
-        const searchTerms = CATEGORY_KB_TERMS[slug] || catData.title || slug;
-        const firstTerm = searchTerms.split(' ')[0];
-        const searchRes = await fetch(`${BACKEND_URL}/api/kb/search?q=${encodeURIComponent(firstTerm)}`);
-        if (searchRes.ok) {
-          const searchData = await searchRes.json();
-          setRelatedArticles((searchData.results || []).slice(0, 5));
+        // Fetch related KB articles from the mapped nav group
+        const navGroup = CATEGORY_KB_GROUPS[slug];
+        if (navGroup) {
+          const articlesRes = await fetch(`${BACKEND_URL}/api/kb/articles?nav_group=${navGroup}`);
+          if (articlesRes.ok) {
+            const articlesData = await articlesRes.json();
+            setRelatedArticles((articlesData.articles || []).slice(0, 5));
+          }
         }
       } catch { /* silent */ }
       setLoading(false);
