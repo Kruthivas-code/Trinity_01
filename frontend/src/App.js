@@ -28,6 +28,7 @@ import { PortalAuthProvider } from './portal/PortalAuthContext';
 import PortalLayout from './portal/PortalLayout';
 import PortalHome from './portal/PortalHome';
 import PortalCategory from './portal/PortalCategory';
+import PortalHelpTopic from './portal/PortalHelpTopic';
 import PortalSubmit from './portal/PortalSubmit';
 import PortalLogin from './portal/PortalLogin';
 import PortalTickets from './portal/PortalTickets';
