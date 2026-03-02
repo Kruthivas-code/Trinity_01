@@ -62,14 +62,52 @@ const ColumnLayoutView = ({ node, editor, getPos, deleteNode, updateAttributes }
 };
 
 // ============= Column Pane View =============
-const ColumnPaneView = ({ deleteNode }) => {
+const ColumnPaneView = ({ deleteNode, editor, getPos }) => {
   const themeId = useEditorTheme();
   const isLight = themeId === 'light';
+
+  const handleDelete = useCallback(() => {
+    // Find parent columnLayout and update its cols attribute
+    const pos = getPos();
+    if (typeof pos === 'number') {
+      const resolved = editor.state.doc.resolve(pos);
+      for (let d = resolved.depth; d > 0; d--) {
+        const parentNode = resolved.node(d);
+        if (parentNode.type.name === 'columnLayout') {
+          const newCount = parentNode.content.childCount - 1;
+          if (newCount < 1) {
+            // Delete entire layout if last pane
+            const parentPos = resolved.before(d);
+            editor.chain().deleteRange({ from: parentPos, to: parentPos + parentNode.nodeSize }).run();
+            return;
+          }
+          // Delete pane, then update parent cols
+          deleteNode();
+          // Schedule attribute update after deletion
+          setTimeout(() => {
+            try {
+              editor.state.doc.descendants((node, nodePos) => {
+                if (node === parentNode || (node.type.name === 'columnLayout' && node.content.childCount === newCount)) {
+                  editor.chain().command(({ tr }) => {
+                    tr.setNodeMarkup(nodePos, undefined, { ...node.attrs, cols: newCount });
+                    return true;
+                  }).run();
+                  return false;
+                }
+              });
+            } catch { /* parent may have been removed */ }
+          }, 0);
+          return;
+        }
+      }
+    }
+    deleteNode();
+  }, [deleteNode, editor, getPos]);
 
   return (
     <NodeViewWrapper className="column-pane-wrapper relative group/pane" data-testid="column-pane">
       <button
-        onClick={() => deleteNode()}
+        onClick={handleDelete}
         className={`absolute -top-2 -right-2 p-1 rounded-full opacity-0 group-hover/pane:opacity-100 transition-all z-10 ${
           isLight
             ? 'bg-white text-gray-400 hover:text-red-500 shadow-sm border border-gray-200'

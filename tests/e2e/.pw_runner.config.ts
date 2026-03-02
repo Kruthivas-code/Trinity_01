@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260302_120927/results.json' }],
   ],
   use: {
-    baseURL: 'https://kb-wysiwyg-upgrade.preview.emergentagent.com',
+    baseURL: 'https://columns-rebuild.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,

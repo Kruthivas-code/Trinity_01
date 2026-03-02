@@ -530,23 +530,21 @@
 /* ============= KB Editor: Visual Steps ============= */
 
 /* ============= KB Editor: Column Layout ============= */
-.column-layout-grid {
+/* TipTap wraps NodeViewContent in [data-node-view-content-react], so we
+   apply the grid to both the class element AND its immediate React wrapper. */
+.column-layout-grid,
+.column-layout-grid > [data-node-view-content-react] {
   display: grid;
   gap: 1rem;
 }
 .column-layout-grid.cols-1,
-.column-layout-grid.cols-1 > * { grid-template-columns: 1fr; }
+.column-layout-grid.cols-1 > [data-node-view-content-react] { grid-template-columns: 1fr; }
 .column-layout-grid.cols-2,
-.column-layout-grid.cols-2 > * { grid-template-columns: repeat(2, 1fr); }
+.column-layout-grid.cols-2 > [data-node-view-content-react] { grid-template-columns: repeat(2, 1fr); }
 .column-layout-grid.cols-3,
-.column-layout-grid.cols-3 > * { grid-template-columns: repeat(3, 1fr); }
+.column-layout-grid.cols-3 > [data-node-view-content-react] { grid-template-columns: repeat(3, 1fr); }
 .column-layout-grid.cols-4,
-.column-layout-grid.cols-4 > * { grid-template-columns: repeat(4, 1fr); }
-
-.column-layout-grid > * {
-  display: grid;
-  gap: 1rem;
-}
+.column-layout-grid.cols-4 > [data-node-view-content-react] { grid-template-columns: repeat(4, 1fr); }
 
 .column-pane-content .is-empty.is-node-empty:first-child::before {
   content: 'Type / for commands...';
