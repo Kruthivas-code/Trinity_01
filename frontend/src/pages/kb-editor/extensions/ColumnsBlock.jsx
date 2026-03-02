@@ -454,19 +454,28 @@ export const ColumnsBlockNode = Node.create({
 
 function columnsBlockSerializer(state, node) {
   const cols = node.attrs.cols || 2;
-  const cards = [];
+  const children = [];
   node.content.forEach(child => {
     if (child.type.name === 'columnCard') {
       const a = child.attrs;
-      let cardAttrs = `title="${a.title || 'Card'}" icon="${a.icon || 'file-text'}"`;
-      if (a.url) cardAttrs += ` url="${a.url}"`;
-      if (a.imagePath) cardAttrs += ` imagePath="${a.imagePath}"`;
-      if (a.cta) cardAttrs += ` cta="${a.cta}"`;
-      if (a.horizontal) cardAttrs += ` horizontal="true"`;
-      cards.push(`<Card ${cardAttrs}>\n${a.description || 'Description'}\n</Card>`);
+      if (a.cardType === 'iframe') {
+        // Serialize back as <iframe> tag
+        if (a.iframeHtml) {
+          children.push(a.iframeHtml);
+        } else if (a.iframeSrc) {
+          children.push(`<iframe src="${a.iframeSrc}" title="${a.title || 'Embedded content'}" frameborder="0" className="w-full aspect-video rounded-xl" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`);
+        }
+      } else {
+        let cardAttrs = `title="${a.title || 'Card'}" icon="${a.icon || 'file-text'}"`;
+        if (a.url) cardAttrs += ` url="${a.url}"`;
+        if (a.imagePath) cardAttrs += ` imagePath="${a.imagePath}"`;
+        if (a.cta) cardAttrs += ` cta="${a.cta}"`;
+        if (a.horizontal) cardAttrs += ` horizontal="true"`;
+        children.push(`<Card ${cardAttrs}>\n${a.description || 'Description'}\n</Card>`);
+      }
     }
   });
-  state.write(`<Columns cols={${cols}}>\n${cards.join('\n')}\n</Columns>\n\n`);
+  state.write(`<Columns cols={${cols}}>\n${children.join('\n')}\n</Columns>\n\n`);
   state.closeBlock(node);
 }
 
