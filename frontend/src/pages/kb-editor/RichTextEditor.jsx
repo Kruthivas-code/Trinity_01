@@ -181,9 +181,12 @@ const mdToHtml = (md) => {
 
     // Restore visual columns blocks as TipTap-compatible HTML
     columnsBlocks.forEach((block, idx) => {
-      const cardsHtml = block.cards.map(card =>
-        `<div data-type="column-card" data-title="${(card.title || '').replace(/"/g, '&quot;')}" data-description="${(card.description || '').replace(/"/g, '&quot;')}" data-icon="${card.icon || 'file-text'}" data-url="${card.url || ''}" data-image-path="${card.imagePath || ''}" data-cta="${card.cta || ''}" data-horizontal="${card.horizontal || false}"></div>`
-      ).join('');
+      const cardsHtml = block.cards.map(card => {
+        const ct = card.cardType || 'card';
+        const iframeSrc = card.iframeSrc || '';
+        const iframeHtml = card.iframeHtml || '';
+        return `<div data-type="column-card" data-card-type="${ct}" data-title="${(card.title || '').replace(/"/g, '&quot;')}" data-description="${(card.description || '').replace(/"/g, '&quot;')}" data-icon="${card.icon || 'file-text'}" data-url="${card.url || ''}" data-image-path="${card.imagePath || ''}" data-cta="${card.cta || ''}" data-horizontal="${card.horizontal || false}" data-iframe-src="${iframeSrc}" data-iframe-html="${iframeHtml.replace(/"/g, '&quot;')}"></div>`;
+      }).join('');
       const columnsHtml = `<div data-type="columns-block" data-cols="${block.cols}">${cardsHtml}</div>`;
       html = html.replace(`<p>COLUMNS_VISUAL_${idx}</p>`, columnsHtml);
       html = html.replace(`COLUMNS_VISUAL_${idx}`, columnsHtml);
