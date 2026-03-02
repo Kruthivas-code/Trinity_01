@@ -360,6 +360,13 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Modified files**: `KBEditor.jsx`, `ArticleSidebar.jsx`, `backend/routes/kb.py`
 - Tested: All 4 tabs verified via screenshots in both dark and light themes
 
+### KB Editor — Iframe Support in Visual Columns (Mar 2, 2026)
+- **Fixed**: Videos in the "Watch some of our video tutorials" section on the Welcome page were not displaying in the KB Editor's Visual Edit mode. The `<Columns>` blocks containing `<iframe>` elements (not `<Card>`) were being consumed by the preprocessor but iframes were silently dropped since only cards were extracted.
+- **Root cause**: `preprocessMd` step 1 matched `<Columns>` blocks and only looked for `<Card>` children. Iframes inside columns were lost.
+- **Fix**: Extended the preprocessor to also extract `<iframe>` elements from `<Columns>` blocks, storing them as iframe-type cards (`cardType: 'iframe'`). Added `cardType`, `iframeSrc`, `iframeHtml` attributes to `ColumnCardNode`. Updated `ColumnCardView` to render actual YouTube embeds for iframe-type cards with an edit popup for the embed URL. Updated `columnsBlockSerializer` to output `<iframe>` tags for iframe-type cards.
+- **Modified files**: `RichTextEditor.jsx` (preprocessMd + mdToHtml), `extensions/ColumnsBlock.jsx` (attributes, view, serializer)
+- Tested: Verified videos render in 2-column grid in KB Editor, and Docs page still works correctly
+
 ---
 
 ## Pending / Backlog
