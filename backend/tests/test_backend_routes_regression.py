@@ -39,7 +39,7 @@ import uuid
 from datetime import datetime
 
 # Use the public URL from frontend/.env for testing
-BASE_URL = "https://trinity-kb-update.preview.emergentagent.com"
+BASE_URL = "https://kb-wysiwyg-upgrade.preview.emergentagent.com"
 
 # Test credentials - create new session for each test run
 SESSION_TOKEN = "test_session_regression_1770873791877"
