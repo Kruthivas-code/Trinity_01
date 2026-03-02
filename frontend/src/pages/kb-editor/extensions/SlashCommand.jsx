@@ -267,12 +267,23 @@ export const SlashCommand = Extension.create({
               }).run();
               break;
             default: {
+              // Check for visual steps
+              if (item.key === 'steps') {
+                editor.chain().focus().insertContent({
+                  type: 'stepsBlock',
+                  content: [{
+                    type: 'stepItem',
+                    attrs: { title: 'Step 1' },
+                    content: [{ type: 'paragraph' }],
+                  }],
+                }).run();
+                break;
+              }
               // Component snippets — insert as markdown text
               const snippets = {
                 callout_note: '<Callout type="NOTE" title="Note">\nYour content here\n</Callout>',
                 callout_tip: '<Callout type="TIP" title="Tip">\nYour content here\n</Callout>',
                 callout_warning: '<Callout type="WARNING" title="Warning">\nYour content here\n</Callout>',
-                steps: '<Steps>\n<Step title="Step 1">\nDescription\n</Step>\n<Step title="Step 2">\nDescription\n</Step>\n</Steps>',
                 tabs: '<Tabs>\n<Tab label="Tab 1">\nContent\n</Tab>\n<Tab label="Tab 2">\nContent\n</Tab>\n</Tabs>',
                 accordion: '<Accordion>\n<AccordionItem title="Item 1">\nContent\n</AccordionItem>\n</Accordion>',
                 youtube: '<YouTube id="VIDEO_ID" title="Video Title" />',

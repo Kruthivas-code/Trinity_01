@@ -22,6 +22,7 @@ import {
 import { SlashCommand } from './extensions/SlashCommand';
 import { ColumnsBlockNode, ColumnCardNode } from './extensions/ColumnsBlock';
 import { IframeEmbed } from './extensions/IframeEmbed';
+import { StepsBlockNode, StepItemNode } from './extensions/StepsBlock';
 
 // ============= Markdown <-> HTML Conversion Pipeline =============
 
@@ -31,9 +32,10 @@ const STANDALONE_TAGS = ['YouTube', 'Loom', 'Figure', 'Video', 'Info', 'Note', '
 const INNER_TAGS = ['Card', 'Step', 'Tab', 'AccordionItem'];
 
 const preprocessMd = (md) => {
-  if (!md) return { processed: '', placeholders: [], columnsBlocks: [] };
+  if (!md) return { processed: '', placeholders: [], columnsBlocks: [], standaloneIframes: [], stepsBlocks: [] };
   const placeholders = [];
   const columnsBlocks = [];
+  const stepsBlocks = [];
   let processed = md;
 
   // 1. Extract <Columns> blocks with <Card> children → convert to visual nodes
@@ -126,9 +128,26 @@ const preprocessMd = (md) => {
     return `\n\nCOLUMNS_VISUAL_${idx}\n\n`;
   });
 
-  // 3. Remaining wrapper components → code blocks
+  // 3. Extract <Steps> blocks → visual step nodes
+  const stepsRegex = /<Steps(?:\s[\s\S]*?)?>([\s\S]*?)<\/Steps>/gi;
+  processed = processed.replace(stepsRegex, (match) => {
+    const steps = [];
+    const stepRegex = /<Step\s+title="([^"]*)"(?:\s[^>]*)?>([\s\S]*?)<\/Step>/gi;
+    let stepMatch;
+    while ((stepMatch = stepRegex.exec(match)) !== null) {
+      steps.push({ title: stepMatch[1], content: stepMatch[2].trim() });
+    }
+    if (steps.length === 0) {
+      steps.push({ title: 'Step 1', content: '' });
+    }
+    const idx = stepsBlocks.length;
+    stepsBlocks.push(steps);
+    return `\n\nSTEPS_VISUAL_${idx}\n\n`;
+  });
+
+  // 4. Remaining wrapper components → code blocks
   WRAPPER_TAGS.forEach(tag => {
-    if (tag === 'Columns' || tag === 'CardGroup') return; // Already handled
+    if (tag === 'Columns' || tag === 'CardGroup' || tag === 'Steps') return; // Already handled
     const regex = new RegExp(`<${tag}(?:\\s[\\s\\S]*?)?>[\\s\\S]*?<\\/${tag}>`, 'gi');
     processed = processed.replace(regex, (match) => {
       const idx = placeholders.length;
@@ -172,13 +191,13 @@ const preprocessMd = (md) => {
     return `\n\nCOMPONENT_BLOCK_${idx}\n\n`;
   });
 
-  return { processed, placeholders, columnsBlocks, standaloneIframes };
+  return { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks };
 };
 
 const mdToHtml = (md) => {
   if (!md) return '';
   try {
-    const { processed, placeholders, columnsBlocks, standaloneIframes } = preprocessMd(md);
+    const { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks } = preprocessMd(md);
     let html = marked.parse(processed, { breaks: false, gfm: true });
 
     // Restore visual columns blocks as TipTap-compatible HTML
@@ -204,6 +223,20 @@ const mdToHtml = (md) => {
       const embedHtml = `<div data-type="iframe-embed" data-src="${src}" data-title="${title}" data-raw-html="${safeRaw}"></div>`;
       html = html.replace(`<p>IFRAME_EMBED_${idx}</p>`, embedHtml);
       html = html.replace(`IFRAME_EMBED_${idx}`, embedHtml);
+    });
+
+    // Restore visual steps blocks as TipTap-compatible HTML
+    stepsBlocks.forEach((steps, idx) => {
+      const stepsHtml = steps.map(step => {
+        const contentHtml = step.content
+          ? marked.parse(step.content, { breaks: false, gfm: true })
+          : '<p></p>';
+        const safeTitle = (step.title || 'Step').replace(/"/g, '&quot;');
+        return `<div data-type="step-item" data-title="${safeTitle}">${contentHtml}</div>`;
+      }).join('');
+      const blockHtml = `<div data-type="steps-block">${stepsHtml}</div>`;
+      html = html.replace(`<p>STEPS_VISUAL_${idx}</p>`, blockHtml);
+      html = html.replace(`STEPS_VISUAL_${idx}`, blockHtml);
     });
 
     // Restore code-block components
@@ -272,7 +305,7 @@ const INSERT_ITEMS = [
   { key: 'callout_note', label: 'Note Callout', icon: <Info className="w-4 h-4 text-blue-400" />, snippet: '<Callout type="NOTE" title="Note">\nYour content here\n</Callout>' },
   { key: 'callout_tip', label: 'Tip Callout', icon: <Lightbulb className="w-4 h-4 text-amber-400" />, snippet: '<Callout type="TIP" title="Tip">\nYour content here\n</Callout>' },
   { key: 'callout_warning', label: 'Warning Callout', icon: <AlertTriangle className="w-4 h-4 text-red-400" />, snippet: '<Callout type="WARNING" title="Warning">\nYour content here\n</Callout>' },
-  { key: 'steps', label: 'Steps', icon: <CheckCircle className="w-4 h-4 text-emerald-400" />, snippet: '<Steps>\n<Step title="Step 1">\nDescription\n</Step>\n<Step title="Step 2">\nDescription\n</Step>\n</Steps>' },
+  { key: 'steps', label: 'Steps', icon: <CheckCircle className="w-4 h-4 text-emerald-400" />, isVisualSteps: true },
   { key: 'tabs', label: 'Tabs', icon: <Columns className="w-4 h-4 text-cyan-400" />, snippet: '<Tabs>\n<Tab label="Tab 1">\nContent\n</Tab>\n<Tab label="Tab 2">\nContent\n</Tab>\n</Tabs>' },
   { key: 'accordion', label: 'Accordion', icon: <MoreHorizontal className="w-4 h-4 text-slate-400" />, snippet: '<Accordion>\n<AccordionItem title="Item 1">\nContent\n</AccordionItem>\n</Accordion>' },
   { key: 'youtube', label: 'YouTube Video', icon: <Youtube className="w-4 h-4 text-red-400" />, snippet: '<YouTube id="VIDEO_ID" title="Video Title" />' },
@@ -310,7 +343,13 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-[#00A1B2] underline' } }),
       Image.configure({ inline: false, allowBase64: true }),
       Underline,
-      Placeholder.configure({ placeholder: 'Type "/" for commands, or start writing...' }),
+      Placeholder.configure({
+        placeholder: ({ node }) => {
+          if (node.type.name === 'paragraph') return 'Type / for commands, or start writing...';
+          return '';
+        },
+        includeChildren: true,
+      }),
       Markdown.configure({
         html: true,
         tightLists: true,
@@ -322,6 +361,8 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
       ColumnsBlockNode,
       ColumnCardNode,
       IframeEmbed,
+      StepsBlockNode,
+      StepItemNode,
     ],
     content: content ? mdToHtml(content) : '',
     editorProps: {
@@ -415,6 +456,19 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
     setShowInsert(false);
   }, [editor]);
 
+  const insertVisualSteps = useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().insertContent({
+      type: 'stepsBlock',
+      content: [{
+        type: 'stepItem',
+        attrs: { title: 'Step 1' },
+        content: [{ type: 'paragraph' }],
+      }],
+    }).run();
+    setShowInsert(false);
+  }, [editor]);
+
   const handleImageUpload = useCallback(async (file) => {
     if (!file || !file.type.startsWith('image/') || !onUploadImage) return;
     const url = await onUploadImage(file);
@@ -467,7 +521,7 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => item.isVisual ? insertVisualColumns(item.cols) : insertSnippet(item.snippet)}
+                  onClick={() => item.isVisual ? insertVisualColumns(item.cols) : item.isVisualSteps ? insertVisualSteps() : insertSnippet(item.snippet)}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm ${theme.textMuted} ${theme.hover} ${theme.hoverText} transition-colors`}
                   data-testid={`insert-${item.key}`}
                 >

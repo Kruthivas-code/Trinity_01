@@ -526,3 +526,68 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ============= KB Editor: Visual Steps ============= */
+.steps-block-wrapper {
+  counter-reset: step-counter;
+}
+
+.step-item-wrapper {
+  counter-increment: step-counter;
+}
+
+.step-number-circle::after {
+  content: counter(step-counter);
+}
+
+/* Step content placeholder for empty paragraphs */
+.step-content .is-empty.is-node-empty:first-child::before {
+  content: 'Start typing or press "/" for commands';
+  float: left;
+  color: inherit;
+  opacity: 0.35;
+  pointer-events: none;
+  height: 0;
+  font-style: italic;
+}
+
+/* Ensure step content inherits proper text styles */
+.step-content p {
+  margin: 0.25em 0;
+}
+
+.step-content h1,
+.step-content h2,
+.step-content h3,
+.step-content h4,
+.step-content h5,
+.step-content h6 {
+  margin-top: 0.75em;
+  margin-bottom: 0.25em;
+}
+
+.step-content ul,
+.step-content ol {
+  padding-left: 1.5em;
+  margin: 0.5em 0;
+}
+
+.step-content pre {
+  margin: 0.5em 0;
+  border-radius: 6px;
+}
+
+.step-content blockquote {
+  margin: 0.5em 0;
+  padding-left: 1em;
+}
+
+/* Steps items wrapper layout */
+.steps-items > [data-node-view-content-react] {
+  display: flex;
+  flex-direction: column;
+}
+
+.steps-items [data-node-view-wrapper] {
+  min-width: 0;
+}
