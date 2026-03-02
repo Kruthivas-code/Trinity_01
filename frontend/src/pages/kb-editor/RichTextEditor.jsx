@@ -146,11 +146,12 @@ const preprocessMd = (md) => {
     });
   });
 
-  // 5. Iframes
+  // 5. Standalone iframes → visual iframe embeds
+  const standaloneIframes = [];
   processed = processed.replace(/<iframe[\s\S]*?(?:\/>|<\/iframe>)/gi, (match) => {
-    const idx = placeholders.length;
-    placeholders.push(match);
-    return `\n\nCOMPONENT_BLOCK_${idx}\n\n`;
+    const idx = standaloneIframes.length;
+    standaloneIframes.push(match);
+    return `\n\nIFRAME_EMBED_${idx}\n\n`;
   });
 
   // 6. Orphan inner components
