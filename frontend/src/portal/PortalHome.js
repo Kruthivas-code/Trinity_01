@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import {
   Wrench, AlertTriangle, MessageSquare, Users,
   CreditCard, Receipt, Globe, Boxes, UserCog, ShieldCheck,
-  Rocket, Bot, Database, Smartphone,
+  Rocket, Bot, Database, Smartphone, BookOpen, Code, FileText,
   ArrowRight, ChevronRight, X, Clock, Zap, Video, Hash, FileCheck, Settings2,
-  Send, Search,
+  Send, Search, ExternalLink,
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -13,6 +13,10 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const ICON_MAP = {
   CreditCard, Receipt, Globe, Boxes, UserCog, ShieldCheck,
   Rocket, Bot, Database, Smartphone,
+};
+
+const KB_ICON_MAP = {
+  BookOpen, Boxes, Code, Rocket, Wrench, FileText,
 };
 
 // ===== Modals =====
