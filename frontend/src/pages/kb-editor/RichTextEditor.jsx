@@ -232,12 +232,21 @@ const columnsToMarkdown = (node) => {
     node.content.forEach(child => {
       if (child.type.name === 'columnCard') {
         const a = child.attrs;
-        let cardAttrs = `title="${a.title || 'Card'}" icon="${a.icon || 'file-text'}"`;
-        if (a.url) cardAttrs += ` url="${a.url}"`;
-        if (a.imagePath) cardAttrs += ` imagePath="${a.imagePath}"`;
-        if (a.cta) cardAttrs += ` cta="${a.cta}"`;
-        if (a.horizontal) cardAttrs += ` horizontal="true"`;
-        cards.push(`<Card ${cardAttrs}>\n${a.description || 'Description'}\n</Card>`);
+        if (a.cardType === 'iframe') {
+          // Serialize iframe-type cards back to raw iframe HTML
+          if (a.iframeHtml) {
+            cards.push(a.iframeHtml);
+          } else if (a.iframeSrc) {
+            cards.push(`<iframe src="${a.iframeSrc}" title="${a.title || 'Embedded content'}" frameborder="0" allowfullscreen></iframe>`);
+          }
+        } else {
+          let cardAttrs = `title="${a.title || 'Card'}" icon="${a.icon || 'file-text'}"`;
+          if (a.url) cardAttrs += ` url="${a.url}"`;
+          if (a.imagePath) cardAttrs += ` imagePath="${a.imagePath}"`;
+          if (a.cta) cardAttrs += ` cta="${a.cta}"`;
+          if (a.horizontal) cardAttrs += ` horizontal="true"`;
+          cards.push(`<Card ${cardAttrs}>\n${a.description || 'Description'}\n</Card>`);
+        }
       }
     });
     return `<Columns cols={${cols}}>\n${cards.join('\n')}\n</Columns>`;
