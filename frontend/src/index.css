@@ -528,6 +528,52 @@
 }
 
 /* ============= KB Editor: Visual Steps ============= */
+
+/* ============= KB Editor: Column Layout ============= */
+.column-layout-grid {
+  display: grid;
+  gap: 1rem;
+}
+.column-layout-grid.cols-1,
+.column-layout-grid.cols-1 > * { grid-template-columns: 1fr; }
+.column-layout-grid.cols-2,
+.column-layout-grid.cols-2 > * { grid-template-columns: repeat(2, 1fr); }
+.column-layout-grid.cols-3,
+.column-layout-grid.cols-3 > * { grid-template-columns: repeat(3, 1fr); }
+.column-layout-grid.cols-4,
+.column-layout-grid.cols-4 > * { grid-template-columns: repeat(4, 1fr); }
+
+.column-layout-grid > * {
+  display: grid;
+  gap: 1rem;
+}
+
+.column-pane-content .is-empty.is-node-empty:first-child::before {
+  content: 'Type / for commands...';
+  float: left;
+  color: inherit;
+  opacity: 0.3;
+  pointer-events: none;
+  height: 0;
+  font-style: italic;
+}
+
+.column-pane-content p { margin: 0.25em 0; }
+.column-pane-content h1,
+.column-pane-content h2,
+.column-pane-content h3 { margin-top: 0.5em; margin-bottom: 0.25em; }
+.column-pane-content ul,
+.column-pane-content ol { padding-left: 1.5em; margin: 0.5em 0; }
+.column-pane-content pre { margin: 0.5em 0; border-radius: 6px; }
+
+@media (max-width: 640px) {
+  .column-layout-grid,
+  .column-layout-grid > [data-node-view-content-react] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ============= KB Editor: Visual Steps (continued) ============= */
 .steps-block-wrapper {
   counter-reset: step-counter;
 }

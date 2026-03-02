@@ -105,6 +105,7 @@ export function extractComponents(content) {
   const patterns = [
     { regex: /<(Steps|CardGroup|Tabs|Accordion|CodeGroup|AccordionGroup)>([\s\S]*?)<\/\1>/gi, type: 'container' },
     { regex: /<Columns\s+cols=\{(\d+)\}>([\s\S]*?)<\/Columns>/gi, type: 'columns' },
+    { regex: /<ColumnLayout\s+cols=\{(\d+)\}>([\s\S]*?)<\/ColumnLayout>/gi, type: 'column-layout' },
     { regex: /<Callout\s+type="([^"]*)"(?:\s+title="([^"]*)")?>([\s\S]*?)<\/Callout>/gi, type: 'callout' },
     { regex: /<(YouTube|Loom|Video|Figure)\s+([^>]*?)\/>/gi, type: 'media' },
     { regex: /<Card\s+([^>]*?)>([\s\S]*?)<\/Card>/gi, type: 'standalone-card' },
@@ -129,6 +130,15 @@ export function extractComponents(content) {
       result.push({ type: 'component', component: item.match[1], content: item.match[2], children: extractInnerComponents(item.match[2], item.match[1]) });
     } else if (item.type === 'columns') {
       result.push({ type: 'component', component: 'Columns', props: { cols: parseInt(item.match[1], 10) || 2 }, children: extractCardsFromColumns(item.match[2]) });
+    } else if (item.type === 'column-layout') {
+      const cols = parseInt(item.match[1], 10) || 2;
+      const panes = [];
+      const colRegex = /<Col>([\s\S]*?)<\/Col>/gi;
+      let cm;
+      while ((cm = colRegex.exec(item.match[2])) !== null) {
+        panes.push(cm[1].trim());
+      }
+      result.push({ type: 'component', component: 'ColumnLayout', props: { cols }, children: panes });
     } else if (item.type === 'callout') {
       result.push({ type: 'component', component: 'Callout', props: { type: item.match[1], title: item.match[2] }, content: item.match[3].trim() });
     } else if (item.type === 'media') {

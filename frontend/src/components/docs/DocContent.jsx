@@ -147,7 +147,7 @@ const Figure = ({ src, alt, caption }) => {
 
 const NestedContent = ({ content, mdComponents }) => {
   if (!content) return null;
-  const hasCustom = /<(Steps|CardGroup|Columns|Card|Tabs|Accordion|Callout|YouTube|Loom|Video|Figure)/i.test(content) || />\s*\[!(NOTE|TIP|WARNING|CAUTION|ERROR|INFO|SUCCESS)\]/i.test(content);
+  const hasCustom = /<(Steps|CardGroup|Columns|ColumnLayout|Card|Tabs|Accordion|Callout|YouTube|Loom|Video|Figure)/i.test(content) || />\s*\[!(NOTE|TIP|WARNING|CAUTION|ERROR|INFO|SUCCESS)\]/i.test(content);
   if (hasCustom) {
     const parsed = extractComponents(content);
     return <>{parsed.map((block, i) => block.type === 'markdown' ? <ReactMarkdown key={i} remarkPlugins={[remarkGfm]} components={mdComponents}>{block.content}</ReactMarkdown> : <RenderComponent key={i} type={block.component} items={block.children} props={block.props} content={block.content} mdComponents={mdComponents} />)}</>;
@@ -163,6 +163,16 @@ const RenderComponent = ({ type, items, props, content, mdComponents }) => {
       return <CardGroup>{items?.map((item, i) => <Card key={i} title={item.title} icon={item.icon} href={item.href} color={item.color}><NestedContent content={item.content} mdComponents={mdComponents} /></Card>)}</CardGroup>;
     case 'Columns':
       return <Columns cols={props?.cols || 2}>{items?.map((item, i) => item.type === 'iframe' ? <div key={i} className="relative w-full aspect-video rounded-xl overflow-hidden"><iframe src={item.src} title={item.title || 'Embedded'} className="absolute inset-0 w-full h-full" frameBorder="0" allowFullScreen /></div> : <Card key={i} title={item.title} icon={item.icon} href={item.href} color={item.color}><NestedContent content={item.content} mdComponents={mdComponents} /></Card>)}</Columns>;
+    case 'ColumnLayout':
+      return (
+        <div className={`my-6 grid gap-4`} style={{ gridTemplateColumns: `repeat(${props?.cols || 2}, 1fr)` }} data-testid="column-layout-render">
+          {items?.map((paneContent, i) => (
+            <div key={i} className="min-w-0">
+              <NestedContent content={paneContent} mdComponents={mdComponents} />
+            </div>
+          ))}
+        </div>
+      );
     case 'Card':
       return <div className="my-6"><Card title={props?.title} icon={props?.icon} href={props?.href} color={props?.color}><NestedContent content={content} mdComponents={mdComponents} /></Card></div>;
     case 'iframe':

@@ -23,6 +23,7 @@ import { SlashCommand } from './extensions/SlashCommand';
 import { ColumnsBlockNode, ColumnCardNode } from './extensions/ColumnsBlock';
 import { IframeEmbed } from './extensions/IframeEmbed';
 import { StepsBlockNode, StepItemNode } from './extensions/StepsBlock';
+import { ColumnLayoutNode, ColumnPaneNode } from './extensions/ColumnLayout';
 
 // ============= Markdown <-> HTML Conversion Pipeline =============
 
@@ -32,10 +33,11 @@ const STANDALONE_TAGS = ['YouTube', 'Loom', 'Figure', 'Video', 'Info', 'Note', '
 const INNER_TAGS = ['Card', 'Step', 'Tab', 'AccordionItem'];
 
 const preprocessMd = (md) => {
-  if (!md) return { processed: '', placeholders: [], columnsBlocks: [], standaloneIframes: [], stepsBlocks: [] };
+  if (!md) return { processed: '', placeholders: [], columnsBlocks: [], standaloneIframes: [], stepsBlocks: [], columnLayouts: [] };
   const placeholders = [];
   const columnsBlocks = [];
   const stepsBlocks = [];
+  const columnLayouts = [];
   let processed = md;
 
   // 1. Extract <Columns> blocks with <Card> children → convert to visual nodes
@@ -145,6 +147,24 @@ const preprocessMd = (md) => {
     return `\n\nSTEPS_VISUAL_${idx}\n\n`;
   });
 
+  // 3b. Extract <ColumnLayout> blocks → visual editable column nodes
+  const colLayoutRegex = /<ColumnLayout(?:\s[^>]*)?\bcols=\{(\d+)\}[^>]*>([\s\S]*?)<\/ColumnLayout>/gi;
+  processed = processed.replace(colLayoutRegex, (match, colsStr, inner) => {
+    const cols = parseInt(colsStr) || 2;
+    const panes = [];
+    const paneRegex = /<Col>([\s\S]*?)<\/Col>/gi;
+    let paneMatch;
+    while ((paneMatch = paneRegex.exec(inner)) !== null) {
+      panes.push(paneMatch[1].trim());
+    }
+    if (panes.length === 0) {
+      for (let i = 0; i < cols; i++) panes.push('');
+    }
+    const idx = columnLayouts.length;
+    columnLayouts.push({ cols, panes });
+    return `\n\nCOLUMN_LAYOUT_${idx}\n\n`;
+  });
+
   // 4. Remaining wrapper components → code blocks
   WRAPPER_TAGS.forEach(tag => {
     if (tag === 'Columns' || tag === 'CardGroup' || tag === 'Steps') return; // Already handled
@@ -191,13 +211,13 @@ const preprocessMd = (md) => {
     return `\n\nCOMPONENT_BLOCK_${idx}\n\n`;
   });
 
-  return { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks };
+  return { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks, columnLayouts };
 };
 
 const mdToHtml = (md) => {
   if (!md) return '';
   try {
-    const { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks } = preprocessMd(md);
+    const { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks, columnLayouts } = preprocessMd(md);
     let html = marked.parse(processed, { breaks: false, gfm: true });
 
     // Restore visual columns blocks as TipTap-compatible HTML
@@ -237,6 +257,19 @@ const mdToHtml = (md) => {
       const blockHtml = `<div data-type="steps-block">${stepsHtml}</div>`;
       html = html.replace(`<p>STEPS_VISUAL_${idx}</p>`, blockHtml);
       html = html.replace(`STEPS_VISUAL_${idx}`, blockHtml);
+    });
+
+    // Restore visual column layouts as TipTap-compatible HTML
+    columnLayouts.forEach((layout, idx) => {
+      const panesHtml = layout.panes.map(paneContent => {
+        const contentHtml = paneContent
+          ? marked.parse(paneContent, { breaks: false, gfm: true })
+          : '<p></p>';
+        return `<div data-type="column-pane">${contentHtml}</div>`;
+      }).join('');
+      const blockHtml = `<div data-type="column-layout" data-cols="${layout.cols}">${panesHtml}</div>`;
+      html = html.replace(`<p>COLUMN_LAYOUT_${idx}</p>`, blockHtml);
+      html = html.replace(`COLUMN_LAYOUT_${idx}`, blockHtml);
     });
 
     // Restore code-block components
@@ -309,8 +342,9 @@ const INSERT_ITEMS = [
   { key: 'tabs', label: 'Tabs', icon: <Columns className="w-4 h-4 text-cyan-400" />, snippet: '<Tabs>\n<Tab label="Tab 1">\nContent\n</Tab>\n<Tab label="Tab 2">\nContent\n</Tab>\n</Tabs>' },
   { key: 'accordion', label: 'Accordion', icon: <MoreHorizontal className="w-4 h-4 text-slate-400" />, snippet: '<Accordion>\n<AccordionItem title="Item 1">\nContent\n</AccordionItem>\n</Accordion>' },
   { key: 'youtube', label: 'YouTube Video', icon: <Youtube className="w-4 h-4 text-red-400" />, snippet: '<YouTube id="VIDEO_ID" title="Video Title" />' },
-  { key: 'columns_2', label: '2 Columns', icon: <Columns className="w-4 h-4 text-teal-400" />, isVisual: true, cols: 2 },
-  { key: 'columns_3', label: '3 Columns', icon: <Columns className="w-4 h-4 text-teal-400" />, isVisual: true, cols: 3 },
+  { key: 'columns_1', label: '1 Column', icon: <Columns className="w-4 h-4 text-teal-400" />, isColumnLayout: true, cols: 1 },
+  { key: 'columns_2', label: '2 Columns', icon: <Columns className="w-4 h-4 text-teal-400" />, isColumnLayout: true, cols: 2 },
+  { key: 'columns_3', label: '3 Columns', icon: <Columns className="w-4 h-4 text-teal-400" />, isColumnLayout: true, cols: 3 },
   { key: 'code_block', label: 'Code Block', icon: <Code className="w-4 h-4 text-green-400" />, snippet: '```javascript\n// Your code here\n```' },
   { key: 'horizontal_rule', label: 'Horizontal Rule', icon: <Minus className="w-4 h-4 text-gray-400" />, snippet: '---' },
 ];
@@ -363,6 +397,8 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
       IframeEmbed,
       StepsBlockNode,
       StepItemNode,
+      ColumnLayoutNode,
+      ColumnPaneNode,
     ],
     content: content ? mdToHtml(content) : '',
     editorProps: {
@@ -442,16 +478,16 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
     setShowInsert(false);
   }, [editor]);
 
-  const insertVisualColumns = useCallback((cols) => {
+  const insertColumnLayout = useCallback((cols) => {
     if (!editor) return;
-    const cards = Array.from({ length: cols }, (_, i) => ({
-      type: 'columnCard',
-      attrs: { title: `Card ${i + 1}`, description: 'Description', icon: ['rocket', 'code', 'zap'][i] || 'file-text' },
+    const panes = Array.from({ length: cols }, () => ({
+      type: 'columnPane',
+      content: [{ type: 'paragraph' }],
     }));
     editor.chain().focus().insertContent({
-      type: 'columnsBlock',
+      type: 'columnLayout',
       attrs: { cols },
-      content: cards,
+      content: panes,
     }).run();
     setShowInsert(false);
   }, [editor]);
@@ -521,7 +557,7 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => item.isVisual ? insertVisualColumns(item.cols) : item.isVisualSteps ? insertVisualSteps() : insertSnippet(item.snippet)}
+                  onClick={() => item.isColumnLayout ? insertColumnLayout(item.cols) : item.isVisualSteps ? insertVisualSteps() : insertSnippet(item.snippet)}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm ${theme.textMuted} ${theme.hover} ${theme.hoverText} transition-colors`}
                   data-testid={`insert-${item.key}`}
                 >
