@@ -508,6 +508,18 @@ export const ColumnCardNode = Node.create({
         default: false,
         parseHTML: el => el.getAttribute('data-horizontal') === 'true',
       },
+      cardType: {
+        default: 'card',
+        parseHTML: el => el.getAttribute('data-card-type') || 'card',
+      },
+      iframeSrc: {
+        default: '',
+        parseHTML: el => el.getAttribute('data-iframe-src') || '',
+      },
+      iframeHtml: {
+        default: '',
+        parseHTML: el => el.getAttribute('data-iframe-html') || '',
+      },
     };
   },
 
