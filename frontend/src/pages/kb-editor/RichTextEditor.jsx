@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { SlashCommand } from './extensions/SlashCommand';
 import { ColumnsBlockNode, ColumnCardNode } from './extensions/ColumnsBlock';
+import { IframeEmbed } from './extensions/IframeEmbed';
 
 // ============= Markdown <-> HTML Conversion Pipeline =============
 
