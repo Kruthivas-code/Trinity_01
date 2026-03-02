@@ -16,7 +16,7 @@ from database import (
     portal_categories_collection, portal_customers_collection,
     portal_sessions_collection, tickets_collection,
     messages_collection, email_replies_collection,
-    engineer_plans_collection,
+    engineer_plans_collection, db,
 )
 from dependencies import get_current_user, require_admin
 from rate_limiter import limiter
