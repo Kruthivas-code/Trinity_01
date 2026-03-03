@@ -413,14 +413,39 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **New files**: `kb-editor/components/IconPicker.jsx`
 - **Modified files**: `kb-editor/extensions/ColumnsBlock.jsx`, `components/docs/IconPicker.jsx`
 
+### KB Editor: Editable Column Layout (Mar 3, 2026)
+- **Major architectural change**: Replaced pre-filled card-based column insertion with empty, editable column panes
+- **New TipTap extensions**: `ColumnLayoutNode` (grid container with `cols` attribute) and `ColumnPaneNode` (editable pane with `block+` content)
+- Users can add any content inside panes — text, headings, lists, images, other components via toolbar and slash commands
+- Add/Delete column panes with proper `cols` attribute sync (deleting last pane removes entire layout)
+- CSS grid layout: 1-4 columns, responsive stacking on mobile via `@media (max-width: 640px)`
+- Clean markdown serialization: `<ColumnLayout cols={N}><Col>content</Col></ColumnLayout>`
+- Full backward compatibility: Old card-based `<Columns>/<Card>` blocks still render and edit correctly
+- Public docs page renders new ColumnLayout with Tailwind responsive grid classes
+- Insert via toolbar "Insert" menu (1/2/3 Columns) or slash commands
+- **New files**: `kb-editor/extensions/ColumnLayout.jsx`
+- **Modified files**: `kb-editor/RichTextEditor.jsx`, `kb-editor/extensions/SlashCommand.jsx`, `components/docs/DocContent.jsx`, `index.css`
+- Tested: 33/33 pass (iteration_10 + iteration_60)
+
+### KB Editor: Accordion Component (Mar 3, 2026)
+- **New TipTap extensions**: `AccordionBlockNode` (container) and `AccordionItemNode` (collapsible section with title + rich content)
+- Each item has an editable title input, expand/collapse toggle with rotating chevron, and rich content area
+- "Add item" button to append new accordion items, trash buttons to delete items or entire block
+- Clean markdown serialization: `<Accordion><AccordionItem title="...">content</AccordionItem></Accordion>`
+- Full round-trip: Visual Edit → Markdown → Save → Reload → Visual Edit preserves all accordion data
+- Public docs rendering already supported via existing `Accordion.jsx` and `parser.js`
+- Insert via toolbar "Insert" menu or `/accordion` slash command
+- Theme-aware (light/dark), smooth expand/collapse animations
+- **New files**: `kb-editor/extensions/AccordionBlock.jsx`
+- **Modified files**: `kb-editor/RichTextEditor.jsx`, `kb-editor/extensions/SlashCommand.jsx`
+- Tested: 33/33 pass (iteration_60) — 13 accordion backend + 11 accordion frontend tests
+
 ---
 
 ## Pending / Backlog
 
-### P1
-- None
-
 ### P2
+- Backend-Driven Portal Categories (move from frontend to DB)
 - Real-time notifications for agents
 - On-demand full thread fetch from Gmail
 - Recurring job for auto-closing stale tickets
