@@ -24,6 +24,7 @@ import { ColumnsBlockNode, ColumnCardNode } from './extensions/ColumnsBlock';
 import { IframeEmbed } from './extensions/IframeEmbed';
 import { StepsBlockNode, StepItemNode } from './extensions/StepsBlock';
 import { ColumnLayoutNode, ColumnPaneNode } from './extensions/ColumnLayout';
+import { AccordionBlockNode, AccordionItemNode } from './extensions/AccordionBlock';
 
 // ============= Markdown <-> HTML Conversion Pipeline =============
 
@@ -33,11 +34,12 @@ const STANDALONE_TAGS = ['YouTube', 'Loom', 'Figure', 'Video', 'Info', 'Note', '
 const INNER_TAGS = ['Card', 'Step', 'Tab', 'AccordionItem'];
 
 const preprocessMd = (md) => {
-  if (!md) return { processed: '', placeholders: [], columnsBlocks: [], standaloneIframes: [], stepsBlocks: [], columnLayouts: [] };
+  if (!md) return { processed: '', placeholders: [], columnsBlocks: [], standaloneIframes: [], stepsBlocks: [], columnLayouts: [], accordionBlocks: [] };
   const placeholders = [];
   const columnsBlocks = [];
   const stepsBlocks = [];
   const columnLayouts = [];
+  const accordionBlocks = [];
   let processed = md;
 
   // 1. Extract <Columns> blocks with <Card> children → convert to visual nodes
@@ -165,9 +167,26 @@ const preprocessMd = (md) => {
     return `\n\nCOLUMN_LAYOUT_${idx}\n\n`;
   });
 
+  // 3c. Extract <Accordion> blocks → visual accordion nodes
+  const accordionRegex = /<Accordion(?:\s[\s\S]*?)?>([\s\S]*?)<\/Accordion>/gi;
+  processed = processed.replace(accordionRegex, (match, inner) => {
+    const items = [];
+    const itemRegex = /<AccordionItem\s+title="([^"]*)"(?:\s[^>]*)?>([\s\S]*?)<\/AccordionItem>/gi;
+    let itemMatch;
+    while ((itemMatch = itemRegex.exec(inner)) !== null) {
+      items.push({ title: itemMatch[1], content: itemMatch[2].trim() });
+    }
+    if (items.length === 0) {
+      items.push({ title: 'Section', content: '' });
+    }
+    const idx = accordionBlocks.length;
+    accordionBlocks.push(items);
+    return `\n\nACCORDION_VISUAL_${idx}\n\n`;
+  });
+
   // 4. Remaining wrapper components → code blocks
   WRAPPER_TAGS.forEach(tag => {
-    if (tag === 'Columns' || tag === 'CardGroup' || tag === 'Steps') return; // Already handled
+    if (tag === 'Columns' || tag === 'CardGroup' || tag === 'Steps' || tag === 'Accordion') return; // Already handled
     const regex = new RegExp(`<${tag}(?:\\s[\\s\\S]*?)?>[\\s\\S]*?<\\/${tag}>`, 'gi');
     processed = processed.replace(regex, (match) => {
       const idx = placeholders.length;
@@ -211,13 +230,13 @@ const preprocessMd = (md) => {
     return `\n\nCOMPONENT_BLOCK_${idx}\n\n`;
   });
 
-  return { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks, columnLayouts };
+  return { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks, columnLayouts, accordionBlocks };
 };
 
 const mdToHtml = (md) => {
   if (!md) return '';
   try {
-    const { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks, columnLayouts } = preprocessMd(md);
+    const { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks, columnLayouts, accordionBlocks } = preprocessMd(md);
     let html = marked.parse(processed, { breaks: false, gfm: true });
 
     // Restore visual columns blocks as TipTap-compatible HTML
@@ -270,6 +289,20 @@ const mdToHtml = (md) => {
       const blockHtml = `<div data-type="column-layout" data-cols="${layout.cols}">${panesHtml}</div>`;
       html = html.replace(`<p>COLUMN_LAYOUT_${idx}</p>`, blockHtml);
       html = html.replace(`COLUMN_LAYOUT_${idx}`, blockHtml);
+    });
+
+    // Restore visual accordion blocks as TipTap-compatible HTML
+    accordionBlocks.forEach((items, idx) => {
+      const itemsHtml = items.map(item => {
+        const contentHtml = item.content
+          ? marked.parse(item.content, { breaks: false, gfm: true })
+          : '<p></p>';
+        const safeTitle = (item.title || 'Section').replace(/"/g, '&quot;');
+        return `<div data-type="accordion-item" data-title="${safeTitle}">${contentHtml}</div>`;
+      }).join('');
+      const blockHtml = `<div data-type="accordion-block">${itemsHtml}</div>`;
+      html = html.replace(`<p>ACCORDION_VISUAL_${idx}</p>`, blockHtml);
+      html = html.replace(`ACCORDION_VISUAL_${idx}`, blockHtml);
     });
 
     // Restore code-block components
@@ -340,7 +373,7 @@ const INSERT_ITEMS = [
   { key: 'callout_warning', label: 'Warning Callout', icon: <AlertTriangle className="w-4 h-4 text-red-400" />, snippet: '<Callout type="WARNING" title="Warning">\nYour content here\n</Callout>' },
   { key: 'steps', label: 'Steps', icon: <CheckCircle className="w-4 h-4 text-emerald-400" />, isVisualSteps: true },
   { key: 'tabs', label: 'Tabs', icon: <Columns className="w-4 h-4 text-cyan-400" />, snippet: '<Tabs>\n<Tab label="Tab 1">\nContent\n</Tab>\n<Tab label="Tab 2">\nContent\n</Tab>\n</Tabs>' },
-  { key: 'accordion', label: 'Accordion', icon: <MoreHorizontal className="w-4 h-4 text-slate-400" />, snippet: '<Accordion>\n<AccordionItem title="Item 1">\nContent\n</AccordionItem>\n</Accordion>' },
+  { key: 'accordion', label: 'Accordion', icon: <MoreHorizontal className="w-4 h-4 text-slate-400" />, isAccordion: true },
   { key: 'youtube', label: 'YouTube Video', icon: <Youtube className="w-4 h-4 text-red-400" />, snippet: '<YouTube id="VIDEO_ID" title="Video Title" />' },
   { key: 'columns_1', label: '1 Column', icon: <Columns className="w-4 h-4 text-teal-400" />, isColumnLayout: true, cols: 1 },
   { key: 'columns_2', label: '2 Columns', icon: <Columns className="w-4 h-4 text-teal-400" />, isColumnLayout: true, cols: 2 },
@@ -399,6 +432,8 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
       StepItemNode,
       ColumnLayoutNode,
       ColumnPaneNode,
+      AccordionBlockNode,
+      AccordionItemNode,
     ],
     content: content ? mdToHtml(content) : '',
     editorProps: {
@@ -505,6 +540,19 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
     setShowInsert(false);
   }, [editor]);
 
+  const insertAccordion = useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().insertContent({
+      type: 'accordionBlock',
+      content: [{
+        type: 'accordionItem',
+        attrs: { title: 'Section 1' },
+        content: [{ type: 'paragraph' }],
+      }],
+    }).run();
+    setShowInsert(false);
+  }, [editor]);
+
   const handleImageUpload = useCallback(async (file) => {
     if (!file || !file.type.startsWith('image/') || !onUploadImage) return;
     const url = await onUploadImage(file);
@@ -557,7 +605,7 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => item.isColumnLayout ? insertColumnLayout(item.cols) : item.isVisualSteps ? insertVisualSteps() : insertSnippet(item.snippet)}
+                  onClick={() => item.isColumnLayout ? insertColumnLayout(item.cols) : item.isVisualSteps ? insertVisualSteps() : item.isAccordion ? insertAccordion() : insertSnippet(item.snippet)}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm ${theme.textMuted} ${theme.hover} ${theme.hoverText} transition-colors`}
                   data-testid={`insert-${item.key}`}
                 >

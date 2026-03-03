@@ -279,13 +279,23 @@ export const SlashCommand = Extension.create({
                 }).run();
                 break;
               }
+              if (item.key === 'accordion') {
+                editor.chain().focus().insertContent({
+                  type: 'accordionBlock',
+                  content: [{
+                    type: 'accordionItem',
+                    attrs: { title: 'Section 1' },
+                    content: [{ type: 'paragraph' }],
+                  }],
+                }).run();
+                break;
+              }
               // Component snippets — insert as markdown text
               const snippets = {
                 callout_note: '<Callout type="NOTE" title="Note">\nYour content here\n</Callout>',
                 callout_tip: '<Callout type="TIP" title="Tip">\nYour content here\n</Callout>',
                 callout_warning: '<Callout type="WARNING" title="Warning">\nYour content here\n</Callout>',
                 tabs: '<Tabs>\n<Tab label="Tab 1">\nContent\n</Tab>\n<Tab label="Tab 2">\nContent\n</Tab>\n</Tabs>',
-                accordion: '<Accordion>\n<AccordionItem title="Item 1">\nContent\n</AccordionItem>\n</Accordion>',
                 youtube: '<YouTube id="VIDEO_ID" title="Video Title" />',
               };
               if (snippets[item.key]) {

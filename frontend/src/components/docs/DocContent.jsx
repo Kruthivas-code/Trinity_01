@@ -163,9 +163,11 @@ const RenderComponent = ({ type, items, props, content, mdComponents }) => {
       return <CardGroup>{items?.map((item, i) => <Card key={i} title={item.title} icon={item.icon} href={item.href} color={item.color}><NestedContent content={item.content} mdComponents={mdComponents} /></Card>)}</CardGroup>;
     case 'Columns':
       return <Columns cols={props?.cols || 2}>{items?.map((item, i) => item.type === 'iframe' ? <div key={i} className="relative w-full aspect-video rounded-xl overflow-hidden"><iframe src={item.src} title={item.title || 'Embedded'} className="absolute inset-0 w-full h-full" frameBorder="0" allowFullScreen /></div> : <Card key={i} title={item.title} icon={item.icon} href={item.href} color={item.color}><NestedContent content={item.content} mdComponents={mdComponents} /></Card>)}</Columns>;
-    case 'ColumnLayout':
+    case 'ColumnLayout': {
+      const cols = props?.cols || 2;
+      const gridClass = cols === 1 ? 'grid-cols-1' : cols === 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2';
       return (
-        <div className={`my-6 grid gap-4`} style={{ gridTemplateColumns: `repeat(${props?.cols || 2}, 1fr)` }} data-testid="column-layout-render">
+        <div className={`my-6 grid gap-4 ${gridClass}`} data-testid="column-layout-render">
           {items?.map((paneContent, i) => (
             <div key={i} className="min-w-0">
               <NestedContent content={paneContent} mdComponents={mdComponents} />
@@ -173,6 +175,7 @@ const RenderComponent = ({ type, items, props, content, mdComponents }) => {
           ))}
         </div>
       );
+    }
     case 'Card':
       return <div className="my-6"><Card title={props?.title} icon={props?.icon} href={props?.href} color={props?.color}><NestedContent content={content} mdComponents={mdComponents} /></Card></div>;
     case 'iframe':

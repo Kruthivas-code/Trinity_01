@@ -569,6 +569,10 @@
   .column-layout-grid > [data-node-view-content-react] {
     grid-template-columns: 1fr !important;
   }
+  /* Public docs page ColumnLayout stacking */
+  [data-testid="column-layout-render"] {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* ============= KB Editor: Visual Steps (continued) ============= */
