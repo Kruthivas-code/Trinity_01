@@ -131,6 +131,7 @@ from routes.knowledge_base import router as knowledge_base_router
 from routes.summaries import router as summaries_router
 from routes.portal import router as portal_router, seed_default_categories
 from routes.kb import router as kb_router
+from routes.atlas import router as atlas_router
 
 app.include_router(filters_router)
 app.include_router(webhooks_router)
@@ -155,6 +156,7 @@ app.include_router(knowledge_base_router)
 app.include_router(summaries_router)
 app.include_router(portal_router)
 app.include_router(kb_router)
+app.include_router(atlas_router)
 
 # ==================== Middleware ====================
 MAX_REQUEST_BODY_SIZE = 50 * 1024 * 1024  # 50MB
@@ -288,6 +290,9 @@ async def startup_event():
     # Start email IMAP poller
     from services.email_poller import start_poller as start_email_poller
     start_email_poller()
+    # Auto-resume Atlas backfill if it was interrupted
+    from services.atlas_backfill import auto_resume_on_startup
+    auto_resume_on_startup()
     logger.info(f"[STARTUP] Instance {_instance_id} started")
 
 
