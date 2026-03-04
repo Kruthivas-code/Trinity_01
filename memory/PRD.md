@@ -442,10 +442,19 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 
 ---
 
+### Backend-Driven Portal Categories (Mar 4, 2026)
+- **Removed all hardcoded mappings** from frontend: `CATEGORY_KB_GROUPS`, `HELP_ARTICLES`, `KB_GROUP_ICONS`/`KB_GROUP_DESCRIPTIONS`
+- **New `kb_group_key` field** on category schema — links categories to KB nav groups for "Related Documentation"
+- **New admin API endpoints**: `GET /api/portal/admin/kb-nav-groups`, `GET /api/portal/admin/kb-articles-list`
+- **Admin Category Manager**: "Linked KB Topic" dropdown, dynamic KB article picker (49+ articles)
+- All 10 existing categories migrated with `kb_group_key` values
+- Tested: 24/24 pass (iteration_61)
+
+---
+
 ## Pending / Backlog
 
 ### P2
-- Backend-Driven Portal Categories (move from frontend to DB)
 - Real-time notifications for agents
 - On-demand full thread fetch from Gmail
 - Recurring job for auto-closing stale tickets
