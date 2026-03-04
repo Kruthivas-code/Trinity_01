@@ -15,7 +15,7 @@ Matching pipeline (designed so 99 % of replies match on steps 1-4):
 import imaplib
 import email
 from email.header import decode_header
-from email.utils import parseaddr
+from email.utils import parseaddr, parsedate_to_datetime
 import os
 import re
 import uuid
@@ -44,6 +44,22 @@ except Exception:
 
 def _get_env(key, default=""):
     return os.environ.get(key, default)
+
+
+def _parse_email_date(msg) -> datetime:
+    """Extract the Date header from an email and return a UTC datetime.
+    Falls back to datetime.now(UTC) if parsing fails."""
+    date_str = msg.get("Date", "")
+    if date_str:
+        try:
+            dt = parsedate_to_datetime(date_str)
+            # Convert to UTC if timezone-aware
+            if dt.tzinfo is not None:
+                return dt.astimezone(timezone.utc)
+            return dt.replace(tzinfo=timezone.utc)
+        except Exception:
+            pass
+    return datetime.now(timezone.utc)
 
 
 # ── Header / body helpers ────────────────────────────────────
@@ -300,8 +316,11 @@ def _is_own_email(msg) -> bool:
 
 # ── New ticket creation ──────────────────────────────────────
 
-def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body: str, email_parts: dict = None):
-    """Create a new ticket from an inbound email that doesn't match any existing ticket."""
+def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body: str,
+                              email_parts: dict = None, email_date: datetime = None,
+                              mail=None, gmail_thrid: str = None):
+    """Create a new ticket from an inbound email that doesn't match any existing ticket.
+    If a Gmail Thread ID and IMAP connection are available, fetches the full thread history."""
     from utils import generate_ticket_id
 
     if not from_addr or not body.strip():
@@ -309,43 +328,194 @@ def _create_ticket_from_email(from_name: str, from_addr: str, subject: str, body
 
     ticket_id = generate_ticket_id()
     title = subject.strip()[:200] if subject.strip() else f"Email from {from_addr}"
+    email_date = email_date or datetime.now(timezone.utc)
     now = datetime.now(timezone.utc)
 
-    tickets_collection.insert_one({
-        "ticket_id": ticket_id,
-        "uuid": str(uuid.uuid4()),
-        "title": title,
-        "description": body.strip()[:10000],
-        "status": "todo",
-        "priority": "medium",
-        "tags": ["email"],
-        "source": "email",
-        "customer_email": from_addr,
-        "customer_name": from_name or from_addr,
-        "created_at": now,
-        "updated_at": now,
-        "last_message_at": now,
-        "last_customer_message_at": now,
-        "assignee_id": None,
-        "escalation_level": "L1",
-    })
+    # If we have a Gmail Thread ID + IMAP connection, fetch full thread first
+    thread_messages = []
+    if mail and gmail_thrid:
+        thread_messages = _fetch_full_thread(mail, gmail_thrid)
 
-    parts = email_parts or {}
-    messages_collection.insert_one({
-        "message_id": f"msg_{uuid.uuid4().hex[:12]}",
-        "ticket_id": ticket_id,
-        "type": "original",
-        "content": body.strip()[:10000],
-        "email_html": parts.get("email_html", ""),
-        "email_text": parts.get("email_text", ""),
-        "author_id": None,
-        "author_name": from_name or from_addr,
-        "author_email": from_addr,
-        "source": "email",
-        "created_at": now,
-    })
+    if thread_messages:
+        # Sort by email date (oldest first) for chronological ordering
+        thread_messages.sort(key=lambda m: m["email_date"])
+
+        # Use the oldest email's date as the ticket creation date
+        oldest_date = thread_messages[0]["email_date"]
+        tickets_collection.insert_one({
+            "ticket_id": ticket_id,
+            "uuid": str(uuid.uuid4()),
+            "title": title,
+            "description": thread_messages[0]["body"][:10000],
+            "status": "todo",
+            "priority": "medium",
+            "tags": ["email"],
+            "source": "email",
+            "customer_email": from_addr,
+            "customer_name": from_name or from_addr,
+            "created_at": oldest_date,
+            "updated_at": now,
+            "last_message_at": thread_messages[-1]["email_date"],
+            "last_customer_message_at": thread_messages[-1]["email_date"],
+            "assignee_id": None,
+            "escalation_level": "L1",
+        })
+
+        for i, tm in enumerate(thread_messages):
+            msg_type = "original" if i == 0 else "customer_reply"
+            # Skip if this specific message_id was already processed
+            if tm["message_id"] and _is_already_processed(tm["message_id"]):
+                # Still store the thread record for future matching
+                _store_thread_record(tm, ticket_id, "thread_backfill")
+                continue
+
+            messages_collection.insert_one({
+                "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+                "ticket_id": ticket_id,
+                "type": msg_type,
+                "content": tm["body"][:10000],
+                "email_html": tm.get("email_html", ""),
+                "email_text": tm.get("email_text", ""),
+                "author_id": None,
+                "author_name": tm["from_name"],
+                "author_email": tm["from_addr"],
+                "source": "email",
+                "created_at": tm["email_date"],
+                "email_date": tm["email_date"],
+            })
+            _store_thread_record(tm, ticket_id, "thread_backfill")
+
+        logger.info(f"[THREAD] Captured {len(thread_messages)} messages for {ticket_id} (thread {gmail_thrid})")
+    else:
+        # No thread history available — create ticket with just this email
+        tickets_collection.insert_one({
+            "ticket_id": ticket_id,
+            "uuid": str(uuid.uuid4()),
+            "title": title,
+            "description": body.strip()[:10000],
+            "status": "todo",
+            "priority": "medium",
+            "tags": ["email"],
+            "source": "email",
+            "customer_email": from_addr,
+            "customer_name": from_name or from_addr,
+            "created_at": email_date,
+            "updated_at": now,
+            "last_message_at": email_date,
+            "last_customer_message_at": email_date,
+            "assignee_id": None,
+            "escalation_level": "L1",
+        })
+
+        parts = email_parts or {}
+        messages_collection.insert_one({
+            "message_id": f"msg_{uuid.uuid4().hex[:12]}",
+            "ticket_id": ticket_id,
+            "type": "original",
+            "content": body.strip()[:10000],
+            "email_html": parts.get("email_html", ""),
+            "email_text": parts.get("email_text", ""),
+            "author_id": None,
+            "author_name": from_name or from_addr,
+            "author_email": from_addr,
+            "source": "email",
+            "created_at": email_date,
+            "email_date": email_date,
+        })
 
     return ticket_id
+
+
+def _store_thread_record(tm: dict, ticket_id: str, match_method: str):
+    """Store an email_threads record for a thread-backfilled message."""
+    if tm.get("message_id") and _is_already_processed(tm["message_id"]):
+        # Update existing record to link to this ticket
+        email_threads_collection.update_one(
+            {"message_id": tm["message_id"]},
+            {"$set": {"ticket_id": ticket_id, "match_method": match_method}},
+        )
+        return
+
+    email_threads_collection.insert_one({
+        "thread_id": f"eth_{uuid.uuid4().hex[:12]}",
+        "ticket_id": ticket_id,
+        "message_id": tm.get("message_id", ""),
+        "in_reply_to": tm.get("in_reply_to", ""),
+        "references": tm.get("references", []),
+        "gmail_thread_id": tm.get("gmail_thrid"),
+        "direction": "inbound" if not tm.get("is_own") else "outbound",
+        "status": "processed",
+        "from_email": tm["from_addr"],
+        "to_email": _get_env("SES_SENDER_EMAIL", "support@emergent.sh"),
+        "subject": tm.get("subject", "")[:500],
+        "body_preview": tm.get("body", "")[:200],
+        "matched": True,
+        "match_method": match_method,
+        "email_date": tm["email_date"],
+        "created_at": datetime.now(timezone.utc),
+    })
+
+
+def _fetch_full_thread(mail, gmail_thrid: str) -> list:
+    """Fetch ALL messages in a Gmail thread by X-GM-THRID, regardless of age.
+    Returns a list of parsed message dicts sorted for chronological insertion."""
+    messages = []
+    try:
+        # Gmail-specific IMAP extension: search by thread ID
+        status, data = mail.search(None, f"X-GM-THRID {gmail_thrid}")
+        if status != "OK" or not data[0]:
+            return messages
+
+        thread_eids = data[0].split()
+        logger.info(f"[THREAD] Found {len(thread_eids)} emails in thread {gmail_thrid}")
+
+        sender_email = _get_env("SES_SENDER_EMAIL", "support@emergent.sh").lower()
+        imap_user = _get_env("IMAP_USER", "").lower()
+
+        for eid in thread_eids:
+            try:
+                status2, msg_data2 = mail.fetch(eid, "(RFC822)")
+                if status2 != "OK" or not msg_data2 or not msg_data2[0]:
+                    continue
+
+                raw = msg_data2[0][1]
+                msg = email.message_from_bytes(raw)
+
+                msg_id = msg.get("Message-ID", "").strip()
+                from_name, from_addr = parseaddr(msg.get("From", ""))
+                from_name = _decode_header_value(from_name) or from_addr
+                from_addr_lower = from_addr.lower()
+                is_own = from_addr_lower in (sender_email, imap_user)
+
+                subject = _decode_header_value(msg.get("Subject", ""))
+                parts = _extract_email_parts(msg)
+                msg_date = _parse_email_date(msg)
+
+                in_reply_to = msg.get("In-Reply-To", "").strip()
+                refs_raw = msg.get("References", "")
+                refs = refs_raw.split() if refs_raw else []
+
+                messages.append({
+                    "message_id": msg_id,
+                    "from_name": from_name,
+                    "from_addr": from_addr,
+                    "subject": subject,
+                    "body": parts["content"],
+                    "email_html": parts.get("email_html", ""),
+                    "email_text": parts.get("email_text", ""),
+                    "email_date": msg_date,
+                    "in_reply_to": in_reply_to,
+                    "references": refs,
+                    "gmail_thrid": gmail_thrid,
+                    "is_own": is_own,
+                })
+            except Exception as e:
+                logger.error(f"[THREAD] Error fetching eid {eid} in thread {gmail_thrid}: {e}")
+
+    except Exception as e:
+        logger.error(f"[THREAD] IMAP search X-GM-THRID {gmail_thrid} failed: {e}")
+
+    return messages
 
 
 # ── Bounce handling ──────────────────────────────────────────
@@ -632,6 +802,7 @@ def _process_sent_email(mail, uid):
 
     if ticket_id and body.strip():
         from_name = _decode_header_value(from_name) or from_addr
+        sent_date = _parse_email_date(msg)
         logger.info(f"[SENT] Matched {ticket_id} via {match_method} to={to_addr}")
 
         # Add as agent reply in the ticket
@@ -645,7 +816,8 @@ def _process_sent_email(mail, uid):
             "author_name": from_name or "Support Agent",
             "author_email": from_addr,
             "source": "email",
-            "created_at": datetime.now(timezone.utc),
+            "created_at": sent_date,
+            "email_date": sent_date,
         })
 
         tickets_collection.update_one(
@@ -654,6 +826,7 @@ def _process_sent_email(mail, uid):
         )
 
     # Store for dedup and threading
+    sent_date = _parse_email_date(msg)
     email_threads_collection.insert_one({
         "thread_id": f"eth_{uuid.uuid4().hex[:12]}",
         "ticket_id": ticket_id,
@@ -669,6 +842,7 @@ def _process_sent_email(mail, uid):
         "body_preview": body[:200] if body else "",
         "matched": ticket_id is not None,
         "match_method": match_method,
+        "email_date": sent_date,
         "created_at": datetime.now(timezone.utc),
     })
 
@@ -704,6 +878,7 @@ def _process_email(mail, eid, folder="inbox"):
     subject = _decode_header_value(msg.get("Subject", ""))
     parts = _extract_email_parts(msg)
     body = parts["content"]
+    email_date = _parse_email_date(msg)
 
     # Detect bounce/delivery failure notifications
     if _is_bounce_email(from_addr, subject):
@@ -733,7 +908,8 @@ def _process_email(mail, eid, folder="inbox"):
             "author_name": from_name,
             "author_email": from_addr,
             "source": "email",
-            "created_at": datetime.now(timezone.utc),
+            "created_at": email_date,
+            "email_date": email_date,
         })
 
         tickets_collection.update_one(
@@ -741,14 +917,18 @@ def _process_email(mail, eid, folder="inbox"):
             {"$set": {
                 "status": "todo",
                 "updated_at": datetime.now(timezone.utc),
-                "last_customer_reply_at": datetime.now(timezone.utc),
-                "last_message_at": datetime.now(timezone.utc),
-                "last_customer_message_at": datetime.now(timezone.utc),
+                "last_customer_reply_at": email_date,
+                "last_message_at": email_date,
+                "last_customer_message_at": email_date,
             }},
         )
     else:
-        # Create a new ticket from this email
-        ticket_id = _create_ticket_from_email(from_name, from_addr, subject, body, email_parts=parts)
+        # Create a new ticket from this email, with full thread capture
+        ticket_id = _create_ticket_from_email(
+            from_name, from_addr, subject, body,
+            email_parts=parts, email_date=email_date,
+            mail=mail, gmail_thrid=gmail_thrid,
+        )
         if ticket_id:
             match = {"ticket_id": ticket_id, "match_method": "new_ticket"}
             logger.info(f"[INBOUND] New ticket {ticket_id} from={from_addr} subject={subject[:60]}")
@@ -775,6 +955,7 @@ def _process_email(mail, eid, folder="inbox"):
         "body_preview": body[:200],
         "matched": match is not None,
         "match_method": match["match_method"] if match else None,
+        "email_date": email_date,
         "created_at": datetime.now(timezone.utc),
     })
 
