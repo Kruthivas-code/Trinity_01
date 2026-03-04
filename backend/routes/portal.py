@@ -63,6 +63,7 @@ class CategoryCreate(BaseModel):
     icon: Optional[str] = "HelpCircle"
     subtopics: Optional[list] = []
     help_articles: Optional[list] = []
+    kb_group_key: Optional[str] = None
     order: Optional[int] = 0
 
 class CategoryUpdate(BaseModel):
@@ -72,6 +73,7 @@ class CategoryUpdate(BaseModel):
     icon: Optional[str] = None
     subtopics: Optional[list] = None
     help_articles: Optional[list] = None
+    kb_group_key: Optional[str] = None
     order: Optional[int] = None
 
 
@@ -206,7 +208,8 @@ async def get_category(slug: str):
 
 # ==================== Help Topics (KB-derived) ====================
 
-KB_GROUP_ICONS = {
+# Fallback metadata when nav groups don't have icon/description stored
+_KB_DEFAULT_ICONS = {
     "beginners-guide": "BookOpen",
     "features": "Boxes",
     "building-your-app": "Code",
@@ -214,7 +217,7 @@ KB_GROUP_ICONS = {
     "troubleshooting": "Wrench",
 }
 
-KB_GROUP_DESCRIPTIONS = {
+_KB_DEFAULT_DESCRIPTIONS = {
     "beginners-guide": "Get started with Emergent — setup, first app, plans, and FAQs",
     "features": "Explore core and advanced platform features",
     "building-your-app": "Guides on prompting, integrations, and custom agents",
@@ -255,11 +258,14 @@ async def list_help_topics():
                 })
 
         first_slug = group_articles[0]["slug"] if group_articles else None
+        # Use stored metadata from nav group, fall back to defaults
+        icon = group.get("portal_icon") or _KB_DEFAULT_ICONS.get(group["key"], "FileText")
+        description = group.get("portal_description") or _KB_DEFAULT_DESCRIPTIONS.get(group["key"], "")
         topics.append({
             "key": group["key"],
             "label": group.get("label", group["key"]),
-            "icon": KB_GROUP_ICONS.get(group["key"], "FileText"),
-            "description": KB_GROUP_DESCRIPTIONS.get(group["key"], ""),
+            "icon": icon,
+            "description": description,
             "article_count": len(group_articles),
             "first_slug": first_slug,
             "sections": sections,
@@ -299,14 +305,39 @@ async def get_help_topic(topic_key: str):
                 "articles": sec_articles,
             })
 
+    icon = group.get("portal_icon") or _KB_DEFAULT_ICONS.get(group["key"], "FileText")
+    description = group.get("portal_description") or _KB_DEFAULT_DESCRIPTIONS.get(group["key"], "")
+
     return {
         "key": group["key"],
         "label": group.get("label", group["key"]),
-        "icon": KB_GROUP_ICONS.get(group["key"], "FileText"),
-        "description": KB_GROUP_DESCRIPTIONS.get(group["key"], ""),
+        "icon": icon,
+        "description": description,
         "article_count": len(group_articles),
         "sections": sections,
     }
+
+
+# ==================== KB Nav Groups (for admin category linking) ====================
+
+@router.get("/admin/kb-nav-groups")
+async def list_kb_nav_groups(current_user: dict = Depends(require_admin)):
+    """Admin endpoint: returns KB navigation groups for linking categories to KB topics."""
+    kb_navigation = db["kb_navigation"]
+    nav_doc = kb_navigation.find_one({}, {"_id": 0})
+    nav_groups = (nav_doc or {}).get("nav_groups", [])
+    return {"nav_groups": [{"key": g["key"], "label": g.get("label", g["key"])} for g in nav_groups]}
+
+
+@router.get("/admin/kb-articles-list")
+async def list_kb_articles_for_admin(current_user: dict = Depends(require_admin)):
+    """Admin endpoint: returns all published KB articles for linking to categories."""
+    kb_articles = db["kb_articles"]
+    articles = list(kb_articles.find(
+        {"published": True},
+        {"_id": 0, "slug": 1, "title": 1}
+    ).sort("title", 1))
+    return {"articles": articles}
 
 
 # ==================== Categories (Admin) ====================
@@ -324,6 +355,7 @@ async def create_category(body: CategoryCreate, current_user: dict = Depends(req
         "icon": body.icon or "HelpCircle",
         "subtopics": body.subtopics or [],
         "help_articles": body.help_articles or [],
+        "kb_group_key": body.kb_group_key,
         "order": body.order or 0,
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
@@ -616,6 +648,7 @@ def seed_default_categories():
     defaults = [
         {"title": "Credits & Pricing", "slug": "credits-pricing", "icon": "CreditCard",
          "description": "Credit usage, types, refunds, and pricing plans",
+         "kb_group_key": "beginners-guide",
          "subtopics": [
              {"name": "Credit Usage", "items": ["High usage", "How credits work"]},
              {"name": "Credit Types", "items": ["Referral credits", "Deployment charges", "Universal key charges"]},
@@ -624,6 +657,7 @@ def seed_default_categories():
          ]},
         {"title": "Subscription Management", "slug": "subscription-management", "icon": "Receipt",
          "description": "Plans, billing, upgrades, and payment methods",
+         "kb_group_key": "beginners-guide",
          "subtopics": [
              {"name": "Plans", "items": ["Features by plan", "Enterprise plans"]},
              {"name": "Upgrade / Downgrade", "items": ["Annual plans", "Auto-renewal"]},
@@ -632,6 +666,7 @@ def seed_default_categories():
          ]},
         {"title": "Custom Domain", "slug": "custom-domain", "icon": "Globe",
          "description": "Linking, DNS, routing, subdomains, and SSL",
+         "kb_group_key": "deploy-and-manage",
          "subtopics": [
              {"name": "Linking", "items": []},
              {"name": "DNS", "items": []},
@@ -642,6 +677,7 @@ def seed_default_categories():
          ]},
         {"title": "Features", "slug": "features", "icon": "Boxes",
          "description": "GitHub, forking, custom agents, rollback, and integrations",
+         "kb_group_key": "features",
          "subtopics": [
              {"name": "GitHub integration", "items": []},
              {"name": "Forking", "items": []},
@@ -655,6 +691,7 @@ def seed_default_categories():
          ]},
         {"title": "Account Management", "slug": "account-management", "icon": "UserCog",
          "description": "Password reset, account transfer, deletion, and privacy",
+         "kb_group_key": "beginners-guide",
          "subtopics": [
              {"name": "Password reset", "items": []},
              {"name": "Account transfer", "items": []},
@@ -663,6 +700,7 @@ def seed_default_categories():
          ]},
         {"title": "Security & Compliance", "slug": "security-compliance", "icon": "ShieldCheck",
          "description": "Compliance, data location, encryption, and export",
+         "kb_group_key": None,
          "subtopics": [
              {"name": "Compliance", "items": []},
              {"name": "Data location", "items": []},
@@ -672,6 +710,7 @@ def seed_default_categories():
          ]},
         {"title": "Deployments", "slug": "deployments", "icon": "Rocket",
          "description": "Preview vs production, build failures, and rollback",
+         "kb_group_key": "deploy-and-manage",
          "subtopics": [
              {"name": "Preview vs Production", "items": []},
              {"name": "Build failures", "items": []},
@@ -685,6 +724,7 @@ def seed_default_categories():
          ]},
         {"title": "Agent (Core AI System)", "slug": "agent-ai", "icon": "Bot",
          "description": "Tech stacks, code quality, bugs, and production readiness",
+         "kb_group_key": "building-your-app",
          "subtopics": [
              {"name": "Tech stacks", "items": []},
              {"name": "Code quality", "items": []},
@@ -693,6 +733,7 @@ def seed_default_categories():
          ]},
         {"title": "Database", "slug": "database", "icon": "Database",
          "description": "Data sync, external DB, triggers, and export",
+         "kb_group_key": "building-your-app",
          "subtopics": [
              {"name": "Data sync", "items": []},
              {"name": "External DB", "items": []},
@@ -702,6 +743,7 @@ def seed_default_categories():
          ]},
         {"title": "Mobile Builds", "slug": "mobile-builds", "icon": "Smartphone",
          "description": "Publish to store and technical issues",
+         "kb_group_key": "features",
          "subtopics": [
              {"name": "Publish to store", "items": []},
              {"name": "Technical issues", "items": []},

@@ -9,28 +9,6 @@ const ICON_OPTIONS = [
   'Settings', 'Search', 'Bell', 'Lock', 'Zap', 'Code',
 ];
 
-const HELP_ARTICLES = [
-  { title: 'Welcome To Emergent', url: 'https://help.emergent.sh/welcome' },
-  { title: 'Your First App', url: 'https://help.emergent.sh/your-first-app' },
-  { title: 'Plans and Credits', url: 'https://help.emergent.sh/plans-and-credits' },
-  { title: 'FAQs', url: 'https://help.emergent.sh/faqs' },
-  { title: 'Voice Mode', url: 'https://help.emergent.sh/voice-mode' },
-  { title: 'GitHub Integration', url: 'https://help.emergent.sh/github-integration' },
-  { title: 'Universal Key', url: 'https://help.emergent.sh/universal-key' },
-  { title: 'Deployment on Emergent', url: 'https://help.emergent.sh/deployment-on-emergent' },
-  { title: 'Context Limits', url: 'https://help.emergent.sh/context-limits' },
-  { title: 'Mobile App Development', url: 'https://help.emergent.sh/mobile-app-development' },
-  { title: 'Teams Plan & Collaboration', url: 'https://help.emergent.sh/teams-plan-collaboration' },
-  { title: 'Deployment Types', url: 'https://help.emergent.sh/deployment-types' },
-  { title: 'Rollback Feature', url: 'https://help.emergent.sh/rollback-feature' },
-  { title: 'Forking In Emergent', url: 'https://help.emergent.sh/forking-in-emergent' },
-  { title: 'MCP (Model Context Protocol)', url: 'https://help.emergent.sh/mcp' },
-  { title: 'Prompting Basics', url: 'https://help.emergent.sh/prompting-basics' },
-  { title: 'Pre-deployment Health Check', url: 'https://help.emergent.sh/pre-deployment-health-check' },
-  { title: 'Fixing Design Inconsistencies', url: 'https://help.emergent.sh/fixing-design-inconsistencies' },
-  { title: 'How Do Apps Work?', url: 'https://help.emergent.sh/how-do-apps-work' },
-];
-
 const slugify = (text) =>
   text.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-');
 
@@ -42,8 +20,10 @@ const PortalCategoryManager = () => {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
   const [expandedId, setExpandedId] = useState(null);
+  const [kbArticles, setKbArticles] = useState([]);
+  const [kbNavGroups, setKbNavGroups] = useState([]);
 
-  const emptyForm = { title: '', slug: '', description: '', icon: 'HelpCircle', subtopics: [], help_articles: [], order: 0 };
+  const emptyForm = { title: '', slug: '', description: '', icon: 'HelpCircle', subtopics: [], help_articles: [], kb_group_key: '', order: 0 };
   const [form, setForm] = useState(emptyForm);
 
   const fetchCategories = useCallback(async () => {
@@ -60,7 +40,26 @@ const PortalCategoryManager = () => {
     }
   }, []);
 
-  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+  const fetchKbData = useCallback(async () => {
+    try {
+      const [articlesRes, navRes] = await Promise.all([
+        fetch(`${BACKEND_URL}/api/portal/admin/kb-articles-list`, { credentials: 'include' }),
+        fetch(`${BACKEND_URL}/api/portal/admin/kb-nav-groups`, { credentials: 'include' }),
+      ]);
+      if (articlesRes.ok) {
+        const data = await articlesRes.json();
+        setKbArticles(data.articles || []);
+      }
+      if (navRes.ok) {
+        const data = await navRes.json();
+        setKbNavGroups(data.nav_groups || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => { fetchCategories(); fetchKbData(); }, [fetchCategories, fetchKbData]);
 
   const openCreate = () => {
     setEditingCat(null);
@@ -77,6 +76,7 @@ const PortalCategoryManager = () => {
       icon: cat.icon || 'HelpCircle',
       subtopics: cat.subtopics || [],
       help_articles: cat.help_articles || [],
+      kb_group_key: cat.kb_group_key || '',
       order: cat.order || 0,
     });
     setShowForm(true);
@@ -161,6 +161,19 @@ const PortalCategoryManager = () => {
         help_articles: exists
           ? f.help_articles.filter(a => a.url !== article.url)
           : [...f.help_articles, article],
+      };
+    });
+  };
+
+  const toggleKbArticle = (article) => {
+    const url = `/docs/${article.slug}`;
+    setForm(f => {
+      const exists = f.help_articles.some(a => a.url === url);
+      return {
+        ...f,
+        help_articles: exists
+          ? f.help_articles.filter(a => a.url !== url)
+          : [...f.help_articles, { title: article.title, url }],
       };
     });
   };
@@ -259,6 +272,14 @@ const PortalCategoryManager = () => {
             {expandedId === cat.slug && (
               <div className="border-t border-border/20 px-4 py-3 bg-muted/10 space-y-2">
                 <p className="text-xs text-muted-foreground">{cat.description}</p>
+                {cat.kb_group_key && (
+                  <div>
+                    <p className="text-[10px] font-mono uppercase text-muted-foreground/50 mb-1">Linked KB Group</p>
+                    <span className="text-[11px] px-2 py-0.5 rounded bg-[#00A1B2]/10 border border-[#00A1B2]/20 text-[#00A1B2]">
+                      {cat.kb_group_key}
+                    </span>
+                  </div>
+                )}
                 {cat.subtopics?.length > 0 && (
                   <div>
                     <p className="text-[10px] font-mono uppercase text-muted-foreground/50 mb-1">Subtopics</p>
@@ -407,6 +428,23 @@ const PortalCategoryManager = () => {
                 </div>
               </div>
 
+              {/* KB Navigation Group Link */}
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Linked KB Topic</label>
+                <p className="text-[10px] text-muted-foreground/50 mb-2">Links this category to a KB documentation section for "Related Documentation" display</p>
+                <select
+                  value={form.kb_group_key || ''}
+                  onChange={e => setForm(f => ({ ...f, kb_group_key: e.target.value || null }))}
+                  className="w-full h-9 px-3 rounded-md border border-border bg-secondary/20 text-sm focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  data-testid="cat-form-kb-group"
+                >
+                  <option value="">None (no linked documentation)</option>
+                  {kbNavGroups.map(g => (
+                    <option key={g.key} value={g.key}>{g.label} ({g.key})</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Help Articles */}
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -425,29 +463,34 @@ const PortalCategoryManager = () => {
                   </button>
                 </div>
 
-                {/* Quick-pick from known articles */}
+                {/* Quick-pick from KB articles */}
                 <div className="mb-3 max-h-36 overflow-y-auto rounded-md border border-border/30 bg-secondary/10 p-2">
-                  <p className="text-[10px] font-mono text-muted-foreground/50 mb-1.5">help.emergent.sh articles</p>
-                  <div className="flex flex-wrap gap-1">
-                    {HELP_ARTICLES.map(article => {
-                      const selected = form.help_articles.some(a => a.url === article.url);
-                      return (
-                        <button
-                          key={article.url}
-                          type="button"
-                          onClick={() => toggleHelpArticle(article)}
-                          className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
-                            selected
-                              ? 'bg-foreground text-background border-foreground'
-                              : 'border-border/30 text-muted-foreground hover:border-foreground/20 hover:text-foreground'
-                          }`}
-                          data-testid={`article-toggle-${article.title.replace(/\s+/g, '-').toLowerCase()}`}
-                        >
-                          {article.title}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <p className="text-[10px] font-mono text-muted-foreground/50 mb-1.5">Knowledge Base articles ({kbArticles.length})</p>
+                  {kbArticles.length === 0 ? (
+                    <p className="text-[10px] text-muted-foreground/40 italic">No published articles found</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {kbArticles.map(article => {
+                        const url = `/docs/${article.slug}`;
+                        const selected = form.help_articles.some(a => a.url === url);
+                        return (
+                          <button
+                            key={article.slug}
+                            type="button"
+                            onClick={() => toggleKbArticle(article)}
+                            className={`text-[10px] px-2 py-0.5 rounded border transition-colors ${
+                              selected
+                                ? 'bg-foreground text-background border-foreground'
+                                : 'border-border/30 text-muted-foreground hover:border-foreground/20 hover:text-foreground'
+                            }`}
+                            data-testid={`article-toggle-${article.slug}`}
+                          >
+                            {article.title}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Currently linked */}
@@ -455,10 +498,10 @@ const PortalCategoryManager = () => {
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-mono text-muted-foreground/50">Linked ({form.help_articles.length})</p>
                     {form.help_articles.map((art, i) => {
-                      const isKnown = HELP_ARTICLES.some(a => a.url === art.url);
+                      const isKbArticle = art.url?.startsWith('/docs/');
                       return (
                         <div key={i} className="flex items-center gap-2">
-                          {isKnown ? (
+                          {isKbArticle ? (
                             <span className="flex-1 text-[11px] text-foreground/70 truncate">{art.title}</span>
                           ) : (
                             <>
@@ -471,7 +514,7 @@ const PortalCategoryManager = () => {
                               <input
                                 value={art.url}
                                 onChange={e => updateArticle(i, 'url', e.target.value)}
-                                placeholder="https://help.emergent.sh/..."
+                                placeholder="https://..."
                                 className="flex-1 h-7 px-2 rounded border border-border/30 bg-secondary/20 text-[11px] font-mono focus:outline-none"
                               />
                             </>

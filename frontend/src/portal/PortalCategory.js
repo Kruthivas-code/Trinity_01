@@ -9,20 +9,6 @@ const ICON_MAP = {
   Rocket, Bot, Database, Smartphone,
 };
 
-// Map portal categories to KB nav group keys for relevant articles
-const CATEGORY_KB_GROUPS = {
-  'credits-pricing': 'beginners-guide',
-  'subscription-management': 'beginners-guide',
-  'custom-domain': 'deploy-and-manage',
-  'features': 'features',
-  'account-management': 'beginners-guide',
-  'security-compliance': null,
-  'deployments': 'deploy-and-manage',
-  'agent-ai': 'building-your-app',
-  'database': 'building-your-app',
-  'mobile-builds': 'features',
-};
-
 const PortalCategory = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -38,8 +24,8 @@ const PortalCategory = () => {
         const catData = await catRes.json();
         setCategory(catData);
 
-        // Fetch related KB articles from the mapped nav group
-        const navGroup = CATEGORY_KB_GROUPS[slug];
+        // Fetch related KB articles from the category's linked nav group
+        const navGroup = catData.kb_group_key;
         if (navGroup) {
           const articlesRes = await fetch(`${BACKEND_URL}/api/kb/articles?nav_group=${navGroup}`);
           if (articlesRes.ok) {

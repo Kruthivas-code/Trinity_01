@@ -2,13 +2,13 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: '/app/tests/e2e',
-  outputDir: '/root/.emergent/automation_output/20260303_154355/test-results',
+  outputDir: '/root/.emergent/automation_output/20260304_163716/test-results',
   timeout: 60000,
   retries: 0,
   workers: 1,
   reporter: [
     ['line'],
-    ['json', { outputFile: '/root/.emergent/automation_output/20260303_154355/results.json' }],
+    ['json', { outputFile: '/root/.emergent/automation_output/20260304_163716/results.json' }],
   ],
   use: {
     baseURL: 'https://columns-rebuild.preview.emergentagent.com',
