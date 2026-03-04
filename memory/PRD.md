@@ -450,12 +450,21 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - All 10 existing categories migrated with `kb_group_key` values
 - Tested: 24/24 pass (iteration_61)
 
+### Automatic Full Gmail Thread Capture (Mar 4, 2026)
+- **Full thread fetch on ticket creation**: When a new ticket is created from an email with a Gmail Thread ID, `_fetch_full_thread()` uses `X-GM-THRID` IMAP search to fetch ALL messages in the thread (regardless of age)
+- **Original email timestamps**: Added `_parse_email_date()` to extract RFC 2822 `Date` headers and convert to UTC. All messages now store `email_date` field and use it for `created_at` instead of processing time
+- **Chronological ordering**: Thread messages sorted oldest-first; oldest = `original` type, rest = `customer_reply` type
+- **Outbound email timestamps**: Sent-folder processing also uses original email Date headers
+- **Thread record storage**: `_store_thread_record()` helper stores dedup/matching records for each backfilled message
+- **Graceful error handling**: Falls back to single-email ticket when IMAP connection unavailable or thread fetch fails
+- **Modified files**: `services/email_poller.py`
+- Tested: 27/27 pass (iteration_62) — all unit + regression tests
+
 ---
 
 ## Pending / Backlog
 
 ### P2
 - Real-time notifications for agents
-- On-demand full thread fetch from Gmail
 - Recurring job for auto-closing stale tickets
 - Email analytics dashboard (send/receive volumes, match rates)
