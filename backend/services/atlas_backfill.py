@@ -789,8 +789,13 @@ def auto_resume_on_startup():
         _save_state(state)
         start_backfill()
 
-
-
+    # Also auto-resume enrichment if it was running
+    enrich_state = _state_col.find_one({"_type": "enrichment"}, {"_id": 0})
+    if enrich_state and enrich_state.get("status") in ("running", "paused"):
+        logger.info(f"[ENRICHMENT] Found incomplete enrichment (processed={enrich_state.get('processed', 0)}). Auto-resuming...")
+        enrich_state["status"] = "paused"
+        _state_col.update_one({"_type": "enrichment"}, {"$set": enrich_state}, upsert=True)
+        run_enrichment_pass()
 def import_atlas_agents() -> dict:
     """
     Import all Atlas agents into Trinity users collection.
