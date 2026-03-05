@@ -202,3 +202,131 @@ When ready to fully switch from Atlas to Trinity:
 | Missing messages after merge | Import ALL Atlas messages, dedup by content+timestamp |
 | Email threading broken | Trinity ticket preserved with `gmail_thread_id` — threading continues to work |
 | Enrichment running concurrently | Stop enrichment before running merge, restart after |
+
+
+---
+
+## Phase 5: Deduplication Verification (Post-Merge)
+
+This phase runs AFTER every merge/sync operation to guarantee zero duplicates in both DB and UI.
+
+### 5.1 Ticket-Level Dedup Checks
+
+**Check 1: No duplicate `atlas_conversation_id`**
+```
+db.tickets.aggregate([
+  { $match: { atlas_conversation_id: { $exists: true, $ne: null } } },
+  { $group: { _id: "$atlas_conversation_id", count: { $sum: 1 }, ticket_ids: { $push: "$ticket_id" } } },
+  { $match: { count: { $gt: 1 } } }
+])
+```
+Expected: 0 results. If any, the merge left behind the Atlas-only duplicate ticket.
+
+**Check 2: No duplicate email conversations (same customer + subject + timestamp)**
+```
+db.tickets.aggregate([
+  { $match: { source: "email", customer_email: { $ne: null } } },
+  { $group: {
+      _id: { email: { $toLower: "$customer_email" }, title: "$title" },
+      count: { $sum: 1 },
+      ticket_ids: { $push: "$ticket_id" },
+      timestamps: { $push: "$created_at" }
+  }},
+  { $match: { count: { $gt: 1 } } }
+])
+```
+For any results: compare timestamps — if within ±5 min, these are duplicates that should have been merged.
+
+**Check 3: Every `atlas_conversation_id` points to exactly one ticket**
+```
+db.tickets.createIndex({ "atlas_conversation_id": 1 }, { unique: true, sparse: true })
+```
+This index enforces the constraint at the DB level. If it fails to create, duplicates exist.
+
+### 5.2 Message-Level Dedup Checks
+
+**Check 4: No duplicate `atlas_message_id` within a ticket**
+```
+db.messages.aggregate([
+  { $match: { atlas_message_id: { $exists: true, $ne: null } } },
+  { $group: { _id: { ticket_id: "$ticket_id", atlas_msg_id: "$atlas_message_id" }, count: { $sum: 1 } } },
+  { $match: { count: { $gt: 1 } } }
+])
+```
+Expected: 0 results.
+
+**Check 5: No duplicate messages by content + author + timestamp within a ticket**
+```
+db.messages.aggregate([
+  { $group: {
+      _id: {
+        ticket_id: "$ticket_id",
+        author_email: { $toLower: { $ifNull: ["$author_email", "unknown"] } },
+        created_at_minute: { $dateTrunc: { date: "$created_at", unit: "minute" } },
+        content_hash: { $substr: ["$content", 0, 100] }
+      },
+      count: { $sum: 1 },
+      message_ids: { $push: "$message_id" }
+  }},
+  { $match: { count: { $gt: 1 } } }
+])
+```
+This catches messages that were captured by both Trinity (email poller) and Atlas (import) with slightly different metadata but same content. For any results: keep the Trinity version (has email headers), delete the Atlas version.
+
+**Check 6: Global `atlas_message_id` uniqueness**
+```
+db.messages.createIndex({ "atlas_message_id": 1 }, { unique: true, sparse: true })
+```
+Enforce at the DB level.
+
+### 5.3 UI Dedup Verification
+
+**Check 7: Message display order**
+For merged tickets, verify that the conversation view shows messages in strict chronological order with no duplicates:
+- Fetch messages for a sample of 50 merged tickets
+- For each: verify no two messages have the same content within a 60-second window
+- Verify `created_at` is monotonically increasing (allowing for slight gaps)
+
+**Check 8: Ticket list dedup**
+- For any `customer_email`, the ticket list should not show two tickets for the same conversation
+- Query: group tickets by `customer_email` + normalized `title`, check for pairs with `created_at` within ±5 min
+- Any results = UI will show duplicate tickets to the agent
+
+### 5.4 Automated Verification Script
+
+Build a single `verify_no_duplicates()` function that runs all 8 checks above and returns a report:
+
+```python
+def verify_no_duplicates() -> dict:
+    """
+    Returns: {
+      "status": "clean" | "duplicates_found",
+      "ticket_dupes": [...],        # Check 1-3
+      "message_dupes": [...],       # Check 4-6
+      "ui_display_dupes": [...],    # Check 7-8
+      "auto_fixed": int,            # Auto-removable duplicates
+      "needs_manual_review": int    # Edge cases
+    }
+    """
+```
+
+This function will be:
+1. **Run after the one-time merge** (Phase 2) — mandatory gate before proceeding
+2. **Run after every sync cycle** (Phase 3) — automated, logged
+3. **Exposed as an API endpoint** — `GET /api/admin/atlas/verify` — for manual checks
+
+### 5.5 Auto-Fix Strategy
+
+When duplicates are found:
+- **Duplicate tickets** (same `atlas_conversation_id`): Keep the one with `gmail_thread_id` (Trinity version), delete the other. If neither has it, keep the older one.
+- **Duplicate messages** (same content within a ticket): Keep the one with `email_message_id` or `in_reply_to` headers (Trinity version), delete the other.
+- **Log every auto-fix** for audit trail.
+
+### 5.6 DB Constraints (Prevention)
+
+After the merge is verified clean, enforce uniqueness at the DB level to prevent future duplicates:
+```
+tickets:  unique sparse index on atlas_conversation_id (already exists)
+messages: unique sparse index on atlas_message_id (already exists)
+messages: compound index on { ticket_id, content_hash, created_at_minute } for fast dedup queries
+```
