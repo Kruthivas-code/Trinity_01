@@ -9,7 +9,8 @@ import logging
 from dependencies import get_current_user
 from services.atlas_backfill import (
     start_backfill, stop_backfill, reset_backfill,
-    get_status, test_batch,
+    get_status, test_batch, import_atlas_agents,
+    run_enrichment_pass, get_enrichment_status, stop_enrichment,
 )
 
 logger = logging.getLogger("atlas_routes")
@@ -65,3 +66,29 @@ async def backfill_test(
         raise HTTPException(status_code=400, detail="Test batch max 200 conversations")
     result = test_batch(count=req.count)
     return result
+
+
+@router.post("/agents/import")
+async def atlas_import_agents(current_user: dict = Depends(get_current_user)):
+    """Import all Atlas agents into Trinity users. Safe to re-run (upserts by email)."""
+    result = import_atlas_agents()
+    return result
+
+
+@router.post("/backfill/enrich")
+async def backfill_enrich(current_user: dict = Depends(get_current_user)):
+    """Start the enrichment pass for previously-imported tickets (runs in background)."""
+    result = run_enrichment_pass()
+    return result
+
+
+@router.get("/backfill/enrich/status")
+async def enrichment_status(current_user: dict = Depends(get_current_user)):
+    """Get current enrichment progress."""
+    return get_enrichment_status()
+
+
+@router.post("/backfill/enrich/stop")
+async def enrichment_stop(current_user: dict = Depends(get_current_user)):
+    """Stop the enrichment pass."""
+    return stop_enrichment()

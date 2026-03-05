@@ -243,8 +243,8 @@ def _extract_domain(email_addr: str) -> Optional[str]:
     return email_addr.split("@", 1)[1].lower()
 
 
-def _get_or_create_customer(email_addr: str, name: str) -> Optional[dict]:
-    """Find or create a customer record by email."""
+def _get_or_create_customer(email_addr: str, name: str, atlas_customer: dict = None) -> Optional[dict]:
+    """Find or create a customer record by email. Enriches with Atlas data."""
     if not email_addr:
         return None
     email_lower = email_addr.lower().strip()
@@ -253,6 +253,29 @@ def _get_or_create_customer(email_addr: str, name: str) -> Optional[dict]:
         {"_id": 0, "customer_id": 1},
     )
     if existing:
+        # Enrich existing customer with Atlas data if available
+        if atlas_customer:
+            enrichment = {}
+            phone = atlas_customer.get("phoneNumber")
+            if phone:
+                enrichment["phone"] = phone
+            cust_cf = atlas_customer.get("customFields")
+            if cust_cf:
+                enrichment["atlas_custom_fields"] = cust_cf
+            atlas_uid = atlas_customer.get("externalUserId")
+            if atlas_uid:
+                enrichment["atlas_external_user_id"] = atlas_uid
+            atlas_cid = str(atlas_customer.get("id", ""))
+            if atlas_cid:
+                enrichment["atlas_customer_id"] = atlas_cid
+            company_id = atlas_customer.get("companyId") or atlas_customer.get("accountId")
+            if company_id:
+                enrichment["atlas_company_id"] = str(company_id)
+            if enrichment:
+                customers_collection.update_one(
+                    {"customer_id": existing["customer_id"]},
+                    {"$set": enrichment},
+                )
         return existing
     customer_id = f"cust_{uuid.uuid4().hex[:12]}"
     doc = {
@@ -263,12 +286,28 @@ def _get_or_create_customer(email_addr: str, name: str) -> Optional[dict]:
         "created_at": datetime.now(timezone.utc),
         "source": "atlas_import",
     }
+    # Add Atlas enrichment fields on creation
+    if atlas_customer:
+        phone = atlas_customer.get("phoneNumber")
+        if phone:
+            doc["phone"] = phone
+        cust_cf = atlas_customer.get("customFields")
+        if cust_cf:
+            doc["atlas_custom_fields"] = cust_cf
+        atlas_uid = atlas_customer.get("externalUserId")
+        if atlas_uid:
+            doc["atlas_external_user_id"] = atlas_uid
+        atlas_cid = str(atlas_customer.get("id", ""))
+        if atlas_cid:
+            doc["atlas_customer_id"] = atlas_cid
+        company_id = atlas_customer.get("companyId") or atlas_customer.get("accountId")
+        if company_id:
+            doc["atlas_company_id"] = str(company_id)
     try:
         customers_collection.insert_one(doc)
         doc.pop("_id", None)
         return doc
     except Exception:
-        # Might be a race condition duplicate
         return customers_collection.find_one(
             {"email": {"$regex": f"^{re.escape(email_lower)}$", "$options": "i"}},
             {"_id": 0, "customer_id": 1},
@@ -280,6 +319,7 @@ def _map_conversation(conv: dict, tag_lookup: dict, agent_email_map: dict) -> di
     customer = conv.get("customer") or {}
     assigned_agent = conv.get("assignedAgent") or {}
     stats = conv.get("statistics") or {}
+    csat = conv.get("csat") or {}
 
     # Tags
     raw_tags = conv.get("tags") or []
@@ -324,7 +364,7 @@ def _map_conversation(conv: dict, tag_lookup: dict, agent_email_map: dict) -> di
         # Assignment
         "assignee_id": None,
         "team_id": conv.get("assignedTeamId"),
-        # Atlas metadata
+        # Atlas metadata (core)
         "atlas_conversation_id": str(conv.get("id", "")),
         "atlas_customer_id": str(conv.get("customerId", "")),
         "atlas_number": conv.get("number"),
@@ -332,21 +372,37 @@ def _map_conversation(conv: dict, tag_lookup: dict, agent_email_map: dict) -> di
         "atlas_priority": conv.get("priority"),
         "atlas_assigned_agent_name": _agent_name(assigned_agent),
         "atlas_assigned_agent_email": assigned_agent.get("email"),
+        "atlas_assigned_agent_id": conv.get("assignedAgentId") or assigned_agent.get("id"),
         # Timestamps
         "started_at": _parse_dt(conv.get("startedAt")),
         "closed_at": _parse_dt(conv.get("closedAt")),
         "assigned_at": _parse_dt(conv.get("assignedAt")),
+        "escalated_at": _parse_dt(conv.get("escalatedAt")),
+        "snoozed_until": _parse_dt(conv.get("snoozedUntil")),
+        # Actor tracking
+        "closed_by": conv.get("closedBy"),
+        "assigned_by": conv.get("assignedBy"),
+        "updated_by": conv.get("updatedBy"),
         # Channel
         "started_channel": conv.get("startedChannel"),
+        "started_sub_channel": conv.get("startedSubChannel"),
+        # Environment
+        "browser": conv.get("browser") or None,
+        "operating_system": conv.get("operatingSystem") or None,
+        # Atlas AI
+        "atlas_assigned_to_zeus": conv.get("assignedToZeus"),
+        # CSAT
+        "atlas_csat_score": csat.get("score") if csat else None,
+        "atlas_csat_comment": csat.get("comment") if csat else None,
         # Stats
         "first_response_time": stats.get("firstResponseTime"),
         "avg_response_time": stats.get("avgResponseTime"),
         "total_resolution_time": stats.get("totalResolutionTime"),
     }
 
-    # Link customer
+    # Link customer (with enrichment)
     if customer_email:
-        cust = _get_or_create_customer(customer_email, ticket_doc["customer_name"])
+        cust = _get_or_create_customer(customer_email, ticket_doc["customer_name"], atlas_customer=customer)
         if cust:
             ticket_doc["customer_id"] = cust.get("customer_id")
 
@@ -383,6 +439,18 @@ def _map_message(msg: dict, ticket_id: str, atlas_conversation_id: str) -> dict:
 
     raw_text = msg.get("text") or ""
 
+    # Attachments: store name, url, size
+    raw_attachments = msg.get("attachments") or []
+    attachments = [
+        {
+            "name": a.get("name", ""),
+            "url": a.get("url", ""),
+            "size": a.get("size", 0),
+        }
+        for a in raw_attachments
+        if a.get("url")
+    ]
+
     return {
         "message_id": f"atlas_msg_{msg.get('id', uuid.uuid4().hex[:12])}",
         "ticket_id": ticket_id,
@@ -394,6 +462,7 @@ def _map_message(msg: dict, ticket_id: str, atlas_conversation_id: str) -> dict:
         "author_email": author_email,
         "source": "atlas",
         "mentions": [],
+        "attachments": attachments if attachments else None,
         "created_at": _parse_dt(msg.get("sentAt")) or _parse_dt(msg.get("createdAt")) or datetime.now(timezone.utc),
         "atlas_message_id": msg.get("id"),
         "atlas_conversation_id": atlas_conversation_id,
@@ -719,3 +788,291 @@ def auto_resume_on_startup():
         state["status"] = STATUS_PAUSED
         _save_state(state)
         start_backfill()
+
+
+
+def import_atlas_agents() -> dict:
+    """
+    Import all Atlas agents into Trinity users collection.
+    Uses email as the merge key — if a user with the same email already exists
+    (e.g. from Google Auth signup), we update rather than duplicate.
+    """
+    if not ATLAS_KEY:
+        return {"error": "No ATLAS_API_KEY configured"}
+
+    ACCESS_TYPE_MAP = {
+        "ADMIN": "admin",
+        "MEMBER": "agent",
+    }
+
+    results = {
+        "total_fetched": 0,
+        "created": 0,
+        "updated": 0,
+        "errors": [],
+    }
+
+    cursor = 0
+    all_agents = []
+    while True:
+        resp = requests.get(
+            f"{ATLAS_API}/users",
+            params={"cursor": cursor, "limit": 200},
+            headers=_headers(),
+            timeout=REQUEST_TIMEOUT,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        agents = data.get("data", data) if isinstance(data, dict) else data
+        if not agents:
+            break
+        all_agents.extend(agents)
+        total = data.get("total", 0) if isinstance(data, dict) else 0
+        if len(all_agents) >= total or not total:
+            break
+        cursor += len(agents)
+
+    results["total_fetched"] = len(all_agents)
+
+    for agent in all_agents:
+        email = (agent.get("email") or "").lower().strip()
+        if not email:
+            results["errors"].append(f"Agent {agent.get('id')}: no email, skipped")
+            continue
+
+        atlas_user_id = str(agent.get("id", ""))
+        first_name = agent.get("firstName") or ""
+        last_name = agent.get("lastName") or ""
+        full_name = f"{first_name} {last_name}".strip() or email
+        profile_url = agent.get("profileUrl")
+        access_types = agent.get("accessTypes") or []
+        role = "admin" if "ADMIN" in access_types else "agent"
+        created_at = _parse_dt(agent.get("createdAt")) or datetime.now(timezone.utc)
+
+        try:
+            existing = users_collection.find_one({"email": email}, {"_id": 0, "user_id": 1})
+            if existing:
+                # Update existing user with Atlas metadata (don't overwrite core fields)
+                users_collection.update_one(
+                    {"email": email},
+                    {"$set": {
+                        "atlas_user_id": atlas_user_id,
+                        "atlas_access_types": access_types,
+                        "atlas_profile_url": profile_url,
+                    }},
+                )
+                results["updated"] += 1
+            else:
+                # Create new user — will merge cleanly when they sign up via Google Auth
+                user_id = f"user_{uuid.uuid4().hex[:12]}"
+                users_collection.insert_one({
+                    "user_id": user_id,
+                    "email": email,
+                    "name": full_name,
+                    "picture": profile_url,
+                    "role": role,
+                    "created_at": created_at,
+                    "updated_at": datetime.now(timezone.utc),
+                    "source": "atlas_import",
+                    "atlas_user_id": atlas_user_id,
+                    "atlas_access_types": access_types,
+                    "atlas_profile_url": profile_url,
+                })
+                results["created"] += 1
+        except Exception as e:
+            results["errors"].append(f"{email}: {str(e)[:200]}")
+
+    return results
+
+
+_enrichment_thread: Optional[threading.Thread] = None
+_enrichment_stop = threading.Event()
+
+
+def run_enrichment_pass() -> dict:
+    """
+    Start the enrichment pass in a background thread.
+    Re-fetches conversations from Atlas for tickets missing new metadata.
+    """
+    global _enrichment_thread
+
+    if _enrichment_thread and _enrichment_thread.is_alive():
+        # Return current state
+        enrich_state = _state_col.find_one({"_type": "enrichment"}, {"_id": 0})
+        if enrich_state:
+            enrich_state.pop("_type", None)
+            return {"status": "already_running", **enrich_state}
+        return {"status": "already_running"}
+
+    _enrichment_stop.clear()
+    _enrichment_thread = threading.Thread(
+        target=_run_enrichment_loop,
+        daemon=True,
+        name="atlas-enrichment",
+    )
+    _enrichment_thread.start()
+    return {"status": "started", "message": "Enrichment pass started in background."}
+
+
+def get_enrichment_status() -> dict:
+    """Get current enrichment progress."""
+    enrich_state = _state_col.find_one({"_type": "enrichment"}, {"_id": 0})
+    if not enrich_state:
+        return {"status": "idle", "processed": 0, "tickets_updated": 0, "messages_patched": 0}
+    enrich_state.pop("_type", None)
+    if enrich_state.get("errors") and len(enrich_state["errors"]) > 20:
+        enrich_state["errors"] = enrich_state["errors"][-20:]
+    return enrich_state
+
+
+def stop_enrichment() -> dict:
+    """Stop the enrichment pass."""
+    global _enrichment_thread
+    if not _enrichment_thread or not _enrichment_thread.is_alive():
+        return {"status": "not_running"}
+    _enrichment_stop.set()
+    _enrichment_thread.join(timeout=30)
+    return {"status": "stopped"}
+
+
+def _run_enrichment_loop():
+    """Background enrichment loop. Processes batches of 100 tickets."""
+    if not ATLAS_KEY:
+        logger.error("[ENRICHMENT] No ATLAS_API_KEY configured")
+        return
+
+    tag_lookup = _fetch_tags()
+    all_users = list(users_collection.find({}, {"_id": 0, "user_id": 1, "email": 1}))
+    agent_email_map = {u["email"].lower(): u["user_id"] for u in all_users if u.get("email")}
+
+    enrich_state = _state_col.find_one({"_type": "enrichment"}, {"_id": 0})
+    if not enrich_state:
+        enrich_state = {
+            "_type": "enrichment",
+            "status": "running",
+            "processed": 0,
+            "tickets_updated": 0,
+            "messages_patched": 0,
+            "last_atlas_id": None,
+            "errors": [],
+        }
+    enrich_state["status"] = "running"
+    _state_col.update_one({"_type": "enrichment"}, {"$set": enrich_state}, upsert=True)
+
+    logger.info("[ENRICHMENT] Starting enrichment pass...")
+
+    while not _enrichment_stop.is_set():
+        query = {
+            "source": "atlas",
+            "atlas_conversation_id": {"$exists": True},
+            "started_sub_channel": {"$exists": False},
+        }
+        if enrich_state.get("last_atlas_id"):
+            query["atlas_conversation_id"] = {
+                "$exists": True,
+                "$gt": enrich_state["last_atlas_id"],
+            }
+            query["started_sub_channel"] = {"$exists": False}
+
+        tickets_batch = list(
+            tickets_collection.find(query, {"_id": 0, "ticket_id": 1, "atlas_conversation_id": 1})
+            .sort("atlas_conversation_id", 1)
+            .limit(50)
+        )
+
+        if not tickets_batch:
+            enrich_state["status"] = "completed"
+            _state_col.update_one({"_type": "enrichment"}, {"$set": enrich_state}, upsert=True)
+            logger.info(f"[ENRICHMENT] Completed. Updated {enrich_state['tickets_updated']} tickets, {enrich_state['messages_patched']} messages patched.")
+            return
+
+        for ticket in tickets_batch:
+            if _enrichment_stop.is_set():
+                enrich_state["status"] = "paused"
+                _state_col.update_one({"_type": "enrichment"}, {"$set": enrich_state}, upsert=True)
+                return
+
+            atlas_id = ticket["atlas_conversation_id"]
+            ticket_id = ticket["ticket_id"]
+
+            try:
+                resp = requests.get(
+                    f"{ATLAS_API}/conversations/{atlas_id}",
+                    headers=_headers(),
+                    timeout=REQUEST_TIMEOUT,
+                )
+                if resp.status_code == 404:
+                    # Mark as enriched so we don't retry
+                    tickets_collection.update_one(
+                        {"ticket_id": ticket_id},
+                        {"$set": {"started_sub_channel": None}},
+                    )
+                    enrich_state["processed"] += 1
+                    enrich_state["last_atlas_id"] = atlas_id
+                    continue
+                resp.raise_for_status()
+                conv = resp.json()
+
+                csat = conv.get("csat") or {}
+                patch = {
+                    "started_sub_channel": conv.get("startedSubChannel"),
+                    "browser": conv.get("browser") or None,
+                    "operating_system": conv.get("operatingSystem") or None,
+                    "escalated_at": _parse_dt(conv.get("escalatedAt")),
+                    "snoozed_until": _parse_dt(conv.get("snoozedUntil")),
+                    "closed_by": conv.get("closedBy"),
+                    "assigned_by": conv.get("assignedBy"),
+                    "updated_by": conv.get("updatedBy"),
+                    "atlas_assigned_to_zeus": conv.get("assignedToZeus"),
+                    "atlas_csat_score": csat.get("score") if csat else None,
+                    "atlas_csat_comment": csat.get("comment") if csat else None,
+                    "atlas_assigned_agent_id": conv.get("assignedAgentId") or (conv.get("assignedAgent") or {}).get("id"),
+                }
+
+                assigned_agent = conv.get("assignedAgent") or {}
+                agent_email = (assigned_agent.get("email") or "").lower()
+                if agent_email and agent_email in agent_email_map:
+                    patch["assignee_id"] = agent_email_map[agent_email]
+
+                customer = conv.get("customer") or {}
+                customer_email = customer.get("email") or (customer.get("defaultSenders") or {}).get("email")
+                if customer_email:
+                    _get_or_create_customer(customer_email, _customer_name(customer), atlas_customer=customer)
+
+                tickets_collection.update_one({"ticket_id": ticket_id}, {"$set": patch})
+                enrich_state["tickets_updated"] += 1
+
+                messages = _fetch_messages(atlas_id)
+                for msg in messages:
+                    raw_att = msg.get("attachments") or []
+                    if not raw_att:
+                        continue
+                    attachments = [
+                        {"name": a.get("name", ""), "url": a.get("url", ""), "size": a.get("size", 0)}
+                        for a in raw_att if a.get("url")
+                    ]
+                    if attachments:
+                        messages_collection.update_one(
+                            {"atlas_message_id": msg.get("id"), "ticket_id": ticket_id},
+                            {"$set": {"attachments": attachments}},
+                        )
+                        enrich_state["messages_patched"] += 1
+
+                enrich_state["processed"] += 1
+                enrich_state["last_atlas_id"] = atlas_id
+                time.sleep(0.3)
+
+            except Exception as e:
+                err = f"{atlas_id}: {str(e)[:200]}"
+                logger.warning(f"[ENRICHMENT] {err}")
+                enrich_state["errors"].append(err)
+                enrich_state["processed"] += 1
+                enrich_state["last_atlas_id"] = atlas_id
+                if len(enrich_state["errors"]) > 100:
+                    enrich_state["errors"] = enrich_state["errors"][-100:]
+
+        # Save state after each batch
+        _state_col.update_one({"_type": "enrichment"}, {"$set": enrich_state}, upsert=True)
+        if enrich_state["processed"] % 500 == 0:
+            logger.info(f"[ENRICHMENT] Progress: {enrich_state['processed']} processed, {enrich_state['tickets_updated']} updated, {enrich_state['messages_patched']} msgs patched")
+        time.sleep(BATCH_DELAY)

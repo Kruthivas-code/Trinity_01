@@ -13,99 +13,100 @@ Trinity is a comprehensive customer help suite with three public surfaces and on
 - **Backend**: FastAPI (Python) + Socket.IO (real-time)
 - **Database**: MongoDB (pymongo)
 - **AI**: Gemini via `emergentintegrations` for ticket summarization
-- **Email Outbound**: Amazon SES SMTP (`smtplib`)
-- **Email Inbound**: Gmail IMAP (`imaplib`) polling `support@emergent.sh`
-- **Auth**: Emergent Google OAuth (dashboard), JWT-like sessions (portal)
-- **Brand Color**: `#00A1B2`
+- **Email Outbound**: Amazon SES SMTP
+- **Email Inbound**: Gmail IMAP polling
+- **Auth**: Emergent Google OAuth (dashboard), JWT sessions (portal)
 
 ## Credentials
 - **Dashboard**: Google OAuth (Emergent Auth)
-- **Portal**: Self-registration. Test account: `kruthivas@emergent.sh` / `Password123`
-- **Atlas API Key**: Configured in backend `.env` as `ATLAS_API_KEY`
+- **Portal**: Self-registration
+- **Atlas API Key**: In `backend/.env` as `ATLAS_API_KEY`
 
 ---
 
 ## Architecture
 
-### Backend Route Modules (`/app/backend/routes/`)
-| Module | Prefix | Purpose |
-|--------|--------|---------|
-| `atlas.py` | `/api/admin/atlas` | Atlas backfill control & status |
-| `auth.py` | `/api/auth` | Google OAuth, sessions, API keys |
-| `tickets.py` | `/api/tickets` | CRUD, notes, assignment |
-| `portal.py` | `/api/portal` | Customer auth, categories |
-| `kb.py` | `/api/kb` | Knowledge Base articles |
-| `admin.py` | `/api/admin` | Custom fields, routing, SLA |
-| `filters.py` | `/api/filter` | Advanced filtering |
-
 ### Backend Services (`/app/backend/services/`)
 | File | Purpose |
 |------|---------|
-| `atlas_backfill.py` | **NEW** — Resumable Atlas historical data import |
-| `atlas_sync.py` | Atlas ongoing sync (to be enhanced for Phase 3) |
+| `atlas_backfill.py` | Resumable Atlas historical import + enrichment + agent import |
+| `atlas_sync.py` | Atlas ongoing real-time sync (to be enhanced) |
 | `email_poller.py` | IMAP polling, ticket matching/creation |
 | `email_service.py` | SES SMTP sending, threading |
+
+### Key API Endpoints (`/app/backend/routes/atlas.py`)
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/admin/atlas/backfill/status` | GET | Backfill progress |
+| `/api/admin/atlas/backfill/start` | POST | Start/resume backfill |
+| `/api/admin/atlas/backfill/stop` | POST | Pause backfill |
+| `/api/admin/atlas/backfill/reset` | POST | Reset to start fresh |
+| `/api/admin/atlas/backfill/test` | POST | Test batch (sync) |
+| `/api/admin/atlas/backfill/enrich` | POST | Start enrichment pass |
+| `/api/admin/atlas/backfill/enrich/status` | GET | Enrichment progress |
+| `/api/admin/atlas/backfill/enrich/stop` | POST | Stop enrichment |
+| `/api/admin/atlas/agents/import` | POST | Import Atlas agents |
 
 ### Key MongoDB Collections
 | Collection | Purpose |
 |-----------|---------|
 | `tickets` | All tickets (portal, email, manual, atlas) |
-| `messages` | Ticket conversation messages |
-| `atlas_backfill_state` | **NEW** — Backfill progress tracking |
-| `atlas_sync_state` | Sync cursor tracking |
-| `customers` | CRM customer records |
+| `messages` | Ticket messages + attachments |
+| `atlas_backfill_state` | Backfill + enrichment progress (resumable) |
+| `customers` | CRM customer records (enriched with Atlas custom fields) |
+| `users` | Agents (163 from Atlas + existing, merge-safe by email) |
 
 ---
 
 ## Completed Work
 
-### Atlas Backfill System (Feb 2026)
-- **Resumable backfill engine** — Persists state in MongoDB after every batch of 100 conversations
-- **Auto-resume on startup** — Detects incomplete backfill and resumes from last cursor
-- **API endpoints**: status, start, stop, reset, test
-- **Test batch passed**: 100 conversations, 657 messages, 0 errors
-- **Full backfill started**: ~66,650 conversations at ~100/min rate
-- **Files**: `services/atlas_backfill.py`, `routes/atlas.py`
+### Atlas Full Metadata Import (Mar 2026)
+**Conversation metadata (all fields):**
+- Core: status, priority, subject, tags, custom_fields
+- Channel: started_channel, started_sub_channel
+- Timestamps: created_at, started_at, closed_at, assigned_at, escalated_at, snoozed_until
+- Actors: closed_by, assigned_by, updated_by
+- CSAT: atlas_csat_score, atlas_csat_comment
+- Stats: first_response_time, avg_response_time, total_resolution_time
+- Environment: browser, operating_system
+- Atlas AI: atlas_assigned_to_zeus
 
-### Previous Work (see CHANGELOG.md for full history)
-- KB Editor (Visual Columns, Cards, Accordion, Steps, Icon Picker, Markdown/Visual toggle, Preview)
+**Message attachments:** name, url (files.atlas.so), size
+
+**Customer enrichment:** atlas_custom_fields, phone, atlas_external_user_id, atlas_company_id
+
+**Agent import:** 163 Atlas agents → Trinity users. Merge-safe via email upsert.
+
+**Resumable infrastructure:**
+- Backfill state persisted in MongoDB after every batch
+- Auto-resume on server startup (handles pod sleep/kill)
+- Enrichment runs in parallel as background thread
+
+### Previous Work
+- KB Editor (Visual Columns, Cards, Accordion, Steps, Icon Picker)
 - Backend-driven Portal Categories
 - Full Gmail Thread Capture with correct timestamps
-- Email System (SES outbound, IMAP inbound, threading, rate limiting)
-- UI/UX improvements (IST timezone, density, avatars, search)
-- Ticket merge, search fixes
-- Docs page header, social links, breadcrumbs
+- Email System (SES outbound, IMAP inbound, threading)
 
 ---
 
 ## In Progress
-
-### P0: Atlas Historical Data Backfill
-- Status: RUNNING (~1% complete, auto-resumes across pod sessions)
-- ~66,650 conversations to import with all messages
-- Data mapping: status, priority, tags, customer, agent, timestamps
-
----
+- **Backfill**: ~71.5% complete (~47,900/67,000). Auto-resumes across sessions.
+- **Enrichment**: Patching ~45K previously-imported tickets with new metadata fields.
 
 ## Pending / Backlog
 
 ### P0: Atlas Real-Time Sync (Shadow Mode)
-- Enhance `atlas_sync.py` for full conversation sync (not just agent messages)
+- Enhance `atlas_sync.py` for full conversation sync
 - Background worker polling every 60s
-- Sync status/priority/assignment changes
 - Admin controls and monitoring
 
 ### P1: Data Validation (Post-Backfill)
-- Count verification (Atlas total vs Trinity imported)
-- Message integrity checks
-- Timestamp sanity
-- Customer linking audit
+- Count verification, message integrity, timestamp sanity
 
-### P2: Future Features
+### P2: Future
+- Blob storage for attachment migration (full Atlas cutover)
 - Real-time notifications for agents
-- Recurring job for auto-closing stale tickets
+- Auto-closing stale tickets
+- Tag definitions & SLA rule import
 - Email analytics dashboard
-- Admin UI for Atlas sync monitoring
-
-### Refactoring
-- `RichTextEditor.jsx` — Extract markdown preprocessing into dedicated hooks
