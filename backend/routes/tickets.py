@@ -234,6 +234,7 @@ async def add_internal_note(
     if (note.type or "internal_note") == "reply" and ticket.get("customer_email"):
         try:
             from services.email_service import send_agent_reply_notification
+            cc_list = note.cc if note.cc else None
             send_agent_reply_notification(
                 ticket_id=ticket_id,
                 customer_email=ticket["customer_email"],
@@ -241,7 +242,14 @@ async def add_internal_note(
                 original_subject=ticket.get("title", "Your support request"),
                 reply_content=note.content,
                 agent_name=current_user.get("name", "Support Agent"),
+                cc=cc_list,
             )
+            # Store CC on the note document
+            if cc_list:
+                messages_collection.update_one(
+                    {"message_id": note_doc["message_id"]},
+                    {"$set": {"cc": cc_list}}
+                )
         except Exception as e:
             logger.warning(f"Failed to send agent reply email for {ticket_id}: {e}")
 
@@ -535,6 +543,30 @@ async def create_ticket(
     result = serialize_doc(final_ticket)
     result["routing_applied"] = routing_result.get("matched", False)
     result["routing_rule"] = routing_result.get("rule_name")
+
+    # Send outbound email if requested (agent-initiated ticket)
+    if ticket_data.send_email and ticket_data.customer_email and ticket_data.description:
+        try:
+            from services.email_service import send_email as send_email_fn
+            from services.email_templates import agent_reply_html, agent_reply_text
+            agent_name = current_user.get("name", "Support Agent")
+            subject = ticket_data.title
+            html = agent_reply_html(ticket_id, "", subject, ticket_data.description, agent_name)
+            text = agent_reply_text(ticket_id, "", subject, ticket_data.description, agent_name)
+            cc_list = ticket_data.cc if ticket_data.cc else None
+            send_email_fn(
+                to_email=ticket_data.customer_email,
+                subject=subject,
+                html_body=html,
+                text_body=text,
+                ticket_id=ticket_id,
+                cc=cc_list,
+            )
+            result["email_sent"] = True
+        except Exception as e:
+            logger.warning(f"Failed to send outbound email for new ticket {ticket_id}: {e}")
+            result["email_sent"] = False
+
     asyncio.create_task(broadcast_ticket_created(result, {"user_id": current_user["user_id"], "name": current_user.get("name", "Unknown")}))
     asyncio.create_task(trigger_webhooks("ticket.created", result))
     return result
@@ -717,9 +749,9 @@ async def get_ticket_metadata(ticket_id: str, current_user: dict = Depends(get_c
 
 @router.get("/tickets/{ticket_id}/email-stats")
 async def get_ticket_email_stats(ticket_id: str, current_user: dict = Depends(get_current_user)):
-    """Get email delivery stats for a ticket."""
+    """Get email delivery stats for a ticket, including bounce details."""
     from database import email_threads_collection
-    stats = {"outbound": 0, "inbound": 0, "failed": 0, "bounced": 0}
+    stats = {"outbound": 0, "inbound": 0, "failed": 0, "bounced": 0, "bounce_details": [], "outbound_emails": []}
     pipeline = [
         {"$match": {"ticket_id": ticket_id}},
         {"$group": {"_id": "$direction", "count": {"$sum": 1}}},
@@ -732,6 +764,34 @@ async def get_ticket_email_stats(ticket_id: str, current_user: dict = Depends(ge
         elif r["_id"] == "outbound_failed":
             stats["failed"] = r["count"]
     stats["bounced"] = email_threads_collection.count_documents({"ticket_id": ticket_id, "status": "bounced"})
+
+    # Bounce details: which emails bounced, when, and why
+    bounced_records = list(email_threads_collection.find(
+        {"ticket_id": ticket_id, "status": "bounced"},
+        {"_id": 0, "to_email": 1, "bounce_reason": 1, "bounced_at": 1, "created_at": 1, "subject": 1}
+    ))
+    for b in bounced_records:
+        stats["bounce_details"].append({
+            "email": b.get("to_email", "unknown"),
+            "reason": b.get("bounce_reason", "Unknown reason"),
+            "bounced_at": b.get("bounced_at").isoformat() if isinstance(b.get("bounced_at"), datetime) else b.get("bounced_at"),
+            "subject": b.get("subject", ""),
+        })
+
+    # Outbound email details for delivery status
+    outbound_records = list(email_threads_collection.find(
+        {"ticket_id": ticket_id, "direction": "outbound"},
+        {"_id": 0, "to_email": 1, "cc": 1, "status": 1, "created_at": 1, "message_id": 1}
+    ).sort("created_at", DESCENDING).limit(20))
+    for o in outbound_records:
+        stats["outbound_emails"].append({
+            "to_email": o.get("to_email"),
+            "cc": o.get("cc") or [],
+            "status": o.get("status", "sent"),
+            "sent_at": o.get("created_at").isoformat() if isinstance(o.get("created_at"), datetime) else o.get("created_at"),
+            "message_id": o.get("message_id", ""),
+        })
+
     return stats
 
 

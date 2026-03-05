@@ -31,6 +31,8 @@ class TicketCreate(BaseModel):
     customer_email: Optional[EmailStr] = None
     source: Optional[str] = Field(default="manual")
     escalation_level: Optional[str] = Field(default="L1")
+    send_email: Optional[bool] = Field(default=False)
+    cc: Optional[List[str]] = Field(default=[])
 
     model_config = {"json_schema_extra": {"examples": [{"title": "Login page returns 500 error", "description": "Users see a 500 error when clicking Sign In with Google on the login page.", "status": "todo", "priority": "high", "tags": ["bug", "auth"], "customer_email": "jane@acme.com", "source": "manual", "escalation_level": "L1"}]}}
 
@@ -147,6 +149,8 @@ class InternalNoteCreate(BaseModel):
     content: str
     mentions: Optional[List[str]] = []
     type: Optional[str] = "internal_note"
+    cc: Optional[List[str]] = []
+    send_email: Optional[bool] = None
 
     model_config = {"json_schema_extra": {"examples": [{"content": "Checked logs — this is caused by the OAuth redirect URI mismatch. @user_jsmith can you update the config?", "mentions": ["user_jsmith"], "type": "internal_note"}]}}
 

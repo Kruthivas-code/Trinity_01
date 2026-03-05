@@ -149,6 +149,7 @@ def send_email(
     ticket_id: Optional[str] = None,
     in_reply_to: Optional[str] = None,
     references: Optional[list] = None,
+    cc: Optional[list] = None,
 ) -> Optional[dict]:
     """
     Send an email via SES SMTP with threading headers.
@@ -185,6 +186,11 @@ def send_email(
     msg["Message-ID"] = threading_msg_id
     msg["Reply-To"] = sender_email
 
+    # CC recipients
+    cc_list = [addr.strip() for addr in (cc or []) if addr and addr.strip()]
+    if cc_list:
+        msg["Cc"] = ", ".join(cc_list)
+
     # Threading headers — these are critical for correct thread matching
     if in_reply_to:
         msg["In-Reply-To"] = in_reply_to
@@ -199,14 +205,17 @@ def send_email(
         msg.attach(MIMEText(text_body, "plain", "utf-8"))
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
+    # All recipients for sendmail
+    all_recipients = [to_email] + cc_list
+
     try:
         server = smtplib.SMTP(smtp_host, 587, timeout=30)
         server.starttls()
         server.login(smtp_user, smtp_password)
-        server.sendmail(sender_email, [to_email], msg.as_string())
+        server.sendmail(sender_email, all_recipients, msg.as_string())
         server.quit()
 
-        logger.info(f"[SEND] OK to={to_email} ticket={ticket_id} msgid={threading_msg_id[:50]} subject={subject[:60]}")
+        logger.info(f"[SEND] OK to={to_email} cc={cc_list or 'none'} ticket={ticket_id} msgid={threading_msg_id[:50]} subject={subject[:60]}")
 
         # Store outbound thread record
         email_threads_collection.insert_one({
@@ -219,6 +228,7 @@ def send_email(
             "status": "sent",
             "from_email": sender_email,
             "to_email": to_email,
+            "cc": cc_list if cc_list else None,
             "subject": subject[:500],
             "created_at": datetime.now(timezone.utc),
         })
@@ -227,6 +237,7 @@ def send_email(
             "status": "sent",
             "threading_message_id": threading_msg_id,
             "to_email": to_email,
+            "cc": cc_list,
         }
 
     except smtplib.SMTPAuthenticationError as e:
@@ -363,7 +374,7 @@ def send_ticket_confirmation(ticket_id: str, customer_email: str, customer_name:
     )
 
 
-def send_agent_reply_notification(ticket_id: str, customer_email: str, customer_name: str, original_subject: str, reply_content: str, agent_name: str):
+def send_agent_reply_notification(ticket_id: str, customer_email: str, customer_name: str, original_subject: str, reply_content: str, agent_name: str, cc: list = None):
     """Send agent reply notification to customer."""
     from services.email_templates import agent_reply_html, agent_reply_text
 
@@ -379,6 +390,7 @@ def send_agent_reply_notification(ticket_id: str, customer_email: str, customer_
         ticket_id=ticket_id,
         in_reply_to=ctx["in_reply_to"],
         references=ctx["references"],
+        cc=cc,
     )
 
 

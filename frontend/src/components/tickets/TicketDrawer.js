@@ -104,6 +104,10 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
           handleCannedResponseSelect={state.handleCannedResponseSelect}
           handleImageUpload={state.handleImageUpload}
           removeAttachedImage={state.removeAttachedImage}
+          ccEmails={state.ccEmails}
+          setCcEmails={state.setCcEmails}
+          showCcField={state.showCcField}
+          setShowCcField={state.setShowCcField}
         />
 
         {/* Right Panel - Details */}

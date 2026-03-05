@@ -3,7 +3,7 @@ import {
   X, Trash2, Send, ChevronDown, Loader2, Star, MoreHorizontal,
   Mail, PenLine, Command, Copy, Printer, BellOff, Merge, ExternalLink,
   Scissors, Bookmark, Download, UserPlus, MessageCircle, Activity,
-  MessageSquare, ImagePlus, Paperclip, BookOpen, GitMerge, Filter, Unlink, Link
+  MessageSquare, ImagePlus, Paperclip, BookOpen, GitMerge, Filter, Unlink, Link, Users
 } from 'lucide-react';
 import RichTextEditor from '../common/RichTextEditor';
 import MentionInput from '../common/MentionInput';
@@ -52,6 +52,9 @@ const TicketConversation = ({
   submitting,
   handleCannedResponseSelect,
   handleImageUpload, removeAttachedImage,
+  // CC
+  ccEmails, setCcEmails,
+  showCcField, setShowCcField,
 }) => {
   const [emailStats, setEmailStats] = useState(null);
   useEffect(() => {
@@ -601,6 +604,26 @@ const TicketConversation = ({
           
           <div className="w-px h-5 bg-border mx-1" />
           
+          {/* CC Button - only in reply mode */}
+          {inputMode === 'reply' && (
+            <button
+              onClick={() => setShowCcField(!showCcField)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-colors ${
+                showCcField || (ccEmails && ccEmails.length > 0)
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+              }`}
+              title="Add CC recipients"
+              data-testid="cc-toggle-btn"
+            >
+              <Users size={13} />
+              <span>CC</span>
+              {ccEmails && ccEmails.length > 0 && (
+                <span className="text-[10px] bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center">{ccEmails.length}</span>
+              )}
+            </button>
+          )}
+          
           {/* Canned Responses Button */}
           <button
             onClick={() => setShowCannedPicker(true)}
@@ -687,6 +710,34 @@ const TicketConversation = ({
         </div>
 
         {/* Rich Text Editor for Reply / MentionInput for Notes */}
+        {/* CC Field */}
+        {showCcField && inputMode === 'reply' && (
+          <div className="mb-2 flex items-center gap-2 bg-secondary/30 rounded px-2 py-1.5" data-testid="cc-field">
+            <span className="text-xs text-muted-foreground font-medium shrink-0">CC:</span>
+            <input
+              type="text"
+              placeholder="email1@example.com, email2@example.com"
+              value={(ccEmails || []).join(', ')}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw === '') {
+                  setCcEmails([]);
+                } else {
+                  setCcEmails(raw.split(',').map(s => s.trim()));
+                }
+              }}
+              className="flex-1 bg-transparent border-none outline-none text-xs text-foreground placeholder:text-muted-foreground/50"
+              data-testid="cc-input"
+            />
+            <button
+              onClick={() => { setCcEmails([]); setShowCcField(false); }}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="cc-close-btn"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
         {inputMode === 'note' ? (
           <MentionInput
             value={inputText}

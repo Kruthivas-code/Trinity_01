@@ -292,9 +292,20 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
               <div className="group relative cursor-default">
                 <AlertTriangle size={12} className="text-amber-500" />
                 <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block z-50">
-                  <div className="bg-popover border border-border text-popover-foreground text-[10px] px-2 py-1 rounded shadow-md whitespace-nowrap">
-                    {emailStats.failed > 0 && <div>{emailStats.failed} failed</div>}
-                    {emailStats.bounced > 0 && <div>{emailStats.bounced} bounced</div>}
+                  <div className="bg-popover border border-border text-popover-foreground text-[10px] px-2 py-1.5 rounded shadow-md min-w-[180px] max-w-[280px]">
+                    {emailStats.failed > 0 && <div className="font-medium text-amber-500 mb-0.5">{emailStats.failed} failed</div>}
+                    {emailStats.bounced > 0 && <div className="font-medium text-red-500 mb-0.5">{emailStats.bounced} bounced</div>}
+                    {emailStats.bounce_details && emailStats.bounce_details.length > 0 && (
+                      <div className="mt-1 space-y-1 border-t border-border pt-1">
+                        {emailStats.bounce_details.map((b, i) => (
+                          <div key={i} className="text-[9px] leading-tight">
+                            <div className="text-foreground font-medium truncate">{b.email}</div>
+                            <div className="text-muted-foreground">{b.reason || 'Unknown reason'}</div>
+                            {b.bounced_at && <div className="text-muted-foreground/60">{new Date(b.bounced_at).toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -305,8 +316,18 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
                   <Check size={12} className="text-muted-foreground/60" />
                 </div>
                 <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block z-50">
-                  <div className="bg-popover border border-border text-popover-foreground text-[10px] px-2 py-1 rounded shadow-md whitespace-nowrap">
-                    Sent via email
+                  <div className="bg-popover border border-border text-popover-foreground text-[10px] px-2 py-1.5 rounded shadow-md min-w-[140px]">
+                    <div>Sent via email</div>
+                    {emailStats.outbound_emails && emailStats.outbound_emails.length > 0 && (
+                      <div className="mt-0.5 text-[9px] text-muted-foreground space-y-0.5">
+                        {emailStats.outbound_emails.slice(0, 3).map((e, i) => (
+                          <div key={i} className="truncate">
+                            To: {e.to_email}
+                            {e.cc && e.cc.length > 0 && <span className="ml-1">CC: {e.cc.join(', ')}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

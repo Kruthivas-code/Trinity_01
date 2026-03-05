@@ -89,6 +89,8 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
   // Image attachments
   const [attachedImages, setAttachedImages] = useState([]);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [ccEmails, setCcEmails] = useState([]);
+  const [showCcField, setShowCcField] = useState(false);
   const imageInputRef = useRef(null);
 
   // Canned responses picker
@@ -759,13 +761,16 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
           content: finalContent,
           type: inputMode === 'reply' ? 'reply' : 'internal_note',
           mentions: inputMentions,
-          images: attachedImages.map(img => ({ url: img.url, name: img.name }))
+          images: attachedImages.map(img => ({ url: img.url, name: img.name })),
+          cc: inputMode === 'reply' ? ccEmails.filter(e => e.trim()) : [],
         })
       });
       if (response.ok) {
         setInputText('');
         setInputMentions([]);
         setAttachedImages([]);
+        setCcEmails([]);
+        setShowCcField(false);
         fetchNotes(ticket.id);
         setTimeout(() => {
           if (conversationRef.current) {
@@ -1056,6 +1061,9 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
     // Images
     attachedImages, uploadingImage, imageInputRef,
     handleImageUpload, removeAttachedImage,
+    // CC
+    ccEmails, setCcEmails,
+    showCcField, setShowCcField,
     // Pickers
     showCannedPicker, setShowCannedPicker,
     handleCannedResponseSelect,
