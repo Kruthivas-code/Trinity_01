@@ -117,7 +117,7 @@ def get_available_agents(team_id: str) -> List[dict]:
     for agent in agents:
         current_count = tickets_collection.count_documents({
             "assignee_id": agent["user_id"],
-            "status": {"$nin": ["resolved", "closed"]}
+            "status": {"$nin": ["closed"]}
         })
         max_tickets = agent.get("max_tickets", 10)
         if current_count < max_tickets:
@@ -190,10 +190,10 @@ def auto_assign_on_escalation(ticket_id: str, new_level: str) -> dict:
 
 
 def handle_ticket_reopen_reassignment(ticket: dict, new_status: str, changed_by: str) -> Optional[dict]:
-    """Handle auto-reassignment when a ticket is reopened from resolved/closed"""
+    """Handle auto-reassignment when a ticket is reopened from closed"""
     old_status = ticket.get("status")
 
-    if old_status not in ("resolved", "closed") or new_status in ("resolved", "closed", "merged"):
+    if old_status not in ("closed",) or new_status in ("closed", "merged"):
         return None
 
     settings = admin_settings_collection.find_one({}, {"_id": 0}) or {}
@@ -262,7 +262,7 @@ def trigger_shift_start_assignment(user_id: str) -> list:
     for ticket in queued_tickets:
         current_count = tickets_collection.count_documents({
             "assignee_id": user_id,
-            "status": {"$nin": ["resolved", "closed"]}
+            "status": {"$nin": ["closed"]}
         })
         max_tickets = user.get("max_tickets", 10)
         if current_count >= max_tickets:

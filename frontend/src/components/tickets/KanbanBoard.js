@@ -21,7 +21,7 @@ const COLUMNS = [
   { id: 'in_progress', title: 'In Progress' },
   { id: 'waiting', title: 'Waiting on Customer' },
   { id: 'review', title: 'Review' },
-  { id: 'resolved', title: 'Resolved' }
+  { id: 'closed', title: 'Closed' }
 ];
 
 const KanbanBoard = ({ tickets, users, currentUserId, onTicketClick, onDragEnd, onCreateTicket }) => {
@@ -54,7 +54,7 @@ const KanbanBoard = ({ tickets, users, currentUserId, onTicketClick, onDragEnd, 
       in_progress: [],
       waiting: [],
       review: [],
-      resolved: []
+      closed: []
     };
 
     tickets.forEach(ticket => {

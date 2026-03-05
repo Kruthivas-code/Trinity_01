@@ -525,7 +525,7 @@ const TicketDetailsPanel = ({
                       Awaiting response &middot; Expires {new Date(csatData.expires_at?.endsWith?.('Z') ? csatData.expires_at : csatData.expires_at + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                     </p>
                   </div>
-                ) : formData.status === 'resolved' ? (
+                ) : formData.status === 'closed' ? (
                   <button
                     onClick={handleSendCsat}
                     disabled={sendingCsat}

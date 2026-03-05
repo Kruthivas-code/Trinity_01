@@ -13,7 +13,7 @@ const CONDITION_FIELDS = [
   { value: 'customer_email', label: 'Customer Email', type: 'text' },
   { value: 'domain', label: 'Email Domain', type: 'text' },
   { value: 'source', label: 'Source', type: 'select', options: ['manual', 'email', 'api'] },
-  { value: 'status', label: 'Status', type: 'select', options: ['todo', 'in_progress', 'waiting', 'review', 'resolved'] },
+  { value: 'status', label: 'Status', type: 'select', options: ['todo', 'in_progress', 'waiting', 'review', 'closed'] },
   { value: 'customer_ltv', label: 'Customer Lifetime Value', type: 'number' }
 ];
 
@@ -326,7 +326,7 @@ const RoutingRulesTab = ({ teams, users }) => {
             <option value="in_progress">In Progress</option>
             <option value="waiting">Waiting</option>
             <option value="review">Review</option>
-            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
           </select>
         );
       default:

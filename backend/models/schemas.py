@@ -382,7 +382,7 @@ class ExportRequest(BaseModel):
     date_to: Optional[str] = None
     status_filter: Optional[List[str]] = None
 
-    model_config = {"json_schema_extra": {"examples": [{"format": "json", "include_notes": True, "include_changelog": True, "include_csat": True, "date_from": "2026-01-01", "date_to": "2026-02-12", "status_filter": ["resolved", "closed"]}]}}
+    model_config = {"json_schema_extra": {"examples": [{"format": "json", "include_notes": True, "include_changelog": True, "include_csat": True, "date_from": "2026-01-01", "date_to": "2026-02-12", "status_filter": ["closed"]}]}}
 
 
 class AtlasImportRequest(BaseModel):

@@ -9,7 +9,7 @@ const STATUS_CONFIG = {
   todo: { label: 'Open', color: 'text-blue-500', bg: 'bg-blue-500/10' },
   'in-progress': { label: 'In Progress', color: 'text-amber-500', bg: 'bg-amber-500/10' },
   waiting: { label: 'Waiting', color: 'text-orange-500', bg: 'bg-orange-500/10' },
-  resolved: { label: 'Resolved', color: 'text-green-500', bg: 'bg-green-500/10' },
+  closed: { label: 'Closed', color: 'text-green-500', bg: 'bg-green-500/10' },
   closed: { label: 'Closed', color: 'text-muted-foreground', bg: 'bg-muted/50' },
 };
 
@@ -78,7 +78,7 @@ const PortalTickets = () => {
           { key: 'all', label: 'All' },
           { key: 'todo', label: 'Open' },
           { key: 'waiting', label: 'Waiting' },
-          { key: 'resolved', label: 'Resolved' },
+          { key: 'closed', label: 'Closed' },
           { key: 'closed', label: 'Closed' },
         ].map(f => (
           <button

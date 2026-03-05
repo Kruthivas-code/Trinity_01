@@ -249,7 +249,7 @@ async def auto_close_resolved_tickets():
                 await asyncio.sleep(3600)
                 continue
             cutoff_time = datetime.now(timezone.utc) - timedelta(hours=AUTO_CLOSE_HOURS)
-            query = {"status": "resolved", "resolved_at": {"$lte": cutoff_time}}
+            query = {"status": "closed", "resolved_at": {"$lte": cutoff_time}}
             tickets_to_close = list(tickets_collection.find(query, {"ticket_id": 1, "_id": 0}))
             if tickets_to_close:
                 ticket_ids = [t["ticket_id"] for t in tickets_to_close]

@@ -667,7 +667,7 @@ const FeatureRequestDrawer = ({ request, onClose, onStatusChange, onRefresh }) =
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono text-muted-foreground">{ticket.ticket_id}</span>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                        ticket.status === 'resolved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'
+                        ticket.status === 'closed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'
                       }`}>{ticket.status}</span>
                     </div>
                     <p className="text-sm truncate mt-1">{ticket.title}</p>

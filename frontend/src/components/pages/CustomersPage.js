@@ -26,7 +26,7 @@ const StatusBadge = ({ status }) => {
     in_progress: 'bg-blue-500/20 text-blue-400',
     waiting: 'bg-amber-500/20 text-amber-400',
     review: 'bg-purple-500/20 text-purple-400',
-    resolved: 'bg-emerald-500/20 text-emerald-400',
+    closed: 'bg-emerald-500/20 text-emerald-400',
     closed: 'bg-gray-500/20 text-gray-400'
   };
   

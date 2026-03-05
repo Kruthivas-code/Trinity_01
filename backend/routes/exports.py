@@ -261,8 +261,8 @@ async def export_customers(
             "name": {"$first": "$customer_name"},
             "domain": {"$first": "$domain"},
             "ticket_count": {"$sum": 1},
-            "open_tickets": {"$sum": {"$cond": [{"$not": {"$in": ["$status", ["resolved", "closed"]]}}, 1, 0]}},
-            "resolved_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["resolved", "closed"]]}, 1, 0]}},
+            "open_tickets": {"$sum": {"$cond": [{"$not": {"$in": ["$status", ["closed"]]}}, 1, 0]}},
+            "resolved_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["closed"]]}, 1, 0]}},
             "first_contact": {"$min": "$created_at"},
             "last_contact": {"$max": "$created_at"},
             "priorities": {"$push": "$priority"},
@@ -325,7 +325,7 @@ async def export_analytics(
         {"$group": {
             "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
             "tickets_created": {"$sum": 1},
-            "resolved": {"$sum": {"$cond": [{"$in": ["$status", ["resolved", "closed"]]}, 1, 0]}},
+            "resolved": {"$sum": {"$cond": [{"$in": ["$status", ["closed"]]}, 1, 0]}},
             "urgent": {"$sum": {"$cond": [{"$eq": ["$priority", "urgent"]}, 1, 0]}},
             "high": {"$sum": {"$cond": [{"$eq": ["$priority", "high"]}, 1, 0]}}
         }},

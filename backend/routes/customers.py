@@ -75,7 +75,7 @@ async def list_customers(
                 "_id": "$customer_email",
                 "total_tickets": {"$sum": 1},
                 "open_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["todo", "in_progress", "waiting", "review"]]}, 1, 0]}},
-                "resolved_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["resolved", "closed"]]}, 1, 0]}}
+                "resolved_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["closed"]]}, 1, 0]}}
             }}
         ]
         for stat in tickets_collection.aggregate(ticket_stats_pipeline):
@@ -209,7 +209,7 @@ async def get_customer(
         "by_status": status_counts,
         "total_tickets": sum(status_counts.values()),
         "open_tickets": sum(status_counts.get(s, 0) for s in ["todo", "in_progress", "waiting", "review"]),
-        "resolved_tickets": sum(status_counts.get(s, 0) for s in ["resolved", "closed"])
+        "resolved_tickets": sum(status_counts.get(s, 0) for s in ["closed"])
     }
     result["recent_tickets"] = [serialize_doc(t) for t in recent_tickets]
     result["csat_history"] = [serialize_doc(c) for c in csat_history]

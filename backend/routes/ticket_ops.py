@@ -131,7 +131,7 @@ async def bulk_close_tickets(
     result = tickets_collection.update_many(
         {"ticket_id": {"$in": ticket_ids}},
         {"$set": {
-            "status": "resolved",
+            "status": "closed",
             "resolved_at": now,
             "updated_at": now
         }}
@@ -188,7 +188,7 @@ async def merge_consecutive_tickets(
         "ticket_id": {"$ne": ticket_id},
         "customer_email": {"$in": customer_emails},
         "created_at": {"$gte": time_window_start, "$lte": time_window_end},
-        "status": {"$nin": ["resolved", "closed"]}
+        "status": {"$nin": ["closed"]}
     }).sort("created_at", 1))
     
     if not consecutive_tickets:
@@ -553,7 +553,7 @@ async def get_merge_suggestions(
     suggestions = list(tickets_collection.find({
         "ticket_id": {"$ne": ticket_id},
         "customer_email": customer_email,
-        "status": {"$nin": ["merged", "closed", "resolved"]},
+        "status": {"$nin": ["merged", "closed"]},
         "created_at": {
             "$gte": two_hours_before,
             "$lte": two_hours_after

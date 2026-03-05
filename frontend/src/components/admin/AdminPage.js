@@ -157,7 +157,7 @@ const ExportDataTab = () => {
     { value: 'in_progress', label: 'In Progress' },
     { value: 'waiting', label: 'Waiting' },
     { value: 'review', label: 'Review' },
-    { value: 'resolved', label: 'Resolved' }
+    { value: 'closed', label: 'Closed' }
   ];
 
   return (

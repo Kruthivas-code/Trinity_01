@@ -66,7 +66,7 @@ async def get_ticket_sla_status(
     first_response_status = "breached" if elapsed_minutes > first_response_mins else "on_track"
     resolution_status = "breached" if elapsed_minutes > resolution_mins else "on_track"
 
-    if ticket.get("status") in ("resolved", "closed"):
+    if ticket.get("status") in ("closed",):
         resolved_at = ticket.get("resolved_at") or ticket.get("closed_at") or ticket.get("updated_at")
         if resolved_at and isinstance(resolved_at, datetime):
             if resolved_at.tzinfo is None:

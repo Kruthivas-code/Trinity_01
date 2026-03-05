@@ -46,7 +46,7 @@ async def get_analytics_summary(current_user: dict = Depends(get_current_user)):
     result = list(tickets_collection.aggregate(pipeline))
     facets = result[0] if result else {}
 
-    status_counts = {s: 0 for s in ["todo", "in_progress", "waiting", "review", "resolved"]}
+    status_counts = {s: 0 for s in ["todo", "in_progress", "waiting", "review", "closed"]}
     for item in facets.get("by_status", []):
         if item["_id"] in status_counts:
             status_counts[item["_id"]] = item["count"]
@@ -136,7 +136,7 @@ async def get_analytics_overview(
                 {"$group": {"_id": {"$ifNull": ["$source", "unknown"]}, "count": {"$sum": 1}}}
             ],
             "resolved_in_period": [
-                {"$match": {"status": {"$in": ["resolved", "closed"]}, "updated_at": {"$gte": cutoff}}},
+                {"$match": {"status": {"$in": ["closed"]}, "updated_at": {"$gte": cutoff}}},
                 {"$count": "count"}
             ],
             "avg_resolution_time": [
@@ -162,7 +162,7 @@ async def get_analytics_overview(
                 {"$sort": {"_id": 1}}
             ],
             "by_escalation": [
-                {"$match": {"status": {"$nin": ["merged", "resolved", "closed"]}}},
+                {"$match": {"status": {"$nin": ["merged", "closed"]}}},
                 {"$group": {"_id": {"$ifNull": ["$escalation_level", "L1"]}, "count": {"$sum": 1}}}
             ],
             "sla_breached": [
@@ -251,7 +251,7 @@ async def get_agent_analytics(
             "open_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["todo", "in_progress", "waiting", "review", "queued", "assigned"]]}, 1, 0]}},
             "resolved_in_period": {"$sum": {"$cond": [
                 {"$and": [
-                    {"$in": ["$status", ["resolved", "closed"]]},
+                    {"$in": ["$status", ["closed"]]},
                     {"$gte": ["$updated_at", cutoff]}
                 ]}, 1, 0
             ]}},

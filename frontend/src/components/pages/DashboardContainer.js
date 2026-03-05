@@ -521,7 +521,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                   <div>
                     <div className="text-[10px] text-muted-foreground uppercase font-medium mb-2">Status</div>
                     <div className="flex flex-wrap gap-1">
-                      {['all', 'todo', 'in_progress', 'waiting_on_customer', 'review', 'resolved'].map(status => (
+                      {['all', 'todo', 'in_progress', 'waiting', 'review', 'closed'].map(status => (
                         <button
                           key={status}
                           onClick={() => setFilters(prev => ({ ...prev, status }))}
@@ -533,8 +533,9 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                           {status === 'all' ? 'All' : 
                            status === 'todo' ? 'To Do' :
                            status === 'in_progress' ? 'In Progress' :
-                           status === 'waiting_on_customer' ? 'Waiting' :
-                           status === 'review' ? 'Review' : 'Resolved'}
+                           status === 'waiting' ? 'Waiting' :
+                           status === 'review' ? 'Review' : 
+                           status === 'closed' ? 'Closed' : status.replace('_', ' ')}
                         </button>
                       ))}
                     </div>

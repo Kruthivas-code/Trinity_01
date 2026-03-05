@@ -428,7 +428,7 @@ async def get_starred_tickets(
 async def get_escalation_counts(current_user: dict = Depends(get_current_user)):
     """Get ticket counts grouped by escalation level (L1/L2/L3) and status."""
     pipeline = [
-        {"$match": {"status": {"$nin": ["merged", "resolved", "closed"]}}},
+        {"$match": {"status": {"$nin": ["merged", "closed"]}}},
         {"$group": {"_id": {"escalation_level": {"$ifNull": ["$escalation_level", "L1"]}, "status": "$status"}, "count": {"$sum": 1}}}
     ]
     results = list(tickets_collection.aggregate(pipeline))
@@ -595,7 +595,7 @@ async def update_ticket(
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
     update_data["updated_at"] = datetime.now(timezone.utc)
-    if "status" in update_data and update_data["status"] == "resolved" and current_ticket.get("status") != "resolved":
+    if "status" in update_data and update_data["status"] == "closed" and current_ticket.get("status") != "closed":
         update_data["resolved_at"] = datetime.now(timezone.utc)
     if "status" in update_data and update_data["status"] == "closed" and current_ticket.get("status") != "closed":
         update_data["closed_at"] = datetime.now(timezone.utc)
@@ -627,7 +627,7 @@ async def update_ticket(
             elif field == "status":
                 messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "text": f"Status changed to {new_val.replace('_', ' ').title()}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
                 # Send status update email for key status changes
-                if new_val in ("resolved", "closed", "in_progress") and current_ticket.get("customer_email"):
+                if new_val in ("closed", "in_progress") and current_ticket.get("customer_email"):
                     try:
                         from services.email_service import send_status_update
                         send_status_update(
@@ -654,7 +654,7 @@ async def update_ticket(
         for field, (old_val, new_val) in changes.items():
             if field == "status":
                 asyncio.create_task(trigger_webhooks("ticket.status_changed", {**serialized, "previous_status": old_val, "new_status": new_val}))
-                if new_val == "resolved":
+                if new_val == "closed":
                     asyncio.create_task(trigger_webhooks("ticket.resolved", serialized))
                 elif new_val == "closed":
                     asyncio.create_task(trigger_webhooks("ticket.closed", serialized))

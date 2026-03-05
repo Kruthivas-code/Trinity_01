@@ -118,7 +118,7 @@ const MergeTicketModal = ({ ticket, onClose, onMerge }) => {
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-muted-foreground">{result.ticket_id}</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    result.status === 'resolved' ? 'bg-emerald-500/20 text-emerald-400' :
+                    result.status === 'closed' ? 'bg-emerald-500/20 text-emerald-400' :
                     result.status === 'closed' ? 'bg-gray-500/20 text-gray-400' :
                     'bg-blue-500/20 text-blue-400'
                   }`}>{result.status}</span>

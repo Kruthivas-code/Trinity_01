@@ -292,7 +292,7 @@ async def trigger_auto_close(current_user: dict = Depends(get_current_user)):
     
     cutoff_time = datetime.now(timezone.utc) - timedelta(hours=AUTO_CLOSE_HOURS)
     
-    query = {"status": "resolved", "resolved_at": {"$lte": cutoff_time}}
+    query = {"status": "closed", "resolved_at": {"$lte": cutoff_time}}
     resolved_tickets = list(tickets_collection.find(query, {"ticket_id": 1, "_id": 0}))
     closed_tickets = [t["ticket_id"] for t in resolved_tickets]
     

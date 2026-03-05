@@ -52,7 +52,7 @@ BATCH_DELAY = 0.5  # seconds between batches
 # ── Atlas field mapping ──
 STATUS_MAP = {
     "OPEN": "todo",
-    "CLOSED": "resolved",
+    "CLOSED": "closed",
     "SNOOZED": "waiting",
     "PENDING": "waiting",
     "IN_PROGRESS": "in_progress",
