@@ -29,7 +29,10 @@ Migrate historical data from Atlas support platform into Trinity and establish r
 - **CC on Replies:** CC field in reply composer, backend SES support
 - **Agent-Initiated Outbound Tickets:** Create tickets + send initial email to customer
 - **Status Standardization (2026-03-06):** Unified `resolved` → `closed`, all waiting variants → `waiting`
-- **Atlas Shadow Sync (2026-03-06):** Real-time sync engine polling Atlas every 60s, syncing new conversations, messages, sidebars (internal notes), and field changes. Auto-starts on boot. Admin UI with start/stop/config/stats. Trinity takes precedence in conflicts.
+- **Atlas Shadow Sync (2026-03-06):** Real-time sync engine polling Atlas every 60s, syncing new conversations, messages, sidebars, field changes. Auto-starts on boot. Admin UI with start/stop/config/stats. Trinity takes precedence in conflicts.
+- **Collapsible Quoted Text (2026-03-06):** Messages with email reply chains collapse quoted content behind a tiny `···` toggle. Works in both EmailMessage (plain text) and EmailViewer (email HTML) components.
+- **Email Capitalization Fix (2026-03-06):** Fixed `from_addr` not being lowercased in email_poller.py, preventing capitalized emails like `Sumiya2@hotmail.com`.
+- **Data Validation (2026-03-06):** One-time audit confirmed 0 duplicate messages, 0 duplicate tickets, 0 duplicate atlas_conversation_ids across all data.
 
 ## Shadow Sync Architecture
 - **Engine:** `backend/services/atlas_sync.py` — daemon thread with MongoDB state persistence
@@ -42,18 +45,20 @@ Migrate historical data from Atlas support platform into Trinity and establish r
 - **Admin UI:** "Atlas Sync" tab in admin page with status indicator, live stats, config, error log
 
 ## Upcoming Tasks (Priority Order)
-1. **P1: Data Validation Script** — Admin endpoint to audit DB for duplicate tickets/messages
-2. **P2: Real-time Agent Notifications**
-3. **P2: Auto-Close Stale Tickets** (recurring job)
-4. **P3: Migrate Atlas Attachments to Blob Storage**
+1. **P2: Real-time Agent Notifications**
+2. **P2: Auto-Close Stale Tickets** (recurring job)
+3. **P3: Migrate Atlas Attachments to Blob Storage**
+4. **P3: Register Atlas Webhooks** for even more real-time sync (supplement polling)
 
 ## Key Files
 - `/app/backend/services/atlas_sync.py` — Shadow sync engine (real-time)
 - `/app/backend/services/atlas_backfill.py` — Backfill engine (historical)
+- `/app/backend/services/email_poller.py` — Email ingestion (IMAP polling)
 - `/app/backend/routes/atlas.py` — Backfill + sync API endpoints
 - `/app/backend/server.py` — App startup + auto-resume + auto-start sync
+- `/app/frontend/src/components/tickets/EmailMessage.js` — Message rendering + collapsible quotes
+- `/app/frontend/src/components/common/EmailViewer.js` — Email HTML rendering + collapsible quotes
 - `/app/frontend/src/components/admin/AdminPage.js` — Admin page with Atlas Sync tab
-- `/app/memory/atlas_sync_plan.md` — Migration strategy doc
 
 ## Key API Endpoints — Atlas Sync
 - `GET /api/admin/atlas/sync/status` — Sync state, last run, counters, errors
