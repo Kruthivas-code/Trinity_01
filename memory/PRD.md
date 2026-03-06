@@ -39,6 +39,16 @@ Migrate historical data from Atlas support platform into Trinity and establish r
 - **System message:** Added to ticket when auto-closed
 - **Admin API:** `GET /api/admin/atlas/zeus/status`, `POST /api/admin/atlas/zeus/run`
 
+## Verified (2026-03-06)
+- **Authenticated Screenshots:** Working with QA session cookie (`session_token=qa_test_admin_session_token_2026`)
+- **Cross-Browser CSS Fix:** Sidebar text visibility confirmed on Chromium via screenshot
+- **Data Integrity Validation:** 15 tickets sampled (10 Atlas + 5 regular) — zero duplicate messages
+- **Collapsible Email Quotes:** Verified in UI — "..." toggle correctly hides quoted reply chains
+- **Background Jobs Re-verified:**
+  - Atlas Shadow Sync: Running (1347 conversations checked, 527 messages synced)
+  - Attachment Migration: Restarted and running (737/65,093 migrated, 595MB transferred)
+  - Zeus Cleanup: Auto-recurring every 30 min (500 closed so far, 6,679 remaining)
+
 ## Upcoming Tasks
 1. **P2: Real-time Agent Notifications**
 2. **P2: Auto-Close Stale Tickets** (non-Zeus, general recurring job)
