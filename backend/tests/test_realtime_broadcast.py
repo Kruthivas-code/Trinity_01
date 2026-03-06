@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from pymongo import MongoClient
 
 # Get BASE_URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://thread-sync-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://trinity-atlas-import.preview.emergentagent.com')
 
 # MongoDB connection for direct inspection
 MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')

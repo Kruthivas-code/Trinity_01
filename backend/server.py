@@ -189,7 +189,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "").split(",")
 if not ALLOWED_ORIGINS or ALLOWED_ORIGINS == [""]:
     ALLOWED_ORIGINS = [
-        "https://thread-sync-1.preview.emergentagent.com",
+        "https://trinity-atlas-import.preview.emergentagent.com",
         "http://localhost:3000",
         "http://127.0.0.1:3000"
     ]
@@ -257,13 +257,13 @@ async def auto_close_resolved_tickets():
                 tickets_collection.update_many(query, {"$set": {"status": "closed", "closed_at": now, "auto_closed": True, "updated_at": now}})
                 system_messages = [
                     {"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": tid, "type": "system",
-                     "text": f"Auto-closed after {AUTO_CLOSE_HOURS} hours in resolved status",
+                     "text": f"Auto-closed after {AUTO_CLOSE_HOURS} hours in closed status",
                      "created_by": "system", "created_at": now}
                     for tid in ticket_ids
                 ]
                 if system_messages:
                     messages_collection.insert_many(system_messages)
-                logger.info(f"[AUTO-CLOSE] Auto-closed {len(ticket_ids)} resolved tickets")
+                logger.info(f"[AUTO-CLOSE] Auto-closed {len(ticket_ids)} closed tickets")
         except asyncio.CancelledError:
             raise
         except Exception as e:

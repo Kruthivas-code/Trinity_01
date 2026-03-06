@@ -93,7 +93,7 @@ async def list_webhook_events(current_user: dict = Depends(get_current_user)):
             "ticket.updated": "Triggered when ticket fields are updated",
             "ticket.assigned": "Triggered when a ticket is assigned to a user or team",
             "ticket.status_changed": "Triggered when ticket status changes",
-            "ticket.resolved": "Triggered when a ticket is resolved",
+            "ticket.resolved": "Triggered when a ticket is closed (legacy alias for ticket.closed)",
             "ticket.closed": "Triggered when a ticket is closed",
             "ticket.deleted": "Triggered when a ticket is deleted",
             "ticket.reply_added": "Triggered when a reply is added to a ticket",

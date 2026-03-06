@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://thread-sync-1.preview.emergentagent.com';
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'https://trinity-atlas-import.preview.emergentagent.com';
 const ADMIN_SESSION_TOKEN = 'test_kb_session_token';
 
 test.describe('Portal KB Integration - Frontend', () => {

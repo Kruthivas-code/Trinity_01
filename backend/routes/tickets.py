@@ -656,7 +656,6 @@ async def update_ticket(
                 asyncio.create_task(trigger_webhooks("ticket.status_changed", {**serialized, "previous_status": old_val, "new_status": new_val}))
                 if new_val == "closed":
                     asyncio.create_task(trigger_webhooks("ticket.resolved", serialized))
-                elif new_val == "closed":
                     asyncio.create_task(trigger_webhooks("ticket.closed", serialized))
             elif field == "assignee_id":
                 asyncio.create_task(trigger_webhooks("ticket.assigned", {**serialized, "previous_assignee_id": old_val, "new_assignee_id": new_val}))

@@ -121,7 +121,7 @@ class AtlasClient:
 # Atlas ConversationStatus → Trinity status
 STATUS_MAP = {
     "OPEN": "todo",
-    "CLOSED": "resolved",
+    "CLOSED": "closed",
     "SNOOZED": "waiting",
     "PENDING": "waiting",
     "IN_PROGRESS": "in_progress",

@@ -340,7 +340,7 @@ async def export_analytics(
         {"$group": {
             "_id": "$assignee_id",
             "assigned": {"$sum": 1},
-            "resolved": {"$sum": {"$cond": [{"$in": ["$status", ["resolved", "closed"]]}, 1, 0]}}
+            "resolved": {"$sum": {"$cond": [{"$in": ["$status", ["closed"]]}, 1, 0]}}
         }}
     ]
     

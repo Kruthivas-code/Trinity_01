@@ -16,7 +16,7 @@ import pytest
 import requests
 
 # Use the public URL for API tests
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://thread-sync-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://trinity-atlas-import.preview.emergentagent.com').rstrip('/')
 SESSION_TOKEN = "test_kb_session_token"
 
 
