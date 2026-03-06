@@ -48,6 +48,12 @@ BATCH_SIZE = 50
 DOWNLOAD_DELAY = 0.3
 # Max file size to download (100 MB)
 MAX_FILE_SIZE = 100 * 1024 * 1024
+# Max consecutive batch failures before circuit-breaking
+MAX_CONSECUTIVE_FAILURES = 3
+# Backoff sleep (seconds) when circuit breaks
+CIRCUIT_BREAK_SLEEP = 300  # 5 minutes
+# Max retries per individual attachment before marking permanently failed
+MAX_ATTACHMENT_RETRIES = 3
 
 
 def _init_storage() -> str:
@@ -95,7 +101,7 @@ def _get_from_storage(path: str) -> tuple:
 
 def _should_migrate(url: str) -> bool:
     """Check if this URL belongs to a CDN that needs migration."""
-    if not url:
+    if not url or not url.startswith("https://"):
         return False
     for domain in MIGRATE_DOMAINS:
         if domain in url:
@@ -147,17 +153,34 @@ def get_migration_status() -> dict:
     return state
 
 
+def _storage_health_probe() -> bool:
+    """Quick probe to check if storage uploads are working."""
+    try:
+        key = _init_storage()
+        resp = requests.put(
+            f"{STORAGE_URL}/objects/trinity/attachments/_health_probe.txt",
+            headers={"X-Storage-Key": key, "Content-Type": "text/plain"},
+            data=b"probe",
+            timeout=15,
+        )
+        return resp.status_code == 200
+    except Exception:
+        return False
+
+
 def _migrate_batch(state: dict) -> dict:
     """Process a batch of messages with unmigrated attachments. Returns stats."""
     stats = {"migrated": 0, "skipped": 0, "failed": 0, "bytes": 0}
 
     # Find messages with attachments still pointing to migrate-domains
-    # (once migrated, URLs change to /api/files/... so regex naturally skips them)
+    # Exclude attachments already marked as permanently failed
     query = {
-        "attachments": {"$exists": True, "$ne": None, "$not": {"$size": 0}},
-        "attachments.url": {
-            "$regex": "|".join(re.escape(d) for d in MIGRATE_DOMAINS)
-        },
+        "attachments": {
+            "$elemMatch": {
+                "url": {"$regex": "|".join(re.escape(d) for d in MIGRATE_DOMAINS)},
+                "storage_path": {"$exists": False},
+            }
+        }
     }
 
     messages = list(
@@ -180,6 +203,12 @@ def _migrate_batch(state: dict) -> dict:
         for i, att in enumerate(attachments):
             original_url = att.get("url", "")
             if not _should_migrate(original_url):
+                # Mark malformed URLs so they don't get re-queried
+                if original_url and any(d in original_url for d in MIGRATE_DOMAINS) and not original_url.startswith("https://"):
+                    attachments[i]["migration_error"] = "malformed_url"
+                    attachments[i]["storage_path"] = "FAILED"
+                    updated = True
+                    stats["skipped"] += 1
                 continue
 
             # Already migrated (has storage_path)
@@ -187,20 +216,38 @@ def _migrate_batch(state: dict) -> dict:
                 stats["skipped"] += 1
                 continue
 
+            # Check if permanently failed
+            retry_count = att.get("migration_retries", 0)
+            if retry_count >= MAX_ATTACHMENT_RETRIES:
+                stats["skipped"] += 1
+                continue
+
             try:
                 # Download from CDN
                 dl = requests.get(original_url, timeout=60, stream=True)
                 if dl.status_code != 200:
+                    attachments[i]["migration_retries"] = retry_count + 1
+                    attachments[i]["last_migration_error"] = f"download_{dl.status_code}"
+                    if retry_count + 1 >= MAX_ATTACHMENT_RETRIES:
+                        attachments[i]["storage_path"] = "FAILED"
+                        attachments[i]["migration_error"] = f"download_failed_{dl.status_code}"
+                    updated = True
                     stats["failed"] += 1
                     continue
 
                 content_length = int(dl.headers.get("Content-Length", 0))
                 if content_length > MAX_FILE_SIZE:
+                    attachments[i]["storage_path"] = "FAILED"
+                    attachments[i]["migration_error"] = "too_large"
+                    updated = True
                     stats["skipped"] += 1
                     continue
 
                 data = dl.content
                 if len(data) > MAX_FILE_SIZE:
+                    attachments[i]["storage_path"] = "FAILED"
+                    attachments[i]["migration_error"] = "too_large"
+                    updated = True
                     stats["skipped"] += 1
                     continue
 
@@ -238,9 +285,21 @@ def _migrate_batch(state: dict) -> dict:
                 time.sleep(DOWNLOAD_DELAY)
 
             except requests.Timeout:
+                attachments[i]["migration_retries"] = retry_count + 1
+                attachments[i]["last_migration_error"] = "timeout"
+                if retry_count + 1 >= MAX_ATTACHMENT_RETRIES:
+                    attachments[i]["storage_path"] = "FAILED"
+                    attachments[i]["migration_error"] = "timeout"
+                updated = True
                 stats["failed"] += 1
                 logger.warning(f"[ATTACH] Timeout downloading {original_url[:80]}")
             except Exception as e:
+                attachments[i]["migration_retries"] = retry_count + 1
+                attachments[i]["last_migration_error"] = str(e)[:200]
+                if retry_count + 1 >= MAX_ATTACHMENT_RETRIES:
+                    attachments[i]["storage_path"] = "FAILED"
+                    attachments[i]["migration_error"] = str(e)[:200]
+                updated = True
                 stats["failed"] += 1
                 logger.warning(f"[ATTACH] Error migrating {original_url[:80]}: {e}")
 
@@ -291,8 +350,30 @@ def _migration_loop():
     _save_state(state)
     logger.info(f"[ATTACH] {total} attachments to migrate")
 
+    consecutive_full_failures = 0
+
     while not _stop_event.is_set():
         try:
+            # Circuit breaker: if storage is consistently failing, back off
+            if consecutive_full_failures >= MAX_CONSECUTIVE_FAILURES:
+                logger.warning(
+                    f"[ATTACH] Circuit breaker: {consecutive_full_failures} consecutive "
+                    f"full-batch failures. Storage probe..."
+                )
+                if _storage_health_probe():
+                    logger.info("[ATTACH] Storage probe passed, resuming migration")
+                    consecutive_full_failures = 0
+                else:
+                    logger.warning(
+                        f"[ATTACH] Storage still down, sleeping {CIRCUIT_BREAK_SLEEP}s..."
+                    )
+                    state = _get_state()
+                    state["status"] = "waiting_storage"
+                    state["last_run_at"] = datetime.now(timezone.utc)
+                    _save_state(state)
+                    _stop_event.wait(CIRCUIT_BREAK_SLEEP)
+                    continue
+
             batch_stats = _migrate_batch(state)
 
             state = _get_state()
@@ -301,10 +382,17 @@ def _migration_loop():
             state["failed"] += batch_stats["failed"]
             state["bytes_transferred"] += batch_stats["bytes"]
             state["last_run_at"] = datetime.now(timezone.utc)
+            state["status"] = "running"
             _save_state(state)
 
             total_processed = batch_stats["migrated"] + batch_stats["skipped"] + batch_stats["failed"]
             if total_processed > 0:
+                # Track consecutive failures for circuit breaker
+                if batch_stats["migrated"] == 0 and batch_stats["failed"] > 0 and batch_stats["skipped"] == 0:
+                    consecutive_full_failures += 1
+                else:
+                    consecutive_full_failures = 0
+
                 mb = batch_stats["bytes"] / (1024 * 1024)
                 logger.info(
                     f"[ATTACH] Batch: migrated={batch_stats['migrated']} "
@@ -369,6 +457,25 @@ def reset_migration() -> dict:
         return {"error": "Stop migration first"}
     _state_col.delete_one({"_type": "attachment_migration"})
     return {"message": "Migration state reset"}
+
+
+def reset_failed_attachments() -> dict:
+    """Reset retry counters on failed attachments so they can be retried.
+    Call this after storage service is restored."""
+    result = messages_collection.update_many(
+        {"attachments.storage_path": "FAILED"},
+        {"$unset": {
+            "attachments.$[elem].storage_path": "",
+            "attachments.$[elem].migration_error": "",
+            "attachments.$[elem].migration_retries": "",
+            "attachments.$[elem].last_migration_error": "",
+        }},
+        array_filters=[{"elem.storage_path": "FAILED"}],
+    )
+    return {
+        "message": f"Reset {result.modified_count} messages with failed attachments",
+        "modified": result.modified_count,
+    }
 
 
 def auto_resume_migration():

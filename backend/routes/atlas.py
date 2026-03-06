@@ -19,6 +19,7 @@ from services.atlas_sync import (
 from services.attachment_migration import (
     start_migration, stop_migration, reset_migration,
     get_migration_status, _get_from_storage, _init_storage,
+    reset_failed_attachments,
 )
 from services.zeus_cleanup import run_cleanup, get_cleanup_status
 
@@ -165,6 +166,12 @@ async def attachment_stop(current_user: dict = Depends(get_current_user)):
 async def attachment_reset(current_user: dict = Depends(get_current_user)):
     """Reset attachment migration state."""
     return reset_migration()
+
+
+@router.post("/attachments/reset-failed")
+async def attachment_reset_failed(current_user: dict = Depends(get_current_user)):
+    """Reset failed attachments so they can be retried when storage is restored."""
+    return reset_failed_attachments()
 
 
 

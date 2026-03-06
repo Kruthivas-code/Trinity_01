@@ -1,0 +1,58 @@
+{
+  "iteration": 356,
+  "date": "2026-03-06",
+  "description": "Attachment Migration Failure Investigation & Fix",
+  "root_cause_analysis": {
+    "symptom": "Attachment migration stuck at 13,432/51,816 with 19,806+ failures (same 83 attachments retried ~238 times in infinite loop)",
+    "root_causes": [
+      {
+        "cause": "Emergent Object Storage upload service returning 500 Internal Server Error for ALL uploads (reads/lists still work)",
+        "severity": "EXTERNAL_SERVICE",
+        "details": "Even a tiny 5-byte text file upload fails. Init and list operations work fine. The storage write capability is completely down."
+      },
+      {
+        "cause": "No failure marking: failed attachments were never marked in DB, causing the same batch to retry indefinitely",
+        "severity": "CODE_BUG",
+        "fix": "Added migration_retries counter and storage_path='FAILED' marking after 3 retries"
+      },
+      {
+        "cause": "No circuit breaker: migration continued burning resources even when storage was completely unavailable",
+        "severity": "CODE_BUG",
+        "fix": "Added circuit breaker that pauses migration after 3 consecutive full-batch failures, with storage health probe before retry"
+      },
+      {
+        "cause": "Query didn't exclude failed attachments: $regex on attachments.url matched all unmigrated attachments including already-failed ones",
+        "severity": "CODE_BUG",
+        "fix": "Changed to $elemMatch query that requires BOTH url match AND storage_path not exists"
+      },
+      {
+        "cause": "Malformed URL 'https: files.atlas.so=' would never download but kept retrying",
+        "severity": "DATA_ISSUE",
+        "fix": "Updated _should_migrate() to require https:// prefix"
+      }
+    ]
+  },
+  "fixes_applied": [
+    "Added MAX_ATTACHMENT_RETRIES (3) — attachments marked storage_path='FAILED' after exhausting retries",
+    "Added circuit breaker (MAX_CONSECUTIVE_FAILURES=3) — pauses 5 min, runs storage health probe before retry",
+    "Added _storage_health_probe() — tests storage upload before resuming batches",
+    "Changed query to $elemMatch — only finds messages with genuinely unmigrated attachments",
+    "Added _should_migrate() URL validation — rejects malformed URLs",
+    "Added reset_failed_attachments() API — allows bulk reset when storage is restored",
+    "Added /api/admin/atlas/attachments/reset-failed endpoint"
+  ],
+  "current_status": {
+    "status": "waiting_storage",
+    "migrated": 13432,
+    "failed": 20714,
+    "skipped": 3872,
+    "total": 51748,
+    "storage_service": "DOWN (500 on all uploads)"
+  },
+  "next_steps": [
+    "Storage service needs to be restored (external dependency)",
+    "Once storage is back: POST /api/admin/atlas/attachments/reset-failed to retry all failed attachments",
+    "Migration will auto-resume via circuit breaker health probe"
+  ],
+  "overall_status": "PASS (code fixes verified, blocked on external service)"
+}
