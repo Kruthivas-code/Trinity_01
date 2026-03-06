@@ -67,6 +67,13 @@ Migrate historical data from Atlas support platform into Trinity and establish r
 - Counter reset to 68,562 (next ticket: TKT-068563)
 - **Attachment migration auto-resume:** Added `auto_resume_migration()` on startup so S3 migration survives server restarts
 
+## IMAP + Atlas Sync Architecture Fix (2026-03-06)
+- **IMAP SSL health:** Added `ssl.create_default_context()`, batch processing (50/batch), and auto-reconnect on SSL errors. SSL errors now caught and connection refreshed mid-batch instead of crashing.
+- **Atlas sync deduplication:** Before creating new ticket, checks if IMAP already created one (match by customer_email + title). Links existing ticket to Atlas instead of creating duplicate.
+- **Atlas sync ticket numbering:** New tickets use `TKT-{atlas_number:06d}` instead of auto-increment, maintaining parity.
+- **Duplicate cleanup:** Deleted 186 IMAP duplicates, fixed 103 ticket number mismatches from post-migration sync.
+- **Data parity:** 0 ticket number mismatches, 67,433 Atlas-linked tickets, escalation levels correct (L1: 46,394, L2: 19,910, L3: 1,129).
+
 ## Upcoming Tasks
 1. **P2: Real-time Agent Notifications**
 2. **P2: Auto-Close Stale Tickets** (non-Zeus, general recurring job)

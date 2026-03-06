@@ -246,7 +246,15 @@ def _create_ticket_from_conv(conv: dict, tag_lookup: dict, agent_email_map: dict
     customer_email = customer.get("email") or (customer.get("defaultSenders") or {}).get("email")
     created_at = _parse_dt(conv.get("createdAt")) or _parse_dt(conv.get("startedAt")) or datetime.now(timezone.utc)
 
-    ticket_id = generate_ticket_id()
+    # Use Atlas conversation number for ticket_id to maintain parity
+    atlas_number = conv.get("number")
+    if atlas_number:
+        ticket_id = f"TKT-{atlas_number:06d}"
+        # Check for collision (shouldn't happen, but safety)
+        if tickets_collection.find_one({"ticket_id": ticket_id}):
+            ticket_id = generate_ticket_id()
+    else:
+        ticket_id = generate_ticket_id()
 
     ticket_doc = {
         "ticket_id": ticket_id,
@@ -669,11 +677,54 @@ def _run_sync_cycle(state: dict, tag_lookup: dict, agent_email_map: dict) -> dic
                             {"$set": {"updated_at": datetime.now(timezone.utc)}},
                         )
                 else:
-                    # New conversation — create ticket
-                    ticket_id = _create_ticket_from_conv(conv, tag_lookup, agent_email_map)
-                    if ticket_id:
+                    # New conversation — check if IMAP already created a ticket for this email
+                    customer_email = (conv.get("customer") or {}).get("email", "").lower().strip()
+                    conv_title = (conv.get("title") or conv.get("subject") or "").strip()
+                    imap_match = None
+                    if customer_email and conv_title:
+                        imap_match = tickets_collection.find_one(
+                            {
+                                "atlas_conversation_id": {"$exists": False},
+                                "customer_email": customer_email,
+                                "title": conv_title,
+                            },
+                            {"_id": 0, "ticket_id": 1},
+                        )
+
+                    if imap_match:
+                        # Link IMAP ticket to Atlas conversation
+                        ticket_id = imap_match["ticket_id"]
+                        atlas_number = conv.get("number")
+                        new_ticket_id = f"TKT-{atlas_number:06d}" if atlas_number else ticket_id
+                        link_fields = {
+                            "atlas_conversation_id": atlas_conv_id,
+                            "atlas_number": atlas_number,
+                        }
+                        # Rename ticket_id to match Atlas number if possible
+                        if new_ticket_id != ticket_id and not tickets_collection.find_one({"ticket_id": new_ticket_id}):
+                            link_fields["ticket_id"] = new_ticket_id
+                            # Update references
+                            for ref_col in ["messages", "email_threads", "ticket_changelog",
+                                            "notifications", "email_replies", "csat_tokens", "csat_responses"]:
+                                db[ref_col].update_many(
+                                    {"ticket_id": ticket_id},
+                                    {"$set": {"ticket_id": new_ticket_id}},
+                                )
+                            ticket_id = new_ticket_id
+                        tickets_collection.update_one(
+                            {"ticket_id": imap_match["ticket_id"]},
+                            {"$set": link_fields},
+                        )
+                        logger.info(f"[SYNC] Linked IMAP ticket {ticket_id} to Atlas conv {atlas_conv_id}")
                         cycle_stats["new_tickets"] += 1
-                        # Sync messages for the new ticket
+                    else:
+                        # No IMAP match — create new ticket
+                        ticket_id = _create_ticket_from_conv(conv, tag_lookup, agent_email_map)
+
+                    if ticket_id:
+                        if not imap_match:
+                            cycle_stats["new_tickets"] += 1
+                        # Sync messages for the new/linked ticket
                         new_msgs = _sync_messages(atlas_conv_id, ticket_id)
                         cycle_stats["messages_synced"] += new_msgs
                         # Sync sidebars

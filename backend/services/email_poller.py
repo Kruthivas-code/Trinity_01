@@ -622,7 +622,9 @@ def poll_inbox():
 
     mail = None
     try:
-        mail = imaplib.IMAP4_SSL(host, 993)
+        import ssl
+        ctx = ssl.create_default_context()
+        mail = imaplib.IMAP4_SSL(host, 993, ssl_context=ctx)
         mail.login(user, password)
 
         # 1. Process INBOX — ALL emails from last 7 days (not just UNSEEN), newest first
@@ -633,11 +635,30 @@ def poll_inbox():
             email_ids = data[0].split()
             email_ids.reverse()  # newest first
             logger.info(f"[POLL] INBOX: {len(email_ids)} emails (last 7d, newest first)")
-            for eid in email_ids:
-                try:
-                    _process_email(mail, eid, folder="inbox")
-                except Exception as e:
-                    logger.error(f"[POLL] INBOX error {eid}: {e}", exc_info=True)
+
+            # Process in batches — reconnect between batches to avoid SSL timeouts
+            batch_size = 50
+            for i in range(0, len(email_ids), batch_size):
+                batch = email_ids[i:i + batch_size]
+                for eid in batch:
+                    try:
+                        _process_email(mail, eid, folder="inbox")
+                    except (imaplib.IMAP4.abort, ssl.SSLError, OSError) as e:
+                        logger.warning(f"[POLL] Connection lost mid-batch: {e}, reconnecting...")
+                        try:
+                            mail.logout()
+                        except Exception:
+                            pass
+                        mail = imaplib.IMAP4_SSL(host, 993, ssl_context=ctx)
+                        mail.login(user, password)
+                        mail.select("INBOX")
+                        # Retry the failed email
+                        try:
+                            _process_email(mail, eid, folder="inbox")
+                        except Exception:
+                            pass
+                    except Exception as e:
+                        logger.error(f"[POLL] INBOX error {eid}: {e}", exc_info=True)
 
         # 2. Process Sent Mail (detect agent replies from Gmail)
         _poll_sent_folder(mail)
