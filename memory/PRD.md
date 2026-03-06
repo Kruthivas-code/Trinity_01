@@ -1,13 +1,14 @@
 # Trinity - Support Ticket Management System
 
 ## Original Problem Statement
-Migrate historical data from Atlas support platform into Trinity and establish real-time two-way sync. Extended to include comprehensive metadata import, agent account import, and new features (bounce details, CC on replies, agent-initiated tickets).
+Migrate historical data from Atlas support platform into Trinity and establish real-time two-way sync. Extended to include comprehensive metadata import, agent account import, new features, and full attachment migration.
 
 ## Core Architecture
 - **Frontend:** React (CRA) + Shadcn UI + TailwindCSS
 - **Backend:** FastAPI (Python) on port 8001
 - **Database:** MongoDB (`test_database`)
 - **Auth:** Emergent-managed Google OAuth
+- **File Storage:** Emergent Object Storage (S3-compatible)
 - **Integrations:** Gemini (summarization), Amazon SES (outbound email), Gmail IMAP (inbound email), Atlas API (historical + real-time sync)
 
 ## Ticket Status Values (Standardized)
@@ -18,8 +19,6 @@ Migrate historical data from Atlas support platform into Trinity and establish r
 | `waiting` | Waiting on customer (unified from: snoozed, pending, waiting_on_customer) |
 | `review` | Under review |
 | `closed` | Ticket completed (unified from: resolved, closed) |
-| `queued` | In queue for assignment |
-| `assigned` | Assigned but not started |
 
 ## Completed Work
 - **Atlas Historical Backfill:** ~67,000 conversations, ~348,000 messages imported (resumable engine)
@@ -29,43 +28,37 @@ Migrate historical data from Atlas support platform into Trinity and establish r
 - **CC on Replies:** CC field in reply composer, backend SES support
 - **Agent-Initiated Outbound Tickets:** Create tickets + send initial email to customer
 - **Status Standardization (2026-03-06):** Unified `resolved` → `closed`, all waiting variants → `waiting`
-- **Atlas Shadow Sync (2026-03-06):** Real-time sync engine polling Atlas every 60s, syncing new conversations, messages, sidebars, field changes. Auto-starts on boot. Admin UI with start/stop/config/stats. Trinity takes precedence in conflicts.
-- **Collapsible Quoted Text (2026-03-06):** Messages with email reply chains collapse quoted content behind a tiny `···` toggle. Works in both EmailMessage (plain text) and EmailViewer (email HTML) components.
-- **Email Capitalization Fix (2026-03-06):** Fixed `from_addr` not being lowercased in email_poller.py, preventing capitalized emails like `Sumiya2@hotmail.com`.
-- **Data Validation (2026-03-06):** One-time audit confirmed 0 duplicate messages, 0 duplicate tickets, 0 duplicate atlas_conversation_ids across all data.
+- **Atlas Shadow Sync (2026-03-06):** Real-time sync engine polling every 60s
+- **Collapsible Quoted Text (2026-03-06):** Email reply chains collapse behind tiny `···` toggle
+- **Email Capitalization Fix (2026-03-06):** from_addr lowercased in email_poller
+- **Data Validation (2026-03-06):** One-time audit — 0 duplicates confirmed
+- **Attachment Migration (2026-03-06):** Background job downloading ~65K files from Atlas CDN to Emergent Object Storage. Proxy endpoint at `/api/files/{path}`. Admin UI with progress bar. Resumable.
 
-## Shadow Sync Architecture
-- **Engine:** `backend/services/atlas_sync.py` — daemon thread with MongoDB state persistence
-- **Polling:** Every 60s, fetches Atlas conversations active in last 15 minutes
-- **New conversations:** Creates Trinity tickets with full field mapping
-- **Existing tickets:** Syncs new messages, sidebars, and field changes (status/priority/assignee)
-- **Conflict resolution:** Trinity takes precedence — if ticket was modified in Trinity since last sync, Atlas field changes are skipped (logged as conflict)
-- **Active ticket re-check:** Each cycle re-checks a batch of active (non-closed) Atlas tickets for new messages
-- **Admin controls:** Start/Stop/Config via `/api/admin/atlas/sync/*` endpoints
-- **Admin UI:** "Atlas Sync" tab in admin page with status indicator, live stats, config, error log
+## Attachment Migration Architecture
+- **Engine:** `backend/services/attachment_migration.py`
+- **CDN domains migrated:** `files.atlas.so`, `cdn.discordapp.com`, `media.discordapp.net`
+- **Storage:** Emergent Object Storage at `trinity/attachments/{uuid}.{ext}`
+- **Proxy:** `GET /api/files/{path}` — serves files from storage (public, cached 24h)
+- **DB update:** `attachments[].url` → `/api/files/...`, `attachments[].original_url` → original CDN URL
+- **Admin API:** Start/Stop/Status at `/api/admin/atlas/attachments/*`
+- **Admin UI:** Progress bar, stats, start/stop in Atlas Sync tab
 
-## Upcoming Tasks (Priority Order)
+## Upcoming Tasks
 1. **P2: Real-time Agent Notifications**
 2. **P2: Auto-Close Stale Tickets** (recurring job)
-3. **P3: Migrate Atlas Attachments to Blob Storage**
-4. **P3: Register Atlas Webhooks** for even more real-time sync (supplement polling)
+3. **P3: Atlas Webhook Registration** for real-time sync supplement
 
 ## Key Files
-- `/app/backend/services/atlas_sync.py` — Shadow sync engine (real-time)
-- `/app/backend/services/atlas_backfill.py` — Backfill engine (historical)
-- `/app/backend/services/email_poller.py` — Email ingestion (IMAP polling)
-- `/app/backend/routes/atlas.py` — Backfill + sync API endpoints
-- `/app/backend/server.py` — App startup + auto-resume + auto-start sync
+- `/app/backend/services/attachment_migration.py` — Attachment migration engine
+- `/app/backend/services/atlas_sync.py` — Shadow sync engine
+- `/app/backend/services/atlas_backfill.py` — Historical backfill engine
+- `/app/backend/services/email_poller.py` — Email ingestion
+- `/app/backend/routes/atlas.py` — All Atlas admin API endpoints
+- `/app/backend/server.py` — App startup + file proxy
+- `/app/frontend/src/components/admin/AdminPage.js` — Admin page with sync + migration UI
 - `/app/frontend/src/components/tickets/EmailMessage.js` — Message rendering + collapsible quotes
-- `/app/frontend/src/components/common/EmailViewer.js` — Email HTML rendering + collapsible quotes
-- `/app/frontend/src/components/admin/AdminPage.js` — Admin page with Atlas Sync tab
-
-## Key API Endpoints — Atlas Sync
-- `GET /api/admin/atlas/sync/status` — Sync state, last run, counters, errors
-- `POST /api/admin/atlas/sync/start` — Start the sync worker
-- `POST /api/admin/atlas/sync/stop` — Stop the sync worker
-- `PATCH /api/admin/atlas/sync/config` — Update poll interval / lookback window
 
 ## Credentials
 - **Atlas API Key:** `NY7YY8Y3092NKWXSQGR8BT3NIXNFOGFWBGFJ36WD8KCBQ9UIQ8VM8CX2K1I2LY75`
+- **Admin API Key:** `tk_live_C47oqvueOkUiCEBs-8EBNkJmu3-VyYdSfOB8RgeFZXI`
 - **Auth:** Emergent Google OAuth
