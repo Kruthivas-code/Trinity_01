@@ -25,6 +25,12 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
 - [x] Race condition resolution: IMAP no longer creates new tickets (fixed 2026-03-06)
 - [x] NoneType bug fix in Atlas sync for null customer emails (fixed 2026-03-06)
 - [x] Data parity migration (ticket numbers, escalation levels, tags)
+- [x] Escalation level sync from custom_fields.support_level (fixed 2026-03-06)
+- [x] Recheck phase now syncs field updates, not just messages (fixed 2026-03-06)
+- [x] Closed tickets recheck for reopened tickets (fixed 2026-03-06)
+- [x] Assignment backfill: 1,287 tickets mapped from Atlas agent emails (fixed 2026-03-06)
+- [x] Escalation backfill: 27 mismatches corrected (fixed 2026-03-06)
+- [x] Attachment migration circuit breaker + retry limits (fixed 2026-03-06)
 - [x] New user onboarding bug fixes (5 critical bugs)
 - [x] User role backfill migration
 - [x] Cross-browser CSS fixes

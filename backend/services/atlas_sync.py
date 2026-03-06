@@ -562,6 +562,10 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict) -> tuple:
     custom_fields = conv.get("customFields")
     if custom_fields and custom_fields != ticket.get("custom_fields"):
         updates["custom_fields"] = custom_fields
+        # Sync escalation_level from support_level custom field
+        support_level = custom_fields.get("support_level")
+        if support_level and ticket.get("escalation_level") != support_level:
+            updates["escalation_level"] = support_level
 
     # Closed at
     closed_at = _parse_dt(conv.get("closedAt"))
@@ -755,13 +759,13 @@ def _run_sync_cycle(state: dict, tag_lookup: dict, agent_email_map: dict) -> dic
 
 def _recheck_active_tickets(agent_email_map: dict, batch_size: int = 50) -> dict:
     """
-    Re-check active (non-closed) Atlas-origin tickets for new messages.
-    This catches updates to conversations that were created before the lookback window.
+    Re-check Atlas-origin tickets for new messages AND field updates.
+    This catches updates to conversations that fall outside the lookback window.
     Processes a batch each cycle to spread the load.
     """
-    stats = {"messages_synced": 0, "checked": 0}
+    stats = {"messages_synced": 0, "checked": 0, "field_updates": 0}
 
-    # Get the oldest-synced active Atlas tickets
+    # Main batch: active (non-closed) tickets, oldest-synced first
     active_tickets = list(tickets_collection.find(
         {
             "atlas_conversation_id": {"$exists": True, "$ne": None},
@@ -770,18 +774,51 @@ def _recheck_active_tickets(agent_email_map: dict, batch_size: int = 50) -> dict
         {"_id": 0, "ticket_id": 1, "atlas_conversation_id": 1, "last_synced_at": 1},
     ).sort("last_synced_at", 1).limit(batch_size))
 
-    for ticket in active_tickets:
+    # Small batch: recently-closed tickets that haven't been synced in a while
+    # (catches Atlas reopening a closed ticket)
+    stale_threshold = datetime.now(timezone.utc) - timedelta(hours=2)
+    closed_batch = list(tickets_collection.find(
+        {
+            "atlas_conversation_id": {"$exists": True, "$ne": None},
+            "status": "closed",
+            "last_synced_at": {"$lt": stale_threshold},
+        },
+        {"_id": 0, "ticket_id": 1, "atlas_conversation_id": 1, "last_synced_at": 1},
+    ).sort("last_synced_at", 1).limit(5))
+
+    all_tickets = active_tickets + closed_batch
+
+    for ticket in all_tickets:
         if _stop_event.is_set():
             break
 
         atlas_conv_id = ticket["atlas_conversation_id"]
         ticket_id = ticket["ticket_id"]
 
+        # Sync messages
         new_msgs = _sync_messages(atlas_conv_id, ticket_id)
         stats["messages_synced"] += new_msgs
         stats["checked"] += 1
 
-        # Update last_synced_at even if no new messages
+        # Fetch conversation from Atlas to sync field updates
+        try:
+            resp = requests.get(
+                f"{ATLAS_API}/conversations/{atlas_conv_id}",
+                headers=_headers(),
+                timeout=15,
+            )
+            if resp.status_code == 200:
+                conv = resp.json()
+                full_ticket = tickets_collection.find_one(
+                    {"ticket_id": ticket_id}, {"_id": 0}
+                )
+                if full_ticket:
+                    field_changes, _ = _sync_fields(conv, full_ticket, agent_email_map)
+                    stats["field_updates"] += field_changes
+        except Exception as e:
+            logger.debug(f"[SHADOW] Recheck field sync error for {ticket_id}: {e}")
+
+        # Update last_synced_at even if no changes
         tickets_collection.update_one(
             {"ticket_id": ticket_id},
             {"$set": {"last_synced_at": datetime.now(timezone.utc)}},
@@ -842,19 +879,19 @@ def _sync_loop():
             state["new_tickets_created"] = state.get("new_tickets_created", 0) + cycle_stats["new_tickets"]
             state["messages_synced"] = state.get("messages_synced", 0) + cycle_stats["messages_synced"] + recheck_stats["messages_synced"]
             state["sidebars_synced"] = state.get("sidebars_synced", 0) + cycle_stats["sidebars_synced"]
-            state["field_updates"] = state.get("field_updates", 0) + cycle_stats["field_updates"]
+            state["field_updates"] = state.get("field_updates", 0) + cycle_stats["field_updates"] + recheck_stats.get("field_updates", 0)
             state["conflicts_skipped"] = state.get("conflicts_skipped", 0) + cycle_stats["conflicts"]
             state["last_sync_at"] = datetime.now(timezone.utc)
             state["status"] = "running"
             _save_state(state)
 
-            total_new = cycle_stats["new_tickets"] + cycle_stats["messages_synced"] + recheck_stats["messages_synced"] + cycle_stats["sidebars_synced"]
+            total_new = cycle_stats["new_tickets"] + cycle_stats["messages_synced"] + recheck_stats["messages_synced"] + cycle_stats["sidebars_synced"] + recheck_stats.get("field_updates", 0)
             if total_new > 0:
                 logger.info(
                     f"[SHADOW] Cycle #{state['cycles_completed']}: "
                     f"checked={cycle_stats['conversations_checked']} new_tickets={cycle_stats['new_tickets']} "
                     f"msgs={cycle_stats['messages_synced']}+{recheck_stats['messages_synced']} "
-                    f"sidebars={cycle_stats['sidebars_synced']} field_updates={cycle_stats['field_updates']} "
+                    f"sidebars={cycle_stats['sidebars_synced']} field_updates={cycle_stats['field_updates']}+{recheck_stats.get('field_updates', 0)} "
                     f"conflicts={cycle_stats['conflicts']} recheck={recheck_stats['checked']}"
                 )
             else:
