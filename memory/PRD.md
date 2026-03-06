@@ -8,7 +8,7 @@ Migrate historical data from Atlas support platform into Trinity and establish r
 - **Backend:** FastAPI (Python) on port 8001
 - **Database:** MongoDB (`test_database`)
 - **Auth:** Emergent-managed Google OAuth
-- **Integrations:** Gemini (summarization), Amazon SES (outbound email), Gmail IMAP (inbound email), Atlas API (historical data)
+- **Integrations:** Gemini (summarization), Amazon SES (outbound email), Gmail IMAP (inbound email), Atlas API (historical + real-time sync)
 
 ## Ticket Status Values (Standardized)
 | Status | Description |
@@ -29,19 +29,37 @@ Migrate historical data from Atlas support platform into Trinity and establish r
 - **CC on Replies:** CC field in reply composer, backend SES support
 - **Agent-Initiated Outbound Tickets:** Create tickets + send initial email to customer
 - **Status Standardization (2026-03-06):** Unified `resolved` → `closed`, all waiting variants → `waiting`
+- **Atlas Shadow Sync (2026-03-06):** Real-time sync engine polling Atlas every 60s, syncing new conversations, messages, sidebars (internal notes), and field changes. Auto-starts on boot. Admin UI with start/stop/config/stats. Trinity takes precedence in conflicts.
+
+## Shadow Sync Architecture
+- **Engine:** `backend/services/atlas_sync.py` — daemon thread with MongoDB state persistence
+- **Polling:** Every 60s, fetches Atlas conversations active in last 15 minutes
+- **New conversations:** Creates Trinity tickets with full field mapping
+- **Existing tickets:** Syncs new messages, sidebars, and field changes (status/priority/assignee)
+- **Conflict resolution:** Trinity takes precedence — if ticket was modified in Trinity since last sync, Atlas field changes are skipped (logged as conflict)
+- **Active ticket re-check:** Each cycle re-checks a batch of active (non-closed) Atlas tickets for new messages
+- **Admin controls:** Start/Stop/Config via `/api/admin/atlas/sync/*` endpoints
+- **Admin UI:** "Atlas Sync" tab in admin page with status indicator, live stats, config, error log
 
 ## Upcoming Tasks (Priority Order)
 1. **P1: Data Validation Script** — Admin endpoint to audit DB for duplicate tickets/messages
-2. **P2: Real-Time Atlas Sync ("Shadow Mode")** — Two-way live sync per atlas_sync_plan.md
-3. **P2: Real-time Agent Notifications**
-4. **P2: Auto-Close Stale Tickets** (recurring job)
-5. **P3: Migrate Atlas Attachments to Blob Storage**
+2. **P2: Real-time Agent Notifications**
+3. **P2: Auto-Close Stale Tickets** (recurring job)
+4. **P3: Migrate Atlas Attachments to Blob Storage**
 
 ## Key Files
-- `/app/backend/services/atlas_backfill.py` — Backfill engine
-- `/app/backend/routes/atlas.py` — Backfill API
-- `/app/backend/server.py` — App startup + auto-resume
+- `/app/backend/services/atlas_sync.py` — Shadow sync engine (real-time)
+- `/app/backend/services/atlas_backfill.py` — Backfill engine (historical)
+- `/app/backend/routes/atlas.py` — Backfill + sync API endpoints
+- `/app/backend/server.py` — App startup + auto-resume + auto-start sync
+- `/app/frontend/src/components/admin/AdminPage.js` — Admin page with Atlas Sync tab
 - `/app/memory/atlas_sync_plan.md` — Migration strategy doc
+
+## Key API Endpoints — Atlas Sync
+- `GET /api/admin/atlas/sync/status` — Sync state, last run, counters, errors
+- `POST /api/admin/atlas/sync/start` — Start the sync worker
+- `POST /api/admin/atlas/sync/stop` — Stop the sync worker
+- `PATCH /api/admin/atlas/sync/config` — Update poll interval / lookback window
 
 ## Credentials
 - **Atlas API Key:** `NY7YY8Y3092NKWXSQGR8BT3NIXNFOGFWBGFJ36WD8KCBQ9UIQ8VM8CX2K1I2LY75`
