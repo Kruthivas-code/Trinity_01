@@ -255,7 +255,7 @@ def map_conversation_to_ticket(
         "description": "",  # Will be populated from first message
         "status": trinity_status,
         "priority": trinity_priority,
-        "escalation_level": "L1",
+        "escalation_level": (conv.get("customFields") or conv.get("custom_fields") or {}).get("support_level", "L1"),
         "order": 0,
         "source": "atlas",
         "tags": mapped_tags,

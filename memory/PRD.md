@@ -56,6 +56,17 @@ Migrate historical data from Atlas support platform into Trinity and establish r
 - **Bug 4: Sidebar admin links** — Added `roles` filter to mainItems array in Sidebar.js (Admin=admin only, Settings=admin/lead)
 - **Bug 5: Stale current_ticket_count** — Removed the broken increment; live count used by get_available_agents is the source of truth
 
+## Ticket Number Alignment (2026-03-06)
+- **Migration script:** `backend/scripts/ticket_number_migration.py` (one-time, run manually)
+- Deleted 45,415 non-Atlas duplicate tickets (email poller artifacts)
+- Renamed 67,327 Atlas tickets to match Atlas numbers: `TKT-{atlas_number:06d}`
+- Updated all referencing collections (messages, email_threads, changelog, etc.)
+- Fixed escalation levels: mapped `custom_fields.support_level` → `escalation_level` (L1: 46,337, L2: 19,909, L3: 1,129)
+- Resolved 298 UUID tags to human-readable names via Atlas API (e.g., `ea8b3176...` → `refund`)
+- Updated atlas_sync, atlas_backfill, atlas_import to use `support_level` for escalation going forward
+- Counter reset to 68,562 (next ticket: TKT-068563)
+- **Attachment migration auto-resume:** Added `auto_resume_migration()` on startup so S3 migration survives server restarts
+
 ## Upcoming Tasks
 1. **P2: Real-time Agent Notifications**
 2. **P2: Auto-Close Stale Tickets** (non-Zeus, general recurring job)

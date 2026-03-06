@@ -255,7 +255,7 @@ def _create_ticket_from_conv(conv: dict, tag_lookup: dict, agent_email_map: dict
         "description": "",
         "status": STATUS_MAP.get(atlas_status, "todo"),
         "priority": PRIORITY_MAP.get(atlas_priority, "medium"),
-        "escalation_level": "L1",
+        "escalation_level": (conv.get("customFields") or {}).get("support_level", "L1"),
         "order": 0,
         "source": "atlas",
         "tags": mapped_tags,

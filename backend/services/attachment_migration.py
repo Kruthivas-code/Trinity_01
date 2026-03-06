@@ -369,3 +369,18 @@ def reset_migration() -> dict:
         return {"error": "Stop migration first"}
     _state_col.delete_one({"_type": "attachment_migration"})
     return {"message": "Migration state reset"}
+
+
+def auto_resume_migration():
+    """Resume migration on startup if it was running or paused."""
+    state = _get_state()
+    status = state.get("status", "idle")
+    if status in ("running", "paused"):
+        migrated = state.get("migrated", 0)
+        total = state.get("total_attachments", 0)
+        logger.info(
+            f"[ATTACH] Auto-resuming migration (was {status}, {migrated}/{total} done)"
+        )
+        start_migration()
+    else:
+        logger.info(f"[ATTACH] Migration status={status}, not resuming")
