@@ -2,6 +2,7 @@
 Atlas sync routes — Backfill control, status, and real-time sync management.
 """
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import Optional
 import logging
@@ -14,6 +15,10 @@ from services.atlas_backfill import (
 )
 from services.atlas_sync import (
     start_sync, stop_sync, get_sync_status, update_config as update_sync_config,
+)
+from services.attachment_migration import (
+    start_migration, stop_migration, reset_migration,
+    get_migration_status, _get_from_storage, _init_storage,
 )
 
 logger = logging.getLogger("atlas_routes")
@@ -132,5 +137,30 @@ async def sync_config(req: SyncConfigUpdate, current_user: dict = Depends(get_cu
         lookback_minutes=req.lookback_minutes,
     )
 
-    """Stop the enrichment pass."""
-    return stop_enrichment()
+
+# ══════════════════════════════════════════════════════════════
+# Attachment Migration
+# ══════════════════════════════════════════════════════════════
+
+@router.get("/attachments/status")
+async def attachment_status(current_user: dict = Depends(get_current_user)):
+    """Get attachment migration status."""
+    return get_migration_status()
+
+
+@router.post("/attachments/start")
+async def attachment_start(current_user: dict = Depends(get_current_user)):
+    """Start attachment migration from Atlas CDN to Emergent storage."""
+    return start_migration()
+
+
+@router.post("/attachments/stop")
+async def attachment_stop(current_user: dict = Depends(get_current_user)):
+    """Stop attachment migration (resumable)."""
+    return stop_migration()
+
+
+@router.post("/attachments/reset")
+async def attachment_reset(current_user: dict = Depends(get_current_user)):
+    """Reset attachment migration state."""
+    return reset_migration()

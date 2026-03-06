@@ -3,7 +3,7 @@ Trinity API - Enterprise ticket management platform
 Main application entry point. All routes are in backend/routes/.
 """
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -230,6 +230,25 @@ async def health():
     if health_status["status"] == "unhealthy":
         return JSONResponse(status_code=503, content=health_status)
     return health_status
+
+
+# ==================== File Proxy (Migrated Attachments) ====================
+@app.get("/api/files/{path:path}")
+async def serve_file(path: str):
+    """Serve migrated attachment files from Emergent Object Storage."""
+    try:
+        from services.attachment_migration import _get_from_storage
+        data, content_type = _get_from_storage(path)
+        return Response(
+            content=data,
+            media_type=content_type,
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+    except Exception as e:
+        logger.warning(f"[FILES] Error serving {path}: {e}")
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="File not found")
+
 
 # ==================== Background Tasks ====================
 auto_close_task = None

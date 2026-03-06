@@ -581,6 +581,113 @@ const AtlasSyncTab = () => {
           <li>• Active (non-closed) Atlas tickets are periodically re-checked for new messages</li>
         </ul>
       </div>
+
+      {/* Attachment Migration Section */}
+      <AttachmentMigrationSection />
+    </div>
+  );
+};
+
+const AttachmentMigrationSection = () => {
+  const [status, setStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/admin/atlas/attachments/status`, { credentials: 'include' });
+      if (res.ok) setStatus(await res.json());
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleAction = async (action) => {
+    setActionLoading(true);
+    try {
+      await fetch(`${BACKEND_URL}/api/admin/atlas/attachments/${action}`, { method: 'POST', credentials: 'include' });
+      await fetchStatus();
+    } finally { setActionLoading(false); }
+  };
+
+  if (loading) return null;
+
+  const isRunning = status?.is_running;
+  const pct = status?.total_attachments > 0 ? Math.round((status.migrated / status.total_attachments) * 100) : 0;
+  const mbTransferred = ((status?.bytes_transferred || 0) / (1024 * 1024)).toFixed(1);
+
+  return (
+    <div className="mt-8 pt-6 border-t border-border/20" data-testid="attachment-migration-section">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-sm font-medium">Attachment Migration</h3>
+          <p className="text-xs text-muted-foreground">Migrate files from Atlas CDN to Emergent storage</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isRunning ? (
+            <button onClick={() => handleAction('stop')} disabled={actionLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 text-xs font-medium"
+              data-testid="attachment-stop-btn">
+              {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <Square size={12} />} Stop
+            </button>
+          ) : (
+            <button onClick={() => handleAction('start')} disabled={actionLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 text-xs font-medium"
+              data-testid="attachment-start-btn">
+              {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Start
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Progress */}
+      {status?.total_attachments > 0 && (
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+            <span>{status.migrated.toLocaleString()} / {status.total_attachments.toLocaleString()} files</span>
+            <span>{pct}% · {mbTransferred} MB</span>
+          </div>
+          <div className="h-1.5 bg-secondary/30 rounded-full overflow-hidden">
+            <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+      )}
+
+      {/* Compact stats */}
+      <div className="grid grid-cols-4 gap-3">
+        <div className="text-center p-2 rounded-lg bg-secondary/20">
+          <p className="text-xs text-muted-foreground">Status</p>
+          <p className="text-sm font-medium">{status?.status || 'idle'}</p>
+        </div>
+        <div className="text-center p-2 rounded-lg bg-secondary/20">
+          <p className="text-xs text-muted-foreground">Migrated</p>
+          <p className="text-sm font-medium">{(status?.migrated || 0).toLocaleString()}</p>
+        </div>
+        <div className="text-center p-2 rounded-lg bg-secondary/20">
+          <p className="text-xs text-muted-foreground">Skipped</p>
+          <p className="text-sm font-medium">{(status?.skipped || 0).toLocaleString()}</p>
+        </div>
+        <div className="text-center p-2 rounded-lg bg-secondary/20">
+          <p className="text-xs text-muted-foreground">Failed</p>
+          <p className={`text-sm font-medium ${status?.failed > 0 ? 'text-red-400' : ''}`}>{(status?.failed || 0).toLocaleString()}</p>
+        </div>
+      </div>
+
+      {status?.errors?.length > 0 && (
+        <div className="mt-3 p-3 rounded-lg border border-red-500/20 bg-red-500/5 max-h-32 overflow-y-auto">
+          {status.errors.slice(-5).reverse().map((err, i) => (
+            <div key={i} className="text-[10px] text-muted-foreground py-0.5">
+              <span className="text-red-400 mr-1">{new Date(err.time).toLocaleTimeString()}</span>
+              {err.error}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
