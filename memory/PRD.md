@@ -1,63 +1,48 @@
-# Trinity — Product Requirements Document
+# Trinity - Support Ticket Management System
 
-## Overview
-Trinity is a comprehensive customer help suite with three public surfaces and one internal tool:
+## Original Problem Statement
+Migrate historical data from Atlas support platform into Trinity and establish real-time two-way sync. Extended to include comprehensive metadata import, agent account import, and new features (bounce details, CC on replies, agent-initiated tickets).
 
-1. **Knowledge Base** (`/`, `/docs/:slug`) — Public documentation site
-2. **Help Portal** (`/portal`) — Customer-facing ticket submission and tracking
-3. **Agent Dashboard** (`/dashboard`, `/all-tickets`) — Internal agent tool
-4. **CSAT** (`/csat/:token`) — Customer satisfaction surveys
+## Core Architecture
+- **Frontend:** React (CRA) + Shadcn UI + TailwindCSS
+- **Backend:** FastAPI (Python) on port 8001
+- **Database:** MongoDB (`test_database`)
+- **Auth:** Emergent-managed Google OAuth
+- **Integrations:** Gemini (summarization), Amazon SES (outbound email), Gmail IMAP (inbound email), Atlas API (historical data)
 
-## Tech Stack
-- **Frontend**: React 18 + Tailwind CSS + Shadcn UI
-- **Backend**: FastAPI (Python) + Socket.IO (real-time)
-- **Database**: MongoDB (pymongo)
-- **AI**: Gemini via `emergentintegrations` for ticket summarization
-- **Email Outbound**: Amazon SES SMTP (with CC support)
-- **Email Inbound**: Gmail IMAP polling
-- **Auth**: Emergent Google OAuth (dashboard), JWT sessions (portal)
-
----
+## Ticket Status Values (Standardized)
+| Status | Description |
+|--------|-------------|
+| `todo` | New/unassigned ticket |
+| `in_progress` | Agent actively working |
+| `waiting` | Waiting on customer (unified from: snoozed, pending, waiting_on_customer) |
+| `review` | Under review |
+| `closed` | Ticket completed (unified from: resolved, closed) |
+| `queued` | In queue for assignment |
+| `assigned` | Assigned but not started |
 
 ## Completed Work
+- **Atlas Historical Backfill:** ~67,000 conversations, ~348,000 messages imported (resumable engine)
+- **Atlas Metadata Enrichment:** CSAT scores, custom fields, attachments (URLs), actor/timestamp info
+- **Atlas Agent Import:** 163 agents with upsert-by-email dedup
+- **Bounce Detail Tooltip:** UI tooltip on bounced messages with recipient + reason
+- **CC on Replies:** CC field in reply composer, backend SES support
+- **Agent-Initiated Outbound Tickets:** Create tickets + send initial email to customer
+- **Status Standardization (2026-03-06):** Unified `resolved` → `closed`, all waiting variants → `waiting`
 
-### Email CC & Outbound Tickets (Mar 5, 2026)
-- **CC on replies**: CC button in reply composer, CC addresses sent in email headers, stored on records
-- **Agent-initiated outbound tickets**: Create Ticket modal with customer email, send email toggle, CC field
-- **Enhanced bounce tooltip**: Detailed hover showing bounced email, reason, timestamp, CC info
-- Backend: `send_email()` CC support, `email-stats` returns `bounce_details` and `outbound_emails`
+## Upcoming Tasks (Priority Order)
+1. **P1: Data Validation Script** — Admin endpoint to audit DB for duplicate tickets/messages
+2. **P2: Real-Time Atlas Sync ("Shadow Mode")** — Two-way live sync per atlas_sync_plan.md
+3. **P2: Real-time Agent Notifications**
+4. **P2: Auto-Close Stale Tickets** (recurring job)
+5. **P3: Migrate Atlas Attachments to Blob Storage**
 
-### Atlas Full Metadata Import (Mar 5, 2026)
-- **Backfill COMPLETE**: 67,135 conversations, 344K+ messages, 0 errors
-- **Agent import**: 163 Atlas agents imported, merge-safe by email
-- **Full metadata**: CSAT scores, attachments (URL refs), sub-channels, actor tracking, environment info
-- **Customer enrichment**: Atlas custom fields, phone, company ID on customer records
-- **Enrichment pass**: Running (3,700/~45K old tickets patched)
+## Key Files
+- `/app/backend/services/atlas_backfill.py` — Backfill engine
+- `/app/backend/routes/atlas.py` — Backfill API
+- `/app/backend/server.py` — App startup + auto-resume
+- `/app/memory/atlas_sync_plan.md` — Migration strategy doc
 
-### Previous Work
-- KB Editor (Columns, Accordion, Steps, Icon Picker)
-- Backend-driven Portal Categories
-- Full Gmail Thread Capture with correct timestamps
-- Email System (SES outbound, IMAP inbound, threading)
-
----
-
-## In Progress
-- **Enrichment pass**: Patching ~45K pre-update tickets with new metadata (auto-resumes)
-
-## Pending / Backlog
-
-### P0: Atlas Real-Time Sync (Shadow Mode)
-- Enhance `atlas_sync.py` for full conversation sync
-- Background worker polling every 60s
-- Admin controls and monitoring
-
-### P1: Data Validation (Post-Enrichment)
-- Count verification, message integrity, timestamp sanity
-
-### P2: Future
-- Blob storage for attachment migration
-- Real-time notifications for agents
-- Auto-closing stale tickets
-- Tag definitions & SLA rule import
-- Email analytics dashboard
+## Credentials
+- **Atlas API Key:** `NY7YY8Y3092NKWXSQGR8BT3NIXNFOGFWBGFJ36WD8KCBQ9UIQ8VM8CX2K1I2LY75`
+- **Auth:** Emergent Google OAuth
