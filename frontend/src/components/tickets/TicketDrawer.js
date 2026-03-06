@@ -31,7 +31,7 @@ const TicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate, o
         className={`fixed right-0 top-0 bottom-0 z-[60] flex shadow-2xl transition-transform duration-200 ease-out ${
           state.isClosing ? 'translate-x-full' : 'translate-x-0 animate-in slide-in-from-right duration-300'
         }`}
-        style={{ width: 'calc(100vw - 220px)', maxWidth: '1200px' }}
+        style={{ width: 'calc(100vw - 80px)' }}
         data-testid="ticket-drawer"
       >
         {/* Left Panel - Customer Ticket History */}
