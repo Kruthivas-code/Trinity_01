@@ -144,6 +144,18 @@ function AppRouter() {
         }
       />
       <Route
+        path="/ai-assigned"
+        element={
+          <ProtectedRoute>
+            {(user) => (
+              <AppWithRealtime user={user}>
+                <MainLayout view="ai-assigned" user={user} />
+              </AppWithRealtime>
+            )}
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/inbox/:inboxId"
         element={
           <ProtectedRoute>

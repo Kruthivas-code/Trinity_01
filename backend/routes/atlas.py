@@ -20,6 +20,7 @@ from services.attachment_migration import (
     start_migration, stop_migration, reset_migration,
     get_migration_status, _get_from_storage, _init_storage,
 )
+from services.zeus_cleanup import run_cleanup, get_cleanup_status
 
 logger = logging.getLogger("atlas_routes")
 
@@ -164,3 +165,22 @@ async def attachment_stop(current_user: dict = Depends(get_current_user)):
 async def attachment_reset(current_user: dict = Depends(get_current_user)):
     """Reset attachment migration state."""
     return reset_migration()
+
+
+
+# ══════════════════════════════════════════════════════════════
+# Zeus (AI) Ticket Cleanup
+# ══════════════════════════════════════════════════════════════
+
+@router.get("/zeus/status")
+async def zeus_status(current_user: dict = Depends(get_current_user)):
+    """Get last Zeus cleanup run stats."""
+    return get_cleanup_status()
+
+
+@router.post("/zeus/run")
+async def zeus_run_now(current_user: dict = Depends(get_current_user)):
+    """Trigger an immediate Zeus cleanup run."""
+    import asyncio
+    stats = await asyncio.get_event_loop().run_in_executor(None, run_cleanup)
+    return stats

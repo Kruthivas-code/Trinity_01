@@ -252,6 +252,7 @@ async def serve_file(path: str):
 
 # ==================== Background Tasks ====================
 auto_close_task = None
+zeus_cleanup_task = None
 _instance_id = os.environ.get('INSTANCE_ID', os.environ.get('HOSTNAME', f'instance_{secrets.token_hex(4)}'))
 
 
@@ -293,10 +294,33 @@ async def auto_close_resolved_tickets():
         await asyncio.sleep(3600)
 
 
+async def zeus_cleanup_recurring():
+    """Run Zeus ticket cleanup every 30 minutes."""
+    lock_adapter = get_lock_adapter()
+    lock_name = "zeus_cleanup"
+    while True:
+        acquired = False
+        try:
+            acquired = await lock_adapter.acquire(lock_name, _instance_id, 1800)
+            if not acquired:
+                await asyncio.sleep(1800)
+                continue
+            from services.zeus_cleanup import run_cleanup
+            import asyncio as _asyncio
+            stats = await _asyncio.get_event_loop().run_in_executor(None, run_cleanup)
+            logger.info(f"[ZEUS] Recurring cleanup: {stats.get('trinity_closed', 0)} closed")
+        except Exception as e:
+            logger.error(f"[ZEUS] Cleanup error: {e}")
+        finally:
+            if acquired:
+                await lock_adapter.release(lock_name, _instance_id)
+        await asyncio.sleep(1800)  # 30 minutes
+
+
 # ==================== Startup / Shutdown ====================
 @app.on_event("startup")
 async def startup_event():
-    global auto_close_task
+    global auto_close_task, zeus_cleanup_task
     from motor.motor_asyncio import AsyncIOMotorClient
     motor_client = AsyncIOMotorClient(MONGO_URL)
     motor_db = motor_client[os.environ.get('DB_NAME', 'tickflow')]
@@ -305,6 +329,7 @@ async def startup_event():
     await start_pubsub()
     await create_mongodb_indexes()
     auto_close_task = asyncio.create_task(auto_close_resolved_tickets())
+    zeus_cleanup_task = asyncio.create_task(zeus_cleanup_recurring())
     seed_default_categories()
     # Start email IMAP poller
     from services.email_poller import start_poller as start_email_poller

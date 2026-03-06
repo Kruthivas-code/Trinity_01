@@ -486,6 +486,10 @@ async def get_tickets(
         query["is_starred"] = is_starred
     if escalation_level:
         query["escalation_level"] = escalation_level
+    # Zeus (AI) filter
+    zeus_filter = request.query_params.get("atlas_assigned_to_zeus")
+    if zeus_filter and zeus_filter.lower() == "true":
+        query["atlas_assigned_to_zeus"] = True
     total = tickets_collection.count_documents(query)
     sort_dir = DESCENDING if sort_order == "desc" else ASCENDING
     skip = (page - 1) * limit

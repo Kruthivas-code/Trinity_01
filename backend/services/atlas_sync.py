@@ -286,6 +286,7 @@ def _create_ticket_from_conv(conv: dict, tag_lookup: dict, agent_email_map: dict
         "avg_response_time": stats.get("avgResponseTime"),
         "total_resolution_time": stats.get("totalResolutionTime"),
         "last_synced_at": datetime.now(timezone.utc),
+        "atlas_assigned_to_zeus": conv.get("assignedToZeus") or False,
     }
 
     # Link customer
@@ -571,6 +572,7 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict) -> tuple:
     updates["atlas_priority"] = conv.get("priority")
     updates["atlas_assigned_agent_name"] = _agent_name(assigned_agent)
     updates["atlas_assigned_agent_email"] = assigned_agent.get("email")
+    updates["atlas_assigned_to_zeus"] = conv.get("assignedToZeus") or False
     updates["last_synced_at"] = datetime.now(timezone.utc)
 
     # Stats

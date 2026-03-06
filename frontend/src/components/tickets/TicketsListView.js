@@ -92,7 +92,7 @@ const formatTimeAgo = (dateString) => {
   });
 };
 
-const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, user, onTicketClick, refreshKey, filterTree: propFilterTree, showFilterBuilder, onSaveInbox }) => {
+const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, user, onTicketClick, refreshKey, filterTree: propFilterTree, showFilterBuilder, onSaveInbox, customParams }) => {
   const [tickets, setTickets] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [users, setUsers] = useState([]);
@@ -198,6 +198,10 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
         params.set('limit', ITEMS_PER_PAGE);
         params.set('sort_by', sortBy);
         params.set('sort_order', sortOrder);
+        // Append custom params (e.g., atlas_assigned_to_zeus=true)
+        if (customParams) {
+          Object.entries(customParams).forEach(([k, v]) => params.set(k, v));
+        }
         
         const url = `${BACKEND_URL}/api/tickets?${params.toString()}`;
         const response = await fetch(url, { credentials: 'include' });

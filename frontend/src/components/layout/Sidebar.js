@@ -4,7 +4,7 @@ import {
   LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, 
   User, ChevronDown, Menu, X, LogOut, Users, Shield, CalendarDays,
   Bookmark, BarChart3, UserCircle, Star, MessageSquare, BookOpen,
-  Inbox, AlertTriangle, Zap, ChevronRight, MoreHorizontal, Pencil, Trash2, Share2
+  Inbox, AlertTriangle, Zap, ChevronRight, MoreHorizontal, Pencil, Trash2, Share2, Bot
 } from 'lucide-react';
 import { clearCachedUser } from '../auth/ProtectedRoute';
 import ShareInboxModal from '../inbox/ShareInboxModal';
@@ -66,6 +66,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
     { id: 'open-tickets', label: 'Open', icon: UserCheck, path: '/open-tickets' },
     { id: 'waiting-tickets', label: 'Waiting', icon: Clock, path: '/waiting-tickets' },
     { id: 'closed-tickets', label: 'Closed', icon: CheckCircle, path: '/closed-tickets' },
+    { id: 'ai-assigned', label: 'Assigned to AI', icon: Bot, path: '/ai-assigned' },
   ];
 
   const escalationFolders = [

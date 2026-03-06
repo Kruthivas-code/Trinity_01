@@ -8,6 +8,7 @@ import OpenTicketsPage from '../tickets/OpenTicketsPage';
 import WaitingTicketsPage from '../tickets/WaitingTicketsPage';
 import ClosedTicketsPage from '../tickets/ClosedTicketsPage';
 import StarredTicketsPage from '../tickets/StarredTicketsPage';
+import AIAssignedTicketsPage from '../tickets/AIAssignedTicketsPage';
 import TicketDrawer from '../tickets/TicketDrawer';
 import CreateTicketModal from '../tickets/CreateTicketModal';
 import CustomInboxPage from '../inbox/CustomInboxPage';
@@ -314,6 +315,14 @@ const MainLayout = ({ user, view }) => {
           )}
           {view === 'starred-tickets' && (
             <StarredTicketsPage 
+              key={refreshKey}
+              refreshKey={refreshKey}
+              user={user} 
+              onTicketClick={handleTicketClick}
+            />
+          )}
+          {view === 'ai-assigned' && (
+            <AIAssignedTicketsPage 
               key={refreshKey}
               refreshKey={refreshKey}
               user={user} 
