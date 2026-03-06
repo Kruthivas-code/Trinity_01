@@ -12,6 +12,9 @@ from services.atlas_backfill import (
     get_status, test_batch, import_atlas_agents,
     run_enrichment_pass, get_enrichment_status, stop_enrichment,
 )
+from services.atlas_sync import (
+    start_sync, stop_sync, get_sync_status, update_config as update_sync_config,
+)
 
 logger = logging.getLogger("atlas_routes")
 
@@ -90,5 +93,44 @@ async def enrichment_status(current_user: dict = Depends(get_current_user)):
 
 @router.post("/backfill/enrich/stop")
 async def enrichment_stop(current_user: dict = Depends(get_current_user)):
+    """Stop the enrichment pass."""
+    return stop_enrichment()
+
+
+# ══════════════════════════════════════════════════════════════
+# Shadow Sync (Real-Time)
+# ══════════════════════════════════════════════════════════════
+
+class SyncConfigUpdate(BaseModel):
+    poll_interval: Optional[int] = None
+    lookback_minutes: Optional[int] = None
+
+
+@router.get("/sync/status")
+async def sync_status(current_user: dict = Depends(get_current_user)):
+    """Get current shadow sync status and stats."""
+    return get_sync_status()
+
+
+@router.post("/sync/start")
+async def sync_start(current_user: dict = Depends(get_current_user)):
+    """Start the Atlas shadow sync daemon."""
+    return start_sync()
+
+
+@router.post("/sync/stop")
+async def sync_stop(current_user: dict = Depends(get_current_user)):
+    """Stop the Atlas shadow sync daemon."""
+    return stop_sync()
+
+
+@router.patch("/sync/config")
+async def sync_config(req: SyncConfigUpdate, current_user: dict = Depends(get_current_user)):
+    """Update sync configuration (poll interval, lookback window)."""
+    return update_sync_config(
+        poll_interval=req.poll_interval,
+        lookback_minutes=req.lookback_minutes,
+    )
+
     """Stop the enrichment pass."""
     return stop_enrichment()

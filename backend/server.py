@@ -293,6 +293,9 @@ async def startup_event():
     # Auto-resume Atlas backfill if it was interrupted
     from services.atlas_backfill import auto_resume_on_startup
     auto_resume_on_startup()
+    # Auto-start Atlas shadow sync
+    from services.atlas_sync import auto_start_on_boot
+    auto_start_on_boot()
     logger.info(f"[STARTUP] Instance {_instance_id} started")
 
 

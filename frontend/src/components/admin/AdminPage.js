@@ -4,7 +4,7 @@ import {
   Type, Hash, Calendar, ToggleLeft, List, Building, User, Ticket,
   Loader2, GripVertical, Clock, Users, UserPlus, Zap, Download,
   FileJson, FileSpreadsheet, Database, Filter, CheckCircle2, AlertTriangle,
-  Timer
+  Timer, RefreshCw, Play, Square, Activity
 } from 'lucide-react';
 import RoutingRulesTab from './RoutingRulesTab';
 import SLAEscalationTab from './SLAEscalationTab';
@@ -384,6 +384,215 @@ const ExportDataTab = () => {
     </div>
   );
 };
+
+// Atlas Shadow Sync Tab
+const AtlasSyncTab = () => {
+  const [syncStatus, setSyncStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [pollInterval, setPollInterval] = useState(60);
+  const [lookbackMinutes, setLookbackMinutes] = useState(15);
+
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/admin/atlas/sync/status`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setSyncStatus(data);
+        setPollInterval(data.poll_interval || 60);
+        setLookbackMinutes(data.lookback_minutes || 15);
+      }
+    } catch (e) {
+      console.error('Failed to fetch sync status:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleStart = async () => {
+    setActionLoading(true);
+    try {
+      await fetch(`${BACKEND_URL}/api/admin/atlas/sync/start`, { method: 'POST', credentials: 'include' });
+      await fetchStatus();
+    } finally { setActionLoading(false); }
+  };
+
+  const handleStop = async () => {
+    setActionLoading(true);
+    try {
+      await fetch(`${BACKEND_URL}/api/admin/atlas/sync/stop`, { method: 'POST', credentials: 'include' });
+      await fetchStatus();
+    } finally { setActionLoading(false); }
+  };
+
+  const handleConfigSave = async () => {
+    setActionLoading(true);
+    try {
+      await fetch(`${BACKEND_URL}/api/admin/atlas/sync/config`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ poll_interval: pollInterval, lookback_minutes: lookbackMinutes }),
+      });
+      await fetchStatus();
+    } finally { setActionLoading(false); }
+  };
+
+  const isRunning = syncStatus?.is_running;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-muted-foreground" size={24} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl" data-testid="atlas-sync-tab">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-lg font-medium">Atlas Shadow Sync</h2>
+          <p className="text-sm text-muted-foreground">
+            Real-time sync with Atlas — polls for new conversations and messages
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {isRunning ? (
+            <button
+              onClick={handleStop}
+              disabled={actionLoading}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors text-sm font-medium"
+              data-testid="atlas-sync-stop-btn"
+            >
+              {actionLoading ? <Loader2 size={14} className="animate-spin" /> : <Square size={14} />}
+              Stop Sync
+            </button>
+          ) : (
+            <button
+              onClick={handleStart}
+              disabled={actionLoading}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors text-sm font-medium"
+              data-testid="atlas-sync-start-btn"
+            >
+              {actionLoading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+              Start Sync
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Status indicator */}
+      <div className="p-4 rounded-xl border border-border/40 bg-card/50 mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`} />
+          <span className="font-medium text-sm" data-testid="atlas-sync-status">
+            {isRunning ? 'Running' : 'Stopped'}
+          </span>
+          {syncStatus?.last_sync_at && (
+            <span className="text-xs text-muted-foreground ml-auto">
+              Last sync: {new Date(syncStatus.last_sync_at).toLocaleString()}
+            </span>
+          )}
+        </div>
+
+        {/* Stats grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard label="Cycles" value={syncStatus?.cycles_completed || 0} />
+          <StatCard label="New Tickets" value={syncStatus?.new_tickets_created || 0} />
+          <StatCard label="Messages Synced" value={syncStatus?.messages_synced || 0} />
+          <StatCard label="Sidebars Synced" value={syncStatus?.sidebars_synced || 0} />
+          <StatCard label="Conversations Checked" value={syncStatus?.conversations_checked || 0} />
+          <StatCard label="Field Updates" value={syncStatus?.field_updates || 0} />
+          <StatCard label="Conflicts Skipped" value={syncStatus?.conflicts_skipped || 0} />
+          <StatCard label="Errors" value={(syncStatus?.errors || []).length} isError />
+        </div>
+      </div>
+
+      {/* Config */}
+      <div className="p-4 rounded-xl border border-border/40 bg-card/50 mb-6">
+        <h3 className="text-sm font-medium mb-4">Configuration</h3>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Poll Interval (seconds)</label>
+            <input
+              type="number"
+              value={pollInterval}
+              onChange={(e) => setPollInterval(parseInt(e.target.value) || 60)}
+              min={10}
+              max={600}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/40 text-sm"
+              data-testid="atlas-sync-poll-interval"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Lookback Window (minutes)</label>
+            <input
+              type="number"
+              value={lookbackMinutes}
+              onChange={(e) => setLookbackMinutes(parseInt(e.target.value) || 15)}
+              min={5}
+              max={120}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/40 text-sm"
+              data-testid="atlas-sync-lookback"
+            />
+          </div>
+        </div>
+        <button
+          onClick={handleConfigSave}
+          disabled={actionLoading}
+          className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors text-sm font-medium"
+          data-testid="atlas-sync-save-config"
+        >
+          {actionLoading ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          Save Config
+        </button>
+      </div>
+
+      {/* Recent Errors */}
+      {syncStatus?.errors?.length > 0 && (
+        <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/5">
+          <h3 className="text-sm font-medium text-red-400 mb-3">Recent Errors</h3>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {syncStatus.errors.slice(-10).reverse().map((err, i) => (
+              <div key={i} className="text-xs text-muted-foreground p-2 rounded-lg bg-secondary/30">
+                <span className="text-red-400 mr-2">{new Date(err.time).toLocaleTimeString()}</span>
+                {err.error}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Info */}
+      <div className="mt-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+        <h4 className="text-sm font-medium text-blue-400 mb-2">How Shadow Sync Works</h4>
+        <ul className="text-xs text-muted-foreground space-y-1">
+          <li>• Polls Atlas every {pollInterval}s for conversations active in the last {lookbackMinutes} minutes</li>
+          <li>• New conversations become tickets; new messages are appended to existing tickets</li>
+          <li>• Sidebars (internal notes) from Atlas are imported as internal notes</li>
+          <li>• Trinity takes precedence: if a ticket was modified in Trinity, Atlas field changes are skipped</li>
+          <li>• Active (non-closed) Atlas tickets are periodically re-checked for new messages</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+const StatCard = ({ label, value, isError }) => (
+  <div className="p-3 rounded-lg bg-secondary/30 border border-border/20">
+    <p className="text-xs text-muted-foreground mb-1">{label}</p>
+    <p className={`text-lg font-semibold ${isError && value > 0 ? 'text-red-400' : ''}`} data-testid={`atlas-sync-stat-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+      {typeof value === 'number' ? value.toLocaleString() : value}
+    </p>
+  </div>
+);
 
 const AdminPage = ({ user }) => {
   const [activeTab, setActiveTab] = useState('custom-fields');
@@ -787,6 +996,18 @@ const AdminPage = ({ user }) => {
                 <Download size={16} />
                 Data Export
               </button>
+              <button
+                onClick={() => setActiveTab('atlas-sync')}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  activeTab === 'atlas-sync'
+                    ? 'bg-primary/20 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+                }`}
+                data-testid="tab-atlas-sync"
+              >
+                <RefreshCw size={16} />
+                Atlas Sync
+              </button>
             </nav>
           </aside>
 
@@ -1157,6 +1378,9 @@ const AdminPage = ({ user }) => {
             {/* Export Tab */}
             {activeTab === 'export' && (
               <ExportDataTab />
+            )}
+            {activeTab === 'atlas-sync' && (
+              <AtlasSyncTab />
             )}
           </main>
         </div>
