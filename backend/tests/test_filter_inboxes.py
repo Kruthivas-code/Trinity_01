@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 from pymongo import MongoClient
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://trinity-atlas-import.preview.emergentagent.com")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://zeus-ai-cleanup.preview.emergentagent.com")
 
 # MongoDB connection for direct setup/cleanup
 MONGO_URL = os.environ.get("MONGO_URL", "mongodb://localhost:27017")

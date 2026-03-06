@@ -7,7 +7,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://trinity-atlas-import.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://zeus-ai-cleanup.preview.emergentagent.com')
 ADMIN_SESSION_TOKEN = "test_kb_session_token"
 
 

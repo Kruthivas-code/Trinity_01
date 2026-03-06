@@ -10,7 +10,7 @@ import os
 import uuid
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://trinity-atlas-import.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://zeus-ai-cleanup.preview.emergentagent.com')
 SESSION_TOKEN = "test_kb_editor_session_2026"
 
 @pytest.fixture
