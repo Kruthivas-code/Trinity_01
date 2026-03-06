@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
-import { GitMerge, BookOpen, Check, AlertTriangle } from 'lucide-react';
+import { GitMerge, BookOpen, Check, AlertTriangle, MoreHorizontal } from 'lucide-react';
 import { renderTextWithMentions } from '../common/MentionInput';
 import EmailViewer from '../common/EmailViewer';
 
@@ -68,15 +68,10 @@ export const getMergeColor = (colorIndex) => {
 // Strip HTML for plain text display
 export const stripHtml = (html) => {
   if (!html) return '';
-  // Remove style tags and their content
   let text = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-  // Remove script tags
   text = text.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
-  // Remove HTML tags
   text = text.replace(/<[^>]*>/g, ' ');
-  // Remove CSS properties that might be in text
   text = text.replace(/[\w-]+\s*:\s*[^;]+;/g, ' ');
-  // Decode common HTML entities
   text = text.replace(/&nbsp;/g, ' ')
              .replace(/&amp;/g, '&')
              .replace(/&lt;/g, '<')
@@ -84,8 +79,54 @@ export const stripHtml = (html) => {
              .replace(/&quot;/g, '"')
              .replace(/&#39;/g, "'")
              .replace(/&#\d+;/g, ' ');
-  // Remove multiple spaces and trim
   return text.replace(/\s+/g, ' ').trim();
+};
+
+// Split text into visible content and quoted/trailing section
+export const splitQuotedContent = (text) => {
+  if (!text) return { visible: '', quoted: '' };
+  const lines = text.split('\n');
+  let cutIndex = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    if (/^On .+ wrote:\s*$/.test(trimmed)) { cutIndex = i; break; }
+    if (/^-{3,}\s*(Original Message|Forwarded message)/i.test(trimmed)) { cutIndex = i; break; }
+    if (trimmed === '________________________________') { cutIndex = i; break; }
+    if (/^From:\s*.+@/i.test(trimmed) && i > 3) { cutIndex = i; break; }
+    if (/^Sent from (Outlook|Mail|iPhone|my)/i.test(trimmed)) { cutIndex = i; break; }
+    if (/^Get Outlook for/i.test(trimmed)) { cutIndex = i; break; }
+    // Block of consecutive > quoted lines
+    if (/^>/.test(trimmed) && i > 0) {
+      let j = i;
+      while (j < lines.length && /^>/.test(lines[j].trim())) j++;
+      if (j - i >= 2) { cutIndex = i; break; }
+    }
+  }
+  if (cutIndex <= 0) return { visible: text, quoted: '' };
+  const visible = lines.slice(0, cutIndex).join('\n').trimEnd();
+  const quoted = lines.slice(cutIndex).join('\n').trimStart();
+  return { visible: visible || text, quoted };
+};
+
+// Tiny collapsible wrapper for quoted content
+const CollapsibleQuote = ({ quoted }) => {
+  const [expanded, setExpanded] = useState(false);
+  if (!quoted) return null;
+  return expanded ? (
+    <div className="mt-1 pt-1 border-t border-border/10">
+      <p className="whitespace-pre-wrap text-muted-foreground/50 text-[11px] leading-snug">{quoted}</p>
+      <button onClick={() => setExpanded(false)} className="text-[10px] text-muted-foreground/30 hover:text-muted-foreground/50 mt-0.5">hide</button>
+    </div>
+  ) : (
+    <button
+      onClick={() => setExpanded(true)}
+      className="mt-0.5 text-muted-foreground/25 hover:text-muted-foreground/40 transition-colors"
+      title="Show quoted text"
+      data-testid="show-quoted-text"
+    >
+      <MoreHorizontal size={14} />
+    </button>
+  );
 };
 
 // Email-style message component with merge support
@@ -188,7 +229,14 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
         />
       );
     }
-    return <p className="whitespace-pre-wrap">{html}</p>;
+    return (
+      <>
+        <p className="whitespace-pre-wrap">{(() => {
+          const { visible, quoted } = splitQuotedContent(html);
+          return <>{visible}<CollapsibleQuote quoted={quoted} /></>;
+        })()}</p>
+      </>
+    );
   };
 
   // Determine styling based on message type

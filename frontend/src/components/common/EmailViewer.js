@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { Image } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Image, MoreHorizontal } from 'lucide-react';
 import ImageGallery from './ImageGallery';
+import { splitQuotedContent } from '../tickets/EmailMessage';
 
 /**
  * EmailViewer - Ultra-compact email content viewer
@@ -71,62 +72,60 @@ const EmailViewer = ({
     return ticket?.description || '';
   }, [ticket?.email_html, ticket?.email_text, ticket?.description]);
   
-  // Format plain text - ultra compact
+  // Format plain text with collapsible quoted content
   const formatPlainText = (text) => {
     if (!text) return <span className="text-muted-foreground/60">No content</span>;
     
-    const lines = text.split('\n');
-    const elements = [];
-    let quoteBuffer = [];
-    let lastWasEmpty = false;
+    const { visible, quoted } = splitQuotedContent(text);
     
-    const flushQuoteBuffer = () => {
-      if (quoteBuffer.length > 0) {
-        elements.push(
-          <blockquote 
-            key={`quote-${elements.length}`} 
-            className="my-1 pl-2 border-l border-muted-foreground/30 text-muted-foreground/60 text-[12px] leading-tight"
-          >
-            {quoteBuffer.map((line, i) => (
-              <div key={i}>{line.replace(/^>+\s*/, '')}</div>
-            ))}
-          </blockquote>
-        );
-        quoteBuffer = [];
-      }
-    };
-    
-    lines.forEach((line, index) => {
-      const trimmedLine = line.trim();
-      const isQuoted = /^>+/.test(line.trimStart());
-      const isReplyHeader = /^On .+ wrote:$/i.test(trimmedLine) || 
-                            /^-{3,}\s*(Original Message|Forwarded message)\s*-{3,}$/i.test(trimmedLine) ||
-                            /^From:.*@.*$/i.test(trimmedLine) && index > 5;
+    const renderLines = (str) => {
+      const lines = str.split('\n');
+      const elements = [];
+      let lastWasEmpty = false;
       
-      if (isQuoted) {
-        quoteBuffer.push(line);
-      } else if (isReplyHeader) {
-        flushQuoteBuffer();
-        elements.push(
-          <div key={`header-${index}`} className="my-1.5 pt-1 text-[10px] text-muted-foreground/40 border-t border-border/20">
-            {trimmedLine}
-          </div>
-        );
-      } else if (!trimmedLine) {
-        flushQuoteBuffer();
-        if (!lastWasEmpty && elements.length > 0) {
-          elements.push(<div key={`space-${index}`} className="h-px" />);
-          lastWasEmpty = true;
+      lines.forEach((line, index) => {
+        const trimmedLine = line.trim();
+        
+        if (!trimmedLine) {
+          if (!lastWasEmpty && elements.length > 0) {
+            elements.push(<div key={`space-${index}`} className="h-px" />);
+            lastWasEmpty = true;
+          }
+        } else {
+          elements.push(<div key={index}>{trimmedLine}</div>);
+          lastWasEmpty = false;
         }
-      } else {
-        flushQuoteBuffer();
-        elements.push(<div key={index}>{trimmedLine}</div>);
-        lastWasEmpty = false;
-      }
-    });
-    
-    flushQuoteBuffer();
-    return elements.length > 0 ? elements : <span className="text-muted-foreground/60">No content</span>;
+      });
+      
+      return elements.length > 0 ? elements : null;
+    };
+
+    return (
+      <>
+        {renderLines(visible) || <span className="text-muted-foreground/60">No content</span>}
+        {quoted && <CollapsibleEmailQuote quoted={quoted} />}
+      </>
+    );
+  };
+
+  const CollapsibleEmailQuote = ({ quoted }) => {
+    const [expanded, setExpanded] = useState(false);
+    if (!quoted) return null;
+    return expanded ? (
+      <div className="mt-1 pt-1 border-t border-border/10">
+        <div className="text-muted-foreground/50 text-[11px] leading-snug whitespace-pre-wrap">{quoted}</div>
+        <button onClick={() => setExpanded(false)} className="text-[10px] text-muted-foreground/30 hover:text-muted-foreground/50 mt-0.5">hide</button>
+      </div>
+    ) : (
+      <button
+        onClick={() => setExpanded(true)}
+        className="mt-0.5 text-muted-foreground/25 hover:text-muted-foreground/40 transition-colors"
+        title="Show quoted text"
+        data-testid="show-quoted-text"
+      >
+        <MoreHorizontal size={14} />
+      </button>
+    );
   };
   
   return (
