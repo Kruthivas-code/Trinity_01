@@ -498,7 +498,7 @@ def _fetch_full_thread(mail, gmail_thrid: str) -> list:
                 messages.append({
                     "message_id": msg_id,
                     "from_name": from_name,
-                    "from_addr": from_addr,
+                    "from_addr": from_addr_lower,
                     "subject": subject,
                     "body": parts["content"],
                     "email_html": parts.get("email_html", ""),
@@ -875,6 +875,7 @@ def _process_email(mail, eid, folder="inbox"):
 
     from_name, from_addr = parseaddr(msg.get("From", ""))
     from_name = _decode_header_value(from_name) or from_addr
+    from_addr = from_addr.lower()
     subject = _decode_header_value(msg.get("Subject", ""))
     parts = _extract_email_parts(msg)
     body = parts["content"]
