@@ -256,6 +256,16 @@ zeus_cleanup_task = None
 _instance_id = os.environ.get('INSTANCE_ID', os.environ.get('HOSTNAME', f'instance_{secrets.token_hex(4)}'))
 
 
+def _backfill_user_roles():
+    """One-time migration: assign role='agent' to any user missing a role field."""
+    result = users_collection.update_many(
+        {"role": {"$exists": False}},
+        {"$set": {"role": "agent"}}
+    )
+    if result.modified_count:
+        logger.info(f"[STARTUP] Backfilled role='agent' for {result.modified_count} users")
+
+
 async def auto_close_resolved_tickets():
     lock_adapter = get_lock_adapter()
     lock_name = "auto_close_resolved_tickets"
@@ -331,6 +341,8 @@ async def startup_event():
     auto_close_task = asyncio.create_task(auto_close_resolved_tickets())
     zeus_cleanup_task = asyncio.create_task(zeus_cleanup_recurring())
     seed_default_categories()
+    # Backfill: ensure every user has a role (safe for production deploys)
+    _backfill_user_roles()
     # Start email IMAP poller
     from services.email_poller import start_poller as start_email_poller
     start_email_poller()

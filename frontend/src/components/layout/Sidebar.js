@@ -96,9 +96,9 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
     { id: 'leaves', label: 'Leaves', icon: CalendarDays, path: '/leaves' },
     { id: 'feature-requests', label: 'Features', icon: Bookmark, path: '/feature-requests' },
     { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
-    { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
-    { id: 'admin', label: 'Admin', icon: Shield, path: '/admin' },
-  ];
+    { id: 'settings', label: 'Settings', icon: Settings, path: '/settings', roles: ['admin', 'lead'] },
+    { id: 'admin', label: 'Admin', icon: Shield, path: '/admin', roles: ['admin'] },
+  ].filter(item => !item.roles || item.roles.includes(user?.role));
 
   useEffect(() => {
     localStorage.setItem('sidebarWidth', sidebarWidth.toString());

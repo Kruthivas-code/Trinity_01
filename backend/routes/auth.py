@@ -69,6 +69,7 @@ async def create_session(request: Request, session_data: SessionCreate, response
                 },
                 "$setOnInsert": {
                     "user_id": user_id,
+                    "role": "agent",
                     "created_at": datetime.now(timezone.utc),
                     "preferences": {"theme": "dark"}
                 }

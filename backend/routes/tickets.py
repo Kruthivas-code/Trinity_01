@@ -131,7 +131,7 @@ async def assign_ticket(
                 update_data["assignee_id"] = assignee
     if assignment.assignee_id:
         update_data["assignee_id"] = assignment.assignee_id
-        users_collection.update_one({"user_id": assignment.assignee_id}, {"$inc": {"current_ticket_count": 1}})
+        pass  # Live count used in get_available_agents; stored counter was always stale
     tickets_collection.update_one({"ticket_id": ticket_id}, {"$set": update_data})
     messages_collection.insert_one({
         "message_id": f"msg_{uuid.uuid4().hex[:12]}",
@@ -514,7 +514,7 @@ async def create_ticket(
         if customer:
             customer_id = customer.get("customer_id")
     now = datetime.now(timezone.utc)
-    assignee_id = ticket_data.assignee_id if ticket_data.assignee_id else current_user["user_id"]
+    assignee_id = ticket_data.assignee_id or None
     ticket_doc = {
         "ticket_id": ticket_id, "uuid": ticket_uuid, "title": ticket_data.title,
         "description": ticket_data.description, "status": ticket_data.status,
@@ -595,7 +595,9 @@ async def update_ticket(
     current_ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not current_ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
-    update_data = {k: v for k, v in ticket_data.dict().items() if v is not None}
+    # Use exclude_unset to only include fields the client actually sent.
+    # This allows setting fields to None (e.g. assignee_id: null to unassign).
+    update_data = ticket_data.model_dump(exclude_unset=True)
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
     update_data["updated_at"] = datetime.now(timezone.utc)
