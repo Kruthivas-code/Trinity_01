@@ -678,7 +678,7 @@ def _run_sync_cycle(state: dict, tag_lookup: dict, agent_email_map: dict) -> dic
                         )
                 else:
                     # New conversation — check if IMAP already created a ticket for this email
-                    customer_email = (conv.get("customer") or {}).get("email", "").lower().strip()
+                    customer_email = ((conv.get("customer") or {}).get("email") or "").lower().strip()
                     conv_title = (conv.get("title") or conv.get("subject") or "").strip()
                     imap_match = None
                     if customer_email and conv_title:

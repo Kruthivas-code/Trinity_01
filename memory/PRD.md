@@ -1,96 +1,67 @@
-# Trinity - Support Ticket Management System
+# Trinity - Enterprise Ticket Management Platform
 
 ## Original Problem Statement
-Migrate historical data from Atlas support platform into Trinity and establish real-time two-way sync. Extended to include comprehensive metadata import, agent account import, new features, attachment migration, and AI ticket management.
+Build and maintain a full-stack ticket management system (React, FastAPI, MongoDB) with Atlas as the single source of truth for new tickets. Key goals:
+- Standardize ticket statuses between Trinity and Atlas
+- Implement Atlas Shadow Mode for real-time data synchronization
+- Migrate attachments from Atlas to Emergent Object Storage
+- Clean up AI-assigned (Zeus) tickets
+- Maintain data parity with Atlas
 
-## Core Architecture
-- **Frontend:** React (CRA) + Shadcn UI + TailwindCSS
-- **Backend:** FastAPI (Python) on port 8001
-- **Database:** MongoDB (`test_database`)
-- **Auth:** Emergent-managed Google OAuth
-- **File Storage:** Emergent Object Storage (S3-compatible)
-- **Integrations:** Gemini (summarization), Amazon SES (outbound email), Gmail IMAP (inbound email), Atlas API (historical + real-time sync)
+## Architecture
+- **Frontend**: React (port 3000)
+- **Backend**: FastAPI (port 8001)
+- **Database**: MongoDB
+- **Data Flow**: Atlas API → Atlas Sync → Trinity DB ← IMAP (replies only)
 
-## Ticket Status Values (Standardized)
-| Status | Description |
-|--------|-------------|
-| `todo` | New/unassigned ticket |
-| `in_progress` | Agent actively working |
-| `waiting` | Waiting on customer |
-| `closed` | Ticket completed |
+## Key Design Decisions
+- **Atlas is the single source of truth** for all new tickets
+- **IMAP poller only processes replies** to existing tickets — does NOT create new tickets
+- **Atlas sync runs every 60 seconds** polling for new/updated conversations
+- **Trinity takes precedence** for field conflicts (if ticket modified in Trinity after last sync)
 
 ## Completed Work
-- **Atlas Historical Backfill:** ~67,000 conversations, ~348,000 messages imported
-- **Atlas Metadata Enrichment:** CSAT, custom fields, attachments, timestamps
-- **Atlas Agent Import:** 163 agents with upsert-by-email dedup
-- **Status Standardization:** `resolved` → `closed`, waiting variants → `waiting`
-- **Atlas Shadow Sync:** Real-time polling every 60s, auto-starts on boot
-- **Collapsible Quoted Text:** Email reply chains collapse behind `···` toggle
-- **Email Capitalization Fix:** from_addr lowercased in email_poller
-- **Attachment Migration:** Background job downloading ~65K files from Atlas CDN to Emergent Object Storage
-- **Zeus (AI) Ticket Cleanup (2026-03-06):** Recurring job (30 min) closes Zeus-assigned tickets stale > 48h. Closes on both Trinity and Atlas. Already processed 2,700+ tickets.
-- **Assigned to AI View (2026-03-06):** New sidebar nav + page showing active Zeus-assigned tickets. Filters by `atlas_assigned_to_zeus=true` on tickets API.
+- [x] Atlas Shadow Sync engine (real-time, 60s interval)
+- [x] Race condition resolution: IMAP no longer creates new tickets (fixed 2026-03-06)
+- [x] NoneType bug fix in Atlas sync for null customer emails (fixed 2026-03-06)
+- [x] Data parity migration (ticket numbers, escalation levels, tags)
+- [x] New user onboarding bug fixes (5 critical bugs)
+- [x] User role backfill migration
+- [x] Cross-browser CSS fixes
+- [x] Wider ticket drawer layout
+- [x] Redesigned reply toolbar
+- [x] Background job stability (auto-resume attachment migration)
+- [x] Bounce email detection and handling
+- [x] Sent folder polling for agent Gmail replies
 
-## Zeus Cleanup Architecture
-- **Engine:** `backend/services/zeus_cleanup.py`
-- **Rule:** Close if `atlas_assigned_to_zeus=True` AND `last_message_at > 48h ago`
-- **Batch:** 500 tickets per run, every 30 minutes
-- **Atlas close:** Uses `POST /v1/conversations/{id}` with `{"status": "CLOSED"}`
-- **System message:** Added to ticket when auto-closed
-- **Admin API:** `GET /api/admin/atlas/zeus/status`, `POST /api/admin/atlas/zeus/run`
+## In Progress
+- [ ] Attachment migration: 25.9% done (13,432/51,816), high failure rate from object storage 500 errors
+- [ ] Zeus ticket cleanup: recurring job active, cleaning stale AI-assigned tickets
 
-## Verified (2026-03-06)
-- **Authenticated Screenshots:** Working with QA session cookie (`session_token=qa_test_admin_session_token_2026`)
-- **Cross-Browser CSS Fix:** Sidebar text visibility confirmed on Chromium via screenshot
-- **Data Integrity Validation:** 15 tickets sampled (10 Atlas + 5 regular) — zero duplicate messages
-- **Collapsible Email Quotes:** Verified in UI — "..." toggle correctly hides quoted reply chains
-- **Background Jobs Re-verified:**
-  - Atlas Shadow Sync: Running (1347 conversations checked, 527 messages synced)
-  - Attachment Migration: Restarted and running (2161/65,093 migrated)
-  - Zeus Cleanup: Auto-recurring every 30 min (500 closed so far, 6,679 remaining)
+## Upcoming Tasks (P2)
+- [ ] Create Data Validation Script — admin endpoint to audit DB integrity
+- [ ] Investigate attachment migration failures (object storage 500 errors)
 
-## Bug Fixes (2026-03-06)
-- **Bug 1: No role on signup** — Added `role: "agent"` to `$setOnInsert` in auth.py + startup backfill for existing users
-- **Bug 2: Cannot unassign ticket** — Changed `update_ticket` to use `model_dump(exclude_unset=True)` instead of filtering None values
-- **Bug 3: Auto-assign to creator** — Removed fallback to `current_user["user_id"]` in ticket creation
-- **Bug 4: Sidebar admin links** — Added `roles` filter to mainItems array in Sidebar.js (Admin=admin only, Settings=admin/lead)
-- **Bug 5: Stale current_ticket_count** — Removed the broken increment; live count used by get_available_agents is the source of truth
+## Future Tasks
+- [ ] Real-time Notifications for agents
+- [ ] Generic auto-close job for stale tickets
 
-## Ticket Number Alignment (2026-03-06)
-- **Migration script:** `backend/scripts/ticket_number_migration.py` (one-time, run manually)
-- Deleted 45,415 non-Atlas duplicate tickets (email poller artifacts)
-- Renamed 67,327 Atlas tickets to match Atlas numbers: `TKT-{atlas_number:06d}`
-- Updated all referencing collections (messages, email_threads, changelog, etc.)
-- Fixed escalation levels: mapped `custom_fields.support_level` → `escalation_level` (L1: 46,337, L2: 19,909, L3: 1,129)
-- Resolved 298 UUID tags to human-readable names via Atlas API (e.g., `ea8b3176...` → `refund`)
-- Updated atlas_sync, atlas_backfill, atlas_import to use `support_level` for escalation going forward
-- Counter reset to 68,562 (next ticket: TKT-068563)
-- **Attachment migration auto-resume:** Added `auto_resume_migration()` on startup so S3 migration survives server restarts
+## 3rd Party Integrations
+- Atlas API (primary data source)
+- Emergent Object Storage (attachments)
+- Gmail IMAP (reply processing only)
+- Gemini (ticket summarization)
+- Amazon SES (outbound email)
+- Emergent-managed Google Auth
 
-## IMAP + Atlas Sync Architecture Fix (2026-03-06)
-- **IMAP SSL health:** Added `ssl.create_default_context()`, batch processing (50/batch), and auto-reconnect on SSL errors. SSL errors now caught and connection refreshed mid-batch instead of crashing.
-- **Atlas sync deduplication:** Before creating new ticket, checks if IMAP already created one (match by customer_email + title). Links existing ticket to Atlas instead of creating duplicate.
-- **Atlas sync ticket numbering:** New tickets use `TKT-{atlas_number:06d}` instead of auto-increment, maintaining parity.
-- **Duplicate cleanup:** Deleted 186 IMAP duplicates, fixed 103 ticket number mismatches from post-migration sync.
-- **Data parity:** 0 ticket number mismatches, 67,433 Atlas-linked tickets, escalation levels correct (L1: 46,394, L2: 19,910, L3: 1,129).
+## Key DB Schema
+- `tickets`: ticket_id (TKT-XXXXXX), atlas_conversation_id (unique sparse), source (atlas/email)
+- `messages`: ticket_id, atlas_message_id (unique sparse)
+- `users`: role field guaranteed (default "agent")
+- `atlas_backfill_state`: _type="shadow" for sync state
 
-## Upcoming Tasks
-1. **P2: Real-time Agent Notifications**
-2. **P2: Auto-Close Stale Tickets** (non-Zeus, general recurring job)
-3. **P3: Atlas Webhook Registration**
-
-## Key Files
-- `/app/backend/services/zeus_cleanup.py` — Zeus cleanup engine
-- `/app/backend/services/attachment_migration.py` — Attachment migration
-- `/app/backend/services/atlas_sync.py` — Shadow sync engine
-- `/app/backend/services/atlas_backfill.py` — Historical backfill
-- `/app/backend/routes/atlas.py` — All Atlas admin endpoints
-- `/app/backend/server.py` — Startup + recurring jobs + file proxy
-- `/app/frontend/src/components/tickets/AIAssignedTicketsPage.js` — AI view
-- `/app/frontend/src/components/layout/Sidebar.js` — Navigation
-- `/app/frontend/src/components/admin/AdminPage.js` — Admin with sync + migration UI
-
-## Credentials
-- **Atlas API Key:** `NY7YY8Y3092NKWXSQGR8BT3NIXNFOGFWBGFJ36WD8KCBQ9UIQ8VM8CX2K1I2LY75`
-- **Admin API Key:** `tk_live_C47oqvueOkUiCEBs-8EBNkJmu3-VyYdSfOB8RgeFZXI`
-- **Auth:** Emergent Google OAuth
+## Critical Files
+- `/app/backend/services/atlas_sync.py` — Atlas sync engine
+- `/app/backend/services/email_poller.py` — IMAP poller (replies only)
+- `/app/backend/server.py` — Startup hooks, background jobs
+- `/app/backend/routes/tickets.py` — Ticket CRUD

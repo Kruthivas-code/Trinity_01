@@ -945,17 +945,9 @@ def _process_email(mail, eid, folder="inbox"):
             }},
         )
     else:
-        # Create a new ticket from this email, with full thread capture
-        ticket_id = _create_ticket_from_email(
-            from_name, from_addr, subject, body,
-            email_parts=parts, email_date=email_date,
-            mail=mail, gmail_thrid=gmail_thrid,
-        )
-        if ticket_id:
-            match = {"ticket_id": ticket_id, "match_method": "new_ticket"}
-            logger.info(f"[INBOUND] New ticket {ticket_id} from={from_addr} subject={subject[:60]}")
-        else:
-            logger.info(f"[INBOUND] Skipped from={from_addr} subject={subject[:60]}")
+        # Atlas is the single source of truth for new tickets.
+        # Do NOT create tickets from IMAP — only process replies to existing tickets.
+        logger.info(f"[INBOUND] Skipped (no match, Atlas-first) from={from_addr} subject={subject[:60]}")
 
     # Store for dedup and threading
     in_reply_to = msg.get("In-Reply-To", "").strip()

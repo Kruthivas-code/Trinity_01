@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://zeus-ai-cleanup.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://atlas-first-sync.preview.emergentagent.com')
 
 
 class TestKBSearchEndpoint:
