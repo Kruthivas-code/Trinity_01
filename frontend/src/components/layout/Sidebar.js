@@ -218,7 +218,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
           transition-colors duration-150
           ${active 
             ? 'bg-foreground/8 text-foreground font-semibold' 
-            : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'
+            : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05]'
           }
           ${!isExpanded && !nested ? 'justify-center px-2 h-7' : nested ? 'px-3 ml-4 h-7' : 'px-3 h-7'}
         `}
@@ -245,7 +245,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
             transition-colors duration-150
             ${isActive('/dashboard')
               ? 'bg-foreground/8 text-foreground font-semibold' 
-              : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'
+              : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05]'
             }
             ${!isExpanded ? 'justify-center px-2 h-7' : 'px-3 h-7'}
           `}
@@ -267,7 +267,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
               className={`
                 w-full flex items-center justify-between px-3 h-7 rounded-lg text-[14px] overflow-hidden
                 transition-colors duration-150
-                ${isTicketViewActive ? 'text-foreground font-semibold' : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'}
+                ${isTicketViewActive ? 'text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05]'}
               `}
               data-testid="nav-tickets-toggle"
             >
@@ -298,7 +298,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
                               transition-colors duration-150
                               ${active 
                                 ? 'bg-foreground/8 text-foreground font-semibold' 
-                                : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05]'
                               }
                             `}
                           >
@@ -376,7 +376,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
           <div>
             <button
               onClick={() => setIsEscalationExpanded(!isEscalationExpanded)}
-              className="w-full flex items-center justify-between px-3 h-7 rounded-lg text-[14px] text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05] transition-colors duration-150"
+              className="w-full flex items-center justify-between px-3 h-7 rounded-lg text-[14px] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors duration-150"
               data-testid="nav-escalation-toggle"
             >
               <div className="flex items-center gap-2.5">
@@ -402,7 +402,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
                         transition-colors duration-150
                         ${active 
                           ? 'bg-foreground/8 text-foreground font-semibold' 
-                          : 'text-foreground/55 hover:text-foreground hover:bg-foreground/[0.05]'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05]'
                         }
                       `}
                       data-testid={`sidebar-${folder.id}-folder-button`}
