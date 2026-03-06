@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   X, Trash2, Send, ChevronDown, Loader2, Star, MoreHorizontal,
-  Mail, PenLine, Command, Copy, Printer, BellOff, Merge, ExternalLink,
+  Mail, PenLine, Copy, Printer, BellOff, Merge, ExternalLink,
   Scissors, Bookmark, Download, UserPlus, MessageCircle, Activity,
   MessageSquare, ImagePlus, Paperclip, BookOpen, GitMerge, Filter, Unlink, Link, Users
 } from 'lucide-react';
@@ -682,29 +682,17 @@ const TicketConversation = ({
             </span>
           )}
           
-          <span className="text-[10px] text-muted-foreground/50 flex items-center gap-2">
-            <span className="flex items-center gap-0.5">
-              <Command size={9} />/
-            </span>
-            <span className="opacity-60">canned</span>
-            <span className="opacity-40">|</span>
-            <span className="flex items-center gap-0.5">
-              <Command size={9} />&crarr;
-            </span>
-            <span className="opacity-60">send</span>
-          </span>
-          
           <button
             onClick={handleSubmitInput}
             disabled={submitting || (!stripHtml(inputText).trim() && attachedImages.length === 0)}
-            className={`h-7 px-4 flex items-center gap-1.5 rounded text-xs font-semibold transition-all duration-150 ${
+            className={`h-8 px-5 flex items-center gap-1.5 rounded-md text-xs font-semibold transition-all duration-150 shrink-0 ${
               inputMode === 'note'
                 ? 'bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.97]'
-                : 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.97]'
+                : 'bg-primary text-primary-foreground hover:brightness-110 active:scale-[0.97]'
             } disabled:opacity-30 disabled:cursor-not-allowed disabled:active:scale-100`}
             data-testid="submit-input"
           >
-            {submitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            {submitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
             <span>Send</span>
           </button>
         </div>

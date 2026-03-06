@@ -263,7 +263,7 @@ function FilterBuilder({ onFilter, onSaveInbox, initialFilters }) {
           <GroupBlock group={filterTree} fields={fields} users={users} onChange={setFilterTree} onRemove={function(){}} depth={0} />
           <div className="flex justify-end mt-3">
             <button type="button" onClick={handleApply} data-testid="filter-apply-btn"
-              className="h-8 px-4 rounded-md bg-foreground text-background text-sm font-medium hover:bg-foreground/90">
+              className="h-8 px-4 rounded-md bg-foreground text-background text-sm font-medium hover:brightness-110">
               Apply Filters
             </button>
           </div>
