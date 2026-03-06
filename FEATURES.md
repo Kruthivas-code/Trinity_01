@@ -156,7 +156,7 @@ POST   /api/tickets/reorder            - Reorder tickets
 GET    /api/tickets/starred            - Starred tickets
 GET    /api/tickets/{id}/changelog     - Audit log
 GET    /api/tickets/{id}/metadata      - Extended metadata
-POST   /api/tickets/{id}/tags          - Add tags
+POST   /api/tickets/{id}/tags          - Add tags (body: raw JSON array ["tag1","tag2"])
 DELETE /api/tickets/{id}/tags/{tag}    - Remove tag
 POST   /api/tickets/{id}/merge         - Merge tickets
 POST   /api/tickets/{id}/unmerge/{src} - Unmerge ticket
@@ -312,10 +312,8 @@ GET    /api/leaves                     - List leaves
 GET    /api/leaves/{id}                - Get leave details
 PUT    /api/leaves/{id}                - Update leave
 DELETE /api/leaves/{id}                - Delete leave
-GET    /api/leaves/types               - Available leave types
-GET    /api/leaves/calendar/{y}/{m}    - Monthly calendar
-GET    /api/leaves/conflicts           - Detect conflicts
-GET    /api/leaves/summary/{uid}       - User leave summary
+GET    /api/leaves/{id}/approve        - Approve leave
+GET    /api/leaves/{id}/reject         - Reject leave
 ```
 
 ---
@@ -458,7 +456,7 @@ Tracks all changes:
 
 ### 9.5 API Endpoints
 ```
-POST   /api/tickets/{id}/notes         - Add note/reply
+POST   /api/tickets/{id}/notes         - Add note/reply (body: {"content": "...", "type": "internal_note"|"reply"})
 GET    /api/tickets/{id}/notes         - Get conversation
 GET    /api/tickets/{id}/activity      - Get activity log
 GET    /api/tickets/{id}/activity-feed - Formatted feed
@@ -651,9 +649,9 @@ GET    /api/presence/ticket/{id}       - Who's viewing
 ### 15.3 API Endpoints
 ```
 GET    /api/sla-policies               - List policies
-POST   /api/sla-policies               - Create policy
-PUT    /api/sla-policies/{id}          - Update policy
-DELETE /api/sla-policies/{id}          - Delete policy
+POST   /api/admin/sla-policies         - Create policy (admin prefix)
+PUT    /api/admin/sla-policies/{id}    - Update policy (admin prefix)
+DELETE /api/admin/sla-policies/{id}   - Delete policy (admin prefix)
 GET    /api/sla/ticket/{id}            - Ticket SLA status
 ```
 

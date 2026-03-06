@@ -46,8 +46,15 @@ Migrate historical data from Atlas support platform into Trinity and establish r
 - **Collapsible Email Quotes:** Verified in UI — "..." toggle correctly hides quoted reply chains
 - **Background Jobs Re-verified:**
   - Atlas Shadow Sync: Running (1347 conversations checked, 527 messages synced)
-  - Attachment Migration: Restarted and running (737/65,093 migrated, 595MB transferred)
+  - Attachment Migration: Restarted and running (2161/65,093 migrated)
   - Zeus Cleanup: Auto-recurring every 30 min (500 closed so far, 6,679 remaining)
+
+## Bug Fixes (2026-03-06)
+- **Bug 1: No role on signup** — Added `role: "agent"` to `$setOnInsert` in auth.py + startup backfill for existing users
+- **Bug 2: Cannot unassign ticket** — Changed `update_ticket` to use `model_dump(exclude_unset=True)` instead of filtering None values
+- **Bug 3: Auto-assign to creator** — Removed fallback to `current_user["user_id"]` in ticket creation
+- **Bug 4: Sidebar admin links** — Added `roles` filter to mainItems array in Sidebar.js (Admin=admin only, Settings=admin/lead)
+- **Bug 5: Stale current_ticket_count** — Removed the broken increment; live count used by get_available_agents is the source of truth
 
 ## Upcoming Tasks
 1. **P2: Real-time Agent Notifications**
