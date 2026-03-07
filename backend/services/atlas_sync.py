@@ -850,6 +850,70 @@ def _recheck_active_tickets(agent_email_map: dict, batch_size: int = 50) -> dict
 
 
 # ══════════════════════════════════════════════════════════════
+# Gap Audit — catch conversations missed by the lookback window
+# ══════════════════════════════════════════════════════════════
+
+AUDIT_EVERY_N_CYCLES = 10  # Run audit every 10 cycles (~10 minutes)
+
+def _audit_missing_conversations(tag_lookup: dict, agent_email_map: dict) -> dict:
+    """
+    Scan all non-closed Atlas conversations and create any that are missing in Trinity.
+    This catches conversations that fell outside the lookback window (e.g., after downtime).
+    """
+    stats = {"checked": 0, "created": 0, "messages_synced": 0}
+
+    for status in ("OPEN", "PENDING", "SNOOZED", "IN_PROGRESS"):
+        cursor = 0
+        while not _stop_event.is_set():
+            try:
+                resp = requests.get(
+                    f"{ATLAS_API}/conversations",
+                    params={"status": status, "cursor": cursor, "limit": 100},
+                    headers=_headers(),
+                    timeout=30,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                convs = data.get("data", [])
+                total = data.get("total", 0)
+
+                if not convs:
+                    break
+
+                for conv in convs:
+                    atlas_conv_id = str(conv.get("id", ""))
+                    if not atlas_conv_id:
+                        continue
+                    stats["checked"] += 1
+
+                    existing = tickets_collection.find_one(
+                        {"atlas_conversation_id": atlas_conv_id},
+                        {"_id": 0, "ticket_id": 1},
+                    )
+                    if existing:
+                        continue
+
+                    # Missing — create it
+                    ticket_id = _create_ticket_from_conv(conv, tag_lookup, agent_email_map)
+                    if ticket_id:
+                        stats["created"] += 1
+                        new_msgs = _sync_messages(atlas_conv_id, ticket_id)
+                        stats["messages_synced"] += new_msgs
+                        logger.info(f"[AUDIT] Created missing ticket {ticket_id} (Atlas #{conv.get('number')})")
+
+                    time.sleep(0.15)
+
+                cursor += len(convs)
+                if cursor >= total:
+                    break
+            except Exception as e:
+                logger.warning(f"[AUDIT] Error scanning {status} conversations: {e}")
+                break
+
+    return stats
+
+
+# ══════════════════════════════════════════════════════════════
 # Daemon Loop
 # ══════════════════════════════════════════════════════════════
 
@@ -886,12 +950,20 @@ def _sync_loop():
             # Phase 2: Re-check active (non-closed) Atlas tickets for new messages
             recheck_stats = _recheck_active_tickets(agent_email_map)
 
+            # Phase 3: Periodic gap audit (every N cycles)
+            audit_stats = {"checked": 0, "created": 0, "messages_synced": 0}
+            cycles_so_far = state.get("cycles_completed", 0) + 1
+            if cycles_so_far % AUDIT_EVERY_N_CYCLES == 0:
+                audit_stats = _audit_missing_conversations(tag_lookup, agent_email_map)
+                if audit_stats["created"] > 0:
+                    logger.info(f"[AUDIT] Found and created {audit_stats['created']} missing tickets")
+
             # Update state
             state = _get_state()
             state["cycles_completed"] = state.get("cycles_completed", 0) + 1
             state["conversations_checked"] = state.get("conversations_checked", 0) + cycle_stats["conversations_checked"]
-            state["new_tickets_created"] = state.get("new_tickets_created", 0) + cycle_stats["new_tickets"]
-            state["messages_synced"] = state.get("messages_synced", 0) + cycle_stats["messages_synced"] + recheck_stats["messages_synced"]
+            state["new_tickets_created"] = state.get("new_tickets_created", 0) + cycle_stats["new_tickets"] + audit_stats["created"]
+            state["messages_synced"] = state.get("messages_synced", 0) + cycle_stats["messages_synced"] + recheck_stats["messages_synced"] + audit_stats["messages_synced"]
             state["sidebars_synced"] = state.get("sidebars_synced", 0) + cycle_stats["sidebars_synced"]
             state["field_updates"] = state.get("field_updates", 0) + cycle_stats["field_updates"] + recheck_stats.get("field_updates", 0)
             state["conflicts_skipped"] = state.get("conflicts_skipped", 0) + cycle_stats["conflicts"]

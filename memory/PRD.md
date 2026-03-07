@@ -45,6 +45,12 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
 - [ ] Attachment migration: 25.9% done (13,432/51,816), high failure rate from object storage 500 errors
 - [ ] Zeus ticket cleanup: recurring job active, cleaning stale AI-assigned tickets
 
+## Recently Completed (2026-03-07)
+- [x] Fixed missing ticket TKT-068210 for rohit@emergent.sh — root cause: conversation created during downtime gap outside 24h catchup window
+- [x] Bulk-synced 231 additional missing non-closed conversations from Atlas (range 67714-69112)
+- [x] Achieved 100% data parity: all 1,356 non-closed Atlas conversations now exist in Trinity
+- [x] Added periodic gap audit phase to sync daemon (runs every 10 cycles) to auto-detect and sync any conversations missed by the 15-minute lookback window
+
 ## Upcoming Tasks (P2)
 - [ ] Create Data Validation Script — admin endpoint to audit DB integrity
 - [ ] Investigate attachment migration failures (object storage 500 errors)
