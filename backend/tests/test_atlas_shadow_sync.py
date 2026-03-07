@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 # Get backend URL from environment - no defaults
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://atlas-first-sync.preview.emergentagent.com"
+    BASE_URL = "https://atlas-parity-fix.preview.emergentagent.com"
 
 # MongoDB connection
 MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')

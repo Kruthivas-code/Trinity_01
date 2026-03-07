@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 _sio_origins = os.environ.get("ALLOWED_ORIGINS", "").split(",")
 if not _sio_origins or _sio_origins == [""]:
     _sio_origins = [
-        "https://atlas-first-sync.preview.emergentagent.com",
+        "https://atlas-parity-fix.preview.emergentagent.com",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]

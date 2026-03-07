@@ -1,8 +1,8 @@
 # Trinity - Phased Screenshot Testing Plan
 
 **Created:** February 12, 2026  
-**App URL:** https://atlas-first-sync.preview.emergentagent.com  
-**API Docs:** https://atlas-first-sync.preview.emergentagent.com/api/docs  
+**App URL:** https://atlas-parity-fix.preview.emergentagent.com  
+**API Docs:** https://atlas-parity-fix.preview.emergentagent.com/api/docs  
 
 ## Test Credentials
 - **Admin User:** test@test.com (user_id: b1bbdaf9-5ac0-47a9-ac7d-31b0b149010e)
