@@ -516,21 +516,32 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict) -> tuple:
     last_synced = ticket.get("last_synced_at")
     trinity_updated = ticket.get("updated_at")
 
-    # If Trinity was modified after last sync, skip field updates (Trinity precedence)
+    # If Trinity was modified after last sync, skip most field updates (Trinity precedence)
+    # BUT always propagate assignment changes from Atlas (Atlas owns assignments)
     if last_synced and trinity_updated and trinity_updated > last_synced:
-        # Trinity was modified independently — don't overwrite
-        # Still update atlas_ metadata fields and last_synced_at
+        # Trinity was modified independently — don't overwrite status/priority/etc.
+        # Still update atlas_ metadata fields, last_synced_at, AND assignment
+        assigned_agent = conv.get("assignedAgent") or {}
         metadata_update = {
             "atlas_status": conv.get("status"),
             "atlas_priority": conv.get("priority"),
+            "atlas_assigned_agent_name": _agent_name(assigned_agent),
+            "atlas_assigned_agent_email": assigned_agent.get("email"),
             "last_synced_at": datetime.now(timezone.utc),
         }
-        assigned_agent = conv.get("assignedAgent") or {}
-        if assigned_agent:
-            metadata_update["atlas_assigned_agent_name"] = _agent_name(assigned_agent)
-            metadata_update["atlas_assigned_agent_email"] = assigned_agent.get("email")
+        # Always propagate assignment changes even during conflict
+        agent_email = assigned_agent.get("email")
+        if agent_email:
+            new_assignee = agent_email_map.get(agent_email.lower())
+            if new_assignee and ticket.get("assignee_id") != new_assignee:
+                metadata_update["assignee_id"] = new_assignee
+        elif ticket.get("assignee_id"):
+            # Atlas unassigned the agent — clear Trinity assignment
+            metadata_update["assignee_id"] = None
+
         tickets_collection.update_one({"ticket_id": ticket_id}, {"$set": metadata_update})
-        return 0, 1  # 0 updates, 1 conflict
+        real = sum(1 for k in metadata_update if k == "assignee_id")
+        return real, 1 if real == 0 else 0
 
     # Build field updates
     updates = {}
@@ -551,6 +562,9 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict) -> tuple:
         new_assignee = agent_email_map.get(agent_email.lower())
         if new_assignee and ticket.get("assignee_id") != new_assignee:
             updates["assignee_id"] = new_assignee
+    elif ticket.get("assignee_id"):
+        # Atlas unassigned the agent — clear Trinity assignment
+        updates["assignee_id"] = None
 
     # Tags
     raw_tags = conv.get("tags") or []
