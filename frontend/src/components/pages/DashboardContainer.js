@@ -70,6 +70,10 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       const userId = user?.user_id || user?.id;
       const params = new URLSearchParams();
       if (userId) params.set('assignee_id', userId);
+      params.append('status', 'todo');
+      params.append('status', 'in_progress');
+      params.append('status', 'waiting');
+      params.append('status', 'review');
       params.set('limit', '200');
       
       const response = await fetch(`${BACKEND_URL}/api/tickets?${params.toString()}`, {
