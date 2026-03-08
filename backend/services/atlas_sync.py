@@ -51,7 +51,7 @@ STATUS_MAP = {
     "CLOSED": "closed",
     "SNOOZED": "waiting",
     "PENDING": "waiting",
-    "IN_PROGRESS": "in_progress",
+    "IN_PROGRESS": "todo",
 }
 
 PRIORITY_MAP = {

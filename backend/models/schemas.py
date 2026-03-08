@@ -84,7 +84,7 @@ class TicketUpdate(BaseModel):
     is_starred: Optional[bool] = None
     snoozed: Optional[bool] = None
 
-    model_config = {"json_schema_extra": {"examples": [{"status": "in_progress", "priority": "urgent", "assignee_id": "user_abc123", "tags": ["bug", "auth", "critical"]}]}}
+    model_config = {"json_schema_extra": {"examples": [{"status": "todo", "priority": "urgent", "assignee_id": "user_abc123", "tags": ["bug", "auth", "critical"]}]}}
 
     @validator('status')
     def validate_status(cls, v):
@@ -128,7 +128,7 @@ class TicketReorder(BaseModel):
     new_status: str
     new_order: int
 
-    model_config = {"json_schema_extra": {"examples": [{"ticket_id": "TKT-00042", "new_status": "in_progress", "new_order": 2}]}}
+    model_config = {"json_schema_extra": {"examples": [{"ticket_id": "TKT-00042", "new_status": "todo", "new_order": 2}]}}
 
 
 class TicketAssign(BaseModel):
@@ -159,7 +159,7 @@ class BulkUpdateRequest(BaseModel):
     ticket_ids: List[str]
     updates: dict
 
-    model_config = {"json_schema_extra": {"examples": [{"ticket_ids": ["TKT-00042", "TKT-00043", "TKT-00044"], "updates": {"status": "in_progress", "assignee_id": "user_abc123"}}]}}
+    model_config = {"json_schema_extra": {"examples": [{"ticket_ids": ["TKT-00042", "TKT-00043", "TKT-00044"], "updates": {"status": "todo", "assignee_id": "user_abc123"}}]}}
 
 
 class BulkTagRequest(BaseModel):
@@ -572,7 +572,7 @@ class FilterRequest(BaseModel):
     sort_by: str = "created_at"
     sort_order: str = "desc"
 
-    model_config = {"json_schema_extra": {"examples": [{"filter_tree": {"logic": "and", "conditions": [{"field": "status", "op": "is", "value": "in_progress"}, {"field": "priority", "op": "is_one_of", "value": ["high", "urgent"]}], "groups": []}, "page": 1, "limit": 25, "sort_by": "updated_at", "sort_order": "desc"}]}}
+    model_config = {"json_schema_extra": {"examples": [{"filter_tree": {"logic": "and", "conditions": [{"field": "status", "op": "is", "value": "todo"}, {"field": "priority", "op": "is_one_of", "value": ["high", "urgent"]}], "groups": []}, "page": 1, "limit": 25, "sort_by": "updated_at", "sort_order": "desc"}]}}
 
 
 class InboxCreate(BaseModel):

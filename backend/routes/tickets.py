@@ -613,7 +613,7 @@ async def update_ticket(
         if reassignment_info and reassignment_info.get("reassigned"):
             update_data["assignee_id"] = reassignment_info.get("new_assignee_id")
             if reassignment_info.get("new_assignee_id") is None:
-                update_data["status"] = "queued"
+                update_data["status"] = "todo"
     changes = {}
     for field, new_value in update_data.items():
         if field != "updated_at":
@@ -635,7 +635,7 @@ async def update_ticket(
             elif field == "status":
                 messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "text": f"Status changed to {new_val.replace('_', ' ').title()}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
                 # Send status update email for key status changes
-                if new_val in ("closed", "in_progress") and current_ticket.get("customer_email"):
+                if new_val in ("closed",) and current_ticket.get("customer_email"):
                     try:
                         from services.email_service import send_status_update
                         send_status_update(

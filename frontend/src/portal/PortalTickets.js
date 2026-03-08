@@ -79,7 +79,6 @@ const PortalTickets = () => {
           { key: 'todo', label: 'Open' },
           { key: 'waiting', label: 'Waiting' },
           { key: 'closed', label: 'Closed' },
-          { key: 'closed', label: 'Closed' },
         ].map(f => (
           <button
             key={f.key}

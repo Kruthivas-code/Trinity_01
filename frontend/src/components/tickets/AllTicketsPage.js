@@ -38,7 +38,7 @@ const AllTicketsPage = ({ user, onTicketClick, refreshKey, onInboxCreated }) => 
       key={`tickets-${levelFilter || 'all'}`}
       title={title}
       subtitle={subtitle}
-      filterStatuses={['todo', 'in_progress', 'waiting', 'review']}
+      filterStatuses={['todo', 'waiting']}
       escalationLevel={levelFilter}
       user={user}
       onTicketClick={onTicketClick}

@@ -86,7 +86,6 @@ def status_update_html(ticket_id: str, customer_name: str, subject: str, new_sta
     status_label = new_status.replace("_", " ").title()
     status_color = {
         "closed": "#22c55e",
-        "in_progress": "#f59e0b",
         "waiting": "#f97316",
         "todo": "#3b82f6",
     }.get(new_status, BRAND_COLOR)

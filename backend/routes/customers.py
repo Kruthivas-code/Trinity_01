@@ -74,7 +74,7 @@ async def list_customers(
             {"$group": {
                 "_id": "$customer_email",
                 "total_tickets": {"$sum": 1},
-                "open_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["todo", "in_progress", "waiting", "review"]]}, 1, 0]}},
+                "open_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["todo", "waiting"]]}, 1, 0]}},
                 "resolved_tickets": {"$sum": {"$cond": [{"$in": ["$status", ["closed"]]}, 1, 0]}}
             }}
         ]
@@ -208,7 +208,7 @@ async def get_customer(
     result["stats"] = {
         "by_status": status_counts,
         "total_tickets": sum(status_counts.values()),
-        "open_tickets": sum(status_counts.get(s, 0) for s in ["todo", "in_progress", "waiting", "review"]),
+        "open_tickets": sum(status_counts.get(s, 0) for s in ["todo", "waiting"]),
         "resolved_tickets": sum(status_counts.get(s, 0) for s in ["closed"])
     }
     result["recent_tickets"] = [serialize_doc(t) for t in recent_tickets]

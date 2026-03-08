@@ -55,7 +55,7 @@ PLATFORM_COMMANDS = [
 # ============================================================================
 
 SEARCH_OPERATORS = {
-    'status': ['open', 'in-progress', 'waiting', 'closed', 'new'],
+    'status': ['open', 'waiting', 'closed'],
     'priority': ['urgent', 'high', 'medium', 'low'],
     'assigned': ['me', 'none'],  # Also accepts @username
     'team': [],  # Dynamic - any team name

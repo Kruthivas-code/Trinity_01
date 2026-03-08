@@ -251,7 +251,7 @@ def trigger_shift_start_assignment(user_id: str) -> list:
 
     queued_tickets = list(tickets_collection.find({
         "team_id": team_id,
-        "status": {"$in": ["queued", "todo"]},
+        "status": "todo",
         "$or": [
             {"assignee_id": None},
             {"assignee_id": {"$exists": False}}
@@ -272,7 +272,6 @@ def trigger_shift_start_assignment(user_id: str) -> list:
             {"ticket_id": ticket["ticket_id"]},
             {"$set": {
                 "assignee_id": user_id,
-                "status": "assigned",
                 "updated_at": datetime.now(timezone.utc)
             }}
         )

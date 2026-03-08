@@ -118,7 +118,7 @@ async def get_admin_settings(current_user: dict = Depends(require_admin)):
             "auto_assignment": True,
             "auto_reassign_reopened": False,
             "default_priority": "medium",
-            "ticket_statuses": ["todo", "in_progress", "waiting", "review", "closed"],
+            "ticket_statuses": ["todo", "waiting", "closed"],
             "ticket_priorities": ["low", "medium", "high", "urgent"]
         }
     result = serialize_doc(settings)

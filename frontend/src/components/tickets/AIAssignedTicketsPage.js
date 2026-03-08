@@ -6,7 +6,7 @@ const AIAssignedTicketsPage = ({ user, onTicketClick, refreshKey }) => {
     <TicketsListView
       title="Assigned to AI"
       subtitle="Tickets currently handled by Zeus (AI agent)"
-      filterStatuses={['todo', 'in_progress', 'waiting']}
+      filterStatuses={['todo', 'waiting']}
       customParams={{ atlas_assigned_to_zeus: 'true' }}
       user={user}
       onTicketClick={onTicketClick}

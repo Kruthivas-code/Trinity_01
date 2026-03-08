@@ -17,10 +17,8 @@ import KanbanColumn from './KanbanColumn';
 import TicketCard from './TicketCard';
 
 const COLUMNS = [
-  { id: 'todo', title: 'To Do' },
-  { id: 'in_progress', title: 'In Progress' },
-  { id: 'waiting', title: 'Waiting on Customer' },
-  { id: 'review', title: 'Review' },
+  { id: 'todo', title: 'Open' },
+  { id: 'waiting', title: 'Waiting' },
   { id: 'closed', title: 'Closed' }
 ];
 

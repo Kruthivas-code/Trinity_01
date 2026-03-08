@@ -71,9 +71,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       const params = new URLSearchParams();
       if (userId) params.set('assignee_id', userId);
       params.append('status', 'todo');
-      params.append('status', 'in_progress');
       params.append('status', 'waiting');
-      params.append('status', 'review');
       params.set('atlas_assigned_to_zeus', 'false');
       params.set('limit', '200');
       
@@ -528,7 +526,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                   <div>
                     <div className="text-[10px] text-muted-foreground uppercase font-medium mb-2">Status</div>
                     <div className="flex flex-wrap gap-1">
-                      {['all', 'todo', 'in_progress', 'waiting', 'review', 'closed'].map(status => (
+                      {['all', 'todo', 'waiting', 'closed'].map(status => (
                         <button
                           key={status}
                           onClick={() => setFilters(prev => ({ ...prev, status }))}
@@ -538,10 +536,8 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                           data-testid={`filter-status-${status}`}
                         >
                           {status === 'all' ? 'All' : 
-                           status === 'todo' ? 'To Do' :
-                           status === 'in_progress' ? 'In Progress' :
+                           status === 'todo' ? 'Open' :
                            status === 'waiting' ? 'Waiting' :
-                           status === 'review' ? 'Review' : 
                            status === 'closed' ? 'Closed' : status.replace('_', ' ')}
                         </button>
                       ))}

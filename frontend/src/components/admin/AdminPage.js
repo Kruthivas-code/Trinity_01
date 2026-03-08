@@ -153,10 +153,8 @@ const ExportDataTab = () => {
   ];
 
   const statuses = [
-    { value: 'todo', label: 'To Do' },
-    { value: 'in_progress', label: 'In Progress' },
+    { value: 'todo', label: 'Open' },
     { value: 'waiting', label: 'Waiting' },
-    { value: 'review', label: 'Review' },
     { value: 'closed', label: 'Closed' }
   ];
 

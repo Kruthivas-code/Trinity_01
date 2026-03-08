@@ -6,7 +6,7 @@ const OpenTicketsPage = ({ user, onTicketClick, refreshKey }) => {
     <TicketsListView
       title="Open Tickets"
       subtitle="Active tickets being worked on"
-      filterStatuses={['todo', 'in_progress', 'review']}
+      filterStatuses={['todo']}
       user={user}
       onTicketClick={onTicketClick}
       refreshKey={refreshKey}

@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import { X, Mail, Send } from 'lucide-react';
 
 const STATUSES = [
-  { value: 'todo', label: 'To Do' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'waiting', label: 'Waiting on Customer' },
-  { value: 'review', label: 'Review' },
+  { value: 'todo', label: 'Open' },
+  { value: 'waiting', label: 'Waiting' },
   { value: 'closed', label: 'Closed' }
 ];
 

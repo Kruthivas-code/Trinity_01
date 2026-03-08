@@ -277,7 +277,7 @@ async def get_filter_fields(current_user: dict = Depends(get_current_user)):
     """Get all available filter fields including built-in and custom fields with their types and options."""
     base_fields = [
         {"field": "status", "label": "Status", "type": "select",
-         "options": ["todo", "in_progress", "waiting", "review", "closed"]},
+         "options": ["todo", "waiting", "closed"]},
         {"field": "priority", "label": "Priority", "type": "select",
          "options": ["low", "medium", "high", "urgent"]},
         {"field": "source", "label": "Source", "type": "select",
