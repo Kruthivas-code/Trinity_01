@@ -12,7 +12,7 @@ const ToolbarButton = ({ onClick, children, title, disabled }) => (
       e.preventDefault(); // Prevent focus loss
       if (!disabled) onClick();
     }}
-    className="h-7 w-7 flex items-center justify-center rounded transition-colors text-muted-foreground hover:text-foreground hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+    className="h-7 w-7 flex items-center justify-center rounded transition-colors text-foreground/60 hover:text-foreground hover:bg-foreground/10 disabled:opacity-50 disabled:cursor-not-allowed"
     title={title}
     disabled={disabled}
   >
@@ -130,9 +130,9 @@ const RichTextEditor = ({
         contentEditable={!disabled}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        className="min-h-[80px] max-h-[200px] overflow-y-auto px-3 py-2.5 text-sm outline-none bg-secondary/10 rounded-b-lg prose prose-sm prose-invert max-w-none
+        className="min-h-[80px] max-h-[200px] overflow-y-auto px-3 py-2.5 text-sm text-foreground outline-none bg-secondary/10 rounded-b-lg prose prose-sm dark:prose-invert max-w-none
           [&_blockquote]:border-l-2 [&_blockquote]:border-primary/50 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-muted-foreground
-          [&_pre]:bg-black/30 [&_pre]:rounded [&_pre]:p-2 [&_pre]:text-xs [&_pre]:font-mono
+          [&_pre]:bg-foreground/10 [&_pre]:rounded [&_pre]:p-2 [&_pre]:text-xs [&_pre]:font-mono
           [&_a]:text-primary [&_a]:underline
           [&_ul]:list-disc [&_ul]:pl-4
           [&_ol]:list-decimal [&_ol]:pl-4
@@ -147,7 +147,7 @@ const RichTextEditor = ({
       <style>{`
         [data-testid="rich-text-editor"]:empty:before {
           content: attr(data-placeholder);
-          color: hsl(var(--muted-foreground) / 0.4);
+          color: hsl(var(--muted-foreground) / 0.7);
           pointer-events: none;
         }
       `}</style>

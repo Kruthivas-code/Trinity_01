@@ -295,7 +295,7 @@ const SettingsPage = ({ user }) => {
                   </code>
                   <button
                     onClick={() => copyToClipboard(showNewKey)}
-                    className="p-2 rounded hover:bg-white/10"
+                    className="p-2 rounded hover:bg-foreground/10"
                   >
                     <Copy size={16} />
                   </button>

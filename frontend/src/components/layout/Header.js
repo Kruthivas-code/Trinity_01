@@ -60,7 +60,7 @@ const Header = ({ user, analytics, onLogout, onCreateTicket, onExport, onImport 
                     onExport('json');
                     setShowExportMenu(false);
                   }}
-                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/5 transition-interactive"
+                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-foreground/5 transition-interactive"
                   data-testid="export-json-button"
                 >
                   Export JSON
@@ -70,7 +70,7 @@ const Header = ({ user, analytics, onLogout, onCreateTicket, onExport, onImport 
                     onExport('csv');
                     setShowExportMenu(false);
                   }}
-                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/5 transition-interactive"
+                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-foreground/5 transition-interactive"
                   data-testid="export-csv-button"
                 >
                   Export CSV
@@ -94,7 +94,7 @@ const Header = ({ user, analytics, onLogout, onCreateTicket, onExport, onImport 
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center gap-2 h-9 px-3 rounded-lg hover:bg-white/5 transition-interactive"
+              className="flex items-center gap-2 h-9 px-3 rounded-lg hover:bg-foreground/5 transition-interactive"
               data-testid="user-menu-button"
             >
               {user.picture ? (
@@ -118,7 +118,7 @@ const Header = ({ user, analytics, onLogout, onCreateTicket, onExport, onImport 
                     navigate('/profile');
                     setShowUserMenu(false);
                   }}
-                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/5 transition-interactive flex items-center gap-2"
+                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-foreground/5 transition-interactive flex items-center gap-2"
                   data-testid="profile-menu-button"
                 >
                   <User size={16} />
@@ -129,7 +129,7 @@ const Header = ({ user, analytics, onLogout, onCreateTicket, onExport, onImport 
                     navigate('/settings');
                     setShowUserMenu(false);
                   }}
-                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/5 transition-interactive flex items-center gap-2"
+                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-foreground/5 transition-interactive flex items-center gap-2"
                   data-testid="settings-menu-button"
                 >
                   <Settings size={16} />
@@ -141,7 +141,7 @@ const Header = ({ user, analytics, onLogout, onCreateTicket, onExport, onImport 
                     onLogout();
                     setShowUserMenu(false);
                   }}
-                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/5 transition-interactive flex items-center gap-2 text-destructive"
+                  className="w-full text-left px-3 py-2 text-sm rounded hover:bg-foreground/5 transition-interactive flex items-center gap-2 text-destructive"
                   data-testid="logout-menu-button"
                 >
                   <LogOut size={16} />

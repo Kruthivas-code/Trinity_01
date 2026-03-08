@@ -25,7 +25,7 @@ const THEMES = {
     textMuted: 'text-[#999999]',
     textSecondary: 'text-[#787878]',
     border: 'border-white/10',
-    hover: 'hover:bg-white/5',
+    hover: 'hover:bg-foreground/5',
     activeBg: 'bg-[#00A1B2]',
     activeText: 'text-white',
     activeAccent: 'text-[#00A1B2]',

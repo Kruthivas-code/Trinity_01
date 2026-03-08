@@ -96,7 +96,7 @@ const CreateTicketModal = ({ isOpen, users = [], onClose, onCreate, onCreated })
               <button
                 type="button"
                 onClick={handleClose}
-                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/5 transition-interactive"
+                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-foreground/10 transition-interactive"
                 data-testid="modal-close-button"
               >
                 <X size={18} />

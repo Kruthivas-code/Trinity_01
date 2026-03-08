@@ -510,7 +510,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                           key={priority}
                           onClick={() => setFilters(prev => ({ ...prev, priority }))}
                           className={`px-2 py-1 text-xs rounded flex items-center gap-1 transition-colors ${
-                            filters.priority === priority ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
+                            filters.priority === priority ? 'bg-primary/20 text-primary' : 'hover:bg-foreground/5'
                           }`}
                           data-testid={`filter-priority-${priority}`}
                         >
@@ -533,7 +533,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                           key={status}
                           onClick={() => setFilters(prev => ({ ...prev, status }))}
                           className={`px-2 py-1 text-xs rounded transition-colors ${
-                            filters.status === status ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
+                            filters.status === status ? 'bg-primary/20 text-primary' : 'hover:bg-foreground/5'
                           }`}
                           data-testid={`filter-status-${status}`}
                         >
@@ -560,7 +560,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                           key={range}
                           onClick={() => setFilters(prev => ({ ...prev, dateRange: range }))}
                           className={`px-2 py-1 text-xs rounded transition-colors ${
-                            filters.dateRange === range ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
+                            filters.dateRange === range ? 'bg-primary/20 text-primary' : 'hover:bg-foreground/5'
                           }`}
                           data-testid={`filter-date-${range}`}
                         >
@@ -583,7 +583,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                         <button
                           onClick={() => setFilters(prev => ({ ...prev, tag: '' }))}
                           className={`px-2 py-1 text-xs rounded transition-colors ${
-                            filters.tag === '' ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
+                            filters.tag === '' ? 'bg-primary/20 text-primary' : 'hover:bg-foreground/5'
                           }`}
                         >
                           All
@@ -593,7 +593,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                             key={tag}
                             onClick={() => setFilters(prev => ({ ...prev, tag }))}
                             className={`px-2 py-1 text-xs rounded transition-colors ${
-                              filters.tag === tag ? 'bg-primary/20 text-primary' : 'hover:bg-white/5'
+                              filters.tag === tag ? 'bg-primary/20 text-primary' : 'hover:bg-foreground/5'
                             }`}
                             data-testid={`filter-tag-${tag}`}
                           >
@@ -654,7 +654,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                       handleExport('json');
                       setShowExportMenu(false);
                     }}
-                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/5 transition-interactive"
+                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-foreground/5 transition-interactive"
                     data-testid="export-json-button"
                   >
                     Export JSON
@@ -664,7 +664,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
                       handleExport('csv');
                       setShowExportMenu(false);
                     }}
-                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-white/5 transition-interactive"
+                    className="w-full text-left px-3 py-2 text-sm rounded hover:bg-foreground/5 transition-interactive"
                     data-testid="export-csv-button"
                   >
                     Export CSV
