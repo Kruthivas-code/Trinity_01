@@ -63,32 +63,23 @@ Our team will get back to you shortly. You can reply directly to this email to a
 
 
 def agent_reply_html(ticket_id: str, customer_name: str, subject: str, reply_content: str, agent_name: str) -> str:
-    # Convert newlines to <br> for HTML display
-    reply_html = reply_content.replace("\n", "<br>")
-    return _base_html(f"""
-<p style="margin:0 0 16px;font-size:14px;color:#71717a;">
-Hi {customer_name}, {agent_name} from our team replied to your ticket:
-</p>
-<div style="background:#f9fafb;border-left:3px solid {BRAND_COLOR};border-radius:0 8px 8px 0;padding:16px;margin-bottom:24px;">
-<p style="margin:0;font-size:14px;color:#18181b;line-height:1.6;">{reply_html}</p>
-</div>
-<p style="margin:0 0 4px;font-size:12px;color:#a1a1aa;">Ticket: {ticket_id}</p>
-<p style="margin:0;font-size:14px;color:#71717a;line-height:1.6;">
-Reply directly to this email to continue the conversation.
-</p>
-""")
+    """Clean RTF email — just the reply content with minimal, readable formatting."""
+    return f"""<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:#18181b;line-height:1.6;">
+{reply_content}
+</body>
+</html>"""
 
 
 def agent_reply_text(ticket_id: str, customer_name: str, subject: str, reply_content: str, agent_name: str) -> str:
-    return f"""Hi {customer_name},
-
-{agent_name} from our team replied to your ticket ({ticket_id}):
-
-{reply_content}
-
-Reply directly to this email to continue the conversation.
-
-— Emergent Support"""
+    """Plain text fallback — just the reply content."""
+    import re
+    # Strip HTML tags for plain text version
+    clean = re.sub(r'<[^>]+>', '', reply_content)
+    clean = clean.strip()
+    return clean
 
 
 def status_update_html(ticket_id: str, customer_name: str, subject: str, new_status: str) -> str:
