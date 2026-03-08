@@ -426,9 +426,9 @@ async def get_starred_tickets(
 
 @router.get("/tickets/escalation-counts")
 async def get_escalation_counts(current_user: dict = Depends(get_current_user)):
-    """Get ticket counts grouped by escalation level (L1/L2/L3) and status."""
+    """Get ticket counts grouped by escalation level (L1/L2/L3) — open tickets only."""
     pipeline = [
-        {"$match": {"status": {"$nin": ["merged", "closed"]}}},
+        {"$match": {"status": "todo"}},
         {"$group": {"_id": {"escalation_level": {"$ifNull": ["$escalation_level", "L1"]}, "status": "$status"}, "count": {"$sum": 1}}}
     ]
     results = list(tickets_collection.aggregate(pipeline))
