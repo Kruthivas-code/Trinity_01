@@ -10,6 +10,7 @@ const WaitingTicketsPage = ({ user, onTicketClick, refreshKey }) => {
       user={user}
       onTicketClick={onTicketClick}
       refreshKey={refreshKey}
+      excludeZeus={true}
     />
   );
 };

@@ -92,7 +92,7 @@ const formatTimeAgo = (dateString) => {
   });
 };
 
-const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, user, onTicketClick, refreshKey, filterTree: propFilterTree, showFilterBuilder, onSaveInbox, customParams }) => {
+const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, user, onTicketClick, refreshKey, filterTree: propFilterTree, showFilterBuilder, onSaveInbox, customParams, excludeZeus }) => {
   const [tickets, setTickets] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [users, setUsers] = useState([]);
@@ -201,6 +201,9 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
         // Append custom params (e.g., atlas_assigned_to_zeus=true)
         if (customParams) {
           Object.entries(customParams).forEach(([k, v]) => params.set(k, v));
+        }
+        if (excludeZeus) {
+          params.set('atlas_assigned_to_zeus', 'false');
         }
         
         const url = `${BACKEND_URL}/api/tickets?${params.toString()}`;

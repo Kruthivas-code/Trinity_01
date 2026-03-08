@@ -74,6 +74,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       params.append('status', 'in_progress');
       params.append('status', 'waiting');
       params.append('status', 'review');
+      params.set('atlas_assigned_to_zeus', 'false');
       params.set('limit', '200');
       
       const response = await fetch(`${BACKEND_URL}/api/tickets?${params.toString()}`, {

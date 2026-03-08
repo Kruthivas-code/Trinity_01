@@ -29,6 +29,7 @@ SYSTEM_INBOXES = [
             "conditions": [
                 {"field": "escalation_level", "op": "is", "value": "L1"},
                 {"field": "status", "op": "is", "value": "todo"},
+                {"field": "atlas_assigned_to_zeus", "op": "is_not", "value": True},
             ],
             "groups": [],
         },
@@ -44,6 +45,7 @@ SYSTEM_INBOXES = [
             "conditions": [
                 {"field": "escalation_level", "op": "is", "value": "L2"},
                 {"field": "status", "op": "is", "value": "todo"},
+                {"field": "atlas_assigned_to_zeus", "op": "is_not", "value": True},
             ],
             "groups": [],
         },
@@ -59,6 +61,7 @@ SYSTEM_INBOXES = [
             "conditions": [
                 {"field": "escalation_level", "op": "is", "value": "L3"},
                 {"field": "status", "op": "is", "value": "todo"},
+                {"field": "atlas_assigned_to_zeus", "op": "is_not", "value": True},
             ],
             "groups": [],
         },
@@ -70,7 +73,7 @@ SYSTEM_INBOXES = [
 
 
 def seed_system_inboxes():
-    """Create default system inboxes (L1/L2/L3) if they don't exist."""
+    """Create or update default system inboxes (L1/L2/L3)."""
     for inbox in SYSTEM_INBOXES:
         existing = custom_inboxes_collection.find_one({"inbox_id": inbox["inbox_id"]})
         if not existing:
@@ -82,6 +85,11 @@ def seed_system_inboxes():
                 "updated_at": datetime.now(timezone.utc),
             }
             custom_inboxes_collection.insert_one(doc)
+        else:
+            custom_inboxes_collection.update_one(
+                {"inbox_id": inbox["inbox_id"]},
+                {"$set": {"filter_tree": inbox["filter_tree"], "updated_at": datetime.now(timezone.utc)}},
+            )
 
 
 seed_system_inboxes()
@@ -103,6 +111,7 @@ FIELD_TYPE_MAP = {
     "email_to": "text",
     "ticket_id": "text",
     "tags": "array",
+    "atlas_assigned_to_zeus": "boolean",
 }
 
 VALID_OPERATORS = {

@@ -45,6 +45,7 @@ const AllTicketsPage = ({ user, onTicketClick, refreshKey, onInboxCreated }) => 
       refreshKey={refreshKey}
       showFilterBuilder={true}
       onSaveInbox={handleSaveInbox}
+      excludeZeus={true}
     />
   );
 };
