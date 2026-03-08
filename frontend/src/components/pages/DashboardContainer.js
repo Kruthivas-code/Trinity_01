@@ -13,6 +13,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [tickets, setTickets] = useState([]);
+  const [totalTicketCount, setTotalTicketCount] = useState(0);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -84,6 +85,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       setAvailableTags(Array.from(tags).sort());
       
       setTickets(allTickets);
+      setTotalTicketCount(data.total || allTickets.length);
     } catch (error) {
       console.error('Failed to fetch tickets:', error);
     }
@@ -440,7 +442,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="px-2 py-0.5 text-xs rounded-full bg-primary/20 text-primary">
-                  {tickets.length} tickets
+                  {totalTicketCount} tickets
                 </span>
                 {mentionedCount > 0 && (
                   <span className="px-2 py-0.5 text-xs rounded-full bg-amber-500/20 text-amber-400 flex items-center gap-1">
