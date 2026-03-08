@@ -4,7 +4,7 @@ import {
   LayoutDashboard, List, Clock, UserCheck, CheckCircle, Settings, 
   User, ChevronDown, Menu, X, LogOut, Users, Shield, CalendarDays,
   Bookmark, BarChart3, UserCircle, Star, MessageSquare, BookOpen,
-  Inbox, AlertTriangle, Zap, ChevronRight, MoreHorizontal, Pencil, Trash2, Share2, Bot
+  Inbox, ChevronRight, MoreHorizontal, Pencil, Trash2, Share2, Bot
 } from 'lucide-react';
 import { clearCachedUser } from '../auth/ProtectedRoute';
 import ShareInboxModal from '../inbox/ShareInboxModal';
@@ -29,8 +29,6 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isTicketsExpanded, setIsTicketsExpanded] = useState(true);
-  const [isEscalationExpanded, setIsEscalationExpanded] = useState(true);
-  const [escalationCounts, setEscalationCounts] = useState({ L1: { total: 0 }, L2: { total: 0 }, L3: { total: 0 } });
   const [inboxMenuOpen, setInboxMenuOpen] = useState(null); // inbox_id of open menu
   const [shareModalInbox, setShareModalInbox] = useState(null);
   const [editModalInbox, setEditModalInbox] = useState(null);
@@ -40,26 +38,6 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
 
   const isExpanded = sidebarWidth > COLLAPSE_THRESHOLD;
 
-  // Fetch escalation counts
-  useEffect(() => {
-    const fetchCounts = async () => {
-      try {
-        const response = await fetch(`${BACKEND_URL}/api/tickets/escalation-counts`, {
-          credentials: 'include'
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setEscalationCounts(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch escalation counts:', error);
-      }
-    };
-    fetchCounts();
-    const interval = setInterval(fetchCounts, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   const ticketViews = [
     { id: 'all-tickets', label: 'All Tickets', icon: Inbox, path: '/all-tickets' },
     { id: 'starred-tickets', label: 'Starred', icon: Star, path: '/starred-tickets' },
@@ -67,24 +45,6 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
     { id: 'waiting-tickets', label: 'Waiting', icon: Clock, path: '/waiting-tickets' },
     { id: 'closed-tickets', label: 'Closed', icon: CheckCircle, path: '/closed-tickets' },
     { id: 'ai-assigned', label: 'Assigned to AI', icon: Bot, path: '/ai-assigned' },
-  ];
-
-  const escalationFolders = [
-    { 
-      id: 'l1', level: 'L1', label: 'L1', icon: Inbox,
-      dotColor: 'bg-emerald-500', chipBg: 'bg-emerald-50', chipText: 'text-emerald-800', chipBorder: 'border-emerald-200',
-      path: '/all-tickets?level=L1'
-    },
-    { 
-      id: 'l2', level: 'L2', label: 'L2', icon: AlertTriangle,
-      dotColor: 'bg-amber-500', chipBg: 'bg-amber-50', chipText: 'text-amber-900', chipBorder: 'border-amber-200',
-      path: '/all-tickets?level=L2'
-    },
-    { 
-      id: 'l3', level: 'L3', label: 'L3', icon: Zap,
-      dotColor: 'bg-rose-500', chipBg: 'bg-rose-50', chipText: 'text-rose-800', chipBorder: 'border-rose-200',
-      path: '/all-tickets?level=L3'
-    },
   ];
 
   const mainItems = [
@@ -363,63 +323,6 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
                     })}
                   </>
                 )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Divider */}
-        <div className="!my-2 h-px bg-border/60" />
-
-        {/* L1 / L2 / L3 Escalation Folders */}
-        {isExpanded && (
-          <div>
-            <button
-              onClick={() => setIsEscalationExpanded(!isEscalationExpanded)}
-              className="w-full flex items-center justify-between px-3 h-7 rounded-lg text-[14px] text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05] transition-colors duration-150"
-              data-testid="nav-escalation-toggle"
-            >
-              <div className="flex items-center gap-2.5">
-                <Zap size={16} />
-                <span className="font-medium text-foreground/80">Escalation</span>
-              </div>
-              <ChevronDown size={14} className={`transition-transform duration-200 ${isEscalationExpanded ? '' : '-rotate-90'}`} />
-            </button>
-
-            {isEscalationExpanded && (
-              <div className="mt-0.5 space-y-px">
-                {escalationFolders.map(folder => {
-                  const Icon = folder.icon;
-                  const active = isActive(folder.path);
-                  const count = escalationCounts[folder.level]?.total || 0;
-                  
-                  return (
-                    <button
-                      key={folder.id}
-                      onClick={() => handleNavigate(folder.path)}
-                      className={`
-                        w-full flex items-center gap-2.5 px-3 ml-4 h-7 rounded-lg text-[14px] overflow-hidden relative
-                        transition-colors duration-150
-                        ${active 
-                          ? 'bg-foreground/8 text-foreground font-semibold' 
-                          : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.05]'
-                        }
-                      `}
-                      data-testid={`sidebar-${folder.id}-folder-button`}
-                    >
-                      {active && (
-                        <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-foreground" />
-                      )}
-                      <div className={`w-2 h-2 rounded-full ${folder.dotColor} shrink-0`} />
-                      <span className="truncate flex-1 text-left">{folder.label}</span>
-                      {count > 0 && (
-                        <span className={`shrink-0 text-[11px] font-medium px-1.5 py-0.5 rounded-md border ${folder.chipBg} ${folder.chipText} ${folder.chipBorder}`}>
-                          {count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
               </div>
             )}
           </div>

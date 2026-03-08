@@ -17,6 +17,75 @@ from utils import serialize_doc
 
 router = APIRouter(prefix="/api", tags=["filters"])
 
+
+# ==================== Seed Default System Inboxes ====================
+
+SYSTEM_INBOXES = [
+    {
+        "inbox_id": "system_inbox_l1",
+        "name": "L1",
+        "filter_tree": {
+            "logic": "and",
+            "conditions": [
+                {"field": "escalation_level", "op": "is", "value": "L1"},
+                {"field": "status", "op": "is", "value": "todo"},
+            ],
+            "groups": [],
+        },
+        "color": "#10b981",
+        "icon": "inbox",
+        "is_system": True,
+    },
+    {
+        "inbox_id": "system_inbox_l2",
+        "name": "L2",
+        "filter_tree": {
+            "logic": "and",
+            "conditions": [
+                {"field": "escalation_level", "op": "is", "value": "L2"},
+                {"field": "status", "op": "is", "value": "todo"},
+            ],
+            "groups": [],
+        },
+        "color": "#f59e0b",
+        "icon": "alert-triangle",
+        "is_system": True,
+    },
+    {
+        "inbox_id": "system_inbox_l3",
+        "name": "L3",
+        "filter_tree": {
+            "logic": "and",
+            "conditions": [
+                {"field": "escalation_level", "op": "is", "value": "L3"},
+                {"field": "status", "op": "is", "value": "todo"},
+            ],
+            "groups": [],
+        },
+        "color": "#ef4444",
+        "icon": "zap",
+        "is_system": True,
+    },
+]
+
+
+def seed_system_inboxes():
+    """Create default system inboxes (L1/L2/L3) if they don't exist."""
+    for inbox in SYSTEM_INBOXES:
+        existing = custom_inboxes_collection.find_one({"inbox_id": inbox["inbox_id"]})
+        if not existing:
+            doc = {
+                **inbox,
+                "owner_id": "system",
+                "shared_with": [],
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+            }
+            custom_inboxes_collection.insert_one(doc)
+
+
+seed_system_inboxes()
+
 # ==================== Filter Engine ====================
 
 FIELD_TYPE_MAP = {
@@ -234,12 +303,13 @@ async def get_filter_fields(current_user: dict = Depends(get_current_user)):
 
 @router.get("/inboxes")
 async def get_inboxes(current_user: dict = Depends(get_current_user)):
-    """List all custom inboxes owned by or shared with the current user."""
+    """List all custom inboxes owned by or shared with the current user, plus system inboxes."""
     user_id = current_user["user_id"]
     inboxes = list(custom_inboxes_collection.find({
         "$or": [
             {"owner_id": user_id},
-            {"shared_with": user_id}
+            {"shared_with": user_id},
+            {"is_system": True},
         ]
     }).sort("created_at", ASCENDING))
     return [serialize_doc(i) for i in inboxes]
@@ -269,11 +339,11 @@ async def create_inbox(
 
 @router.get("/inboxes/{inbox_id}")
 async def get_inbox(inbox_id: str, current_user: dict = Depends(get_current_user)):
-    """Get a specific custom inbox by ID (must be owner or shared-with)."""
+    """Get a specific custom inbox by ID (must be owner, shared-with, or system)."""
     user_id = current_user["user_id"]
     inbox = custom_inboxes_collection.find_one({
         "inbox_id": inbox_id,
-        "$or": [{"owner_id": user_id}, {"shared_with": user_id}]
+        "$or": [{"owner_id": user_id}, {"shared_with": user_id}, {"is_system": True}]
     })
     if not inbox:
         raise HTTPException(status_code=404, detail="Inbox not found")
@@ -290,7 +360,7 @@ async def update_inbox(
     user_id = current_user["user_id"]
     inbox = custom_inboxes_collection.find_one({
         "inbox_id": inbox_id,
-        "$or": [{"owner_id": user_id}, {"shared_with": user_id}]
+        "$or": [{"owner_id": user_id}, {"shared_with": user_id}, {"is_system": True}]
     })
     if not inbox:
         raise HTTPException(status_code=404, detail="Inbox not found")
@@ -316,7 +386,7 @@ async def delete_inbox(inbox_id: str, current_user: dict = Depends(get_current_u
     user_id = current_user["user_id"]
     result = custom_inboxes_collection.delete_one({
         "inbox_id": inbox_id,
-        "$or": [{"owner_id": user_id}, {"shared_with": user_id}]
+        "$or": [{"owner_id": user_id}, {"shared_with": user_id}, {"is_system": True}]
     })
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Inbox not found")
@@ -381,7 +451,7 @@ async def get_inbox_tickets(
     user_id = current_user["user_id"]
     inbox = custom_inboxes_collection.find_one({
         "inbox_id": inbox_id,
-        "$or": [{"owner_id": user_id}, {"shared_with": user_id}]
+        "$or": [{"owner_id": user_id}, {"shared_with": user_id}, {"is_system": True}]
     })
     if not inbox:
         raise HTTPException(status_code=404, detail="Inbox not found")
