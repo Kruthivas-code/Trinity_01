@@ -136,7 +136,7 @@ const KanbanBoard = ({ tickets, users, currentUserId, onTicketClick, onDragEnd, 
       measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
     >
       <div className="relative h-[calc(100vh-64px)] overflow-x-auto overflow-y-hidden">
-        <div className="flex h-full gap-4 px-6 pb-6 pt-4 min-w-max" data-testid="kanban-track">
+        <div className="flex h-full gap-4 px-6 pb-6 pt-4 w-full" data-testid="kanban-track">
           {COLUMNS.map((column, index) => (
             <KanbanColumn
               key={column.id}

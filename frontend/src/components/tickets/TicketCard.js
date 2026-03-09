@@ -86,9 +86,14 @@ const TicketCard = ({ ticket, users = [], isMentioned = false, onClick, isDraggi
         </div>
       )}
 
-      <h4 className="text-[13px] text-foreground leading-snug truncate">{ticket.title}</h4>
+      <h4 className="text-[13px] text-foreground leading-snug font-medium" data-testid="ticket-card-title">{ticket.title}</h4>
+      {(ticket.description || ticket.last_message_text) && (
+        <p className="text-[11px] text-muted-foreground/80 mt-1 line-clamp-2 leading-relaxed" data-testid="ticket-card-preview">
+          {(ticket.description || ticket.last_message_text || '').slice(0, 150)}
+        </p>
+      )}
       {ticket.customer_email && (
-        <p className="text-[10px] text-muted-foreground truncate mt-1">{ticket.customer_email}</p>
+        <p className="text-[10px] text-muted-foreground truncate mt-1.5">{ticket.customer_email}</p>
       )}
     </div>
   );

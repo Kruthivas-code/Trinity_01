@@ -11,7 +11,7 @@ const KanbanColumn = ({ column, tickets, users, onTicketClick, onCreateTicket, s
   return (
     <div
       ref={setNodeRef}
-      className={`w-72 min-w-[288px] max-w-[288px] rounded-xl border flex flex-col ${
+      className={`flex-1 min-w-[280px] rounded-xl border flex flex-col ${
         isOver ? 'border-foreground/30 bg-foreground/5' : 'bg-secondary/30 border-border'
       }`}
       style={{ transition: 'border-color 150ms, background-color 150ms' }}
