@@ -14,7 +14,7 @@ import os
 import time
 from datetime import datetime, timedelta
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://atlas-parity-fix.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://trinity-events-1.preview.emergentagent.com').rstrip('/')
 SESSION_TOKEN = os.environ.get('TEST_SESSION_TOKEN', 'qa_test_admin_session_token_2026')
 
 

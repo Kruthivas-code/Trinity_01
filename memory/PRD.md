@@ -12,13 +12,15 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
 - **Frontend**: React (port 3000)
 - **Backend**: FastAPI (port 8001)
 - **Database**: MongoDB
-- **Data Flow**: Atlas API → Atlas Sync → Trinity DB ← IMAP (replies only)
+- **Data Flow**: Atlas API → Atlas Webhooks + Polling → Trinity DB ← IMAP (replies only)
 
 ## Key Design Decisions
 - **Atlas is the single source of truth** for all new tickets
 - **IMAP poller only processes replies** to existing tickets — does NOT create new tickets
-- **Atlas sync runs every 60 seconds** polling for new/updated conversations
+- **Atlas webhooks** provide real-time sync for: conversation created, agent changed, new message, tags changed
+- **Atlas polling sync (60s)** still active as fallback — to be deprecated once webhooks proven stable
 - **Trinity takes precedence** for field conflicts (if ticket modified in Trinity after last sync)
+- **Priority updates** are synced via _sync_fields whenever any webhook event fires (no separate priority webhook)
 
 ## Completed Work
 - [x] Atlas Shadow Sync engine (real-time, 60s interval)
@@ -40,28 +42,42 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
 - [x] Background job stability (auto-resume attachment migration)
 - [x] Bounce email detection and handling
 - [x] Sent folder polling for agent Gmail replies
+- [x] 100% data parity achieved (68,578+ Atlas conversations)
+- [x] Periodic gap audit phase in sync daemon
+- [x] UI ticket count fixes (dashboard, sidebar, escalation)
+- [x] L1/L2/L3 converted to editable custom inboxes
+- [x] Zeus AI ticket filtering across all views
+- [x] Light/dark mode contrast fixes
+- [x] Clean RTF outbound emails
+- [x] Status consolidation (Open/Waiting/Closed/Merged)
+- [x] Atlas webhook receiver endpoint (2026-03-09)
+- [x] Atlas webhook processing logic for all 4 registered events (2026-03-09)
+
+## Webhook Implementation (2026-03-09)
+- **Endpoint**: `/api/webhooks/atlas` (POST)
+- **Registered events** (deployed env only):
+  - conversation_created (secret: 5f1baf20faae445aa5a3705485d88161)
+  - agent_changed (secret: 6d2f7f2c1e4044fb99e0f9269bd248ef)
+  - new_message_received (secret: 903b0385e2554aaeb3df7957245d91c7)
+  - tags_changed (secret: f07dc9880eb64b499d7220651ca07615)
+- **Priority**: NOT a separate webhook — synced via _sync_fields on every event
+- **Handler file**: `/app/backend/routes/atlas_webhooks.py`
+- **Status**: Code complete, awaiting production verification
 
 ## In Progress
-- [ ] Attachment migration: 25.9% done (13,432/51,816), high failure rate from object storage 500 errors
-- [ ] Zeus ticket cleanup: recurring job active, cleaning stale AI-assigned tickets
+- [ ] Attachment migration: paused due to object storage 500 errors (auto-resume enabled)
+- [ ] Zeus ticket cleanup: recurring job active
 
-## Recently Completed (2026-03-07)
-- [x] Fixed missing ticket TKT-068210 for rohit@emergent.sh — root cause: conversation created during downtime gap outside 24h catchup window
-- [x] Full parity audit: scanned all 68,578 Atlas conversations, found and synced 558 missing tickets (231 non-closed + 327 closed) from downtime gap (range #67709-#68258)
-- [x] Achieved 100% data parity: 0 missing conversations across entire Atlas dataset
-- [x] Added periodic gap audit phase to sync daemon (Phase 3, every 10 cycles) to auto-detect and sync any conversations missed by the 15-minute lookback window
-
-## Upcoming Tasks (P2)
-- [ ] Create Data Validation Script — admin endpoint to audit DB integrity
-- [ ] Investigate attachment migration failures (object storage 500 errors)
-
-## Future Tasks
-- [ ] Real-time Notifications for agents
-- [ ] Generic auto-close job for stale tickets
+## Upcoming Tasks
+- [ ] P1: Deprecate polling sync once webhooks proven stable
+- [ ] P2: Create data validation admin tool
+- [ ] P2: Real-time notifications for agents
+- [ ] P2: Auto-close stale tickets job
+- [ ] P3: Cleanup one-time migration scripts
 
 ## 3rd Party Integrations
-- Atlas API (primary data source)
-- Emergent Object Storage (attachments)
+- Atlas API (primary data source) + Atlas Webhooks (real-time events)
+- Emergent Object Storage (attachments — currently experiencing outage)
 - Gmail IMAP (reply processing only)
 - Gemini (ticket summarization)
 - Amazon SES (outbound email)
@@ -74,7 +90,8 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
 - `atlas_backfill_state`: _type="shadow" for sync state
 
 ## Critical Files
-- `/app/backend/services/atlas_sync.py` — Atlas sync engine
+- `/app/backend/routes/atlas_webhooks.py` — Atlas webhook handler (real-time sync)
+- `/app/backend/services/atlas_sync.py` — Atlas polling sync engine (fallback)
 - `/app/backend/services/email_poller.py` — IMAP poller (replies only)
 - `/app/backend/server.py` — Startup hooks, background jobs
 - `/app/backend/routes/tickets.py` — Ticket CRUD

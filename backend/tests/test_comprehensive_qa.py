@@ -8,7 +8,7 @@ import os
 import time
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://atlas-parity-fix.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://trinity-events-1.preview.emergentagent.com')
 
 # Generate unique test email for each test run
 TEST_EMAIL = f"testqa_{int(time.time())}_{uuid.uuid4().hex[:6]}@test.com"

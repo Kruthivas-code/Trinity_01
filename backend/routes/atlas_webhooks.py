@@ -90,7 +90,7 @@ def _handle_conversation_created(payload: dict):
         conv = _fetch_conversation(conv_id)
 
     if not conv.get("id"):
-        logger.warning(f"[WEBHOOK] Could not get conversation data for created event")
+        logger.warning("[WEBHOOK] Could not get conversation data for created event")
         return
 
     ticket_id = _create_ticket_from_conv(conv, tag_map, agent_map)
@@ -102,7 +102,7 @@ def _handle_conversation_created(payload: dict):
 
 
 def _handle_field_change(payload: dict, change_type: str):
-    """Handle status/agent/priority/tag changes — update existing ticket fields."""
+    """Handle status/agent/tag changes — update existing ticket fields (incl. priority)."""
     agent_map, _ = _get_maps()
     conv_id = _extract_conversation_id(payload)
 
@@ -116,7 +116,6 @@ def _handle_field_change(payload: dict, change_type: str):
     )
 
     if not ticket:
-        # Ticket doesn't exist yet — create it
         logger.info(f"[WEBHOOK] Ticket for {conv_id} not found, creating from {change_type} event")
         _handle_conversation_created(payload)
         return
@@ -127,11 +126,18 @@ def _handle_field_change(payload: dict, change_type: str):
         return
 
     updates_applied, conflicts = _sync_fields(conv, ticket, agent_map)
+
+    # Also update ticket updated_at timestamp
+    tickets_collection.update_one(
+        {"ticket_id": ticket["ticket_id"]},
+        {"$set": {"updated_at": datetime.now(timezone.utc)}},
+    )
+
     logger.info(f"[WEBHOOK] {change_type}: ticket {ticket['ticket_id']} — {updates_applied} updates, {conflicts} conflicts")
 
 
 def _handle_new_message(payload: dict):
-    """Handle new message — sync messages for existing ticket."""
+    """Handle new message — sync messages + update ticket timestamps + sync fields (incl. priority)."""
     conv_id = _extract_conversation_id(payload)
     if not conv_id:
         logger.warning("[WEBHOOK] No conversation ID in new message event")
@@ -139,51 +145,73 @@ def _handle_new_message(payload: dict):
 
     ticket = tickets_collection.find_one(
         {"atlas_conversation_id": conv_id},
-        {"_id": 0, "ticket_id": 1},
+        {"_id": 0},
     )
 
     if not ticket:
-        # Ticket doesn't exist — create it first
         logger.info(f"[WEBHOOK] Ticket for {conv_id} not found, creating from message event")
         _handle_conversation_created(payload)
         return
 
-    new_msgs = _sync_messages(conv_id, ticket["ticket_id"])
+    ticket_id = ticket["ticket_id"]
+    new_msgs = _sync_messages(conv_id, ticket_id)
+
+    # Always update ticket timestamps when a new message webhook fires
+    now = datetime.now(timezone.utc)
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$set": {"updated_at": now, "last_message_at": now}},
+    )
+
+    # Also sync field changes (status, priority, assignee may have changed alongside the message)
+    agent_map, _ = _get_maps()
+    conv = _fetch_conversation(conv_id)
+    if conv.get("id"):
+        _sync_fields(conv, ticket, agent_map)
+
     if new_msgs:
-        logger.info(f"[WEBHOOK] Synced {new_msgs} new messages for {ticket['ticket_id']}")
+        logger.info(f"[WEBHOOK] Synced {new_msgs} new messages for {ticket_id}")
+    else:
+        logger.debug(f"[WEBHOOK] Message event for {ticket_id}, no new messages found")
 
 
 def _handle_tags_changed(payload: dict):
-    """Handle tag changes — update ticket tags."""
+    """Handle tag changes — update ticket tags + sync all fields (incl. priority)."""
     conv_id = _extract_conversation_id(payload)
     if not conv_id:
         return
 
     ticket = tickets_collection.find_one(
         {"atlas_conversation_id": conv_id},
-        {"_id": 0, "ticket_id": 1},
+        {"_id": 0},
     )
     if not ticket:
         _handle_conversation_created(payload)
         return
 
-    # Fetch fresh conversation for updated tags
+    # Fetch fresh conversation for updated tags AND fields
     conv = _fetch_conversation(conv_id)
     if not conv.get("id"):
         return
 
-    _, tag_map = _get_maps()
+    agent_map, tag_map = _get_maps()
+
+    # Update tags
     raw_tags = conv.get("tags") or []
     mapped_tags = [tag_map.get(str(t), str(t)) for t in raw_tags]
-
     tickets_collection.update_one(
         {"ticket_id": ticket["ticket_id"]},
         {"$set": {"tags": mapped_tags, "updated_at": datetime.now(timezone.utc)}},
     )
     logger.info(f"[WEBHOOK] Updated tags for {ticket['ticket_id']}: {mapped_tags}")
 
+    # Also sync other fields (priority, status, assignee, etc.)
+    _sync_fields(conv, ticket, agent_map)
+
 
 # Event type → handler mapping
+# Note: priority_changed is intentionally excluded — priority is synced
+# whenever other webhook events fire (via _sync_fields on the full conversation).
 EVENT_HANDLERS = {
     "conversation.created": _handle_conversation_created,
     "conversation_created": _handle_conversation_created,
@@ -191,8 +219,6 @@ EVENT_HANDLERS = {
     "conversation_agent_changed": lambda p: _handle_field_change(p, "agent_changed"),
     "conversation.status_changed": lambda p: _handle_field_change(p, "status_changed"),
     "conversation_status_changed": lambda p: _handle_field_change(p, "status_changed"),
-    "conversation.priority_changed": lambda p: _handle_field_change(p, "priority_changed"),
-    "conversation_priority_changed": lambda p: _handle_field_change(p, "priority_changed"),
     "conversation.tags_changed": _handle_tags_changed,
     "conversation_tags_changed": _handle_tags_changed,
     "message.received": _handle_new_message,

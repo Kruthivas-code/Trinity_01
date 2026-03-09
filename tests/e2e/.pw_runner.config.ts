@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260304_163716/results.json' }],
   ],
   use: {
-    baseURL: 'https://atlas-parity-fix.preview.emergentagent.com',
+    baseURL: 'https://trinity-events-1.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,
