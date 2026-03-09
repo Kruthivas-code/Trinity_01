@@ -123,6 +123,7 @@ from routes.email import router as email_router
 from routes.admin import router as admin_router
 from routes.sla import router as sla_router
 from routes.analytics import router as analytics_router
+from routes.atlas_webhooks import router as atlas_webhooks_router
 from routes.search_presence import router as search_presence_router
 from routes.leaves import router as leaves_router
 from routes.feature_requests import router as feature_requests_router
@@ -148,6 +149,7 @@ app.include_router(email_router)
 app.include_router(admin_router)
 app.include_router(sla_router)
 app.include_router(analytics_router)
+app.include_router(atlas_webhooks_router)
 app.include_router(search_presence_router)
 app.include_router(leaves_router)
 app.include_router(feature_requests_router)
