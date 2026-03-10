@@ -117,7 +117,7 @@ def generate_ticket_id() -> str:
         upsert=True,
         return_document=True
     )
-    return f"TKT-{counter['seq']:06d}"
+    return f"TKT-{counter['seq']}"
 
 
 def generate_customer_id() -> str:

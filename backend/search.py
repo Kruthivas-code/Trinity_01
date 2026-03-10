@@ -336,10 +336,11 @@ class SearchEngine:
             if query:
                 stripped = query.strip()
                 if re.match(r'^\d+$', stripped):
-                    # Try both raw and zero-padded to 6 digits (TKT-070723 format)
+                    # Match both padded (legacy TKT-070723) and unpadded (TKT-70723) formats
                     candidates = [f'TKT-{stripped}']
-                    if len(stripped) < 6:
-                        candidates.append(f'TKT-{stripped.zfill(6)}')
+                    padded = stripped.zfill(6)
+                    if padded != stripped:
+                        candidates.append(f'TKT-{padded}')
                     direct_ticket = self.tickets.find_one({
                         'ticket_id': {'$in': candidates},
                         'status': {'$ne': 'merged'}

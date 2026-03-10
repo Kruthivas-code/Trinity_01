@@ -249,7 +249,7 @@ def _create_ticket_from_conv(conv: dict, tag_lookup: dict, agent_email_map: dict
     # Use Atlas conversation number for ticket_id to maintain parity
     atlas_number = conv.get("number")
     if atlas_number:
-        ticket_id = f"TKT-{atlas_number:06d}"
+        ticket_id = f"TKT-{atlas_number}"
         # Check for collision (shouldn't happen, but safety)
         if tickets_collection.find_one({"ticket_id": ticket_id}):
             ticket_id = generate_ticket_id()
@@ -713,7 +713,7 @@ def _run_sync_cycle(state: dict, tag_lookup: dict, agent_email_map: dict) -> dic
                         # Link IMAP ticket to Atlas conversation
                         ticket_id = imap_match["ticket_id"]
                         atlas_number = conv.get("number")
-                        new_ticket_id = f"TKT-{atlas_number:06d}" if atlas_number else ticket_id
+                        new_ticket_id = f"TKT-{atlas_number}" if atlas_number else ticket_id
                         link_fields = {
                             "atlas_conversation_id": atlas_conv_id,
                             "atlas_number": atlas_number,

@@ -373,6 +373,47 @@ def _start_null_synced_backfill():
     t.start()
 
 
+def _start_ticket_id_migration():
+    """Remove zero-padding from ticket IDs (TKT-070723 → TKT-70723).
+    Runs once across all deploys/pods via DB flag."""
+    import threading
+
+    def _run():
+        try:
+            flag = db["backfill_state"].find_one({"_type": "ticket_id_format_migration"})
+            if flag and flag.get("status") == "completed":
+                logger.info("[MIGRATION] ticket_id format migration already completed, skipping")
+                return
+
+            result = db["backfill_state"].update_one(
+                {"_type": "ticket_id_format_migration", "status": {"$ne": "running"}},
+                {"$set": {"status": "running", "started_by": _instance_id, "started_at": datetime.now(timezone.utc)}},
+                upsert=True,
+            )
+            if result.modified_count == 0 and result.upserted_id is None:
+                logger.info("[MIGRATION] ticket_id format migration already running on another pod")
+                return
+
+            from one_time_migrations.migrate_ticket_id_format import run
+            logger.info("[MIGRATION] Starting ticket_id format migration in background thread")
+            run(dry_run=False)
+
+            db["backfill_state"].update_one(
+                {"_type": "ticket_id_format_migration"},
+                {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}},
+            )
+            logger.info("[MIGRATION] ticket_id format migration completed")
+        except Exception as e:
+            logger.error(f"[MIGRATION] ticket_id format migration error: {e}")
+            db["backfill_state"].update_one(
+                {"_type": "ticket_id_format_migration"},
+                {"$set": {"status": "failed", "error": str(e)}},
+            )
+
+    t = threading.Thread(target=_run, daemon=True, name="ticket_id_format_migration")
+    t.start()
+
+
 # ==================== Startup / Shutdown ====================
 @app.on_event("startup")
 async def startup_event():
@@ -403,6 +444,8 @@ async def startup_event():
     auto_resume_migration()
     # One-time backfill: resync messages for tickets with null last_synced_at
     _start_null_synced_backfill()
+    # One-time migration: remove zero-padding from ticket IDs
+    _start_ticket_id_migration()
     logger.info(f"[STARTUP] Instance {_instance_id} started")
 
 
