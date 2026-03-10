@@ -151,6 +151,7 @@ class InternalNoteCreate(BaseModel):
     type: Optional[str] = "internal_note"
     cc: Optional[List[str]] = []
     send_email: Optional[bool] = None
+    attachment_ids: Optional[List[str]] = []
 
     model_config = {"json_schema_extra": {"examples": [{"content": "Checked logs — this is caused by the OAuth redirect URI mismatch. @user_jsmith can you update the config?", "mentions": ["user_jsmith"], "type": "internal_note"}]}}
 

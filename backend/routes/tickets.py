@@ -16,6 +16,7 @@ from pymongo import ASCENDING, DESCENDING
 from database import (
     db, tickets_collection, users_collection, teams_collection,
     messages_collection, ticket_changelog_collection, email_replies_collection,
+    file_attachments_collection,
 )
 from dependencies import get_current_user
 from models.schemas import (
@@ -219,6 +220,22 @@ async def add_internal_note(
         return serialize_doc(existing_duplicate)
     message_id = f"msg_{uuid.uuid4().hex[:12]}"
     mentions = note.mentions or []
+    attachment_ids = note.attachment_ids or []
+
+    # Resolve attachment metadata for the message record
+    attachment_meta = []
+    if attachment_ids:
+        for aid in attachment_ids:
+            att_doc = file_attachments_collection.find_one({"file_id": aid}, {"_id": 0})
+            if att_doc:
+                attachment_meta.append({
+                    "file_id": att_doc["file_id"],
+                    "original_name": att_doc["original_name"],
+                    "content_type": att_doc["content_type"],
+                    "size": att_doc["size"],
+                    "download_url": f"/api/attachments/{att_doc['file_id']}",
+                })
+
     note_doc = {
         "message_id": message_id, "ticket_id": ticket_id,
         "type": note.type or "internal_note", "content": note.content,
@@ -226,6 +243,9 @@ async def add_internal_note(
         "author_email": current_user.get("email"), "mentions": mentions,
         "created_at": datetime.now(timezone.utc)
     }
+    if attachment_meta:
+        note_doc["attachments"] = attachment_meta
+
     messages_collection.insert_one(note_doc)
     now = datetime.now(timezone.utc)
     update_fields = {"updated_at": now, "last_message_at": now}
@@ -242,6 +262,27 @@ async def add_internal_note(
         try:
             from services.email_service import send_agent_reply_notification
             cc_list = note.cc if note.cc else None
+
+            # Load attachment file data for email
+            email_attachments = None
+            if attachment_meta:
+                import os
+                UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
+                email_attachments = []
+                for meta in attachment_meta:
+                    att_doc = file_attachments_collection.find_one(
+                        {"file_id": meta["file_id"]}, {"_id": 0}
+                    )
+                    if att_doc:
+                        file_path = os.path.join(UPLOAD_DIR, att_doc["stored_name"])
+                        if os.path.exists(file_path):
+                            with open(file_path, "rb") as f:
+                                email_attachments.append({
+                                    "filename": att_doc["original_name"],
+                                    "content_type": att_doc["content_type"],
+                                    "data": f.read(),
+                                })
+
             send_agent_reply_notification(
                 ticket_id=ticket_id,
                 customer_email=ticket["customer_email"],
@@ -250,6 +291,7 @@ async def add_internal_note(
                 reply_content=note.content,
                 agent_name=current_user.get("name", "Support Agent"),
                 cc=cc_list,
+                attachments=email_attachments if email_attachments else None,
             )
             # Store CC on the note document
             if cc_list:

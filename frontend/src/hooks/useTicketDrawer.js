@@ -88,6 +88,11 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
   const [showCcField, setShowCcField] = useState(false);
   const imageInputRef = useRef(null);
 
+  // File attachments (for outbound email)
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const fileInputRef = useRef(null);
+
   // Canned responses picker
   const [showCannedPicker, setShowCannedPicker] = useState(false);
 
@@ -731,7 +736,7 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
 
   const handleSubmitInput = async () => {
     const plainText = stripHtml(inputText);
-    const hasContent = plainText.trim() || attachedImages.length > 0;
+    const hasContent = plainText.trim() || attachedImages.length > 0 || attachedFiles.length > 0;
     if (!hasContent || !ticket || submitting) return;
 
     handleTypingChange(false);
@@ -758,12 +763,14 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
           mentions: inputMentions,
           images: attachedImages.map(img => ({ url: img.url, name: img.name })),
           cc: inputMode === 'reply' ? ccEmails.filter(e => e.trim()) : [],
+          attachment_ids: attachedFiles.map(f => f.file_id),
         })
       });
       if (response.ok) {
         setInputText('');
         setInputMentions([]);
         setAttachedImages([]);
+        setAttachedFiles([]);
         setCcEmails([]);
         setShowCcField(false);
         fetchNotes(ticket.id);
@@ -875,6 +882,62 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
 
   const removeAttachedImage = (imageId) => {
     setAttachedImages(prev => prev.filter(img => img.id !== imageId));
+  };
+
+  const handleFileUpload = async (event) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingFile(true);
+    try {
+      const newFiles = [];
+      for (const file of files) {
+        if (file.size > 7 * 1024 * 1024) {
+          console.warn(`File ${file.name} too large (max 7MB)`);
+          continue;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${BACKEND_URL}/api/attachments/upload`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          newFiles.push({
+            file_id: data.file_id,
+            original_name: data.original_name,
+            content_type: data.content_type,
+            size: data.size,
+            download_url: data.download_url,
+          });
+        }
+      }
+
+      if (newFiles.length > 0) {
+        setAttachedFiles(prev => [...prev, ...newFiles]);
+      }
+    } catch (error) {
+      console.error('File upload failed:', error);
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removeAttachedFile = (fileId) => {
+    setAttachedFiles(prev => prev.filter(f => f.file_id !== fileId));
+    // Best-effort cleanup on server
+    fetch(`${BACKEND_URL}/api/attachments/${fileId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    }).catch(() => {});
   };
 
   const handleDelete = () => {
@@ -1057,6 +1120,9 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
     // Images
     attachedImages, uploadingImage, imageInputRef,
     handleImageUpload, removeAttachedImage,
+    // File attachments
+    attachedFiles, uploadingFile, fileInputRef,
+    handleFileUpload, removeAttachedFile,
     // CC
     ccEmails, setCcEmails,
     showCcField, setShowCcField,

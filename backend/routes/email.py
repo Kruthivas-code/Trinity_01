@@ -18,7 +18,7 @@ from pymongo import ASCENDING, DESCENDING
 
 from database import (
     db, tickets_collection, users_collection, messages_collection,
-    email_replies_collection,
+    email_replies_collection, file_attachments_collection,
 )
 from dependencies import get_current_user
 from models.schemas import AtlasImportRequest
@@ -37,7 +37,27 @@ UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+ALLOWED_ATTACHMENT_TYPES = {
+    # Images
+    "image/jpeg", "image/png", "image/gif", "image/webp",
+    # Documents
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    # Text
+    "text/plain", "text/csv", "text/html",
+    # Archives
+    "application/zip", "application/x-zip-compressed",
+    "application/gzip",
+    # Other
+    "application/json", "application/xml",
+}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_ATTACHMENT_SIZE = 7 * 1024 * 1024  # 7MB per file (SES 10MB total limit)
 
 
 @router.post("/upload/image")
@@ -97,6 +117,100 @@ async def get_uploaded_file(filename: str):
     content_type = content_types.get(ext, "application/octet-stream")
 
     return FileResponse(file_path, media_type=content_type)
+
+
+# ==================== File Attachments (for outbound emails) ====================
+
+@router.post("/attachments/upload")
+async def upload_attachment(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload a file attachment for use in outbound email replies.
+    Stores in local filesystem + metadata in MongoDB. Returns a file_id for referencing."""
+
+    # Validate content type
+    content_type = file.content_type or "application/octet-stream"
+    if content_type not in ALLOWED_ATTACHMENT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File type '{content_type}' not allowed. Supported: PDF, Word, Excel, PowerPoint, images, text, CSV, ZIP."
+        )
+
+    content = await file.read()
+    if len(content) > MAX_ATTACHMENT_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File too large. Maximum size is {MAX_ATTACHMENT_SIZE // (1024*1024)}MB per attachment."
+        )
+
+    file_id = f"att_{uuid.uuid4().hex[:16]}"
+    original_name = file.filename or "unnamed"
+    ext = os.path.splitext(original_name)[1].lower()
+    stored_name = f"{file_id}{ext}"
+    file_path = os.path.join(UPLOAD_DIR, stored_name)
+
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    doc = {
+        "file_id": file_id,
+        "original_name": original_name,
+        "stored_name": stored_name,
+        "content_type": content_type,
+        "size": len(content),
+        "uploaded_by": current_user["user_id"],
+        "uploaded_by_name": current_user.get("name"),
+        "created_at": datetime.now(timezone.utc),
+    }
+    file_attachments_collection.insert_one(doc)
+    doc.pop("_id", None)
+
+    return {
+        "file_id": file_id,
+        "original_name": original_name,
+        "content_type": content_type,
+        "size": len(content),
+        "download_url": f"/api/attachments/{file_id}",
+    }
+
+
+@router.get("/attachments/{file_id}")
+async def download_attachment(file_id: str):
+    """Download/serve a file attachment by file_id."""
+    doc = file_attachments_collection.find_one({"file_id": file_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+
+    file_path = os.path.join(UPLOAD_DIR, doc["stored_name"])
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Attachment file missing from storage")
+
+    return FileResponse(
+        file_path,
+        media_type=doc.get("content_type", "application/octet-stream"),
+        filename=doc["original_name"],
+    )
+
+
+@router.delete("/attachments/{file_id}")
+async def delete_attachment(
+    file_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete an unused attachment. Only the uploader can delete."""
+    doc = file_attachments_collection.find_one({"file_id": file_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+    if doc["uploaded_by"] != current_user["user_id"]:
+        raise HTTPException(status_code=403, detail="Only the uploader can delete this attachment")
+
+    file_path = os.path.join(UPLOAD_DIR, doc["stored_name"])
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    file_attachments_collection.delete_one({"file_id": file_id})
+    return {"status": "deleted", "file_id": file_id}
 
 
 # ==================== Data Import ====================

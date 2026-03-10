@@ -329,8 +329,10 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
             </div>
             <div className="flex flex-wrap gap-1.5">
               {attachments.map((att, i) => {
-                const url = att.url || att.file_url || '';
-                const name = att.name || att.filename || `file-${i + 1}`;
+                const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+                const rawUrl = att.url || att.file_url || att.download_url || '';
+                const url = rawUrl.startsWith('/api/') ? `${BACKEND_URL}${rawUrl}` : rawUrl;
+                const name = att.name || att.filename || att.original_name || `file-${i + 1}`;
                 const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(name) || /^image\//i.test(att.contentType || att.content_type || '');
                 return isImage ? (
                   <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block" data-testid={`attachment-image-${i}`}>

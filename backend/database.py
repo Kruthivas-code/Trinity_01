@@ -77,6 +77,9 @@ notifications_collection = db.notifications
 # Knowledge Base
 knowledge_snippets_collection = db.knowledge_snippets
 
+# File attachments (for outbound email attachments)
+file_attachments_collection = db.file_attachments
+
 # ==================== Constants ====================
 
 # Webhook event types

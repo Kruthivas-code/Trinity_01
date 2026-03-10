@@ -11,6 +11,8 @@ Threading strategy:
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from email.utils import formataddr, make_msgid
 import os
 import uuid
@@ -150,10 +152,13 @@ def send_email(
     in_reply_to: Optional[str] = None,
     references: Optional[list] = None,
     cc: Optional[list] = None,
+    attachments: Optional[list] = None,
 ) -> Optional[dict]:
     """
-    Send an email via SES SMTP with threading headers.
+    Send an email via SES SMTP with threading headers and optional file attachments.
     Thread-safe with rate limiting and retry queue.
+
+    attachments: list of dicts with keys: filename, content_type, data (bytes)
     """
     sender_email = _get_env("SES_SENDER_EMAIL", "support@emergent.sh")
     sender_name = _get_env("SES_SENDER_NAME", "Emergent Support")
@@ -177,7 +182,15 @@ def send_email(
             return None
 
     # Build MIME message
-    msg = MIMEMultipart("alternative")
+    has_attachments = bool(attachments)
+    if has_attachments:
+        # "mixed" allows text + file attachments
+        msg = MIMEMultipart("mixed")
+        text_part = MIMEMultipart("alternative")
+    else:
+        msg = MIMEMultipart("alternative")
+        text_part = msg
+
     threading_msg_id = _make_message_id()
 
     msg["From"] = formataddr((sender_name, sender_email))
@@ -202,8 +215,25 @@ def send_email(
         msg["X-Ticket-ID"] = ticket_id
 
     if text_body:
-        msg.attach(MIMEText(text_body, "plain", "utf-8"))
-    msg.attach(MIMEText(html_body, "html", "utf-8"))
+        text_part.attach(MIMEText(text_body, "plain", "utf-8"))
+    text_part.attach(MIMEText(html_body, "html", "utf-8"))
+
+    # If mixed mode, attach the text part first, then files
+    if has_attachments:
+        msg.attach(text_part)
+        for att in attachments:
+            part = MIMEBase(
+                att.get("content_type", "application/octet-stream").split("/")[0],
+                att.get("content_type", "application/octet-stream").split("/")[-1],
+            )
+            part.set_payload(att["data"])
+            encoders.encode_base64(part)
+            part.add_header(
+                "Content-Disposition",
+                "attachment",
+                filename=att.get("filename", "attachment"),
+            )
+            msg.attach(part)
 
     # All recipients for sendmail
     all_recipients = [to_email] + cc_list
@@ -374,8 +404,8 @@ def send_ticket_confirmation(ticket_id: str, customer_email: str, customer_name:
     )
 
 
-def send_agent_reply_notification(ticket_id: str, customer_email: str, customer_name: str, original_subject: str, reply_content: str, agent_name: str, cc: list = None):
-    """Send agent reply notification to customer."""
+def send_agent_reply_notification(ticket_id: str, customer_email: str, customer_name: str, original_subject: str, reply_content: str, agent_name: str, cc: list = None, attachments: list = None):
+    """Send agent reply notification to customer with optional file attachments."""
     from services.email_templates import agent_reply_html, agent_reply_text
 
     ctx = get_thread_context(ticket_id)
@@ -391,6 +421,7 @@ def send_agent_reply_notification(ticket_id: str, customer_email: str, customer_
         in_reply_to=ctx["in_reply_to"],
         references=ctx["references"],
         cc=cc,
+        attachments=attachments,
     )
 
 

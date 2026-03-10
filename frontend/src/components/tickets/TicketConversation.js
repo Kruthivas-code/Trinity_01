@@ -52,6 +52,9 @@ const TicketConversation = ({
   submitting,
   handleCannedResponseSelect,
   handleImageUpload, removeAttachedImage,
+  // File attachments
+  attachedFiles, uploadingFile, fileInputRef,
+  handleFileUpload, removeAttachedFile,
   // CC
   ccEmails, setCcEmails,
   showCcField, setShowCcField,
@@ -672,20 +675,45 @@ const TicketConversation = ({
             className="hidden"
             data-testid="image-input"
           />
+
+          {/* File Attachment Button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingFile}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors disabled:opacity-50"
+            title="Attach file (PDF, Word, Excel, etc.)"
+            data-testid="attach-file-btn"
+          >
+            {uploadingFile ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <Paperclip size={13} />
+            )}
+            <span>File</span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.gz,.json,.xml,.jpg,.jpeg,.png,.gif,.webp"
+            multiple
+            onChange={handleFileUpload}
+            className="hidden"
+            data-testid="file-input"
+          />
           
           <div className="flex-1" />
           
           {/* Show attachment count if any */}
-          {attachedImages.length > 0 && (
+          {(attachedImages.length > 0 || attachedFiles.length > 0) && (
             <span className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-0.5 rounded">
               <Paperclip size={11} />
-              {attachedImages.length}
+              {attachedImages.length + attachedFiles.length}
             </span>
           )}
           
           <button
             onClick={handleSubmitInput}
-            disabled={submitting || (!stripHtml(inputText).trim() && attachedImages.length === 0)}
+            disabled={submitting || (!stripHtml(inputText).trim() && attachedImages.length === 0 && attachedFiles.length === 0)}
             className={`h-8 px-5 flex items-center gap-1.5 rounded-md text-xs font-semibold transition-all duration-150 shrink-0 ${
               inputMode === 'note'
                 ? 'bg-amber-500 text-white hover:bg-amber-600 active:scale-[0.97]'
@@ -785,6 +813,37 @@ const TicketConversation = ({
                 <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] px-1 py-0.5 rounded-b-md truncate">
                   {img.name}
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Attached Files Preview */}
+        {attachedFiles.length > 0 && (
+          <div className="flex flex-col gap-1.5 px-3 py-2 bg-secondary/20 rounded-lg border border-border/30" data-testid="attached-files-list">
+            {attachedFiles.map((file) => (
+              <div
+                key={file.file_id}
+                className="flex items-center gap-2 px-2 py-1.5 bg-background/60 rounded border border-border/30 group"
+                data-testid={`attached-file-${file.file_id}`}
+              >
+                <Paperclip size={12} className="text-muted-foreground shrink-0" />
+                <span className="text-xs text-foreground truncate flex-1" title={file.original_name}>
+                  {file.original_name}
+                </span>
+                <span className="text-[10px] text-muted-foreground shrink-0">
+                  {file.size < 1024 ? `${file.size}B`
+                    : file.size < 1024 * 1024 ? `${(file.size / 1024).toFixed(0)}KB`
+                    : `${(file.size / (1024 * 1024)).toFixed(1)}MB`}
+                </span>
+                <button
+                  onClick={() => removeAttachedFile(file.file_id)}
+                  className="w-4 h-4 flex items-center justify-center text-muted-foreground hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                  title="Remove file"
+                  data-testid={`remove-file-${file.file_id}`}
+                >
+                  <X size={11} />
+                </button>
               </div>
             ))}
           </div>
