@@ -188,6 +188,92 @@ def _build_agent_email_map() -> dict:
     return {u["email"].lower(): u["user_id"] for u in all_users if u.get("email")}
 
 
+def _fetch_atlas_users() -> list:
+    """Fetch all users (agents) from Atlas API."""
+    try:
+        resp = requests.get(f"{ATLAS_API}/users", headers=_headers(), timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("data", data) if isinstance(data, dict) else data
+    except Exception as e:
+        logger.error(f"Failed to fetch Atlas users: {e}")
+        return []
+
+
+# Cache for email → Atlas agent ID mapping
+_atlas_agent_cache = {"map": {}, "last_refresh": None}
+_ATLAS_AGENT_CACHE_TTL = 300  # 5 minutes
+
+
+def _get_atlas_agent_id_by_email(email: str) -> Optional[str]:
+    """Look up Atlas agent ID by email. Uses a cached mapping."""
+    now = datetime.now(timezone.utc)
+    if (
+        not _atlas_agent_cache["last_refresh"]
+        or (now - _atlas_agent_cache["last_refresh"]).total_seconds() > _ATLAS_AGENT_CACHE_TTL
+    ):
+        atlas_users = _fetch_atlas_users()
+        _atlas_agent_cache["map"] = {
+            u["email"].lower(): u["id"]
+            for u in atlas_users
+            if u.get("email") and u.get("id")
+        }
+        _atlas_agent_cache["last_refresh"] = now
+    return _atlas_agent_cache["map"].get(email.lower()) if email else None
+
+
+def sync_assignment_to_atlas(ticket_id: str, assignee_user_id: Optional[str]) -> bool:
+    """
+    Push an assignment change from Trinity to Atlas.
+    Returns True if the Atlas API call succeeded, False otherwise.
+    """
+    if not ATLAS_KEY:
+        logger.warning("No ATLAS_API_KEY configured, skipping Atlas assignment sync")
+        return False
+
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not ticket:
+        logger.warning(f"Ticket {ticket_id} not found for Atlas assignment sync")
+        return False
+
+    atlas_conv_id = ticket.get("atlas_conversation_id")
+    if not atlas_conv_id:
+        logger.debug(f"Ticket {ticket_id} has no Atlas conversation ID, skipping sync")
+        return False
+
+    atlas_agent_id = None
+    if assignee_user_id:
+        user = users_collection.find_one({"user_id": assignee_user_id}, {"_id": 0, "email": 1})
+        if user and user.get("email"):
+            atlas_agent_id = _get_atlas_agent_id_by_email(user["email"])
+            if not atlas_agent_id:
+                logger.warning(
+                    f"No Atlas agent found for email {user['email']} "
+                    f"(user_id={assignee_user_id}), skipping Atlas sync"
+                )
+                return False
+        else:
+            logger.warning(f"User {assignee_user_id} not found or has no email, skipping Atlas sync")
+            return False
+
+    try:
+        resp = requests.post(
+            f"{ATLAS_API}/conversations/{atlas_conv_id}",
+            headers=_headers(),
+            json={"assignedAgentId": atlas_agent_id},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        logger.info(
+            f"Synced assignment to Atlas: ticket={ticket_id}, "
+            f"conv={atlas_conv_id}, agent={atlas_agent_id or 'unassigned'}"
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Failed to sync assignment to Atlas for {ticket_id}: {e}")
+        return False
+
+
 # ══════════════════════════════════════════════════════════════
 # Customer helper
 # ══════════════════════════════════════════════════════════════

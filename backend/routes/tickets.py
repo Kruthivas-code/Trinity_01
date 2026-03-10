@@ -35,6 +35,7 @@ from realtime import (
     broadcast_ticket_update, broadcast_ticket_created,
     broadcast_ticket_deleted, broadcast_mention_notification,
 )
+from services.atlas_sync import sync_assignment_to_atlas
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +142,12 @@ async def assign_ticket(
         "author_id": current_user["user_id"],
         "created_at": datetime.now(timezone.utc)
     })
+    # Push assignment change to Atlas
+    final_assignee = update_data.get("assignee_id")
+    try:
+        sync_assignment_to_atlas(ticket_id, final_assignee)
+    except Exception as e:
+        logger.warning(f"Failed to sync assignment to Atlas for {ticket_id}: {e}")
     updated = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     return serialize_doc(updated)
 
@@ -667,6 +674,11 @@ async def update_ticket(
                     asyncio.create_task(trigger_webhooks("ticket.closed", serialized))
             elif field == "assignee_id":
                 asyncio.create_task(trigger_webhooks("ticket.assigned", {**serialized, "previous_assignee_id": old_val, "new_assignee_id": new_val}))
+                # Push assignment change to Atlas so it doesn't get overwritten on next sync
+                try:
+                    sync_assignment_to_atlas(ticket_id, new_val)
+                except Exception as e:
+                    logger.warning(f"Failed to sync assignment to Atlas for {ticket_id}: {e}")
     return serialized
 
 
