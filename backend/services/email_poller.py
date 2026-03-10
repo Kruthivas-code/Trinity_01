@@ -29,6 +29,39 @@ from database import email_threads_collection, tickets_collection, messages_coll
 
 logger = logging.getLogger("email_poller")
 
+
+def _has_atlas_duplicate(ticket_id: str, content: str, email_date) -> bool:
+    """Check if an Atlas-synced message with similar content already exists for this ticket.
+    Prevents IMAP from creating duplicate messages that Atlas already synced."""
+    if not content or not ticket_id:
+        return False
+    # Normalize content for comparison
+    import re as _re
+    clean = _re.sub(r'<[^>]+>', ' ', content or '')
+    clean = _re.sub(r'\s+', ' ', clean).strip()[:200].lower()
+    if len(clean) < 20:
+        return False
+
+    # Check for Atlas messages on this ticket within ±1 day of the email date
+    query = {"ticket_id": ticket_id, "atlas_message_id": {"$exists": True, "$ne": None}}
+    if email_date:
+        from_dt = email_date - timedelta(days=1)
+        to_dt = email_date + timedelta(days=1)
+        query["created_at"] = {"$gte": from_dt, "$lte": to_dt}
+
+    atlas_msgs = messages_collection.find(query, {"_id": 0, "content": 1}).limit(20)
+    for msg in atlas_msgs:
+        atlas_clean = _re.sub(r'<[^>]+>', ' ', msg.get("content") or '')
+        atlas_clean = _re.sub(r'\s+', ' ', atlas_clean).strip()[:200].lower()
+        # Check if content is substantially similar (80%+ of shorter text is contained in longer)
+        if len(atlas_clean) < 20:
+            continue
+        shorter = clean if len(clean) <= len(atlas_clean) else atlas_clean
+        longer = atlas_clean if len(clean) <= len(atlas_clean) else clean
+        if shorter in longer:
+            return True
+    return False
+
 _poller_thread = None
 _stop_event = threading.Event()
 
@@ -826,6 +859,11 @@ def _process_sent_email(mail, uid):
         sent_date = _parse_email_date(msg)
         logger.info(f"[SENT] Matched {ticket_id} via {match_method} to={to_addr}")
 
+        # Dedup: skip if Atlas already synced a message with similar content
+        if _has_atlas_duplicate(ticket_id, body, sent_date):
+            logger.info(f"[SENT] Skipping duplicate for {ticket_id} — Atlas already has this message")
+            return
+
         # Add as agent reply in the ticket
         msg_id = f"msg_{uuid.uuid4().hex[:12]}"
         messages_collection.insert_one({
@@ -917,6 +955,11 @@ def _process_email(mail, eid, folder="inbox"):
     if match:
         ticket_id = match["ticket_id"]
         logger.info(f"[INBOUND] Matched {ticket_id} via {match['match_method']} from={from_addr}")
+
+        # Dedup: skip if Atlas already synced a message with similar content
+        if _has_atlas_duplicate(ticket_id, body, email_date):
+            logger.info(f"[INBOUND] Skipping duplicate for {ticket_id} — Atlas already has this message")
+            return
 
         msg_id = f"msg_{uuid.uuid4().hex[:12]}"
         messages_collection.insert_one({

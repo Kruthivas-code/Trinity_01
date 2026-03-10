@@ -523,6 +523,7 @@ const TicketConversation = ({
               onSaveToKB={handleSaveToKB}
               ticketId={ticket?.ticket_id}
               emailStats={emailStats}
+              attachments={msg.attachments}
             />
           ))
         )}

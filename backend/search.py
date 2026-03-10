@@ -407,11 +407,26 @@ class SearchEngine:
             
             # Text search if there's a query
             if query and len(query) >= 2:
-                mongo_query['$text'] = {'$search': query}
-                cursor = self.tickets.find(
-                    mongo_query,
-                    {'score': {'$meta': 'textScore'}}
-                ).sort([('score', {'$meta': 'textScore'})]).limit(limit)
+                # Detect email-like queries — use regex on customer_email instead of $text
+                # MongoDB $text tokenizes on @ and ., making email search unreliable
+                if '@' in query or (query.count('.') >= 1 and ' ' not in query and len(query) > 5):
+                    email_regex = {"$regex": re.escape(query), "$options": "i"}
+                    email_query = {
+                        "$or": [
+                            {"customer_email": email_regex},
+                            {"associated_emails": email_regex},
+                            {"search_identifiers": email_regex},
+                        ],
+                        "status": {"$ne": "merged"}
+                    }
+                    email_query.update({k: v for k, v in mongo_query.items() if k not in ['$text', 'status']})
+                    cursor = self.tickets.find(email_query).sort('created_at', -1).limit(limit)
+                else:
+                    mongo_query['$text'] = {'$search': query}
+                    cursor = self.tickets.find(
+                        mongo_query,
+                        {'score': {'$meta': 'textScore'}}
+                    ).sort([('score', {'$meta': 'textScore'})]).limit(limit)
             else:
                 # Just filter by operators
                 cursor = self.tickets.find(mongo_query).sort('created_at', -1).limit(limit)

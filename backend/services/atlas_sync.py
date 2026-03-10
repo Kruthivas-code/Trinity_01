@@ -790,12 +790,17 @@ def _recheck_active_tickets(agent_email_map: dict, batch_size: int = 50) -> dict
 
     # Small batch: recently-closed tickets that haven't been synced in a while
     # (catches Atlas reopening a closed ticket)
+    # Include tickets with null last_synced_at (legacy tickets that were never rechecked)
     stale_threshold = datetime.now(timezone.utc) - timedelta(hours=2)
     closed_batch = list(tickets_collection.find(
         {
             "atlas_conversation_id": {"$exists": True, "$ne": None},
             "status": "closed",
-            "last_synced_at": {"$lt": stale_threshold},
+            "$or": [
+                {"last_synced_at": {"$lt": stale_threshold}},
+                {"last_synced_at": None},
+                {"last_synced_at": {"$exists": False}},
+            ],
         },
         {"_id": 0, "ticket_id": 1, "atlas_conversation_id": 1, "last_synced_at": 1},
     ).sort("last_synced_at", 1).limit(5))

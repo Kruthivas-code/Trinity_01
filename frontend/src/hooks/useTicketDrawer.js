@@ -1028,6 +1028,7 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
       original_ticket_id: note.original_ticket_id || null,
       merge_color_index: note.merge_color_index,
       merged_ticket_title: note.merged_ticket_title,
+      attachments: note.attachments || [],
       emailData: (note.email_html || note.source === 'email') ? {
         email_html: note.email_html || '',
         email_text: note.email_text || '',

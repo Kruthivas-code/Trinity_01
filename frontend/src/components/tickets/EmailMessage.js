@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
-import { GitMerge, BookOpen, Check, AlertTriangle, MoreHorizontal } from 'lucide-react';
+import { GitMerge, BookOpen, Check, AlertTriangle, MoreHorizontal, Paperclip, Download, FileText, Image as ImageIcon } from 'lucide-react';
 import { renderTextWithMentions } from '../common/MentionInput';
 import EmailViewer from '../common/EmailViewer';
 
@@ -130,7 +130,7 @@ const CollapsibleQuote = ({ quoted }) => {
 };
 
 // Email-style message component with merge support
-const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, isFirst, isAgentMessage, originalTicketId, mergeColorIndex, isMergeDivider, mergedTicketTitle, currentTicketId, emailData, source, onSaveToKB, ticketId, emailStats }) => {
+const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, isFirst, isAgentMessage, originalTicketId, mergeColorIndex, isMergeDivider, mergedTicketTitle, currentTicketId, emailData, source, onSaveToKB, ticketId, emailStats, attachments }) => {
   const formatDate = (dateString) => {
     const date = new Date(dateString?.endsWith?.('Z') ? dateString : dateString + 'Z');
     return date.toLocaleString('en-US', { 
@@ -320,6 +320,45 @@ const EmailMessage = ({ type, sender, senderEmail, subject, content, timestamp, 
             renderContent(content)
           )}
         </div>
+        {/* Attachments */}
+        {attachments && attachments.length > 0 && (
+          <div className="pl-8 mt-1.5" data-testid="message-attachments">
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-1">
+              <Paperclip size={10} />
+              <span>{attachments.length} attachment{attachments.length > 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {attachments.map((att, i) => {
+                const url = att.url || att.file_url || '';
+                const name = att.name || att.filename || `file-${i + 1}`;
+                const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(name) || /^image\//i.test(att.contentType || att.content_type || '');
+                return isImage ? (
+                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block" data-testid={`attachment-image-${i}`}>
+                    <img
+                      src={url}
+                      alt={name}
+                      className="max-h-32 max-w-[200px] rounded border border-border/40 object-cover hover:opacity-80 transition-opacity cursor-pointer"
+                      loading="lazy"
+                    />
+                  </a>
+                ) : (
+                  <a
+                    key={i}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded border border-border/40 bg-secondary/30 text-[11px] text-foreground hover:bg-secondary/60 transition-colors"
+                    data-testid={`attachment-file-${i}`}
+                  >
+                    <FileText size={12} className="text-muted-foreground shrink-0" />
+                    <span className="truncate max-w-[150px]">{name}</span>
+                    <Download size={10} className="text-muted-foreground shrink-0" />
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {/* Save to KB for agent messages */}
         {isAgent && !isNote && onSaveToKB && content && (
           <div className="pl-8 mt-1">
