@@ -21,77 +21,87 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
 - **Atlas polling sync (60s)** still active as fallback — to be deprecated once webhooks proven stable
 - **Trinity takes precedence** for field conflicts (if ticket modified in Trinity after last sync)
 - **Priority updates** are synced via _sync_fields whenever any webhook event fires (no separate priority webhook)
+- **IMAP dedup** prevents duplicate messages when Atlas already synced the same content
 
 ## Completed Work
 - [x] Atlas Shadow Sync engine (real-time, 60s interval)
-- [x] Race condition resolution: IMAP no longer creates new tickets (fixed 2026-03-06)
-- [x] NoneType bug fix in Atlas sync for null customer emails (fixed 2026-03-06)
-- [x] Data parity migration (ticket numbers, escalation levels, tags)
-- [x] Assignment sync: unassignment + conflict path propagation (fixed 2026-03-07)
-- [x] Escalation level sync from custom_fields.support_level (fixed 2026-03-06)
-- [x] Recheck phase now syncs field updates, not just messages (fixed 2026-03-06)
-- [x] Closed tickets recheck for reopened tickets (fixed 2026-03-06)
-- [x] Assignment backfill: 1,287 tickets mapped from Atlas agent emails (fixed 2026-03-06)
-- [x] Escalation backfill: 27 mismatches corrected (fixed 2026-03-06)
-- [x] Attachment migration circuit breaker + retry limits (fixed 2026-03-06)
-- [x] New user onboarding bug fixes (5 critical bugs)
-- [x] User role backfill migration
-- [x] Cross-browser CSS fixes
-- [x] Wider ticket drawer layout
-- [x] Redesigned reply toolbar
-- [x] Background job stability (auto-resume attachment migration)
-- [x] Bounce email detection and handling
-- [x] Sent folder polling for agent Gmail replies
-- [x] 100% data parity achieved (68,578+ Atlas conversations)
-- [x] Periodic gap audit phase in sync daemon
+- [x] Race condition resolution: IMAP no longer creates new tickets
+- [x] Data parity: 72,943+ tickets synced from Atlas
+- [x] 100% data parity achieved
+- [x] Gap audit phase in sync daemon
 - [x] UI ticket count fixes (dashboard, sidebar, escalation)
 - [x] L1/L2/L3 converted to editable custom inboxes
 - [x] Zeus AI ticket filtering across all views
 - [x] Light/dark mode contrast fixes
 - [x] Clean RTF outbound emails
 - [x] Status consolidation (Open/Waiting/Closed/Merged)
-- [x] Atlas webhook receiver endpoint (2026-03-09)
-- [x] Atlas webhook processing logic for all 4 registered events (2026-03-09)
+- [x] Atlas webhook receiver endpoint with processing logic (2026-03-09)
+- [x] Dashboard UI: full-width kanban, message preview, compact cards (2026-03-10)
+- [x] Health endpoint fix: /health + /api/health for K8s probes (2026-03-10)
+- [x] MongoDB index creation: per-index error handling, removed duplicate index (2026-03-10)
+- [x] **Fix: Dead zone for closed tickets with null last_synced_at** (2026-03-10)
+- [x] **Fix: Email search using regex for @ queries instead of $text** (2026-03-10)
+- [x] **Fix: Attachment rendering in message threads (frontend)** (2026-03-10)
+- [x] **Fix: IMAP duplicate prevention via _has_atlas_duplicate** (2026-03-10)
 
-## Webhook Implementation (2026-03-09)
-- **Endpoint**: `/api/webhooks/atlas` (POST)
-- **Registered events** (deployed env only):
-  - conversation_created (secret: 5f1baf20faae445aa5a3705485d88161)
-  - agent_changed (secret: 6d2f7f2c1e4044fb99e0f9269bd248ef)
-  - new_message_received (secret: 903b0385e2554aaeb3df7957245d91c7)
-  - tags_changed (secret: f07dc9880eb64b499d7220651ca07615)
-- **Priority**: NOT a separate webhook — synced via _sync_fields on every event
-- **Handler file**: `/app/backend/routes/atlas_webhooks.py`
-- **Status**: Code complete, awaiting production verification
+## Recent Fixes (2026-03-10)
+
+### Fix 1: Dead Zone for Closed Tickets
+- **Problem**: 59,359 closed tickets with null `last_synced_at` were never rechecked for missing messages
+- **Root cause**: MongoDB `$lt` doesn't match null values, so these tickets fell through both recheck paths
+- **Fix**: Added `$or: [null, {$exists: false}]` to closed_batch query in atlas_sync.py
+- **File**: `/app/backend/services/atlas_sync.py` line ~795
+
+### Fix 2: Email Search
+- **Problem**: Searching `formlyhq@gmail.com` returned 0 relevant results (20 wrong matches)
+- **Root cause**: MongoDB `$text` tokenizes emails on `.` and `@`, drowning actual matches in common tokens
+- **Fix**: Detect email-like queries (contains `@`) → use regex on customer_email instead of $text
+- **File**: `/app/backend/search.py` line ~410
+
+### Fix 3: Attachment Display
+- **Problem**: Attachments synced from Atlas stored in DB but never rendered in UI
+- **Root cause**: `useTicketDrawer.js` dropped attachments field; `EmailMessage.js` had no attachment renderer
+- **Fix**: Pass attachments through thread builder, render image thumbnails + file download links
+- **Files**: `useTicketDrawer.js`, `TicketConversation.js`, `EmailMessage.js`
+
+### Fix 4: IMAP Duplicate Prevention
+- **Problem**: IMAP poller created duplicate messages that Atlas already synced (~186 dupes for one customer)
+- **Fix**: `_has_atlas_duplicate()` checks for Atlas messages with similar content before inserting
+- **File**: `/app/backend/services/email_poller.py` line ~33
 
 ## In Progress
 - [ ] Attachment migration: paused due to object storage 500 errors (auto-resume enabled)
-- [ ] Zeus ticket cleanup: recurring job active
+- [ ] 59,359 closed tickets gradually being rechecked (5 per cycle)
 
 ## Upcoming Tasks
 - [ ] P1: Deprecate polling sync once webhooks proven stable
+- [ ] P1: One-time backfill script to resync messages for all null last_synced_at tickets (faster than 5/cycle)
 - [ ] P2: Create data validation admin tool
 - [ ] P2: Real-time notifications for agents
 - [ ] P2: Auto-close stale tickets job
+- [ ] P2: Deduplicate existing IMAP duplicate messages (historical cleanup)
 - [ ] P3: Cleanup one-time migration scripts
 
 ## 3rd Party Integrations
-- Atlas API (primary data source) + Atlas Webhooks (real-time events)
-- Emergent Object Storage (attachments — currently experiencing outage)
+- Atlas API + Webhooks (primary data source)
+- Emergent Object Storage (attachments — outage)
 - Gmail IMAP (reply processing only)
 - Gemini (ticket summarization)
 - Amazon SES (outbound email)
 - Emergent-managed Google Auth
 
 ## Key DB Schema
-- `tickets`: ticket_id (TKT-XXXXXX), atlas_conversation_id (unique sparse), source (atlas/email)
-- `messages`: ticket_id, atlas_message_id (unique sparse)
-- `users`: role field guaranteed (default "agent")
-- `atlas_backfill_state`: _type="shadow" for sync state
+- `tickets`: ticket_id, atlas_conversation_id (unique sparse), status (todo/waiting/closed/merged)
+- `messages`: ticket_id, atlas_message_id (unique sparse), attachments array
+- `users`: role field (default "agent")
+- `inboxes`: system + user-created inboxes
 
 ## Critical Files
-- `/app/backend/routes/atlas_webhooks.py` — Atlas webhook handler (real-time sync)
-- `/app/backend/services/atlas_sync.py` — Atlas polling sync engine (fallback)
-- `/app/backend/services/email_poller.py` — IMAP poller (replies only)
-- `/app/backend/server.py` — Startup hooks, background jobs
+- `/app/backend/routes/atlas_webhooks.py` — Atlas webhook handler
+- `/app/backend/services/atlas_sync.py` — Atlas polling sync (with dead zone fix)
+- `/app/backend/services/email_poller.py` — IMAP poller (with dedup)
+- `/app/backend/search.py` — Search engine (with email regex fix)
+- `/app/backend/server.py` — Startup hooks, /health endpoint
 - `/app/backend/routes/tickets.py` — Ticket CRUD
+- `/app/frontend/src/components/tickets/EmailMessage.js` — Message display (with attachments)
+- `/app/frontend/src/hooks/useTicketDrawer.js` — Thread builder (passes attachments)
