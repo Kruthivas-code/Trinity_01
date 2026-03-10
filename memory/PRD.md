@@ -40,27 +40,39 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
 - [x] Dashboard UI: full-width kanban, message preview, compact cards (2026-03-10)
 - [x] Health endpoint fix: /health + /api/health for K8s probes (2026-03-10)
 - [x] MongoDB index creation: per-index error handling, removed duplicate index (2026-03-10)
-- [x] **Fix: Dead zone for closed tickets with null last_synced_at** (2026-03-10)
-- [x] **Fix: Email search using regex for @ queries instead of $text** (2026-03-10)
-- [x] **Fix: Attachment rendering in message threads (frontend)** (2026-03-10)
-- [x] **Fix: IMAP duplicate prevention via _has_atlas_duplicate** (2026-03-10)
-- [x] **Fix: "Assign to me" button — bidirectional Atlas sync** (2026-03-10)
+- [x] Fix: Dead zone for closed tickets with null last_synced_at (2026-03-10)
+- [x] Fix: Email search using regex for @ queries instead of $text (2026-03-10)
+- [x] Fix: Attachment rendering in message threads (frontend) (2026-03-10)
+- [x] Fix: IMAP duplicate prevention via _has_atlas_duplicate (2026-03-10)
+- [x] Fix: "Assign to me" button — bidirectional Atlas sync (2026-03-10)
+- [x] **Feature: File attachment support for outbound emails** (2026-03-10)
 
-## Recent Fix: "Assign to me" Button (2026-03-10)
+## Recent: File Attachment Feature (2026-03-10)
 
-### Root Cause
-When a user clicked "Assign to me" in Trinity, the assignment was only saved to Trinity's local DB. The Atlas polling sync (every 60s) would then overwrite the local assignment with Atlas's old value because `_sync_fields()` explicitly treated Atlas as the owner of assignments. This made the assignment appear to "disappear" after ~60 seconds.
+### What's New
+Agents can now attach files (PDFs, Word, Excel, images, text, CSV, ZIP, etc.) when replying to customers. Files are:
+1. Uploaded and stored server-side
+2. Attached as MIME parts in outbound emails via SES
+3. Displayed in the conversation thread for audit
 
-### Fix
-- Added `sync_assignment_to_atlas()` function in `atlas_sync.py` that pushes assignment changes to Atlas via `POST /v1/conversations/{id}` with `{assignedAgentId: atlas_uuid}`
-- Added helper functions `_fetch_atlas_users()` and `_get_atlas_agent_id_by_email()` with 5-minute caching
-- Called from both `PUT /api/tickets/{id}` and `POST /api/tickets/{id}/assign` endpoints
-- Graceful degradation: Atlas API errors are logged but don't break the main update flow
-- Handles unassignment (null) correctly
+### Implementation
+- **Backend**: `POST /api/attachments/upload`, `GET /api/attachments/{file_id}`, `DELETE /api/attachments/{file_id}`
+- **Backend**: `send_email()` enhanced with MIME multipart/mixed for file attachments
+- **Backend**: `POST /api/tickets/{id}/notes` accepts `attachment_ids`, stores metadata in message record
+- **Frontend**: "File" button in composer toolbar, file preview with name/size/remove, outbound attachment display in messages
+- **Limits**: 7MB per file, 10MB total (SES limit). Allowed types: PDF, Word, Excel, PowerPoint, text, CSV, ZIP, images
+- **Storage**: Files in `/app/backend/uploads/`, metadata in MongoDB `file_attachments` collection
 
 ### Files Modified
-- `/app/backend/services/atlas_sync.py` — New functions: `sync_assignment_to_atlas`, `_fetch_atlas_users`, `_get_atlas_agent_id_by_email`
-- `/app/backend/routes/tickets.py` — Import + calls to `sync_assignment_to_atlas` in both update and assign endpoints
+- `/app/backend/routes/email.py` — Upload/download/delete endpoints
+- `/app/backend/services/email_service.py` — MIME attachment support
+- `/app/backend/routes/tickets.py` — Notes endpoint accepts attachment_ids
+- `/app/backend/models/schemas.py` — InternalNoteCreate schema
+- `/app/backend/database.py` — file_attachments_collection
+- `/app/frontend/src/hooks/useTicketDrawer.js` — File state, upload/remove handlers
+- `/app/frontend/src/components/tickets/TicketConversation.js` — File button + preview UI
+- `/app/frontend/src/components/tickets/TicketDrawer.js` — Props passthrough
+- `/app/frontend/src/components/tickets/EmailMessage.js` — Outbound attachment rendering
 
 ## In Progress
 - [ ] Attachment migration: paused due to object storage 500 errors (auto-resume enabled)
@@ -79,22 +91,26 @@ When a user clicked "Assign to me" in Trinity, the assignment was only saved to 
 - Emergent Object Storage (attachments — outage)
 - Gmail IMAP (reply processing only)
 - Gemini (ticket summarization)
-- Amazon SES (outbound email)
+- Amazon SES (outbound email with file attachments)
 - Emergent-managed Google Auth
 
 ## Key DB Schema
 - `tickets`: ticket_id, atlas_conversation_id (unique sparse), status (todo/waiting/closed/merged)
-- `messages`: ticket_id, atlas_message_id (unique sparse), attachments array
+- `messages`: ticket_id, atlas_message_id (unique sparse), attachments array (for outbound: file_id, original_name, content_type, size, download_url)
 - `users`: role field (default "agent"), email (mapped to Atlas agent IDs)
 - `inboxes`: system + user-created inboxes
 - `backfill_state`: Tracks one-time migration status
+- `file_attachments`: file_id, original_name, stored_name, content_type, size, uploaded_by, created_at
 
 ## Critical Files
 - `/app/backend/routes/atlas_webhooks.py` — Atlas webhook handler
 - `/app/backend/services/atlas_sync.py` — Atlas polling sync + bidirectional assignment sync
+- `/app/backend/services/email_service.py` — SES email with MIME attachments
 - `/app/backend/services/email_poller.py` — IMAP poller (with dedup)
+- `/app/backend/routes/email.py` — File upload/download/delete + data import
 - `/app/backend/search.py` — Search engine (with email regex fix)
 - `/app/backend/server.py` — Startup hooks, /health endpoint
-- `/app/backend/routes/tickets.py` — Ticket CRUD + Atlas assignment sync
-- `/app/frontend/src/components/tickets/EmailMessage.js` — Message display (with attachments)
-- `/app/frontend/src/hooks/useTicketDrawer.js` — Thread builder (passes attachments)
+- `/app/backend/routes/tickets.py` — Ticket CRUD + Atlas assignment sync + notes with attachments
+- `/app/frontend/src/hooks/useTicketDrawer.js` — Thread builder (images + file attachments)
+- `/app/frontend/src/components/tickets/TicketConversation.js` — Composer with file attachment UI
+- `/app/frontend/src/components/tickets/EmailMessage.js` — Message display (inbound + outbound attachments)
