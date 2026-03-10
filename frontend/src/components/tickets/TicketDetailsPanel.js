@@ -109,11 +109,9 @@ const TicketDetailsPanel = ({
           {showAssignDropdown && (
             <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-lg shadow-lg max-h-64 overflow-y-auto">
               <button
-                onClick={() => {
-                  setFormData({ ...formData, assignee_id: null });
-                  setShowAssignDropdown(false);
-                }}
+                onClick={() => handleAssign(null)}
                 className="w-full px-3 py-2 text-left text-sm hover:bg-secondary/50 text-muted-foreground"
+                data-testid="assign-unassigned-button"
               >
                 Unassigned
               </button>

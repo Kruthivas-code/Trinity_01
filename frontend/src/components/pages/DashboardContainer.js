@@ -96,7 +96,7 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/users`, {
+      const response = await fetch(`${BACKEND_URL}/api/users?limit=500`, {
         credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to fetch users');
