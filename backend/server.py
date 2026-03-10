@@ -330,6 +330,49 @@ async def zeus_cleanup_recurring():
         await asyncio.sleep(1800)  # 30 minutes
 
 
+def _start_null_synced_backfill():
+    """Run the null-last_synced_at backfill in a background thread.
+    Uses a DB flag so it only runs once across all deploys/pods."""
+    import threading
+
+    def _run():
+        try:
+            # Check if already completed
+            flag = db["backfill_state"].find_one({"_type": "null_synced_backfill"})
+            if flag and flag.get("status") == "completed":
+                logger.info("[BACKFILL] null_synced backfill already completed, skipping")
+                return
+
+            # Claim the job (only one pod runs it)
+            result = db["backfill_state"].update_one(
+                {"_type": "null_synced_backfill", "status": {"$ne": "running"}},
+                {"$set": {"status": "running", "started_by": _instance_id, "started_at": datetime.now(timezone.utc)}},
+                upsert=True,
+            )
+            if result.modified_count == 0 and result.upserted_id is None:
+                logger.info("[BACKFILL] null_synced backfill already running on another pod")
+                return
+
+            from one_time_migrations.backfill_null_synced import run
+            logger.info("[BACKFILL] Starting null_synced backfill in background thread")
+            run(dry_run=False)
+
+            db["backfill_state"].update_one(
+                {"_type": "null_synced_backfill"},
+                {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc)}},
+            )
+            logger.info("[BACKFILL] null_synced backfill completed")
+        except Exception as e:
+            logger.error(f"[BACKFILL] null_synced backfill error: {e}")
+            db["backfill_state"].update_one(
+                {"_type": "null_synced_backfill"},
+                {"$set": {"status": "failed", "error": str(e)}},
+            )
+
+    t = threading.Thread(target=_run, daemon=True, name="null_synced_backfill")
+    t.start()
+
+
 # ==================== Startup / Shutdown ====================
 @app.on_event("startup")
 async def startup_event():
@@ -358,6 +401,8 @@ async def startup_event():
     # Auto-resume attachment migration if it was running
     from services.attachment_migration import auto_resume_migration
     auto_resume_migration()
+    # One-time backfill: resync messages for tickets with null last_synced_at
+    _start_null_synced_backfill()
     logger.info(f"[STARTUP] Instance {_instance_id} started")
 
 
