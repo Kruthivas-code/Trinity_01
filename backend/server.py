@@ -337,21 +337,16 @@ def _start_null_synced_backfill():
 
     def _run():
         try:
-            # Check if already completed
             flag = db["backfill_state"].find_one({"_type": "null_synced_backfill"})
-            if flag and flag.get("status") == "completed":
-                logger.info("[BACKFILL] null_synced backfill already completed, skipping")
+            if flag and flag.get("status") in ("completed", "running"):
+                logger.info(f"[BACKFILL] null_synced backfill status={flag.get('status')}, skipping")
                 return
 
-            # Claim the job (only one pod runs it)
-            result = db["backfill_state"].update_one(
-                {"_type": "null_synced_backfill", "status": {"$ne": "running"}},
-                {"$set": {"status": "running", "started_by": _instance_id, "started_at": datetime.now(timezone.utc)}},
+            db["backfill_state"].replace_one(
+                {"_type": "null_synced_backfill"},
+                {"_type": "null_synced_backfill", "status": "running", "started_by": _instance_id, "started_at": datetime.now(timezone.utc)},
                 upsert=True,
             )
-            if result.modified_count == 0 and result.upserted_id is None:
-                logger.info("[BACKFILL] null_synced backfill already running on another pod")
-                return
 
             from one_time_migrations.backfill_null_synced import run
             logger.info("[BACKFILL] Starting null_synced backfill in background thread")
@@ -381,18 +376,15 @@ def _start_ticket_id_migration():
     def _run():
         try:
             flag = db["backfill_state"].find_one({"_type": "ticket_id_format_migration"})
-            if flag and flag.get("status") == "completed":
-                logger.info("[MIGRATION] ticket_id format migration already completed, skipping")
+            if flag and flag.get("status") in ("completed", "running"):
+                logger.info(f"[MIGRATION] ticket_id format migration status={flag.get('status')}, skipping")
                 return
 
-            result = db["backfill_state"].update_one(
-                {"_type": "ticket_id_format_migration", "status": {"$ne": "running"}},
-                {"$set": {"status": "running", "started_by": _instance_id, "started_at": datetime.now(timezone.utc)}},
+            db["backfill_state"].replace_one(
+                {"_type": "ticket_id_format_migration"},
+                {"_type": "ticket_id_format_migration", "status": "running", "started_by": _instance_id, "started_at": datetime.now(timezone.utc)},
                 upsert=True,
             )
-            if result.modified_count == 0 and result.upserted_id is None:
-                logger.info("[MIGRATION] ticket_id format migration already running on another pod")
-                return
 
             from one_time_migrations.migrate_ticket_id_format import run
             logger.info("[MIGRATION] Starting ticket_id format migration in background thread")
