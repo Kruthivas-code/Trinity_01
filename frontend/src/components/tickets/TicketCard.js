@@ -31,12 +31,11 @@ const TicketCard = ({ ticket, users = [], isMentioned = false, onClick, isDraggi
   return (
     <div
       onClick={isDragging ? undefined : onClick}
-      className={`w-full text-left bg-card rounded-lg p-3 border cursor-grab active:cursor-grabbing relative transition-all duration-150 ${
+      className={`w-full text-left bg-card rounded-md px-2.5 py-2 border cursor-grab active:cursor-grabbing relative transition-all duration-150 ${
         isDragging ? 'shadow-lg border-foreground/30 scale-[1.02]' : 'border-border hover:border-foreground/20 hover:shadow-md'
       } ${isMentioned ? 'border-l-2 border-l-amber-500 bg-amber-50/50' : ''}`}
       data-testid="ticket-card"
     >
-      {/* Mention Indicator Badge */}
       {isMentioned && (
         <div 
           className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center shadow-sm"
@@ -45,55 +44,51 @@ const TicketCard = ({ ticket, users = [], isMentioned = false, onClick, isDraggi
           <AtSign size={10} className="text-white" />
         </div>
       )}
-      
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-[11px] text-muted-foreground font-mono">
-          {ticket.ticket_id || `#${ticket.id?.slice(-6)}`}
-        </span>
-        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${escalationConfig.bg} ${escalationConfig.text} ${escalationConfig.border}`}>
+
+      {/* Row 1: Ticket ID · Priority · Assignee | Escalation */}
+      <div className="flex items-center justify-between gap-1.5 mb-1">
+        <div className="flex items-center gap-1.5 min-w-0 text-[11px]">
+          <span className="text-muted-foreground font-mono shrink-0">{ticket.ticket_id || `#${ticket.id?.slice(-6)}`}</span>
+          <span className="text-muted-foreground/30 shrink-0">·</span>
+          <span className={`w-1.5 h-1.5 rounded-full ${priorityConfig.color} shrink-0`} />
+          <span className={`font-medium ${priorityConfig.text} shrink-0`}>{priorityConfig.label}</span>
+          <span className="text-muted-foreground/30 shrink-0">·</span>
+          {assignee ? (
+            <span className="text-muted-foreground truncate">{assignee.name.split(' ')[0]}</span>
+          ) : (
+            <span className="text-muted-foreground/60 flex items-center gap-0.5"><User size={10} />—</span>
+          )}
+        </div>
+        <span className={`text-[9px] font-semibold px-1 py-px rounded border shrink-0 ${escalationConfig.bg} ${escalationConfig.text} ${escalationConfig.border}`}>
           {escalationConfig.label}
         </span>
       </div>
 
-      <div className="flex items-center gap-2 mb-2">
-        <div className="flex items-center gap-1.5">
-          <span className={`w-2 h-2 rounded-full ${priorityConfig.color}`} />
-          <span className={`text-[11px] font-medium ${priorityConfig.text}`}>{priorityConfig.label}</span>
-        </div>
-        <span className="text-muted-foreground/30">·</span>
-        {assignee ? (
-          <div className="flex items-center gap-1.5 min-w-0">
-            <div className="w-4 h-4 rounded-full bg-foreground/10 flex items-center justify-center text-[9px] text-foreground font-medium shrink-0">
-              {assignee.name.charAt(0).toUpperCase()}
-            </div>
-            <span className="text-[11px] text-muted-foreground truncate">{assignee.name.split(' ')[0]}</span>
-          </div>
-        ) : (
-          <span className="text-[11px] text-muted-foreground/60 flex items-center gap-1">
-            <User size={11} />Unassigned
-          </span>
-        )}
-      </div>
-
+      {/* Row 2: Tags (inline, compact) */}
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2">
-          {tags.slice(0, 3).map((tag, idx) => (
-            <span key={idx} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded bg-secondary text-muted-foreground">
-              <Tag size={9} />{tag}
+        <div className="flex flex-wrap gap-0.5 mb-1">
+          {tags.slice(0, 2).map((tag, idx) => (
+            <span key={idx} className="inline-flex items-center gap-0.5 px-1 py-px text-[9px] font-medium rounded bg-secondary text-muted-foreground">
+              <Tag size={8} />{tag}
             </span>
           ))}
-          {tags.length > 3 && <span className="text-[10px] text-muted-foreground/50">+{tags.length - 3}</span>}
+          {tags.length > 2 && <span className="text-[9px] text-muted-foreground/50">+{tags.length - 2}</span>}
         </div>
       )}
 
-      <h4 className="text-[13px] text-foreground leading-snug font-medium" data-testid="ticket-card-title">{ticket.title}</h4>
+      {/* Row 3: Subject */}
+      <h4 className="text-[12px] text-foreground leading-snug font-medium" data-testid="ticket-card-title">{ticket.title}</h4>
+
+      {/* Row 4: Message preview */}
       {(ticket.description || ticket.last_message_text) && (
-        <p className="text-[11px] text-muted-foreground/80 mt-1 line-clamp-2 leading-relaxed" data-testid="ticket-card-preview">
-          {(ticket.description || ticket.last_message_text || '').slice(0, 150)}
+        <p className="text-[11px] text-muted-foreground/70 mt-0.5 line-clamp-2 leading-snug" data-testid="ticket-card-preview">
+          {(ticket.description || ticket.last_message_text || '').slice(0, 120)}
         </p>
       )}
+
+      {/* Row 5: Customer email */}
       {ticket.customer_email && (
-        <p className="text-[10px] text-muted-foreground truncate mt-1.5">{ticket.customer_email}</p>
+        <p className="text-[10px] text-muted-foreground truncate mt-1">{ticket.customer_email}</p>
       )}
     </div>
   );

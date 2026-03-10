@@ -33,7 +33,7 @@ const KanbanColumn = ({ column, tickets, users, onTicketClick, onCreateTicket, s
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+      <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5">
         {tickets.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-10 px-4">
             <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center mb-3">
