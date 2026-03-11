@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRealtime } from '../contexts/RealtimeContext';
 import { stripHtml } from '../components/tickets/EmailMessage';
+import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -490,11 +491,22 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
   );
 
   const handleAssign = async (userId) => {
+    const previousAssignee = formData.assignee_id;
     setFormData({ ...formData, assignee_id: userId });
     setShowAssignDropdown(false);
 
     if (onUpdate && ticket) {
-      await onUpdate(ticket.id, { assignee_id: userId });
+      try {
+        await onUpdate(ticket.id, { assignee_id: userId });
+        const assigneeName = userId
+          ? (Array.isArray(users) ? users.find(u => (u.user_id || u.id) === userId)?.name : null) || 'agent'
+          : null;
+        toast.success(userId ? `Assigned to ${assigneeName}` : 'Unassigned');
+      } catch (err) {
+        // Revert optimistic update
+        setFormData(prev => ({ ...prev, assignee_id: previousAssignee }));
+        toast.error('Failed to assign ticket');
+      }
     }
   };
 
@@ -502,6 +514,8 @@ const useTicketDrawer = ({ ticket, users, currentUser, isOpen, onClose, onUpdate
     const myUserId = currentUser?.user_id || currentUser?.id;
     if (myUserId) {
       await handleAssign(myUserId);
+    } else {
+      toast.error('Unable to assign: user ID not found');
     }
   };
 

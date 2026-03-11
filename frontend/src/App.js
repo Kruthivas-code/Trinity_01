@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import './App.css';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { RealtimeProvider, useRealtime } from './contexts/RealtimeContext';
@@ -449,6 +450,7 @@ function App() {
       <Router>
         <div className="App min-h-screen bg-background">
           <AppRouter />
+          <Toaster position="bottom-right" richColors closeButton />
         </div>
       </Router>
     </ThemeProvider>

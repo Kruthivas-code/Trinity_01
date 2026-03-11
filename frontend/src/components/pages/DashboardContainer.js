@@ -200,7 +200,6 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
   };
 
   const handleUpdateTicket = async (ticketId, updates, closeDrawer = false) => {
-    try {
       // Handle merge completion - just refresh without making an update API call
       if (updates._merged) {
         await fetchTickets();
@@ -216,7 +215,10 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
         body: JSON.stringify(updates)
       });
 
-      if (!response.ok) throw new Error('Failed to update ticket');
+      if (!response.ok) {
+        const errBody = await response.text().catch(() => '');
+        throw new Error(`Update failed (${response.status}): ${errBody}`);
+      }
       
       const updatedTicket = await response.json();
       
@@ -232,9 +234,6 @@ const DashboardContainer = ({ user, onTicketClickFromExternal }) => {
       if (closeDrawer) {
         setIsDrawerOpen(false);
       }
-    } catch (error) {
-      console.error('Failed to update ticket:', error);
-    }
   };
 
   const handleDeleteTicket = async (ticketId) => {

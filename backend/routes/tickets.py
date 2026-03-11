@@ -651,6 +651,13 @@ async def update_ticket(
     update_data = ticket_data.model_dump(exclude_unset=True)
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
+
+    # Log assignment attempts for debugging
+    if "assignee_id" in update_data:
+        logger.info(
+            f"[ASSIGN] ticket={ticket_id} by={current_user['user_id']} "
+            f"old={current_ticket.get('assignee_id')} new={update_data['assignee_id']}"
+        )
     update_data["updated_at"] = datetime.now(timezone.utc)
     if "status" in update_data and update_data["status"] == "closed" and current_ticket.get("status") != "closed":
         update_data["resolved_at"] = datetime.now(timezone.utc)
