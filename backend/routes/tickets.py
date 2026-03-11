@@ -124,6 +124,10 @@ async def assign_ticket(
     ticket = tickets_collection.find_one({"ticket_id": ticket_id})
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
+    # Defensive: verify assignee exists
+    if assignment.assignee_id:
+        if not users_collection.find_one({"user_id": assignment.assignee_id}, {"_id": 1}):
+            raise HTTPException(status_code=400, detail=f"Invalid assignee_id: user '{assignment.assignee_id}' does not exist")
     update_data = {"updated_at": datetime.now(timezone.utc)}
     if assignment.team_id:
         update_data["team_id"] = assignment.team_id
@@ -652,6 +656,14 @@ async def update_ticket(
     update_data = ticket_data.model_dump(exclude_unset=True)
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
+
+    # Defensive validation: verify assignee_id exists in users collection
+    if "assignee_id" in update_data and update_data["assignee_id"] is not None:
+        if not users_collection.find_one({"user_id": update_data["assignee_id"]}, {"_id": 1}):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid assignee_id: user '{update_data['assignee_id']}' does not exist"
+            )
 
     # Only set trinity_assigned_at when the assignee actually CHANGES
     if "assignee_id" in update_data and update_data["assignee_id"] != current_ticket.get("assignee_id"):

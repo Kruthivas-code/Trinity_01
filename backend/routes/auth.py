@@ -19,6 +19,44 @@ from rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
 
+
+def _resolve_imported_user(email: str) -> bool:
+    """
+    Check if this email belongs to an imported user with a placeholder email.
+    If so, update the imported record's email so the subsequent upsert merges correctly.
+
+    This prevents ghost records from being created when Atlas-imported users
+    (who have @imported.local placeholder emails) log in for the first time.
+
+    Returns True if an imported record was found and updated.
+    """
+    try:
+        from services.atlas_sync import _get_atlas_agent_id_by_email
+        atlas_agent_id = _get_atlas_agent_id_by_email(email)
+        if not atlas_agent_id:
+            return False
+
+        imported = users_collection.find_one(
+            {"atlas_user_id": atlas_agent_id, "email": {"$ne": email}},
+            {"_id": 0, "user_id": 1, "email": 1}
+        )
+        if not imported:
+            return False
+
+        old_email = imported["email"]
+        logger.info(
+            f"[AUTH] Resolving imported user: {old_email} → {email} "
+            f"(user_id={imported['user_id']}, atlas_id={atlas_agent_id})"
+        )
+        users_collection.update_one(
+            {"user_id": imported["user_id"]},
+            {"$set": {"email": email, "updated_at": datetime.now(timezone.utc)}}
+        )
+        return True
+    except Exception as e:
+        logger.warning(f"[AUTH] Failed to resolve imported user for {email}: {e}")
+        return False
+
 router = APIRouter(prefix="/api", tags=["auth"])
 
 
@@ -56,6 +94,14 @@ async def create_session(request: Request, session_data: SessionCreate, response
         session_token = user_data["session_token"]
 
         user_id = f"user_{uuid.uuid4().hex[:12]}"
+
+        # Before upsert: check if this email belongs to an imported user
+        # with a placeholder email (e.g. @imported.local). If so, update
+        # the imported record's email so the upsert merges into it instead
+        # of creating a ghost duplicate.
+        existing_by_email = users_collection.find_one({"email": email})
+        if not existing_by_email:
+            _resolve_imported_user(email)
 
         logger.info(f"[AUTH] Upserting user: {email}")
         users_collection.update_one(
