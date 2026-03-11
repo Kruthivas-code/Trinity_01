@@ -602,6 +602,16 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict) -> tuple:
     last_synced = ticket.get("last_synced_at")
     trinity_updated = ticket.get("updated_at")
 
+    # Check if Trinity recently made an assignment change (protect for 5 min)
+    trinity_assigned_at = ticket.get("trinity_assigned_at")
+    assignment_protected = False
+    if trinity_assigned_at:
+        if trinity_assigned_at.tzinfo is None:
+            trinity_assigned_at = trinity_assigned_at.replace(tzinfo=timezone.utc)
+        age = (datetime.now(timezone.utc) - trinity_assigned_at).total_seconds()
+        if age < 300:  # 5-minute protection window
+            assignment_protected = True
+
     # If Trinity was modified after last sync, skip most field updates (Trinity precedence)
     # BUT always propagate assignment changes from Atlas (Atlas owns assignments)
     if last_synced and trinity_updated and trinity_updated > last_synced:
@@ -615,15 +625,18 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict) -> tuple:
             "atlas_assigned_agent_email": assigned_agent.get("email"),
             "last_synced_at": datetime.now(timezone.utc),
         }
-        # Always propagate assignment changes even during conflict
-        agent_email = assigned_agent.get("email")
-        if agent_email:
-            new_assignee = agent_email_map.get(agent_email.lower())
-            if new_assignee and ticket.get("assignee_id") != new_assignee:
-                metadata_update["assignee_id"] = new_assignee
-        elif ticket.get("assignee_id"):
-            # Atlas unassigned the agent — clear Trinity assignment
-            metadata_update["assignee_id"] = None
+        # Propagate assignment from Atlas UNLESS Trinity recently made an assignment
+        if not assignment_protected:
+            agent_email = assigned_agent.get("email")
+            if agent_email:
+                new_assignee = agent_email_map.get(agent_email.lower())
+                if new_assignee and ticket.get("assignee_id") != new_assignee:
+                    metadata_update["assignee_id"] = new_assignee
+            elif ticket.get("assignee_id"):
+                # Atlas unassigned the agent — clear Trinity assignment
+                metadata_update["assignee_id"] = None
+        else:
+            logger.debug(f"[SYNC] Skipping assignment overwrite for {ticket_id} — Trinity assignment protected")
 
         tickets_collection.update_one({"ticket_id": ticket_id}, {"$set": metadata_update})
         real = sum(1 for k in metadata_update if k == "assignee_id")
@@ -643,14 +656,18 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict) -> tuple:
     if ticket.get("priority") != mapped_priority:
         updates["priority"] = mapped_priority
 
-    agent_email = assigned_agent.get("email")
-    if agent_email:
-        new_assignee = agent_email_map.get(agent_email.lower())
-        if new_assignee and ticket.get("assignee_id") != new_assignee:
-            updates["assignee_id"] = new_assignee
-    elif ticket.get("assignee_id"):
-        # Atlas unassigned the agent — clear Trinity assignment
-        updates["assignee_id"] = None
+    # Assignment sync (skip if Trinity recently made an assignment)
+    if not assignment_protected:
+        agent_email = assigned_agent.get("email")
+        if agent_email:
+            new_assignee = agent_email_map.get(agent_email.lower())
+            if new_assignee and ticket.get("assignee_id") != new_assignee:
+                updates["assignee_id"] = new_assignee
+        elif ticket.get("assignee_id"):
+            # Atlas unassigned the agent — clear Trinity assignment
+            updates["assignee_id"] = None
+    else:
+        logger.debug(f"[SYNC] Skipping assignment overwrite for {ticket_id} — Trinity assignment protected")
 
     # Tags
     raw_tags = conv.get("tags") or []
@@ -757,7 +774,8 @@ def _run_sync_cycle(state: dict, tag_lookup: dict, agent_email_map: dict) -> dic
                     {"atlas_conversation_id": atlas_conv_id},
                     {"_id": 0, "ticket_id": 1, "status": 1, "priority": 1,
                      "assignee_id": 1, "updated_at": 1, "last_synced_at": 1,
-                     "custom_fields": 1, "closed_at": 1, "atlas_csat_score": 1},
+                     "custom_fields": 1, "closed_at": 1, "atlas_csat_score": 1,
+                     "trinity_assigned_at": 1},
                 )
 
                 if existing_ticket:

@@ -133,6 +133,7 @@ async def assign_ticket(
                 update_data["assignee_id"] = assignee
     if assignment.assignee_id:
         update_data["assignee_id"] = assignment.assignee_id
+        update_data["trinity_assigned_at"] = datetime.now(timezone.utc)
         pass  # Live count used in get_available_agents; stored counter was always stale
     tickets_collection.update_one({"ticket_id": ticket_id}, {"$set": update_data})
     messages_collection.insert_one({
@@ -658,6 +659,8 @@ async def update_ticket(
             f"[ASSIGN] ticket={ticket_id} by={current_user['user_id']} "
             f"old={current_ticket.get('assignee_id')} new={update_data['assignee_id']}"
         )
+        # Protect against sync overwrite: mark this as a Trinity-originated assignment
+        update_data["trinity_assigned_at"] = datetime.now(timezone.utc)
     update_data["updated_at"] = datetime.now(timezone.utc)
     if "status" in update_data and update_data["status"] == "closed" and current_ticket.get("status") != "closed":
         update_data["resolved_at"] = datetime.now(timezone.utc)
