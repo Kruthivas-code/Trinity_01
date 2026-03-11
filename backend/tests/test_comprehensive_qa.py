@@ -8,7 +8,7 @@ import os
 import time
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://assign-me-fix.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://view-upgrade-stage.preview.emergentagent.com')
 
 # Generate unique test email for each test run
 TEST_EMAIL = f"testqa_{int(time.time())}_{uuid.uuid4().hex[:6]}@test.com"

@@ -41,7 +41,7 @@
   "seed_data_creation": "Used existing production data - 73k+ tickets, 180 users",
   "retest_needed": false,
   "should_main_agent_self_test": false,
-  "context_for_next_testing_agent": "Atlas assignment sync feature fully tested and verified working. Key test: Assigning rohit@emergent.sh to TKT-3633 successfully pushed to Atlas API (verified via direct Atlas API call - assignedAgentId=f9127d65-56ea-4978-b64a-9bac5395cab3). Log confirms: 'Synced assignment to Atlas: ticket=TKT-3633, conv=00001204-39be-4eb7-8f39-1ea9f07e2112, agent=f9127d65-56ea-4978-b64a-9bac5395cab3'",
+  "context_for_next_testing_agent": "Atlas assignment sync feature fully tested and verified working. Key test: Assigning rohit@emergent.sh to TKT-3633 successfully pushed to Atlas API (verified via direct Atlas API call - assignedAgentId=view-upgrade-stage). Log confirms: 'Synced assignment to Atlas: ticket=TKT-3633, conv=view-upgrade-stage, agent=view-upgrade-stage'",
   "verification_details": {
     "health_endpoints": {
       "GET /health": "200 OK, status=healthy",

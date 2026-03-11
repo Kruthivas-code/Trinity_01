@@ -82,7 +82,7 @@ async def send_csat_survey(
     csat_tokens_collection.insert_one(token_doc)
     
     # Generate email content (MOCKED - not actually sent)
-    base_url = os.environ.get("CSAT_BASE_URL", os.environ.get("ALLOWED_ORIGINS", "https://assign-me-fix.preview.emergentagent.com").split(",")[0].strip())
+    base_url = os.environ.get("CSAT_BASE_URL", os.environ.get("ALLOWED_ORIGINS", "https://view-upgrade-stage.preview.emergentagent.com").split(",")[0].strip())
     
     email_content = {
         "to": customer_email,
