@@ -16,9 +16,9 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
 
 ## Key Design Decisions
 - **Atlas is the single source of truth** for all new tickets
-- **IMAP poller only processes replies** to existing tickets -- does NOT create new tickets
+- **IMAP poller only processes replies** to existing tickets — does NOT create new tickets
 - **Atlas webhooks** provide real-time sync for: conversation created, agent changed, new message, tags changed
-- **Atlas polling sync (60s)** still active as fallback -- to be deprecated once webhooks proven stable
+- **Atlas polling sync (60s)** still active as fallback — to be deprecated once webhooks proven stable
 - **Trinity takes precedence** for field conflicts (if ticket modified in Trinity after last sync)
 - **Bidirectional assignment sync**: Trinity pushes assignment changes TO Atlas + 5-minute protection window prevents Atlas sync from overwriting recent Trinity assignments
 - **Assignment protection**: `trinity_assigned_at` timestamp prevents `_sync_fields` from overwriting assignments within 5 minutes of a Trinity-originated change
@@ -43,7 +43,7 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
 - [x] Fix: Email search using regex for @ queries instead of $text (2026-03-10)
 - [x] Fix: Attachment rendering in message threads (frontend) (2026-03-10)
 - [x] Fix: IMAP duplicate prevention via _has_atlas_duplicate (2026-03-10)
-- [x] **Fix: "Assign to me" button -- bidirectional Atlas sync + 5min protection** (2026-03-11)
+- [x] **Fix: "Assign to me" button — bidirectional Atlas sync + 5min protection** (2026-03-11)
 - [x] **Feature: File attachment support for outbound emails** (2026-03-10)
 - [x] **Fix: Users list truncation (limit=100 -> limit=500)** (2026-03-11)
 - [x] **Fix: "Unassigned" button now persists to backend** (2026-03-11)
@@ -52,34 +52,54 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
 - [x] **Fix: trinity_assigned_at only set on actual assignee change** (2026-03-11)
 - [x] **Fix: System messages use 'content' field consistently** (2026-03-11)
 - [x] **Fix: Merged duplicate closed_at/resolved_at logic** (2026-03-11)
-- [x] **Feature: Information density - tags & customer email in list view** (2026-03-11)
+- [x] **Feature: Information density — tags & customer email in list view** (2026-03-11)
 - [x] **Feature: Relative time (age) display in Kanban cards and list view** (2026-03-11)
 
-## Production Readiness Fixes (2026-03-11)
+### Session 2026-03-11 (Ghost User Fix)
+- [x] **ROOT CAUSE FIX: @imported.local ghost user records** (2026-03-11)
+  - Identified that 25 users were imported with placeholder `@imported.local` emails
+  - When these users log in via Google OAuth, the auth upsert creates a GHOST duplicate record
+  - The ghost has a different user_id from the imported record, breaking assignment mapping
+- [x] **Migration script: fix_imported_local_emails.py** — Fixes existing @imported.local records by:
+  - Looking up real emails via Atlas API using atlas_user_id
+  - Merging ghost records (updates all references, deletes ghost)
+  - Updating placeholder emails to real emails
+- [x] **Auth flow fix: _resolve_imported_user()** — Prevents future ghost records by:
+  - Before upsert, checks if login email has no direct match
+  - Queries Atlas API for atlas_user_id, finds imported user with placeholder email
+  - Updates imported record's email to real email BEFORE the upsert
+  - Subsequent upsert merges into the existing (now-corrected) record
+- [x] **Defensive validation: assignee_id existence check** — in both:
+  - `PUT /api/tickets/{id}` (update_ticket)
+  - `POST /api/tickets/{id}/assign` (assign_ticket)
+  - Returns 400 with clear error for nonexistent user_ids
+  - Null (unassign) is explicitly allowed
 
-### trinity_assigned_at Race Condition Fix
-**Problem:** Frontend auto-save sends all formData fields including `assignee_id` on every save. The original code set `trinity_assigned_at` whenever `assignee_id` was present in the update payload, even if it hadn't changed. This meant every auto-save extended the 5-minute protection window indefinitely, preventing Atlas sync from ever updating the assignee.
+## Root Cause Analysis: "Assign to me" Button Failure
 
-**Fix:** Changed the condition in `update_ticket()` to:
-```python
-if "assignee_id" in update_data and update_data["assignee_id"] != current_ticket.get("assignee_id"):
-```
-Now `trinity_assigned_at` is only set when the assignee actually changes.
+### The Problem
+25 Atlas agents were bulk-imported on 2026-01-27 with placeholder emails like `animesh@imported.local`. When these users log in via Google OAuth with their real email (`animesh@emergent.sh`), the auth flow's `update_one({"email": email}, ..., upsert=True)` finds NO match (placeholder ≠ real email), creating a ghost duplicate user record.
 
-### System Message Field Consistency
-**Problem:** System messages (for assignment, status, priority changes) used `text` field, but the conversation view reads from `content` field. This caused these system messages to appear empty.
+**Result**: Two records for the same person:
+- Imported record: `user_animesh_xxx` / `animesh@imported.local` — tickets reference this
+- Ghost record: `user_yyy_zzz` / `animesh@emergent.sh` — session uses this
 
-**Fix:** Changed all system message inserts to use `content` instead of `text`.
+When the user clicks "Assign to me", the ghost user_id is written as assignee_id. The `agent_email_map` (email-based sync mapping) may also resolve inconsistently between the two records.
 
-### Duplicate Logic Cleanup
-**Problem:** `closed_at` and `resolved_at` were set in two identical conditional blocks.
+### Why it worked for rohit@emergent.sh
+Rohit had BOTH an imported record AND an organic record (with real email, password, Google OAuth). The auth upsert matched on his real email, linking the session to his organic record. Other users only had the @imported.local record.
 
-**Fix:** Merged into a single block.
+### The Fix (3 layers)
+1. **Migration script** — fixes existing data (deployed, runs on next startup)
+2. **Auth flow enhancement** — prevents future ghosts via Atlas API lookup
+3. **Defensive validation** — prevents writing nonexistent user_ids
 
 ## Upcoming Tasks
+- [ ] P0: Deploy and run migration script (fix_imported_local_emails.py --apply)
 - [ ] P1: Create one-time script to deduplicate historical IMAP messages
 - [ ] P1: Deprecate polling sync once webhooks proven stable
 - [ ] P1: User must re-deploy to trigger ticket ID migration and message backfill
+- [ ] P2: Align Trinity user_ids with Atlas UUIDs (eliminate email-based mapping entirely)
 - [ ] P2: Create data validation admin tool
 - [ ] P2: Real-time notifications for agents
 - [ ] P2: Auto-close stale tickets job
@@ -87,15 +107,15 @@ Now `trinity_assigned_at` is only set when the assignee actually changes.
 
 ## 3rd Party Integrations
 - Atlas API + Webhooks (primary data source)
-- Emergent Object Storage (attachments -- outage)
+- Emergent Object Storage (attachments — outage)
 - Gmail IMAP (reply processing only)
 - Gemini (ticket summarization)
 - Amazon SES (outbound email with file attachments)
 - Emergent-managed Google Auth
 
 ## Key DB Schema
-- `tickets`: ticket_id, atlas_conversation_id, status, assignee_id, **trinity_assigned_at** (new)
-- `messages`: ticket_id, atlas_message_id, attachments array, **content** (not text)
-- `users`: role, email (mapped to Atlas agent IDs)
+- `tickets`: ticket_id, atlas_conversation_id, status, assignee_id, trinity_assigned_at
+- `messages`: ticket_id, atlas_message_id, attachments array, content (not text)
+- `users`: user_id, email, role, atlas_user_id, source
 - `file_attachments`: file_id, original_name, stored_name, content_type, size, uploaded_by
 - `backfill_state`: Tracks one-time migration status
