@@ -406,6 +406,46 @@ def _start_ticket_id_migration():
     t.start()
 
 
+
+def _start_imported_email_fix():
+    """Fix @imported.local placeholder emails and merge ghost user records.
+    Runs once across all deploys/pods via DB flag."""
+    import threading
+
+    def _run():
+        try:
+            flag = db["backfill_state"].find_one({"_type": "imported_email_fix"})
+            if flag and flag.get("status") in ("completed", "running"):
+                logger.info(f"[MIGRATION] imported email fix status={flag.get('status')}, skipping")
+                return
+
+            db["backfill_state"].replace_one(
+                {"_type": "imported_email_fix"},
+                {"_type": "imported_email_fix", "status": "running", "started_by": _instance_id, "started_at": datetime.now(timezone.utc)},
+                upsert=True,
+            )
+
+            from one_time_migrations.fix_imported_local_emails import run_migration
+            logger.info("[MIGRATION] Starting @imported.local email fix in background thread")
+            stats = run_migration(dry_run=False)
+
+            db["backfill_state"].update_one(
+                {"_type": "imported_email_fix"},
+                {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc), "stats": stats}},
+            )
+            logger.info(f"[MIGRATION] @imported.local email fix completed: {stats}")
+        except Exception as e:
+            logger.error(f"[MIGRATION] imported email fix error: {e}")
+            db["backfill_state"].update_one(
+                {"_type": "imported_email_fix"},
+                {"$set": {"status": "failed", "error": str(e)[:500]}},
+            )
+
+    t = threading.Thread(target=_run, daemon=True, name="imported_email_fix")
+    t.start()
+
+
+
 # ==================== Startup / Shutdown ====================
 @app.on_event("startup")
 async def startup_event():
@@ -438,6 +478,8 @@ async def startup_event():
     _start_null_synced_backfill()
     # One-time migration: remove zero-padding from ticket IDs
     _start_ticket_id_migration()
+    # One-time migration: fix @imported.local placeholder emails
+    _start_imported_email_fix()
     logger.info(f"[STARTUP] Instance {_instance_id} started")
 
 
