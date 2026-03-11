@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Clock, User as UserIcon, ArrowUpDown, ArrowUp, ArrowDown, Check } from 'lucide-react';
+import { Clock, User as UserIcon, ArrowUpDown, ArrowUp, ArrowDown, Check, Tag, Mail } from 'lucide-react';
 import { useRealtime } from '../../contexts/RealtimeContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -90,6 +90,21 @@ const formatTimeAgo = (dateString) => {
     minute: '2-digit',
     hour12: true
   });
+};
+
+const formatRelativeAge = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString?.endsWith?.('Z') ? dateString : dateString + 'Z');
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'now';
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d`;
+  const months = Math.floor(days / 30);
+  return `${months}mo`;
 };
 
 const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, user, onTicketClick, refreshKey, filterTree: propFilterTree, showFilterBuilder, onSaveInbox, customParams, excludeZeus }) => {
@@ -418,7 +433,7 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                      {/* Title Row */}
+                      {/* Row 1: Title + badges */}
                       <div className="flex items-center justify-between gap-2 mb-0">
                         <h3 className="text-[13px] font-medium text-foreground line-clamp-1">
                           {ticket.title}
@@ -437,7 +452,7 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
                         </div>
                       </div>
 
-                      {/* Preview + Metadata on same row */}
+                      {/* Row 2: Preview + Metadata */}
                       <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                         {(ticket.description || ticket.email_preview || ticket.email_text) && (
                           <span className="line-clamp-1 flex-1 min-w-0">
@@ -449,15 +464,37 @@ const TicketsListView = ({ title, subtitle, filterStatuses, escalationLevel, use
                             <UserIcon size={11} />
                             <span>{getUserName(ticket.assignee_id)}</span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Clock size={11} />
-                            <span className="tabular-nums">{formatTimeAgo(ticket.created_at)}</span>
-                          </div>
+                          <span className="text-muted-foreground/50 tabular-nums" title={formatTimeAgo(ticket.created_at)}>
+                            {formatRelativeAge(ticket.created_at)}
+                          </span>
                           <span className="text-muted-foreground/70 font-mono text-[10px]">
                             #{ticket.ticket_id || ticket.id?.slice(-6) || 'N/A'}
                           </span>
                         </div>
                       </div>
+
+                      {/* Row 3: Tags + Customer Email */}
+                      {((ticket.tags && ticket.tags.length > 0) || ticket.customer_email) && (
+                        <div className="flex items-center gap-2 mt-0.5 text-[10px]">
+                          {ticket.tags && ticket.tags.length > 0 && (
+                            <div className="flex items-center gap-1 min-w-0">
+                              <Tag size={9} className="text-muted-foreground/50 shrink-0" />
+                              {ticket.tags.slice(0, 3).map((tag, idx) => (
+                                <span key={idx} className="px-1.5 py-px rounded bg-secondary text-muted-foreground font-medium truncate max-w-[80px]" data-testid={`list-tag-${tag}`}>
+                                  {tag}
+                                </span>
+                              ))}
+                              {ticket.tags.length > 3 && <span className="text-muted-foreground/40">+{ticket.tags.length - 3}</span>}
+                            </div>
+                          )}
+                          {ticket.customer_email && (
+                            <div className="flex items-center gap-1 text-muted-foreground/60 truncate ml-auto shrink-0">
+                              <Mail size={9} />
+                              <span className="truncate max-w-[160px]">{ticket.customer_email}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </button>

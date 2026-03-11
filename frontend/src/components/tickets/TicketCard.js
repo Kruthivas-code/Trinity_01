@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, User, AtSign } from 'lucide-react';
+import { Tag, User, AtSign, Clock } from 'lucide-react';
 
 const getPriorityConfig = (priority) => {
   switch (priority) {
@@ -18,6 +18,20 @@ const getEscalationConfig = (level) => {
     case 'L3': return { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', label: 'L3' };
     default: return { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200', label: 'L1' };
   }
+};
+
+const formatAge = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString?.endsWith?.('Z') ? dateString : dateString + 'Z');
+  const diff = Date.now() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'now';
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days}d`;
+  return `${Math.floor(days / 30)}mo`;
 };
 
 const TicketCard = ({ ticket, users = [], isMentioned = false, onClick, isDragging }) => {
@@ -45,7 +59,7 @@ const TicketCard = ({ ticket, users = [], isMentioned = false, onClick, isDraggi
         </div>
       )}
 
-      {/* Row 1: Ticket ID · Priority · Assignee | Escalation */}
+      {/* Row 1: Ticket ID · Priority · Assignee · Age | Escalation */}
       <div className="flex items-center justify-between gap-1.5 mb-1">
         <div className="flex items-center gap-1.5 min-w-0 text-[11px]">
           <span className="text-muted-foreground font-mono shrink-0">{ticket.ticket_id || `#${ticket.id?.slice(-6)}`}</span>
@@ -57,6 +71,12 @@ const TicketCard = ({ ticket, users = [], isMentioned = false, onClick, isDraggi
             <span className="text-muted-foreground truncate">{assignee.name.split(' ')[0]}</span>
           ) : (
             <span className="text-muted-foreground/60 flex items-center gap-0.5"><User size={10} />—</span>
+          )}
+          {ticket.created_at && (
+            <>
+              <span className="text-muted-foreground/30 shrink-0">·</span>
+              <span className="text-muted-foreground/60 shrink-0 tabular-nums" title={new Date(ticket.created_at).toLocaleString()}>{formatAge(ticket.created_at)}</span>
+            </>
           )}
         </div>
         <span className={`text-[9px] font-semibold px-1 py-px rounded border shrink-0 ${escalationConfig.bg} ${escalationConfig.text} ${escalationConfig.border}`}>

@@ -653,8 +653,8 @@ async def update_ticket(
     if not update_data:
         raise HTTPException(status_code=400, detail="No data to update")
 
-    # Log assignment attempts for debugging
-    if "assignee_id" in update_data:
+    # Only set trinity_assigned_at when the assignee actually CHANGES
+    if "assignee_id" in update_data and update_data["assignee_id"] != current_ticket.get("assignee_id"):
         logger.info(
             f"[ASSIGN] ticket={ticket_id} by={current_user['user_id']} "
             f"old={current_ticket.get('assignee_id')} new={update_data['assignee_id']}"
@@ -664,7 +664,6 @@ async def update_ticket(
     update_data["updated_at"] = datetime.now(timezone.utc)
     if "status" in update_data and update_data["status"] == "closed" and current_ticket.get("status") != "closed":
         update_data["resolved_at"] = datetime.now(timezone.utc)
-    if "status" in update_data and update_data["status"] == "closed" and current_ticket.get("status") != "closed":
         update_data["closed_at"] = datetime.now(timezone.utc)
     reassignment_info = None
     if "status" in update_data:
@@ -690,9 +689,9 @@ async def update_ticket(
                 if new_val:
                     assignee = users_collection.find_one({"user_id": new_val})
                     assignee_name = assignee.get("name", new_val) if assignee else new_val
-                messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "text": f"Assigned to {assignee_name}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
+                messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "content": f"Assigned to {assignee_name}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
             elif field == "status":
-                messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "text": f"Status changed to {new_val.replace('_', ' ').title()}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
+                messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "content": f"Status changed to {new_val.replace('_', ' ').title()}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
                 # Send status update email for key status changes
                 if new_val in ("closed",) and current_ticket.get("customer_email"):
                     try:
@@ -707,7 +706,7 @@ async def update_ticket(
                     except Exception as e:
                         logger.warning(f"Failed to send status update email for {ticket_id}: {e}")
             elif field == "priority":
-                messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "text": f"Priority set to {new_val.title()}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
+                messages_collection.insert_one({"message_id": f"msg_{uuid4().hex[:12]}", "ticket_id": ticket_id, "type": "system", "content": f"Priority set to {new_val.title()}", "created_by": current_user["user_id"], "created_at": datetime.now(timezone.utc)})
     if reassignment_info and reassignment_info.get("reassigned"):
         reason_text = "Original assignee not on shift" if reassignment_info.get("reason") == "original_assignee_off_shift" else "No agents on shift - ticket unassigned"
         log_ticket_change(ticket_id=ticket_id, uuid_str=current_ticket.get("uuid", ""), field="auto_reassignment", old_value=reassignment_info.get("old_assignee_name"), new_value=reassignment_info.get("new_assignee_name") or "Unassigned", changed_by="system", change_type="auto_reassign", metadata={"reason": reason_text})
