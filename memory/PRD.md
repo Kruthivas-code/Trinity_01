@@ -64,10 +64,17 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
   - Data Parity: Trinity vs Atlas totals, linked/missing counts, ticket ID alignment, parity score %
   - Configuration: Poll interval, lookback window, save config
   - New endpoints: `GET /api/admin/atlas/test`, `GET /api/admin/atlas/parity`
+- [x] **Migration: Ticket ID alignment** (2026-03-11)
+  - Aligned all 2,989 mismatched ticket IDs to match Atlas numbers (TKT-{atlas_number})
+  - Relocated 1,561 IMAP-only blocking tickets to new sequential numbers
+  - Updated 32,921 cross-collection references
+  - 0 mismatched, 0 temp-prefixed tickets remaining
+- [x] **Migration: Message deduplication** (2026-03-11)
+  - Scanned for atlas_message_id + content-hash duplicates
+  - Found 0 duplicates (data was already clean)
 
 ## Upcoming Tasks
 - [ ] P0: Deploy and verify @imported.local migration + assign button fix on production
-- [ ] P1: Deduplicate historical IMAP messages
 - [ ] P1: Trigger ticket ID migration and message backfill (auto-runs on deploy)
 - [ ] P2: Align Trinity user_ids with Atlas UUIDs (eliminate email-based mapping)
 - [ ] P2: Create data validation admin tool

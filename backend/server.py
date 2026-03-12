@@ -446,6 +446,88 @@ def _start_imported_email_fix():
 
 
 
+def _start_ticket_alignment():
+    """Align ticket IDs with Atlas conversation numbers. Runs once via DB flag."""
+    import threading
+
+    def _run():
+        try:
+            flag = db["backfill_state"].find_one({"_type": "ticket_alignment"})
+            if flag and flag.get("status") == "completed":
+                logger.info("[MIGRATION] ticket alignment already completed, skipping")
+                return
+            if flag and flag.get("status") == "running" and flag.get("started_by") == _instance_id:
+                logger.info("[MIGRATION] ticket alignment already running on this instance, skipping")
+                return
+            # Reset stale "running" from a dead instance
+            db["backfill_state"].replace_one(
+                {"_type": "ticket_alignment"},
+                {"_type": "ticket_alignment", "status": "running", "started_by": _instance_id, "started_at": datetime.now(timezone.utc)},
+                upsert=True,
+            )
+
+            from one_time_migrations.align_ticket_numbers import run_migration
+            logger.info("[MIGRATION] Starting ticket ID alignment in background thread")
+            stats = run_migration(dry_run=False)
+
+            db["backfill_state"].update_one(
+                {"_type": "ticket_alignment"},
+                {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc), "stats": stats}},
+            )
+            logger.info(f"[MIGRATION] Ticket alignment completed: {stats}")
+        except Exception as e:
+            logger.error(f"[MIGRATION] ticket alignment error: {e}")
+            db["backfill_state"].update_one(
+                {"_type": "ticket_alignment"},
+                {"$set": {"status": "failed", "error": str(e)[:500]}},
+            )
+
+    t = threading.Thread(target=_run, daemon=True, name="ticket_alignment")
+    t.start()
+
+
+def _start_message_dedup():
+    """Deduplicate historical messages. Runs once via DB flag."""
+    import threading
+
+    def _run():
+        try:
+            flag = db["backfill_state"].find_one({"_type": "message_dedup"})
+            if flag and flag.get("status") == "completed":
+                logger.info("[MIGRATION] message dedup already completed, skipping")
+                return
+            if flag and flag.get("status") == "running" and flag.get("started_by") == _instance_id:
+                logger.info("[MIGRATION] message dedup already running on this instance, skipping")
+                return
+
+            db["backfill_state"].replace_one(
+                {"_type": "message_dedup"},
+                {"_type": "message_dedup", "status": "running", "started_by": _instance_id, "started_at": datetime.now(timezone.utc)},
+                upsert=True,
+            )
+
+            from one_time_migrations.dedup_messages import run_migration
+            logger.info("[MIGRATION] Starting message dedup in background thread")
+            stats = run_migration(dry_run=False)
+
+            db["backfill_state"].update_one(
+                {"_type": "message_dedup"},
+                {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc), "stats": stats}},
+            )
+            logger.info(f"[MIGRATION] Message dedup completed: {stats}")
+        except Exception as e:
+            logger.error(f"[MIGRATION] message dedup error: {e}")
+            db["backfill_state"].update_one(
+                {"_type": "message_dedup"},
+                {"$set": {"status": "failed", "error": str(e)[:500]}},
+            )
+
+    t = threading.Thread(target=_run, daemon=True, name="message_dedup")
+    t.start()
+
+
+
+
 # ==================== Startup / Shutdown ====================
 @app.on_event("startup")
 async def startup_event():
@@ -480,6 +562,10 @@ async def startup_event():
     _start_ticket_id_migration()
     # One-time migration: fix @imported.local placeholder emails
     _start_imported_email_fix()
+    # One-time migration: align ticket IDs with Atlas numbers
+    _start_ticket_alignment()
+    # One-time migration: deduplicate messages
+    _start_message_dedup()
     logger.info(f"[STARTUP] Instance {_instance_id} started")
 
 
