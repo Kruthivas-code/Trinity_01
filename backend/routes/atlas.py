@@ -6,8 +6,12 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import Optional
 import logging
+import os
+import time
+import requests
 
 from dependencies import get_current_user
+from database import db, tickets_collection, users_collection
 from services.atlas_backfill import (
     start_backfill, stop_backfill, reset_backfill,
     get_status, test_batch, import_atlas_agents,
@@ -191,3 +195,124 @@ async def zeus_run_now(current_user: dict = Depends(get_current_user)):
     import asyncio
     stats = await asyncio.get_event_loop().run_in_executor(None, run_cleanup)
     return stats
+
+
+
+# ══════════════════════════════════════════════════════════════
+# Atlas API Health Test
+# ══════════════════════════════════════════════════════════════
+
+@router.get("/test")
+async def atlas_api_test(current_user: dict = Depends(get_current_user)):
+    """1-click Atlas API connectivity and health test."""
+    api_key = os.environ.get("ATLAS_API_KEY", "")
+    masked_key = f"...{api_key[-6:]}" if len(api_key) > 6 else "NOT SET"
+
+    result = {
+        "key_masked": masked_key,
+        "key_set": bool(api_key),
+        "connection": "unknown",
+        "status_code": None,
+        "response_time_ms": None,
+        "total_conversations": None,
+        "error": None,
+    }
+
+    if not api_key:
+        result["connection"] = "error"
+        result["error"] = "ATLAS_API_KEY not configured"
+        return result
+
+    try:
+        start = time.time()
+        resp = requests.get(
+            "https://api.atlas.so/v1/conversations",
+            params={"limit": 1},
+            headers={"Authorization": f"Bearer {api_key}", "Accept": "application/json"},
+            timeout=10,
+        )
+        elapsed = round((time.time() - start) * 1000)
+        result["status_code"] = resp.status_code
+        result["response_time_ms"] = elapsed
+
+        if resp.status_code == 200:
+            data = resp.json()
+            result["connection"] = "healthy"
+            result["total_conversations"] = data.get("total", 0)
+        elif resp.status_code == 401:
+            result["connection"] = "auth_failed"
+            result["error"] = "API key is invalid or expired"
+        else:
+            result["connection"] = "error"
+            result["error"] = f"HTTP {resp.status_code}"
+    except requests.Timeout:
+        result["connection"] = "timeout"
+        result["error"] = "Request timed out (>10s)"
+    except Exception as e:
+        result["connection"] = "error"
+        result["error"] = str(e)[:200]
+
+    return result
+
+
+# ══════════════════════════════════════════════════════════════
+# Data Parity Overview
+# ══════════════════════════════════════════════════════════════
+
+@router.get("/parity")
+async def atlas_parity(current_user: dict = Depends(get_current_user)):
+    """Data parity stats between Trinity and Atlas."""
+    trinity_total = tickets_collection.count_documents({})
+    atlas_linked = tickets_collection.count_documents(
+        {"atlas_conversation_id": {"$exists": True, "$ne": None}}
+    )
+    imap_only = trinity_total - atlas_linked
+
+    # Mismatched ticket IDs
+    pipeline = [
+        {"$match": {"atlas_number": {"$exists": True, "$ne": None}}},
+        {"$project": {
+            "_id": 0,
+            "match": {"$eq": ["$ticket_id", {"$concat": ["TKT-", {"$toString": "$atlas_number"}]}]},
+        }},
+        {"$group": {"_id": "$match", "count": {"$sum": 1}}},
+    ]
+    mismatch_agg = {r["_id"]: r["count"] for r in tickets_collection.aggregate(pipeline)}
+    matched = mismatch_agg.get(True, 0)
+    mismatched = mismatch_agg.get(False, 0)
+
+    # Full sync state
+    shadow_state = db.atlas_backfill_state.find_one({"_type": "shadow"}, {"_id": 0})
+    full_sync = (shadow_state or {}).get("full_sync", {})
+
+    # Atlas total (from last known full sync, or test endpoint)
+    atlas_total = full_sync.get("total", 0)
+
+    # Users parity
+    total_users = users_collection.count_documents({})
+    imported_local = users_collection.count_documents(
+        {"email": {"$regex": r"@imported\.local$", "$options": "i"}}
+    )
+
+    parity_pct = round((atlas_linked / atlas_total * 100), 1) if atlas_total > 0 else 0
+
+    return {
+        "trinity_total": trinity_total,
+        "atlas_total": atlas_total,
+        "atlas_linked": atlas_linked,
+        "imap_only": imap_only,
+        "missing_from_trinity": max(0, atlas_total - atlas_linked),
+        "ticket_ids_matched": matched,
+        "ticket_ids_mismatched": mismatched,
+        "parity_pct": parity_pct,
+        "full_sync": {
+            "cursor": full_sync.get("cursor", 0),
+            "total": full_sync.get("total", 0),
+            "completed_passes": full_sync.get("completed_passes", 0),
+            "last_completed_at": full_sync.get("last_completed_at"),
+        },
+        "users": {
+            "total": total_users,
+            "imported_local_emails": imported_local,
+        },
+    }

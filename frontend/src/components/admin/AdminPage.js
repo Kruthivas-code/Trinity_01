@@ -383,25 +383,33 @@ const ExportDataTab = () => {
   );
 };
 
-// Atlas Shadow Sync Tab
+// Atlas Control Panel Tab
 const AtlasSyncTab = () => {
   const [syncStatus, setSyncStatus] = useState(null);
+  const [parity, setParity] = useState(null);
+  const [apiTest, setApiTest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [testingApi, setTestingApi] = useState(false);
   const [pollInterval, setPollInterval] = useState(60);
   const [lookbackMinutes, setLookbackMinutes] = useState(15);
+  const [activeSection, setActiveSection] = useState('dashboard');
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/admin/atlas/sync/status`, { credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
+      const [syncRes, parityRes] = await Promise.all([
+        fetch(`${BACKEND_URL}/api/admin/atlas/sync/status`, { credentials: 'include' }),
+        fetch(`${BACKEND_URL}/api/admin/atlas/parity`, { credentials: 'include' }),
+      ]);
+      if (syncRes.ok) {
+        const data = await syncRes.json();
         setSyncStatus(data);
         setPollInterval(data.poll_interval || 60);
         setLookbackMinutes(data.lookback_minutes || 15);
       }
+      if (parityRes.ok) setParity(await parityRes.json());
     } catch (e) {
-      console.error('Failed to fetch sync status:', e);
+      console.error('Failed to fetch status:', e);
     } finally {
       setLoading(false);
     }
@@ -413,18 +421,10 @@ const AtlasSyncTab = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleStart = async () => {
+  const handleAction = async (action) => {
     setActionLoading(true);
     try {
-      await fetch(`${BACKEND_URL}/api/admin/atlas/sync/start`, { method: 'POST', credentials: 'include' });
-      await fetchStatus();
-    } finally { setActionLoading(false); }
-  };
-
-  const handleStop = async () => {
-    setActionLoading(true);
-    try {
-      await fetch(`${BACKEND_URL}/api/admin/atlas/sync/stop`, { method: 'POST', credentials: 'include' });
+      await fetch(`${BACKEND_URL}/api/admin/atlas/sync/${action}`, { method: 'POST', credentials: 'include' });
       await fetchStatus();
     } finally { setActionLoading(false); }
   };
@@ -433,8 +433,7 @@ const AtlasSyncTab = () => {
     setActionLoading(true);
     try {
       await fetch(`${BACKEND_URL}/api/admin/atlas/sync/config`, {
-        method: 'PATCH',
-        credentials: 'include',
+        method: 'PATCH', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ poll_interval: pollInterval, lookback_minutes: lookbackMinutes }),
       });
@@ -442,7 +441,23 @@ const AtlasSyncTab = () => {
     } finally { setActionLoading(false); }
   };
 
+  const handleTestApi = async () => {
+    setTestingApi(true);
+    setApiTest(null);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/admin/atlas/test`, { credentials: 'include' });
+      if (res.ok) setApiTest(await res.json());
+    } catch (e) {
+      setApiTest({ connection: 'error', error: e.message });
+    } finally { setTestingApi(false); }
+  };
+
   const isRunning = syncStatus?.is_running;
+  const fs = syncStatus?.full_sync || parity?.full_sync || {};
+  const fsPct = fs.total > 0 ? Math.round((fs.cursor / fs.total) * 100) : 0;
+  const fsEta = fs.total > 0 && fs.cursor > 0
+    ? `~${Math.round(((fs.total - fs.cursor) / 100) * (pollInterval / 60))} min`
+    : '';
 
   if (loading) {
     return (
@@ -452,135 +467,318 @@ const AtlasSyncTab = () => {
     );
   }
 
+  const sections = [
+    { id: 'dashboard', label: 'Sync Dashboard', icon: Activity },
+    { id: 'api-health', label: 'API Health', icon: Zap },
+    { id: 'parity', label: 'Data Parity', icon: Database },
+    { id: 'config', label: 'Configuration', icon: Settings },
+  ];
+
   return (
-    <div className="max-w-4xl" data-testid="atlas-sync-tab">
+    <div className="max-w-5xl" data-testid="atlas-control-panel">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-medium">Atlas Shadow Sync</h2>
+          <h2 className="text-lg font-medium">Atlas Control Panel</h2>
           <p className="text-sm text-muted-foreground">
-            Real-time sync with Atlas — polls for new conversations and messages
+            Manage sync, monitor parity, and test connectivity
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <div className={`w-2.5 h-2.5 rounded-full ${isRunning ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`} />
+          <span className="text-sm font-medium" data-testid="atlas-sync-status">
+            {isRunning ? 'Sync Running' : 'Sync Stopped'}
+          </span>
           {isRunning ? (
-            <button
-              onClick={handleStop}
-              disabled={actionLoading}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors text-sm font-medium"
-              data-testid="atlas-sync-stop-btn"
-            >
-              {actionLoading ? <Loader2 size={14} className="animate-spin" /> : <Square size={14} />}
-              Stop Sync
+            <button onClick={() => handleAction('stop')} disabled={actionLoading}
+              className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 text-xs font-medium"
+              data-testid="atlas-sync-stop-btn">
+              {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <Square size={12} />} Stop
             </button>
           ) : (
-            <button
-              onClick={handleStart}
-              disabled={actionLoading}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 transition-colors text-sm font-medium"
-              data-testid="atlas-sync-start-btn"
-            >
-              {actionLoading ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-              Start Sync
+            <button onClick={() => handleAction('start')} disabled={actionLoading}
+              className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 text-xs font-medium"
+              data-testid="atlas-sync-start-btn">
+              {actionLoading ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />} Start
             </button>
           )}
         </div>
       </div>
 
-      {/* Status indicator */}
-      <div className="p-4 rounded-xl border border-border/40 bg-card/50 mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`} />
-          <span className="font-medium text-sm" data-testid="atlas-sync-status">
-            {isRunning ? 'Running' : 'Stopped'}
-          </span>
-          {syncStatus?.last_sync_at && (
-            <span className="text-xs text-muted-foreground ml-auto">
-              Last sync: {new Date(syncStatus.last_sync_at).toLocaleString()}
-            </span>
+      {/* Section Tabs */}
+      <div className="flex items-center gap-1 mb-6 p-1 rounded-lg bg-secondary/30 border border-border/30 w-fit">
+        {sections.map(s => (
+          <button key={s.id} onClick={() => setActiveSection(s.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              activeSection === s.id ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'
+            }`} data-testid={`atlas-section-${s.id}`}>
+            <s.icon size={13} /> {s.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ─── Sync Dashboard ─── */}
+      {activeSection === 'dashboard' && (
+        <div className="space-y-4">
+          {/* Phase 1: Realtime */}
+          <div className="p-4 rounded-xl border border-border/40 bg-card/50">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-blue-400" />
+              <h3 className="text-sm font-medium">Phase 1 — Realtime Sync</h3>
+              <span className="text-[10px] text-muted-foreground ml-auto">every {syncStatus?.poll_interval || 60}s · last {syncStatus?.lookback_minutes || 15} min</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="Conversations" value={syncStatus?.conversations_checked || 0} />
+              <StatCard label="New Tickets" value={syncStatus?.new_tickets_created || 0} />
+              <StatCard label="Messages" value={syncStatus?.messages_synced || 0} />
+              <StatCard label="Field Updates" value={syncStatus?.field_updates || 0} />
+            </div>
+          </div>
+
+          {/* Phase 2: Full Sync */}
+          <div className="p-4 rounded-xl border border-border/40 bg-card/50">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-amber-400" />
+              <h3 className="text-sm font-medium">Phase 2 — Full Comprehensive Sync</h3>
+              <span className="text-[10px] text-muted-foreground ml-auto">
+                pass #{fs.completed_passes || 0} · 100/cycle · 45-day window
+              </span>
+            </div>
+            {/* Progress bar */}
+            <div className="mb-3">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span>{(fs.cursor || 0).toLocaleString()} / {(fs.total || 0).toLocaleString()} conversations</span>
+                <span>{fsPct}% {fsEta && `· ETA ${fsEta}`}</span>
+              </div>
+              <div className="h-2 bg-secondary/40 rounded-full overflow-hidden">
+                <div className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                  style={{ width: `${fsPct}%` }} data-testid="full-sync-progress" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <StatCard label="Passes Done" value={fs.completed_passes || 0} />
+              <StatCard label="Sidebars" value={syncStatus?.sidebars_synced || 0} />
+              <StatCard label="Conflicts" value={syncStatus?.conflicts_skipped || 0} />
+            </div>
+            {fs.last_completed_at && (
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Last full pass: {new Date(fs.last_completed_at).toLocaleString()}
+              </p>
+            )}
+          </div>
+
+          {/* Cycle + Timing */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 rounded-lg bg-secondary/20 border border-border/20 text-center">
+              <p className="text-xs text-muted-foreground">Cycles</p>
+              <p className="text-xl font-semibold tabular-nums">{(syncStatus?.cycles_completed || 0).toLocaleString()}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-secondary/20 border border-border/20 text-center">
+              <p className="text-xs text-muted-foreground">Last Sync</p>
+              <p className="text-sm font-medium">{syncStatus?.last_sync_at ? new Date(syncStatus.last_sync_at).toLocaleTimeString() : '—'}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-secondary/20 border border-border/20 text-center">
+              <p className="text-xs text-muted-foreground">Errors</p>
+              <p className={`text-xl font-semibold ${(syncStatus?.errors?.length || 0) > 0 ? 'text-red-400' : ''}`}>
+                {(syncStatus?.errors || []).length}
+              </p>
+            </div>
+          </div>
+
+          {/* Recent Errors */}
+          {syncStatus?.errors?.length > 0 && (
+            <div className="p-3 rounded-xl border border-red-500/20 bg-red-500/5">
+              <h4 className="text-xs font-medium text-red-400 mb-2">Recent Errors</h4>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {syncStatus.errors.slice(-5).reverse().map((err, i) => (
+                  <div key={i} className="text-[11px] text-muted-foreground p-1.5 rounded bg-secondary/30">
+                    <span className="text-red-400 mr-2">{new Date(err.time).toLocaleTimeString()}</span>
+                    {err.error}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
+      )}
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard label="Cycles" value={syncStatus?.cycles_completed || 0} />
-          <StatCard label="New Tickets" value={syncStatus?.new_tickets_created || 0} />
-          <StatCard label="Messages Synced" value={syncStatus?.messages_synced || 0} />
-          <StatCard label="Sidebars Synced" value={syncStatus?.sidebars_synced || 0} />
-          <StatCard label="Conversations Checked" value={syncStatus?.conversations_checked || 0} />
-          <StatCard label="Field Updates" value={syncStatus?.field_updates || 0} />
-          <StatCard label="Conflicts Skipped" value={syncStatus?.conflicts_skipped || 0} />
-          <StatCard label="Errors" value={(syncStatus?.errors || []).length} isError />
-        </div>
-      </div>
+      {/* ─── API Health ─── */}
+      {activeSection === 'api-health' && (
+        <div className="space-y-4">
+          <div className="p-5 rounded-xl border border-border/40 bg-card/50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium">Atlas API Connection Test</h3>
+              <button onClick={handleTestApi} disabled={testingApi}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 text-sm font-medium transition-colors"
+                data-testid="atlas-test-btn">
+                {testingApi ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
+                {testingApi ? 'Testing...' : 'Test Connection'}
+              </button>
+            </div>
 
-      {/* Config */}
-      <div className="p-4 rounded-xl border border-border/40 bg-card/50 mb-6">
-        <h3 className="text-sm font-medium mb-4">Configuration</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">Poll Interval (seconds)</label>
-            <input
-              type="number"
-              value={pollInterval}
-              onChange={(e) => setPollInterval(parseInt(e.target.value) || 60)}
-              min={10}
-              max={600}
-              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/40 text-sm"
-              data-testid="atlas-sync-poll-interval"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">Lookback Window (minutes)</label>
-            <input
-              type="number"
-              value={lookbackMinutes}
-              onChange={(e) => setLookbackMinutes(parseInt(e.target.value) || 15)}
-              min={5}
-              max={120}
-              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/40 text-sm"
-              data-testid="atlas-sync-lookback"
-            />
-          </div>
-        </div>
-        <button
-          onClick={handleConfigSave}
-          disabled={actionLoading}
-          className="mt-3 flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors text-sm font-medium"
-          data-testid="atlas-sync-save-config"
-        >
-          {actionLoading ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-          Save Config
-        </button>
-      </div>
+            {apiTest && (
+              <div className="space-y-3">
+                {/* Status badge */}
+                <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium ${
+                  apiTest.connection === 'healthy' ? 'bg-emerald-500/15 text-emerald-400' :
+                  apiTest.connection === 'auth_failed' ? 'bg-red-500/15 text-red-400' :
+                  'bg-amber-500/15 text-amber-400'
+                }`} data-testid="atlas-test-result">
+                  {apiTest.connection === 'healthy' ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+                  {apiTest.connection === 'healthy' ? 'Connected' :
+                   apiTest.connection === 'auth_failed' ? 'Authentication Failed' :
+                   apiTest.connection === 'timeout' ? 'Timeout' : 'Error'}
+                </div>
 
-      {/* Recent Errors */}
-      {syncStatus?.errors?.length > 0 && (
-        <div className="p-4 rounded-xl border border-red-500/20 bg-red-500/5">
-          <h3 className="text-sm font-medium text-red-400 mb-3">Recent Errors</h3>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {syncStatus.errors.slice(-10).reverse().map((err, i) => (
-              <div key={i} className="text-xs text-muted-foreground p-2 rounded-lg bg-secondary/30">
-                <span className="text-red-400 mr-2">{new Date(err.time).toLocaleTimeString()}</span>
-                {err.error}
+                {/* Details */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-lg bg-secondary/20">
+                    <p className="text-[10px] text-muted-foreground">Status Code</p>
+                    <p className="text-sm font-medium">{apiTest.status_code || '—'}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-secondary/20">
+                    <p className="text-[10px] text-muted-foreground">Response Time</p>
+                    <p className="text-sm font-medium">{apiTest.response_time_ms ? `${apiTest.response_time_ms}ms` : '—'}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-secondary/20">
+                    <p className="text-[10px] text-muted-foreground">Atlas Conversations</p>
+                    <p className="text-sm font-medium">{apiTest.total_conversations?.toLocaleString() || '—'}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-secondary/20">
+                    <p className="text-[10px] text-muted-foreground">API Key</p>
+                    <p className="text-sm font-mono font-medium">{apiTest.key_masked || '—'}</p>
+                  </div>
+                </div>
+
+                {apiTest.error && (
+                  <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
+                    {apiTest.error}
+                  </div>
+                )}
               </div>
-            ))}
+            )}
+
+            {!apiTest && !testingApi && (
+              <p className="text-sm text-muted-foreground">Click "Test Connection" to verify Atlas API connectivity, key validity, and response time.</p>
+            )}
           </div>
         </div>
       )}
 
-      {/* Info */}
-      <div className="mt-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-        <h4 className="text-sm font-medium text-blue-400 mb-2">How Shadow Sync Works</h4>
-        <ul className="text-xs text-muted-foreground space-y-1">
-          <li>• Polls Atlas every {pollInterval}s for conversations active in the last {lookbackMinutes} minutes</li>
-          <li>• New conversations become tickets; new messages are appended to existing tickets</li>
-          <li>• Sidebars (internal notes) from Atlas are imported as internal notes</li>
-          <li>• Trinity takes precedence: if a ticket was modified in Trinity, Atlas field changes are skipped</li>
-          <li>• Active (non-closed) Atlas tickets are periodically re-checked for new messages</li>
-        </ul>
-      </div>
+      {/* ─── Data Parity ─── */}
+      {activeSection === 'parity' && parity && (
+        <div className="space-y-4">
+          {/* Parity Score */}
+          <div className="p-5 rounded-xl border border-border/40 bg-card/50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-medium">Data Parity Score</h3>
+              <div className={`text-2xl font-bold tabular-nums ${
+                parity.parity_pct >= 98 ? 'text-emerald-400' :
+                parity.parity_pct >= 90 ? 'text-amber-400' : 'text-red-400'
+              }`} data-testid="parity-score">
+                {parity.parity_pct}%
+              </div>
+            </div>
+            <div className="h-2 bg-secondary/40 rounded-full overflow-hidden mb-4">
+              <div className={`h-full rounded-full transition-all ${
+                parity.parity_pct >= 98 ? 'bg-emerald-500' :
+                parity.parity_pct >= 90 ? 'bg-amber-500' : 'bg-red-500'
+              }`} style={{ width: `${parity.parity_pct}%` }} />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="Trinity Total" value={parity.trinity_total} />
+              <StatCard label="Atlas Total" value={parity.atlas_total} />
+              <StatCard label="Linked" value={parity.atlas_linked} />
+              <StatCard label="Missing" value={parity.missing_from_trinity} isError={parity.missing_from_trinity > 0} />
+            </div>
+          </div>
 
-      {/* Attachment Migration Section */}
+          {/* Ticket IDs */}
+          <div className="p-5 rounded-xl border border-border/40 bg-card/50">
+            <h3 className="text-sm font-medium mb-3">Ticket ID Alignment</h3>
+            <div className="grid grid-cols-3 gap-3">
+              <StatCard label="ID Match" value={parity.ticket_ids_matched} />
+              <StatCard label="ID Mismatch" value={parity.ticket_ids_mismatched} isError={parity.ticket_ids_mismatched > 0} />
+              <StatCard label="IMAP-Only" value={parity.imap_only} />
+            </div>
+          </div>
+
+          {/* Users */}
+          <div className="p-5 rounded-xl border border-border/40 bg-card/50">
+            <h3 className="text-sm font-medium mb-3">Users</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <StatCard label="Total Users" value={parity.users?.total || 0} />
+              <StatCard label="Placeholder Emails" value={parity.users?.imported_local_emails || 0}
+                isError={(parity.users?.imported_local_emails || 0) > 0} />
+            </div>
+          </div>
+
+          {/* Full Sync Progress */}
+          <div className="p-5 rounded-xl border border-border/40 bg-card/50">
+            <h3 className="text-sm font-medium mb-3">Full Sync Progress</h3>
+            <div className="grid grid-cols-4 gap-3">
+              <StatCard label="Cursor" value={parity.full_sync?.cursor || 0} />
+              <StatCard label="Total" value={parity.full_sync?.total || 0} />
+              <StatCard label="Passes" value={parity.full_sync?.completed_passes || 0} />
+              <div className="p-3 rounded-lg bg-secondary/30 border border-border/20">
+                <p className="text-xs text-muted-foreground mb-1">Last Pass</p>
+                <p className="text-sm font-medium">
+                  {parity.full_sync?.last_completed_at
+                    ? new Date(parity.full_sync.last_completed_at).toLocaleDateString()
+                    : 'In progress'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Configuration ─── */}
+      {activeSection === 'config' && (
+        <div className="space-y-4">
+          <div className="p-5 rounded-xl border border-border/40 bg-card/50">
+            <h3 className="text-sm font-medium mb-4">Sync Configuration</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Poll Interval (seconds)</label>
+                <input type="number" value={pollInterval}
+                  onChange={(e) => setPollInterval(parseInt(e.target.value) || 60)}
+                  min={10} max={600}
+                  className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/40 text-sm"
+                  data-testid="atlas-sync-poll-interval" />
+                <p className="text-[10px] text-muted-foreground mt-1">How often the sync daemon runs (10-600s)</p>
+              </div>
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Lookback Window (minutes)</label>
+                <input type="number" value={lookbackMinutes}
+                  onChange={(e) => setLookbackMinutes(parseInt(e.target.value) || 15)}
+                  min={5} max={120}
+                  className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border/40 text-sm"
+                  data-testid="atlas-sync-lookback" />
+                <p className="text-[10px] text-muted-foreground mt-1">Phase 1 fetches conversations updated in last N minutes</p>
+              </div>
+            </div>
+            <button onClick={handleConfigSave} disabled={actionLoading}
+              className="mt-4 flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 text-sm font-medium transition-colors"
+              data-testid="atlas-sync-save-config">
+              {actionLoading ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              Save Config
+            </button>
+          </div>
+
+          {/* Info */}
+          <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+            <h4 className="text-xs font-medium text-blue-400 mb-2">How 2-Phase Sync Works</h4>
+            <ul className="text-[11px] text-muted-foreground space-y-1">
+              <li><strong className="text-blue-300">Phase 1 (Realtime):</strong> Fetches conversations updated in the last {lookbackMinutes} minutes. Runs every {pollInterval}s. Keeps Trinity in near-real-time with Atlas.</li>
+              <li><strong className="text-amber-300">Phase 2 (Full):</strong> Walks ALL conversations from the last 45 days (including CLOSED). Processes 100/cycle. When it reaches the end, starts a new pass. Catches everything Phase 1 might miss.</li>
+              <li><strong className="text-foreground">Protection:</strong> Trinity-made changes (assignments, status) are protected for 5 minutes to prevent Atlas sync from overwriting them.</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Attachment Migration */}
       <AttachmentMigrationSection />
     </div>
   );
