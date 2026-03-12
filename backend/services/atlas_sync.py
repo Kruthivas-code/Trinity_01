@@ -537,14 +537,12 @@ def _sync_sidebars(atlas_conv_id: str, ticket_id: str) -> int:
         # Each sidebar may have messages inside it
         sidebar_messages = sidebar.get("messages") or []
         if not sidebar_messages:
-            # Try fetching sidebar messages
             try:
-                detail_resp = requests.get(
+                requests.get(
                     f"{ATLAS_API}/conversations/{atlas_conv_id}/sidebars",
                     headers=_headers(),
                     timeout=15,
                 )
-                # Sidebars endpoint returns list; messages are embedded
             except Exception:
                 pass
 
@@ -596,7 +594,6 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict) -> tuple:
     Only update if Trinity hasn't been modified since last sync (Trinity precedence).
     Returns (updates_applied: int, conflicts: int).
     """
-    atlas_conv_id = str(conv.get("id", ""))
     ticket_id = ticket["ticket_id"]
 
     last_synced = ticket.get("last_synced_at")
@@ -722,18 +719,19 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict) -> tuple:
 
 
 # ══════════════════════════════════════════════════════════════
-# Main Sync Cycle
+# Phase 1: Real-time Sync (recent conversations)
 # ══════════════════════════════════════════════════════════════
 
-def _run_sync_cycle(state: dict, tag_lookup: dict, agent_email_map: dict) -> dict:
+def _run_realtime_sync(state: dict, tag_lookup: dict, agent_email_map: dict) -> dict:
     """
-    Run a single sync cycle: fetch recent Atlas conversations and sync.
-    Returns stats dict.
+    Phase 1: Fetch Atlas conversations updated in the last N minutes
+    and sync new tickets, messages, sidebars, and field changes.
+    This keeps Trinity in near-real-time with Atlas.
     """
     lookback = state.get("lookback_minutes", DEFAULT_LOOKBACK_MINUTES)
     start_date = (datetime.now(timezone.utc) - timedelta(minutes=lookback)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    cycle_stats = {
+    stats = {
         "conversations_checked": 0,
         "new_tickets": 0,
         "messages_synced": 0,
@@ -767,9 +765,8 @@ def _run_sync_cycle(state: dict, tag_lookup: dict, agent_email_map: dict) -> dic
                 if not atlas_conv_id:
                     continue
 
-                cycle_stats["conversations_checked"] += 1
+                stats["conversations_checked"] += 1
 
-                # Check if ticket already exists in Trinity
                 existing_ticket = tickets_collection.find_one(
                     {"atlas_conversation_id": atlas_conv_id},
                     {"_id": 0, "ticket_id": 1, "status": 1, "priority": 1,
@@ -779,81 +776,28 @@ def _run_sync_cycle(state: dict, tag_lookup: dict, agent_email_map: dict) -> dic
                 )
 
                 if existing_ticket:
-                    # Existing ticket — sync new messages + field changes
                     ticket_id = existing_ticket["ticket_id"]
-
                     new_msgs = _sync_messages(atlas_conv_id, ticket_id)
-                    cycle_stats["messages_synced"] += new_msgs
-
+                    stats["messages_synced"] += new_msgs
                     new_sidebars = _sync_sidebars(atlas_conv_id, ticket_id)
-                    cycle_stats["sidebars_synced"] += new_sidebars
-
+                    stats["sidebars_synced"] += new_sidebars
                     field_updates, conflicts = _sync_fields(conv, existing_ticket, agent_email_map)
-                    cycle_stats["field_updates"] += field_updates
-                    cycle_stats["conflicts"] += conflicts
-
-                    # Update ticket timestamp if new content was synced
+                    stats["field_updates"] += field_updates
+                    stats["conflicts"] += conflicts
                     if new_msgs > 0 or new_sidebars > 0:
                         tickets_collection.update_one(
                             {"ticket_id": ticket_id},
                             {"$set": {"updated_at": datetime.now(timezone.utc)}},
                         )
                 else:
-                    # New conversation — check if IMAP already created a ticket for this email
-                    customer_email = ((conv.get("customer") or {}).get("email") or "").lower().strip()
-                    conv_title = (conv.get("title") or conv.get("subject") or "").strip()
-                    imap_match = None
-                    if customer_email and conv_title:
-                        imap_match = tickets_collection.find_one(
-                            {
-                                "atlas_conversation_id": {"$exists": False},
-                                "customer_email": customer_email,
-                                "title": conv_title,
-                            },
-                            {"_id": 0, "ticket_id": 1},
-                        )
-
-                    if imap_match:
-                        # Link IMAP ticket to Atlas conversation
-                        ticket_id = imap_match["ticket_id"]
-                        atlas_number = conv.get("number")
-                        new_ticket_id = f"TKT-{atlas_number}" if atlas_number else ticket_id
-                        link_fields = {
-                            "atlas_conversation_id": atlas_conv_id,
-                            "atlas_number": atlas_number,
-                        }
-                        # Rename ticket_id to match Atlas number if possible
-                        if new_ticket_id != ticket_id and not tickets_collection.find_one({"ticket_id": new_ticket_id}):
-                            link_fields["ticket_id"] = new_ticket_id
-                            # Update references
-                            for ref_col in ["messages", "email_threads", "ticket_changelog",
-                                            "notifications", "email_replies", "csat_tokens", "csat_responses"]:
-                                db[ref_col].update_many(
-                                    {"ticket_id": ticket_id},
-                                    {"$set": {"ticket_id": new_ticket_id}},
-                                )
-                            ticket_id = new_ticket_id
-                        tickets_collection.update_one(
-                            {"ticket_id": imap_match["ticket_id"]},
-                            {"$set": link_fields},
-                        )
-                        logger.info(f"[SYNC] Linked IMAP ticket {ticket_id} to Atlas conv {atlas_conv_id}")
-                        cycle_stats["new_tickets"] += 1
-                    else:
-                        # No IMAP match — create new ticket
-                        ticket_id = _create_ticket_from_conv(conv, tag_lookup, agent_email_map)
-
+                    ticket_id = _create_or_link_ticket(conv, tag_lookup, agent_email_map)
                     if ticket_id:
-                        if not imap_match:
-                            cycle_stats["new_tickets"] += 1
-                        # Sync messages for the new/linked ticket
+                        stats["new_tickets"] += 1
                         new_msgs = _sync_messages(atlas_conv_id, ticket_id)
-                        cycle_stats["messages_synced"] += new_msgs
-                        # Sync sidebars
+                        stats["messages_synced"] += new_msgs
                         new_sidebars = _sync_sidebars(atlas_conv_id, ticket_id)
-                        cycle_stats["sidebars_synced"] += new_sidebars
+                        stats["sidebars_synced"] += new_sidebars
 
-                # Brief delay to avoid hammering Atlas API
                 time.sleep(0.2)
 
             cursor += len(convs)
@@ -865,229 +809,250 @@ def _run_sync_cycle(state: dict, tag_lookup: dict, agent_email_map: dict) -> dic
             time.sleep(5)
             continue
         except Exception as e:
-            logger.error(f"[SHADOW] Error in sync cycle at cursor {cursor}: {e}")
+            logger.error(f"[SHADOW] Error in realtime sync at cursor {cursor}: {e}")
             break
 
-    return cycle_stats
+    return stats
 
 
-# ══════════════════════════════════════════════════════════════
-# Active Tickets Re-check (catch changes to older conversations)
-# ══════════════════════════════════════════════════════════════
-
-def _recheck_active_tickets(agent_email_map: dict, batch_size: int = 50) -> dict:
+def _create_or_link_ticket(conv: dict, tag_lookup: dict, agent_email_map: dict) -> Optional[str]:
     """
-    Re-check Atlas-origin tickets for new messages AND field updates.
-    This catches updates to conversations that fall outside the lookback window.
-    Processes a batch each cycle to spread the load.
+    For a new Atlas conversation, either link it to an existing IMAP ticket
+    or create a new Trinity ticket. Returns ticket_id or None.
     """
-    stats = {"messages_synced": 0, "checked": 0, "field_updates": 0}
+    atlas_conv_id = str(conv.get("id", ""))
+    customer_email = ((conv.get("customer") or {}).get("email") or "").lower().strip()
+    conv_title = (conv.get("title") or conv.get("subject") or "").strip()
 
-    # Main batch: active (non-closed) tickets, oldest-synced first
-    active_tickets = list(tickets_collection.find(
-        {
-            "atlas_conversation_id": {"$exists": True, "$ne": None},
-            "status": {"$nin": ["closed"]},
-        },
-        {"_id": 0, "ticket_id": 1, "atlas_conversation_id": 1, "last_synced_at": 1},
-    ).sort("last_synced_at", 1).limit(batch_size))
-
-    # Small batch: recently-closed tickets that haven't been synced in a while
-    # (catches Atlas reopening a closed ticket)
-    # Include tickets with null last_synced_at (legacy tickets that were never rechecked)
-    stale_threshold = datetime.now(timezone.utc) - timedelta(hours=2)
-    closed_batch = list(tickets_collection.find(
-        {
-            "atlas_conversation_id": {"$exists": True, "$ne": None},
-            "status": "closed",
-            "$or": [
-                {"last_synced_at": {"$lt": stale_threshold}},
-                {"last_synced_at": None},
-                {"last_synced_at": {"$exists": False}},
-            ],
-        },
-        {"_id": 0, "ticket_id": 1, "atlas_conversation_id": 1, "last_synced_at": 1},
-    ).sort("last_synced_at", 1).limit(5))
-
-    all_tickets = active_tickets + closed_batch
-
-    for ticket in all_tickets:
-        if _stop_event.is_set():
-            break
-
-        atlas_conv_id = ticket["atlas_conversation_id"]
-        ticket_id = ticket["ticket_id"]
-
-        # Sync messages
-        new_msgs = _sync_messages(atlas_conv_id, ticket_id)
-        stats["messages_synced"] += new_msgs
-        stats["checked"] += 1
-
-        # Fetch conversation from Atlas to sync field updates
-        try:
-            resp = requests.get(
-                f"{ATLAS_API}/conversations/{atlas_conv_id}",
-                headers=_headers(),
-                timeout=15,
-            )
-            if resp.status_code == 200:
-                conv = resp.json()
-                full_ticket = tickets_collection.find_one(
-                    {"ticket_id": ticket_id}, {"_id": 0}
-                )
-                if full_ticket:
-                    field_changes, _ = _sync_fields(conv, full_ticket, agent_email_map)
-                    stats["field_updates"] += field_changes
-        except Exception as e:
-            logger.debug(f"[SHADOW] Recheck field sync error for {ticket_id}: {e}")
-
-        # Update last_synced_at even if no changes
-        tickets_collection.update_one(
-            {"ticket_id": ticket_id},
-            {"$set": {"last_synced_at": datetime.now(timezone.utc)}},
+    # Check for existing IMAP-created ticket
+    imap_match = None
+    if customer_email and conv_title:
+        imap_match = tickets_collection.find_one(
+            {
+                "atlas_conversation_id": {"$exists": False},
+                "customer_email": customer_email,
+                "title": conv_title,
+            },
+            {"_id": 0, "ticket_id": 1},
         )
 
-        if new_msgs > 0:
-            tickets_collection.update_one(
-                {"ticket_id": ticket_id},
-                {"$set": {"updated_at": datetime.now(timezone.utc)}},
-            )
-
-        time.sleep(0.2)
-
-    return stats
-
-
-# ══════════════════════════════════════════════════════════════
-# Gap Audit — catch conversations missed by the lookback window
-# ══════════════════════════════════════════════════════════════
-
-AUDIT_EVERY_N_CYCLES = 10  # Run audit every 10 cycles (~10 minutes)
-
-def _audit_missing_conversations(tag_lookup: dict, agent_email_map: dict) -> dict:
-    """
-    Scan all non-closed Atlas conversations and create any that are missing in Trinity.
-    This catches conversations that fell outside the lookback window (e.g., after downtime).
-    """
-    stats = {"checked": 0, "created": 0, "messages_synced": 0}
-
-    for status in ("OPEN", "PENDING", "SNOOZED", "IN_PROGRESS"):
-        cursor = 0
-        while not _stop_event.is_set():
-            try:
-                resp = requests.get(
-                    f"{ATLAS_API}/conversations",
-                    params={"status": status, "cursor": cursor, "limit": 100},
-                    headers=_headers(),
-                    timeout=30,
+    if imap_match:
+        ticket_id = imap_match["ticket_id"]
+        atlas_number = conv.get("number")
+        new_ticket_id = f"TKT-{atlas_number}" if atlas_number else ticket_id
+        link_fields = {
+            "atlas_conversation_id": atlas_conv_id,
+            "atlas_number": atlas_number,
+        }
+        if new_ticket_id != ticket_id and not tickets_collection.find_one({"ticket_id": new_ticket_id}):
+            link_fields["ticket_id"] = new_ticket_id
+            for ref_col in ["messages", "email_threads", "ticket_changelog",
+                            "notifications", "email_replies", "csat_tokens", "csat_responses"]:
+                db[ref_col].update_many(
+                    {"ticket_id": ticket_id},
+                    {"$set": {"ticket_id": new_ticket_id}},
                 )
-                resp.raise_for_status()
-                data = resp.json()
-                convs = data.get("data", [])
-                total = data.get("total", 0)
+            ticket_id = new_ticket_id
+        tickets_collection.update_one(
+            {"ticket_id": imap_match["ticket_id"]},
+            {"$set": link_fields},
+        )
+        logger.info(f"[SYNC] Linked IMAP ticket {ticket_id} to Atlas conv {atlas_conv_id}")
+        return ticket_id
 
-                if not convs:
-                    break
+    return _create_ticket_from_conv(conv, tag_lookup, agent_email_map)
 
-                for conv in convs:
-                    atlas_conv_id = str(conv.get("id", ""))
-                    if not atlas_conv_id:
-                        continue
-                    stats["checked"] += 1
 
-                    existing = tickets_collection.find_one(
-                        {"atlas_conversation_id": atlas_conv_id},
-                        {"_id": 0, "ticket_id": 1},
-                    )
-                    if existing:
-                        continue
+# ══════════════════════════════════════════════════════════════
+# Phase 2: Full Comprehensive Sync
+# ══════════════════════════════════════════════════════════════
 
-                    # Missing — create it
-                    ticket_id = _create_ticket_from_conv(conv, tag_lookup, agent_email_map)
-                    if ticket_id:
-                        stats["created"] += 1
-                        new_msgs = _sync_messages(atlas_conv_id, ticket_id)
-                        stats["messages_synced"] += new_msgs
-                        logger.info(f"[AUDIT] Created missing ticket {ticket_id} (Atlas #{conv.get('number')})")
+FULL_SYNC_WINDOW_DAYS = 45      # 15 days for 99% close rate + 30 days safety margin
+FULL_SYNC_BATCH_SIZE = 100      # Conversations per cycle
 
-                    time.sleep(0.15)
+def _run_full_sync_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -> dict:
+    """
+    Phase 2: Full comprehensive sync.
 
-                cursor += len(convs)
-                if cursor >= total:
-                    break
-            except Exception as e:
-                logger.warning(f"[AUDIT] Error scanning {status} conversations: {e}")
+    Walks through ALL Atlas conversations (including CLOSED) created
+    in the last FULL_SYNC_WINDOW_DAYS days. Processes one batch per cycle,
+    tracking position with a cursor. When it reaches the end, resets
+    and starts a new pass.
+
+    This catches:
+    - Tickets opened AND closed during downtime (the old gap audit's blind spot)
+    - Any messages or field changes missed by the realtime lookback window
+    - Conversations in any status (OPEN, CLOSED, SNOOZED, PENDING, etc.)
+    """
+    stats = {"checked": 0, "new_tickets": 0, "messages_synced": 0,
+             "field_updates": 0, "sidebars_synced": 0}
+
+    full_sync = state.get("full_sync", {})
+    cursor = full_sync.get("cursor", 0)
+    window_start = (datetime.now(timezone.utc) - timedelta(days=FULL_SYNC_WINDOW_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    try:
+        resp = requests.get(
+            f"{ATLAS_API}/conversations",
+            params={"startDate": window_start, "cursor": cursor, "limit": FULL_SYNC_BATCH_SIZE},
+            headers=_headers(),
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        convs = data.get("data", [])
+        total = data.get("total", 0)
+
+        if not convs:
+            # Reached end or empty window — mark pass as complete
+            full_sync["cursor"] = 0
+            full_sync["completed_passes"] = full_sync.get("completed_passes", 0) + 1
+            full_sync["last_completed_at"] = datetime.now(timezone.utc).isoformat()
+            state["full_sync"] = full_sync
+            _save_state(state)
+            logger.info(f"[FULL_SYNC] Pass #{full_sync['completed_passes']} complete. Total={full_sync.get('total', 0)}")
+            return stats
+
+        for conv in convs:
+            if _stop_event.is_set():
                 break
 
+            atlas_conv_id = str(conv.get("id", ""))
+            if not atlas_conv_id:
+                continue
+
+            stats["checked"] += 1
+
+            existing_ticket = tickets_collection.find_one(
+                {"atlas_conversation_id": atlas_conv_id},
+                {"_id": 0, "ticket_id": 1, "status": 1, "priority": 1,
+                 "assignee_id": 1, "updated_at": 1, "last_synced_at": 1,
+                 "custom_fields": 1, "closed_at": 1, "atlas_csat_score": 1,
+                 "trinity_assigned_at": 1},
+            )
+
+            if existing_ticket:
+                ticket_id = existing_ticket["ticket_id"]
+                new_msgs = _sync_messages(atlas_conv_id, ticket_id)
+                stats["messages_synced"] += new_msgs
+                new_sidebars = _sync_sidebars(atlas_conv_id, ticket_id)
+                stats["sidebars_synced"] += new_sidebars
+                field_updates, _ = _sync_fields(conv, existing_ticket, agent_email_map)
+                stats["field_updates"] += field_updates
+                tickets_collection.update_one(
+                    {"ticket_id": ticket_id},
+                    {"$set": {"last_synced_at": datetime.now(timezone.utc)}},
+                )
+                if new_msgs > 0:
+                    tickets_collection.update_one(
+                        {"ticket_id": ticket_id},
+                        {"$set": {"updated_at": datetime.now(timezone.utc)}},
+                    )
+            else:
+                ticket_id = _create_or_link_ticket(conv, tag_lookup, agent_email_map)
+                if ticket_id:
+                    stats["new_tickets"] += 1
+                    new_msgs = _sync_messages(atlas_conv_id, ticket_id)
+                    stats["messages_synced"] += new_msgs
+                    new_sidebars = _sync_sidebars(atlas_conv_id, ticket_id)
+                    stats["sidebars_synced"] += new_sidebars
+
+            time.sleep(0.15)
+
+        # Advance cursor
+        new_cursor = cursor + len(convs)
+        if new_cursor >= total:
+            full_sync["cursor"] = 0
+            full_sync["completed_passes"] = full_sync.get("completed_passes", 0) + 1
+            full_sync["last_completed_at"] = datetime.now(timezone.utc).isoformat()
+            logger.info(f"[FULL_SYNC] Pass #{full_sync['completed_passes']} complete. Total={total}")
+        else:
+            full_sync["cursor"] = new_cursor
+
+        full_sync["total"] = total
+        state["full_sync"] = full_sync
+        _save_state(state)
+
+    except requests.Timeout:
+        logger.warning(f"[FULL_SYNC] Timeout at cursor {cursor}")
+    except Exception as e:
+        logger.error(f"[FULL_SYNC] Error at cursor {cursor}: {e}")
+
     return stats
 
 
 # ══════════════════════════════════════════════════════════════
-# Daemon Loop
+# Daemon Loop (2-Phase Architecture)
 # ══════════════════════════════════════════════════════════════
 
 def _sync_loop():
-    """Main daemon loop — runs continuously until stopped."""
-    logger.info("[SHADOW] Sync daemon started")
+    """
+    Main daemon loop — 2-phase architecture:
+
+    Phase 1 (Realtime): Syncs conversations updated in the last 15 minutes.
+                        Runs every cycle. Keeps Trinity in near-real-time.
+
+    Phase 2 (Full):     Walks ALL conversations from the last 45 days
+                        (including closed). Processes 100/cycle. When it
+                        reaches the end, starts over. Catches everything
+                        Phase 1 might miss (downtime, closed tickets, etc.)
+    """
+    logger.info("[SHADOW] Sync daemon started (2-phase architecture)")
 
     state = _get_state()
     state["status"] = "running"
     state["started_at"] = datetime.now(timezone.utc)
+    if "full_sync" not in state:
+        state["full_sync"] = {"cursor": 0, "completed_passes": 0, "total": 0}
     _save_state(state)
 
-    # Fetch tags once per startup
     tag_lookup = _fetch_tags()
     agent_email_map = _build_agent_email_map()
     logger.info(f"[SHADOW] Loaded {len(tag_lookup)} tags, {len(agent_email_map)} agent mappings")
 
-    # Refresh agent map periodically
     last_agent_refresh = time.time()
     AGENT_REFRESH_INTERVAL = 300  # 5 minutes
 
     while not _stop_event.is_set():
         try:
-            # Refresh agent map periodically
             if time.time() - last_agent_refresh > AGENT_REFRESH_INTERVAL:
                 agent_email_map = _build_agent_email_map()
                 last_agent_refresh = time.time()
 
             state = _get_state()
 
-            # Phase 1: Sync recent conversations (new + updated within lookback window)
-            cycle_stats = _run_sync_cycle(state, tag_lookup, agent_email_map)
+            # ── Phase 1: Realtime sync ──
+            realtime_stats = _run_realtime_sync(state, tag_lookup, agent_email_map)
 
-            # Phase 2: Re-check active (non-closed) Atlas tickets for new messages
-            recheck_stats = _recheck_active_tickets(agent_email_map)
+            # ── Phase 2: Full comprehensive sync ──
+            full_stats = _run_full_sync_batch(state, tag_lookup, agent_email_map)
 
-            # Phase 3: Periodic gap audit (every N cycles)
-            audit_stats = {"checked": 0, "created": 0, "messages_synced": 0}
-            cycles_so_far = state.get("cycles_completed", 0) + 1
-            if cycles_so_far % AUDIT_EVERY_N_CYCLES == 0:
-                audit_stats = _audit_missing_conversations(tag_lookup, agent_email_map)
-                if audit_stats["created"] > 0:
-                    logger.info(f"[AUDIT] Found and created {audit_stats['created']} missing tickets")
-
-            # Update state
+            # ── Update state ──
             state = _get_state()
             state["cycles_completed"] = state.get("cycles_completed", 0) + 1
-            state["conversations_checked"] = state.get("conversations_checked", 0) + cycle_stats["conversations_checked"]
-            state["new_tickets_created"] = state.get("new_tickets_created", 0) + cycle_stats["new_tickets"] + audit_stats["created"]
-            state["messages_synced"] = state.get("messages_synced", 0) + cycle_stats["messages_synced"] + recheck_stats["messages_synced"] + audit_stats["messages_synced"]
-            state["sidebars_synced"] = state.get("sidebars_synced", 0) + cycle_stats["sidebars_synced"]
-            state["field_updates"] = state.get("field_updates", 0) + cycle_stats["field_updates"] + recheck_stats.get("field_updates", 0)
-            state["conflicts_skipped"] = state.get("conflicts_skipped", 0) + cycle_stats["conflicts"]
+            state["conversations_checked"] = state.get("conversations_checked", 0) + realtime_stats["conversations_checked"]
+            state["new_tickets_created"] = state.get("new_tickets_created", 0) + realtime_stats["new_tickets"] + full_stats["new_tickets"]
+            state["messages_synced"] = state.get("messages_synced", 0) + realtime_stats["messages_synced"] + full_stats["messages_synced"]
+            state["sidebars_synced"] = state.get("sidebars_synced", 0) + realtime_stats["sidebars_synced"] + full_stats["sidebars_synced"]
+            state["field_updates"] = state.get("field_updates", 0) + realtime_stats["field_updates"] + full_stats["field_updates"]
+            state["conflicts_skipped"] = state.get("conflicts_skipped", 0) + realtime_stats["conflicts"]
             state["last_sync_at"] = datetime.now(timezone.utc)
             state["status"] = "running"
             _save_state(state)
 
-            total_new = cycle_stats["new_tickets"] + cycle_stats["messages_synced"] + recheck_stats["messages_synced"] + cycle_stats["sidebars_synced"] + recheck_stats.get("field_updates", 0)
-            if total_new > 0:
+            total_activity = (
+                realtime_stats["new_tickets"] + realtime_stats["messages_synced"] + realtime_stats["sidebars_synced"]
+                + full_stats["new_tickets"] + full_stats["messages_synced"] + full_stats["sidebars_synced"]
+            )
+            if total_activity > 0 or full_stats["checked"] > 0:
+                fs = state.get("full_sync", {})
                 logger.info(
                     f"[SHADOW] Cycle #{state['cycles_completed']}: "
-                    f"checked={cycle_stats['conversations_checked']} new_tickets={cycle_stats['new_tickets']} "
-                    f"msgs={cycle_stats['messages_synced']}+{recheck_stats['messages_synced']} "
-                    f"sidebars={cycle_stats['sidebars_synced']} field_updates={cycle_stats['field_updates']}+{recheck_stats.get('field_updates', 0)} "
-                    f"conflicts={cycle_stats['conflicts']} recheck={recheck_stats['checked']}"
+                    f"P1[checked={realtime_stats['conversations_checked']} new={realtime_stats['new_tickets']} "
+                    f"msgs={realtime_stats['messages_synced']} fields={realtime_stats['field_updates']}] "
+                    f"P2[batch={full_stats['checked']} new={full_stats['new_tickets']} "
+                    f"msgs={full_stats['messages_synced']} cursor={fs.get('cursor',0)}/{fs.get('total',0)} "
+                    f"pass#{fs.get('completed_passes',0)}]"
                 )
             else:
                 logger.debug(f"[SHADOW] Cycle #{state['cycles_completed']}: no changes")
