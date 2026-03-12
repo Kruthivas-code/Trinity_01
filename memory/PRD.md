@@ -58,6 +58,12 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
 - [x] **Auth flow fix: _resolve_imported_user() prevents ghost duplicates** (2026-03-11)
 - [x] **Defensive validation: assignee_id existence check** (2026-03-11)
 - [x] **Refactor: 2-phase sync architecture replacing 3-phase** (2026-03-11)
+- [x] **Feature: Atlas Admin Control Panel** (2026-03-11)
+  - Sync Dashboard: Phase 1 + Phase 2 stats, full sync progress bar with ETA
+  - API Health: 1-click Atlas API connectivity test (key validity, response time, conversation count)
+  - Data Parity: Trinity vs Atlas totals, linked/missing counts, ticket ID alignment, parity score %
+  - Configuration: Poll interval, lookback window, save config
+  - New endpoints: `GET /api/admin/atlas/test`, `GET /api/admin/atlas/parity`
 
 ## Upcoming Tasks
 - [ ] P0: Deploy and verify @imported.local migration + assign button fix on production

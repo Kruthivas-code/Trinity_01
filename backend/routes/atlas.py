@@ -285,8 +285,21 @@ async def atlas_parity(current_user: dict = Depends(get_current_user)):
     shadow_state = db.atlas_backfill_state.find_one({"_type": "shadow"}, {"_id": 0})
     full_sync = (shadow_state or {}).get("full_sync", {})
 
-    # Atlas total (from last known full sync, or test endpoint)
-    atlas_total = full_sync.get("total", 0)
+    # Get actual total from Atlas API (not just the 45-day window)
+    atlas_total = 0
+    try:
+        api_key = os.environ.get("ATLAS_API_KEY", "")
+        if api_key:
+            resp = requests.get(
+                "https://api.atlas.so/v1/conversations",
+                params={"limit": 1},
+                headers={"Authorization": f"Bearer {api_key}", "Accept": "application/json"},
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                atlas_total = resp.json().get("total", 0)
+    except Exception:
+        atlas_total = full_sync.get("total", 0)  # fallback to window total
 
     # Users parity
     total_users = users_collection.count_documents({})
