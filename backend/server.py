@@ -553,6 +553,9 @@ async def startup_event():
     # Auto-start Atlas shadow sync
     from services.atlas_sync import auto_start_on_boot
     auto_start_on_boot()
+    # Start unassigned ticket sweep daemon
+    from services.ticket_sweep import start_sweep
+    start_sweep()
     # Auto-resume attachment migration if it was running
     from services.attachment_migration import auto_resume_migration
     auto_resume_migration()

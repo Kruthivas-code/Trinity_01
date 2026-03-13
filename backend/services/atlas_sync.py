@@ -507,6 +507,13 @@ def _create_ticket_from_conv(conv: dict, tag_lookup: dict, agent_email_map: dict
     try:
         tickets_collection.insert_one(ticket_doc)
         ticket_doc.pop("_id", None)
+        # Run routing rules on newly synced Atlas tickets (same as manual creation)
+        try:
+            from ticket_helpers import run_routing_rules
+            if not ticket_doc.get("atlas_assigned_to_zeus"):
+                run_routing_rules(ticket_doc)
+        except Exception as e:
+            logger.warning(f"[SHADOW] Routing rules failed for {ticket_id}: {e}")
         return ticket_id
     except Exception as e:
         # Duplicate atlas_conversation_id — already exists

@@ -117,6 +117,8 @@ async def get_admin_settings(current_user: dict = Depends(require_admin)):
             "support_email": "",
             "auto_assignment": True,
             "auto_reassign_reopened": False,
+            "assignment_method": "round_robin",
+            "default_team_id": None,
             "default_priority": "medium",
             "ticket_statuses": ["todo", "waiting", "closed"],
             "ticket_priorities": ["low", "medium", "high", "urgent"]
@@ -124,6 +126,10 @@ async def get_admin_settings(current_user: dict = Depends(require_admin)):
     result = serialize_doc(settings)
     if "auto_reassign_reopened" not in result:
         result["auto_reassign_reopened"] = False
+    if "assignment_method" not in result:
+        result["assignment_method"] = "round_robin"
+    if "default_team_id" not in result:
+        result["default_team_id"] = None
     return result
 
 
@@ -411,4 +417,37 @@ async def get_auto_close_status(current_user: dict = Depends(require_admin)):
         "enabled": True,
         "auto_close_hours": AUTO_CLOSE_HOURS,
         "description": f"Resolved tickets are automatically closed after {AUTO_CLOSE_HOURS} hours"
+    }
+
+
+# ==================== Ticket Sweep ====================
+
+@router.post("/admin/ticket-sweep/run")
+async def run_ticket_sweep(current_user: dict = Depends(require_admin)):
+    """Manually trigger the unassigned ticket sweep."""
+    from services.ticket_sweep import sweep_unassigned_tickets
+    stats = sweep_unassigned_tickets()
+    return stats
+
+
+@router.get("/admin/ticket-sweep/stats")
+async def get_ticket_sweep_stats(current_user: dict = Depends(require_admin)):
+    """Get current unassigned ticket stats."""
+    from datetime import timedelta
+    now = datetime.now(timezone.utc)
+    unassigned_count = tickets_collection.count_documents({
+        "status": {"$in": ["todo", "in_progress", "waiting"]},
+        "assignee_id": None,
+        "atlas_assigned_to_zeus": {"$ne": True},
+    })
+    unassigned_stale = tickets_collection.count_documents({
+        "status": {"$in": ["todo", "in_progress", "waiting"]},
+        "assignee_id": None,
+        "atlas_assigned_to_zeus": {"$ne": True},
+        "created_at": {"$lt": now - timedelta(minutes=10)},
+    })
+    return {
+        "unassigned_human_tickets": unassigned_count,
+        "unassigned_stale_tickets": unassigned_stale,
+        "sweep_interval_seconds": 300,
     }

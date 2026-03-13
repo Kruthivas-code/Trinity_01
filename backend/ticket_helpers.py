@@ -66,9 +66,15 @@ def run_routing_rules(ticket: dict) -> dict:
         if matched:
             actions = rule.get("actions", {})
             update_data = {}
+            assignment_method = rule.get("assignment_method", "round_robin")
 
             if actions.get("assign_team"):
                 update_data["team_id"] = actions["assign_team"]
+                # Auto-assign an agent from this team if no specific user is set
+                if not actions.get("assign_user"):
+                    assignee = assign_by_method(actions["assign_team"], assignment_method)
+                    if assignee:
+                        update_data["assignee_id"] = assignee
             if actions.get("assign_user"):
                 update_data["assignee_id"] = actions["assign_user"]
             if actions.get("set_priority"):
@@ -155,6 +161,23 @@ def round_robin_assign(team_id: str) -> Optional[str]:
     return None
 
 
+def least_tickets_assign(team_id: str) -> Optional[str]:
+    """Assign to the agent with fewest open tickets in the team."""
+    available = get_available_agents(team_id)
+    if not available:
+        return None
+    # Sort by current_ticket_count ascending (set in get_available_agents)
+    available.sort(key=lambda a: a.get("current_ticket_count", 0))
+    return available[0]["user_id"]
+
+
+def assign_by_method(team_id: str, method: str = "round_robin") -> Optional[str]:
+    """Assign an agent using the specified method. Falls back to round_robin."""
+    if method == "least_tickets":
+        return least_tickets_assign(team_id)
+    return round_robin_assign(team_id)
+
+
 def auto_assign_on_escalation(ticket_id: str, new_level: str) -> dict:
     """Auto-assign ticket based on escalation level"""
     target_team = teams_collection.find_one(
@@ -166,7 +189,9 @@ def auto_assign_on_escalation(ticket_id: str, new_level: str) -> dict:
         return {"assigned": False, "reason": f"No team found for level {new_level}"}
 
     team_id = target_team.get("team_id")
-    assignee_id = round_robin_assign(team_id)
+    settings = admin_settings_collection.find_one({"type": "global"}, {"_id": 0}) or {}
+    method = settings.get("assignment_method", "round_robin")
+    assignee_id = assign_by_method(team_id, method)
 
     update_data = {
         "escalation_level": new_level,
