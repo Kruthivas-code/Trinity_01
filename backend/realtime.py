@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 _sio_origins = os.environ.get("ALLOWED_ORIGINS", "").split(",")
 if not _sio_origins or _sio_origins == [""]:
     _sio_origins = [
-        "https://view-upgrade-stage.preview.emergentagent.com",
+        "https://data-integrity-fix-37.preview.emergentagent.com",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
     ]

@@ -37,7 +37,7 @@ import os
 import uuid
 
 # Use the public URL from frontend/.env for testing
-BASE_URL = "https://view-upgrade-stage.preview.emergentagent.com"
+BASE_URL = "https://data-integrity-fix-37.preview.emergentagent.com"
 
 # Test credentials
 SESSION_TOKEN = "7N_TW_9vqeefrLlsBi_s9cZyXCYznDfSPaSt8iwcJic"

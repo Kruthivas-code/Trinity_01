@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://view-upgrade-stage.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://data-integrity-fix-37.preview.emergentagent.com')
 
 
 class TestKBSearchEndpoint:

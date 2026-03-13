@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'https://view-upgrade-stage.preview.emergentagent.com';
+const BASE_URL = 'https://data-integrity-fix-37.preview.emergentagent.com';
 const SESSION_TOKEN = 'test_kb_session_token';
 
 test.describe('KB Column Layout - Public Docs', () => {

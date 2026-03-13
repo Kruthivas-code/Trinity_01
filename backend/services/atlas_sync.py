@@ -588,7 +588,7 @@ def _sync_sidebars(atlas_conv_id: str, ticket_id: str) -> int:
 # Field sync (status, priority, assignee) with conflict detection
 # ══════════════════════════════════════════════════════════════
 
-def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict) -> tuple:
+def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict, tag_lookup: dict = None) -> tuple:
     """
     Compare Atlas conversation fields with Trinity ticket fields.
     Only update if Trinity hasn't been modified since last sync (Trinity precedence).
@@ -668,9 +668,10 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict) -> tuple:
 
     # Tags
     raw_tags = conv.get("tags") or []
-    if raw_tags:
-        # We'd need tag_lookup here, skip for now if no changes detected
-        pass
+    if raw_tags and tag_lookup:
+        mapped_tags = [tag_lookup.get(str(t), str(t)) for t in raw_tags]
+        if sorted(mapped_tags) != sorted(ticket.get("tags") or []):
+            updates["tags"] = mapped_tags
 
     # Custom fields from Atlas
     custom_fields = conv.get("customFields")
@@ -772,7 +773,7 @@ def _run_realtime_sync(state: dict, tag_lookup: dict, agent_email_map: dict) -> 
                     {"_id": 0, "ticket_id": 1, "status": 1, "priority": 1,
                      "assignee_id": 1, "updated_at": 1, "last_synced_at": 1,
                      "custom_fields": 1, "closed_at": 1, "atlas_csat_score": 1,
-                     "trinity_assigned_at": 1},
+                     "trinity_assigned_at": 1, "tags": 1},
                 )
 
                 if existing_ticket:
@@ -781,7 +782,7 @@ def _run_realtime_sync(state: dict, tag_lookup: dict, agent_email_map: dict) -> 
                     stats["messages_synced"] += new_msgs
                     new_sidebars = _sync_sidebars(atlas_conv_id, ticket_id)
                     stats["sidebars_synced"] += new_sidebars
-                    field_updates, conflicts = _sync_fields(conv, existing_ticket, agent_email_map)
+                    field_updates, conflicts = _sync_fields(conv, existing_ticket, agent_email_map, tag_lookup)
                     stats["field_updates"] += field_updates
                     stats["conflicts"] += conflicts
                     if new_msgs > 0 or new_sidebars > 0:
@@ -928,7 +929,7 @@ def _run_full_sync_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -
                 {"_id": 0, "ticket_id": 1, "status": 1, "priority": 1,
                  "assignee_id": 1, "updated_at": 1, "last_synced_at": 1,
                  "custom_fields": 1, "closed_at": 1, "atlas_csat_score": 1,
-                 "trinity_assigned_at": 1},
+                 "trinity_assigned_at": 1, "tags": 1},
             )
 
             if existing_ticket:
@@ -937,7 +938,7 @@ def _run_full_sync_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -
                 stats["messages_synced"] += new_msgs
                 new_sidebars = _sync_sidebars(atlas_conv_id, ticket_id)
                 stats["sidebars_synced"] += new_sidebars
-                field_updates, _ = _sync_fields(conv, existing_ticket, agent_email_map)
+                field_updates, _ = _sync_fields(conv, existing_ticket, agent_email_map, tag_lookup)
                 stats["field_updates"] += field_updates
                 tickets_collection.update_one(
                     {"ticket_id": ticket_id},
@@ -1011,13 +1012,19 @@ def _sync_loop():
     logger.info(f"[SHADOW] Loaded {len(tag_lookup)} tags, {len(agent_email_map)} agent mappings")
 
     last_agent_refresh = time.time()
+    last_tag_refresh = time.time()
     AGENT_REFRESH_INTERVAL = 300  # 5 minutes
+    TAG_REFRESH_INTERVAL = 600   # 10 minutes
 
     while not _stop_event.is_set():
         try:
-            if time.time() - last_agent_refresh > AGENT_REFRESH_INTERVAL:
+            now = time.time()
+            if now - last_agent_refresh > AGENT_REFRESH_INTERVAL:
                 agent_email_map = _build_agent_email_map()
-                last_agent_refresh = time.time()
+                last_agent_refresh = now
+            if now - last_tag_refresh > TAG_REFRESH_INTERVAL:
+                tag_lookup = _fetch_tags()
+                last_tag_refresh = now
 
             state = _get_state()
 

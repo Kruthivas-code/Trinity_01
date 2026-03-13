@@ -73,6 +73,15 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
   - Scanned for atlas_message_id + content-hash duplicates
   - Found 0 duplicates (data was already clean)
 
+## Completed Work (continued)
+- [x] **Fix: Tag UUID→Name resolution for existing ticket updates** (2026-03-13)
+  - Fixed `_sync_fields()` which had a `pass` placeholder — now correctly resolves Atlas tag UUIDs to names
+  - Added `tags` to DB projection for both Phase 1 and Phase 2 sync queries
+  - Added periodic tag lookup refresh (every 10 minutes, was startup-only)
+  - Migrated 1,017 historical tickets from UUID tags to resolved names
+  - 54 deleted Atlas tag UUIDs remain unresolvable (expected — tags removed from Atlas)
+  - Final state: 59,417 tickets fully resolved, 1,054 contain deleted tag UUIDs
+
 ## Upcoming Tasks
 - [ ] P0: Deploy and verify @imported.local migration + assign button fix on production
 - [ ] P1: Trigger ticket ID migration and message backfill (auto-runs on deploy)
