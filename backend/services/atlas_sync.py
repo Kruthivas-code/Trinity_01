@@ -43,7 +43,7 @@ _stop_event = threading.Event()
 
 # Defaults
 DEFAULT_POLL_INTERVAL = 60       # seconds between sync cycles
-DEFAULT_LOOKBACK_MINUTES = 15    # how far back to look for updated conversations
+DEFAULT_LOOKBACK_MINUTES = 60    # how far back to look for updated conversations
 
 # Field mappings (same as backfill)
 STATUS_MAP = {
