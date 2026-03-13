@@ -81,6 +81,19 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
   - Migrated 1,017 historical tickets from UUID tags to resolved names
   - 54 deleted Atlas tag UUIDs remain unresolvable (expected — tags removed from Atlas)
   - Final state: 59,417 tickets fully resolved, 1,054 contain deleted tag UUIDs
+- [x] **Fix: Data sync drift — removed false conflict detection** (2026-03-13)
+  - Root cause: `_sync_fields()` had an overly aggressive conflict guard (`updated_at > last_synced_at`) that blocked Atlas status/priority/tag updates whenever any internal operation (auto-close, message sync) bumped `updated_at`
+  - Fix: Removed the conflict branch entirely. Atlas is now source of truth for status, priority, tags, metadata. Only assignment is protected (5-min window after Trinity-side change)
+  - Result: 100% field parity (0 diffs across 200 sampled conversations)
+- [x] **Fix: Ghost ticket cleanup** (2026-03-13)
+  - Closed 1,648 orphaned IMAP tickets (>7 days, no Atlas link, unassigned)
+  - Closed 10 drift tickets (Atlas CLOSED, Trinity still open)
+  - Fixed 5,736 stale `atlas_status` metadata records on closed tickets
+  - Force-synced 1,272 non-closed tickets with stale data (354 status corrections)
+- [x] **Expanded sync window** (2026-03-13)
+  - `FULL_SYNC_WINDOW_DAYS`: 45 → 90 days
+  - `FULL_SYNC_BATCH_SIZE`: 100 → 200/cycle
+  - Covers long-tail open tickets beyond the previous 45-day mark
 
 ## Upcoming Tasks
 - [ ] P0: Deploy and verify @imported.local migration + assign button fix on production

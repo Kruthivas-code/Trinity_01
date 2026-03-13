@@ -590,14 +590,12 @@ def _sync_sidebars(atlas_conv_id: str, ticket_id: str) -> int:
 
 def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict, tag_lookup: dict = None) -> tuple:
     """
-    Compare Atlas conversation fields with Trinity ticket fields.
-    Only update if Trinity hasn't been modified since last sync (Trinity precedence).
+    Sync Atlas conversation fields into Trinity ticket.
+    Atlas is the source of truth for status, priority, tags, and metadata.
+    Only assignment is protected (5-min window after Trinity-side change).
     Returns (updates_applied: int, conflicts: int).
     """
     ticket_id = ticket["ticket_id"]
-
-    last_synced = ticket.get("last_synced_at")
-    trinity_updated = ticket.get("updated_at")
 
     # Check if Trinity recently made an assignment change (protect for 5 min)
     trinity_assigned_at = ticket.get("trinity_assigned_at")
@@ -609,37 +607,7 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict, tag_lookup: di
         if age < 300:  # 5-minute protection window
             assignment_protected = True
 
-    # If Trinity was modified after last sync, skip most field updates (Trinity precedence)
-    # BUT always propagate assignment changes from Atlas (Atlas owns assignments)
-    if last_synced and trinity_updated and trinity_updated > last_synced:
-        # Trinity was modified independently — don't overwrite status/priority/etc.
-        # Still update atlas_ metadata fields, last_synced_at, AND assignment
-        assigned_agent = conv.get("assignedAgent") or {}
-        metadata_update = {
-            "atlas_status": conv.get("status"),
-            "atlas_priority": conv.get("priority"),
-            "atlas_assigned_agent_name": _agent_name(assigned_agent),
-            "atlas_assigned_agent_email": assigned_agent.get("email"),
-            "last_synced_at": datetime.now(timezone.utc),
-        }
-        # Propagate assignment from Atlas UNLESS Trinity recently made an assignment
-        if not assignment_protected:
-            agent_email = assigned_agent.get("email")
-            if agent_email:
-                new_assignee = agent_email_map.get(agent_email.lower())
-                if new_assignee and ticket.get("assignee_id") != new_assignee:
-                    metadata_update["assignee_id"] = new_assignee
-            elif ticket.get("assignee_id"):
-                # Atlas unassigned the agent — clear Trinity assignment
-                metadata_update["assignee_id"] = None
-        else:
-            logger.debug(f"[SYNC] Skipping assignment overwrite for {ticket_id} — Trinity assignment protected")
-
-        tickets_collection.update_one({"ticket_id": ticket_id}, {"$set": metadata_update})
-        real = sum(1 for k in metadata_update if k == "assignee_id")
-        return real, 1 if real == 0 else 0
-
-    # Build field updates
+    # Build field updates — Atlas is source of truth
     updates = {}
     atlas_status = (conv.get("status") or "OPEN").upper()
     atlas_priority = (conv.get("priority") or "NO_PRIORITY").upper()
@@ -773,7 +741,7 @@ def _run_realtime_sync(state: dict, tag_lookup: dict, agent_email_map: dict) -> 
                     {"_id": 0, "ticket_id": 1, "status": 1, "priority": 1,
                      "assignee_id": 1, "updated_at": 1, "last_synced_at": 1,
                      "custom_fields": 1, "closed_at": 1, "atlas_csat_score": 1,
-                     "trinity_assigned_at": 1, "tags": 1},
+                     "trinity_assigned_at": 1, "tags": 1, "escalation_level": 1},
                 )
 
                 if existing_ticket:
@@ -929,7 +897,7 @@ def _run_full_sync_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -
                 {"_id": 0, "ticket_id": 1, "status": 1, "priority": 1,
                  "assignee_id": 1, "updated_at": 1, "last_synced_at": 1,
                  "custom_fields": 1, "closed_at": 1, "atlas_csat_score": 1,
-                 "trinity_assigned_at": 1, "tags": 1},
+                 "trinity_assigned_at": 1, "tags": 1, "escalation_level": 1},
             )
 
             if existing_ticket:
