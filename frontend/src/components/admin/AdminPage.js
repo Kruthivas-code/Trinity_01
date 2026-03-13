@@ -387,13 +387,15 @@ const ExportDataTab = () => {
 const AtlasSyncTab = () => {
   const [syncStatus, setSyncStatus] = useState(null);
   const [parity, setParity] = useState(null);
+  const [healthReport, setHealthReport] = useState(null);
+  const [healthLoading, setHealthLoading] = useState(false);
   const [apiTest, setApiTest] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [testingApi, setTestingApi] = useState(false);
   const [pollInterval, setPollInterval] = useState(60);
-  const [lookbackMinutes, setLookbackMinutes] = useState(15);
-  const [activeSection, setActiveSection] = useState('dashboard');
+  const [lookbackMinutes, setLookbackMinutes] = useState(60);
+  const [activeSection, setActiveSection] = useState('health');
 
   const fetchStatus = async () => {
     try {
@@ -405,7 +407,7 @@ const AtlasSyncTab = () => {
         const data = await syncRes.json();
         setSyncStatus(data);
         setPollInterval(data.poll_interval || 60);
-        setLookbackMinutes(data.lookback_minutes || 15);
+        setLookbackMinutes(data.lookback_minutes || 60);
       }
       if (parityRes.ok) setParity(await parityRes.json());
     } catch (e) {
@@ -415,8 +417,21 @@ const AtlasSyncTab = () => {
     }
   };
 
+  const fetchHealth = async () => {
+    setHealthLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/admin/atlas/sync-health`, { credentials: 'include' });
+      if (res.ok) setHealthReport(await res.json());
+    } catch (e) {
+      console.error('Health audit failed:', e);
+    } finally {
+      setHealthLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchStatus();
+    fetchHealth();
     const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -468,7 +483,8 @@ const AtlasSyncTab = () => {
   }
 
   const sections = [
-    { id: 'dashboard', label: 'Sync Dashboard', icon: Activity },
+    { id: 'health', label: 'Sync Health', icon: CheckCircle2 },
+    { id: 'dashboard', label: 'Sync Engine', icon: Activity },
     { id: 'api-health', label: 'API Health', icon: Zap },
     { id: 'parity', label: 'Data Parity', icon: Database },
     { id: 'config', label: 'Configuration', icon: Settings },
@@ -516,6 +532,165 @@ const AtlasSyncTab = () => {
           </button>
         ))}
       </div>
+
+      {/* ─── Sync Health Audit ─── */}
+      {activeSection === 'health' && (
+        <div className="space-y-4" data-testid="sync-health-panel">
+          {/* Grade + Overall Score */}
+          <div className="p-5 rounded-xl border border-border/40 bg-card/50">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-medium">Live Sync Health Audit</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Samples 200 conversations from Atlas and compares field-by-field with Trinity
+                </p>
+              </div>
+              <button onClick={fetchHealth} disabled={healthLoading}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 text-sm font-medium transition-colors"
+                data-testid="run-health-audit-btn">
+                {healthLoading ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                {healthLoading ? 'Auditing...' : 'Run Audit'}
+              </button>
+            </div>
+
+            {healthReport && (
+              <div className="space-y-4">
+                {/* Grade badge */}
+                <div className="flex items-center gap-4">
+                  <div className={`text-4xl font-black px-4 py-2 rounded-xl ${
+                    healthReport.grade === 'A' ? 'bg-emerald-500/15 text-emerald-400' :
+                    healthReport.grade === 'B' ? 'bg-amber-500/15 text-amber-400' :
+                    'bg-red-500/15 text-red-400'
+                  }`} data-testid="health-grade">
+                    {healthReport.grade}
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold tabular-nums" data-testid="health-pct">
+                      {healthReport.overall_pct}%
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {healthReport.total_clean}/{healthReport.total_checked} clean · {healthReport.total_diffs} diffs · {healthReport.total_missing} missing
+                    </p>
+                  </div>
+                </div>
+
+                {/* Per-window breakdown */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {healthReport.windows?.map((w, i) => (
+                    <div key={i} className="p-3 rounded-lg bg-secondary/20 border border-border/20">
+                      <p className="text-[10px] text-muted-foreground mb-1">{w.label}</p>
+                      {w.error ? (
+                        <p className="text-xs text-red-400">{w.error}</p>
+                      ) : (
+                        <>
+                          <p className={`text-lg font-bold tabular-nums ${
+                            w.pct >= 98 ? 'text-emerald-400' : w.pct >= 80 ? 'text-amber-400' : 'text-red-400'
+                          }`}>{w.pct}%</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {w.clean}/{w.checked} clean · {w.diffs}d · {w.missing}m
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Sync Engine Status */}
+                <div className="p-4 rounded-lg bg-secondary/10 border border-border/20">
+                  <h4 className="text-xs font-medium mb-2">Sync Engine</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Status</p>
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-2 h-2 rounded-full ${healthReport.engine?.is_running ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-500'}`} />
+                        <p className="text-xs font-medium">{healthReport.engine?.is_running ? 'Running' : 'Stopped'}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Phase 2</p>
+                      <p className="text-xs font-medium">{healthReport.engine?.phase2_pct}% ({healthReport.engine?.phase2_cursor?.toLocaleString()}/{healthReport.engine?.phase2_total?.toLocaleString()})</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">ETA</p>
+                      <p className="text-xs font-medium">{healthReport.engine?.phase2_eta_minutes > 0 ? `~${healthReport.engine.phase2_eta_minutes}m` : 'Complete'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Passes</p>
+                      <p className="text-xs font-medium">#{healthReport.engine?.phase2_passes}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Cycles</p>
+                      <p className="text-xs font-medium">{healthReport.engine?.cycles?.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  {/* Phase 2 progress bar */}
+                  <div className="mt-2 h-1.5 bg-secondary/40 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${healthReport.engine?.phase2_pct || 0}%` }} />
+                  </div>
+                </div>
+
+                {/* Open Ticket Breakdown */}
+                <div className="p-4 rounded-lg bg-secondary/10 border border-border/20">
+                  <h4 className="text-xs font-medium mb-2">Open Tickets</h4>
+                  <div className="grid grid-cols-4 gap-3">
+                    <StatCard label="Total Open" value={healthReport.open_tickets?.total} />
+                    <StatCard label="Zeus (AI)" value={healthReport.open_tickets?.zeus} />
+                    <StatCard label="Human Assigned" value={healthReport.open_tickets?.human_assigned} />
+                    <StatCard label="Human Unassigned" value={healthReport.open_tickets?.human_unassigned}
+                      isError={healthReport.open_tickets?.human_unassigned > 50} />
+                  </div>
+                </div>
+
+                {/* Linking */}
+                <div className="p-4 rounded-lg bg-secondary/10 border border-border/20">
+                  <h4 className="text-xs font-medium mb-2">Atlas Linking</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    <StatCard label="Linked" value={`${healthReport.linking?.linked_pct}%`} />
+                    <StatCard label="Total" value={healthReport.linking?.total_tickets?.toLocaleString()} />
+                    <StatCard label="Unlinked (open)" value={healthReport.linking?.non_closed_unlinked}
+                      isError={healthReport.linking?.non_closed_unlinked > 10} />
+                  </div>
+                </div>
+
+                {/* Diffs table */}
+                {healthReport.diffs?.length > 0 && (
+                  <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/20">
+                    <h4 className="text-xs font-medium text-red-400 mb-2">Field Differences ({healthReport.total_diffs})</h4>
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {healthReport.diffs.map((d, i) => (
+                        <div key={i} className="p-2 rounded bg-secondary/30 text-xs">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-medium">{d.ticket} <span className="text-muted-foreground">(#{d.atlas_num})</span></span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {d.synced_minutes_ago != null ? `synced ${d.synced_minutes_ago}m ago` : 'never synced'}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {d.issues.map((issue, j) => (
+                              <span key={j} className="px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 text-[10px]">
+                                {issue.field}: {issue.trinity} ≠ {issue.atlas}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Timestamp */}
+                <p className="text-[10px] text-muted-foreground text-right">
+                  Audit ran at {new Date(healthReport.timestamp).toLocaleString()}
+                </p>
+              </div>
+            )}
+
+            {!healthReport && !healthLoading && (
+              <p className="text-sm text-muted-foreground">Click "Run Audit" to check sync health, or it will auto-run on page load.</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ─── Sync Dashboard ─── */}
       {activeSection === 'dashboard' && (

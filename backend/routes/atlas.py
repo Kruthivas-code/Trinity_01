@@ -1,6 +1,7 @@
 """
 Atlas sync routes — Backfill control, status, and real-time sync management.
 """
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -328,4 +329,187 @@ async def atlas_parity(current_user: dict = Depends(get_current_user)):
             "total": total_users,
             "imported_local_emails": imported_local,
         },
+    }
+
+
+
+# ==================== Sync Health Audit ====================
+
+_STATUS_MAP = {"OPEN": "todo", "CLOSED": "closed", "SNOOZED": "waiting", "PENDING": "waiting", "IN_PROGRESS": "todo"}
+_PRIORITY_MAP = {"NO_PRIORITY": "medium", "LOW": "low", "NORMAL": "medium", "MEDIUM": "medium", "HIGH": "high", "URGENT": "urgent"}
+
+
+@router.get("/sync-health")
+async def sync_health_audit(current_user: dict = Depends(get_current_user)):
+    """
+    Run a live sync health audit: sample conversations from Atlas,
+    compare field-by-field with Trinity, and return a detailed report.
+    Auto-runs on page load — no manual trigger needed.
+    """
+    from datetime import timedelta
+    from services.atlas_sync import _get_state, FULL_SYNC_WINDOW_DAYS, FULL_SYNC_BATCH_SIZE, DEFAULT_LOOKBACK_MINUTES
+
+    atlas_key = os.environ.get("ATLAS_API_KEY", "")
+    if not atlas_key:
+        raise HTTPException(status_code=500, detail="ATLAS_API_KEY not configured")
+
+    headers = {"Accept": "application/json", "Authorization": f"Bearer {atlas_key}"}
+    now = datetime.now(timezone.utc)
+
+    # Sample from 4 time windows (50 each = 200 total)
+    windows = [
+        {"label": "Last 6 hours", "days": 0.25},
+        {"label": "1-3 days", "days": 3},
+        {"label": "3-7 days", "days": 7},
+        {"label": "7-14 days", "days": 14},
+    ]
+
+    window_results = []
+    total_checked = total_clean = total_diffs = total_missing = 0
+    all_diffs = []
+
+    for w in windows:
+        start = (now - timedelta(days=w["days"])).strftime("%Y-%m-%dT%H:%M:%SZ")
+        try:
+            resp = requests.get(
+                "https://api.atlas.so/v1/conversations",
+                params={"startDate": start, "limit": 50},
+                headers=headers, timeout=20,
+            )
+            if resp.status_code != 200:
+                window_results.append({"label": w["label"], "error": f"Atlas API {resp.status_code}"})
+                continue
+            convs = resp.json().get("data", [])
+        except Exception as e:
+            window_results.append({"label": w["label"], "error": str(e)})
+            continue
+
+        clean = diffs = missing = 0
+        for conv in convs:
+            atlas_id = str(conv.get("id", ""))
+            atlas_status = conv.get("status", "")
+            atlas_priority = conv.get("priority", "")
+            atlas_zeus = conv.get("assignedToZeus", False)
+            atlas_agent = conv.get("assignedAgent") or {}
+            atlas_num = conv.get("number")
+
+            trinity = tickets_collection.find_one(
+                {"atlas_conversation_id": atlas_id},
+                {"_id": 0, "ticket_id": 1, "status": 1, "atlas_status": 1, "priority": 1,
+                 "atlas_assigned_to_zeus": 1, "atlas_assigned_agent_email": 1, "last_synced_at": 1}
+            )
+            if not trinity:
+                missing += 1
+                continue
+
+            exp_status = _STATUS_MAP.get(atlas_status.upper(), "todo")
+            exp_priority = _PRIORITY_MAP.get((atlas_priority or "NO_PRIORITY").upper(), "medium")
+            issues = []
+            if trinity.get("status") != exp_status:
+                issues.append({"field": "status", "trinity": trinity.get("status"), "atlas": atlas_status})
+            if trinity.get("atlas_status") != atlas_status:
+                issues.append({"field": "atlas_status", "trinity": trinity.get("atlas_status"), "atlas": atlas_status})
+            if trinity.get("priority") != exp_priority:
+                issues.append({"field": "priority", "trinity": trinity.get("priority"), "atlas": atlas_priority})
+            if trinity.get("atlas_assigned_to_zeus") != atlas_zeus:
+                issues.append({"field": "zeus", "trinity": str(trinity.get("atlas_assigned_to_zeus")), "atlas": str(atlas_zeus)})
+            if trinity.get("atlas_assigned_agent_email") != atlas_agent.get("email"):
+                issues.append({"field": "agent", "trinity": trinity.get("atlas_assigned_agent_email") or "none", "atlas": atlas_agent.get("email") or "none"})
+
+            if issues:
+                diffs += 1
+                if len(all_diffs) < 15:
+                    ls = trinity.get("last_synced_at")
+                    sync_age = None
+                    if ls:
+                        if ls.tzinfo is None:
+                            ls = ls.replace(tzinfo=timezone.utc)
+                        sync_age = round((now - ls).total_seconds() / 60)
+                    all_diffs.append({
+                        "ticket": trinity.get("ticket_id"),
+                        "atlas_num": atlas_num,
+                        "issues": issues,
+                        "synced_minutes_ago": sync_age,
+                    })
+            else:
+                clean += 1
+
+        pct = round(clean / len(convs) * 100) if convs else 0
+        window_results.append({
+            "label": w["label"],
+            "checked": len(convs),
+            "clean": clean,
+            "diffs": diffs,
+            "missing": missing,
+            "pct": pct,
+        })
+        total_checked += len(convs)
+        total_clean += clean
+        total_diffs += diffs
+        total_missing += missing
+
+    # Linking stats
+    total_tickets = tickets_collection.count_documents({})
+    linked = tickets_collection.count_documents({"atlas_conversation_id": {"$ne": None}})
+    non_closed_unlinked = tickets_collection.count_documents({
+        "$or": [{"atlas_conversation_id": None}, {"atlas_conversation_id": {"$exists": False}}],
+        "status": {"$ne": "closed"},
+    })
+
+    # Open ticket breakdown
+    non_closed = tickets_collection.count_documents({"status": {"$ne": "closed"}})
+    zeus = tickets_collection.count_documents({"status": {"$ne": "closed"}, "atlas_assigned_to_zeus": True})
+    human_assigned = tickets_collection.count_documents({
+        "status": {"$ne": "closed"}, "atlas_assigned_to_zeus": {"$ne": True}, "assignee_id": {"$ne": None},
+    })
+    human_unassigned = tickets_collection.count_documents({
+        "status": {"$ne": "closed"}, "atlas_assigned_to_zeus": {"$ne": True}, "assignee_id": None,
+    })
+
+    # Sync engine state
+    state = _get_state()
+    fs = state.get("full_sync", {})
+    cursor = fs.get("cursor", 0)
+    fs_total = fs.get("total", 0)
+    remaining = fs_total - cursor
+    eta_minutes = round(remaining / FULL_SYNC_BATCH_SIZE) if FULL_SYNC_BATCH_SIZE else 0
+
+    overall_pct = round(total_clean / total_checked * 100, 1) if total_checked else 0
+    grade = "A" if overall_pct >= 98 else "B" if overall_pct >= 90 else "C" if overall_pct >= 70 else "F"
+
+    return {
+        "grade": grade,
+        "overall_pct": overall_pct,
+        "total_checked": total_checked,
+        "total_clean": total_clean,
+        "total_diffs": total_diffs,
+        "total_missing": total_missing,
+        "windows": window_results,
+        "diffs": all_diffs,
+        "linking": {
+            "total_tickets": total_tickets,
+            "linked": linked,
+            "linked_pct": round(linked / total_tickets * 100, 1) if total_tickets else 0,
+            "non_closed_unlinked": non_closed_unlinked,
+        },
+        "open_tickets": {
+            "total": non_closed,
+            "zeus": zeus,
+            "human_assigned": human_assigned,
+            "human_unassigned": human_unassigned,
+        },
+        "engine": {
+            "status": state.get("status", "unknown"),
+            "is_running": state.get("status") == "running",
+            "cycles": state.get("cycles_completed", 0),
+            "phase2_cursor": cursor,
+            "phase2_total": fs_total,
+            "phase2_pct": round(cursor / fs_total * 100) if fs_total else 0,
+            "phase2_passes": fs.get("completed_passes", 0),
+            "phase2_eta_minutes": eta_minutes,
+            "window_days": FULL_SYNC_WINDOW_DAYS,
+            "batch_size": FULL_SYNC_BATCH_SIZE,
+            "lookback_minutes": DEFAULT_LOOKBACK_MINUTES,
+        },
+        "timestamp": now.isoformat(),
     }

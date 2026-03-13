@@ -107,6 +107,12 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
   - Admin API: `/admin/ticket-sweep/run` (manual trigger), `/admin/ticket-sweep/stats` (stats)
   - Admin settings: `assignment_method` and `default_team_id` fields added
   - Testing: 23/23 backend tests passed
+- [x] **Sync Health Dashboard** (2026-03-13)
+  - Built `GET /api/admin/atlas/sync-health` — live audit that samples 200 Atlas conversations across 4 time windows, compares field-by-field with Trinity, returns grade + detailed report
+  - Added "Sync Health" tab to admin UI — auto-runs on page load, shows grade, per-window breakdown, engine status, open ticket counts, linking stats, and field diff details
+  - Fixed IMAP ticket linking: `_create_or_link_ticket()` now matches by `ticket_id` (TKT-{number}) first, then email+title, fixing 53+ orphaned tickets
+  - Increased Phase 1 lookback from 15 → 60 minutes for faster new-conversation coverage
+  - Backfilled 53 unlinked IMAP tickets via one-time scan
 
 ## Upcoming Tasks
 - [ ] P0: Deploy and verify @imported.local migration + assign button fix on production
