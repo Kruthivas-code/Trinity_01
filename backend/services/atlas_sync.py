@@ -228,17 +228,12 @@ def sync_assignment_to_atlas(ticket_id: str, assignee_user_id: Optional[str]) ->
     Returns True if the Atlas API call succeeded, False otherwise.
     """
     if not ATLAS_KEY:
-        logger.warning("No ATLAS_API_KEY configured, skipping Atlas assignment sync")
         return False
-
     ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
     if not ticket:
-        logger.warning(f"Ticket {ticket_id} not found for Atlas assignment sync")
         return False
-
     atlas_conv_id = ticket.get("atlas_conversation_id")
     if not atlas_conv_id:
-        logger.debug(f"Ticket {ticket_id} has no Atlas conversation ID, skipping sync")
         return False
 
     atlas_agent_id = None
@@ -247,13 +242,9 @@ def sync_assignment_to_atlas(ticket_id: str, assignee_user_id: Optional[str]) ->
         if user and user.get("email"):
             atlas_agent_id = _get_atlas_agent_id_by_email(user["email"])
             if not atlas_agent_id:
-                logger.warning(
-                    f"No Atlas agent found for email {user['email']} "
-                    f"(user_id={assignee_user_id}), skipping Atlas sync"
-                )
+                logger.warning(f"No Atlas agent for {user['email']}, skipping Atlas sync")
                 return False
         else:
-            logger.warning(f"User {assignee_user_id} not found or has no email, skipping Atlas sync")
             return False
 
     try:
@@ -264,14 +255,125 @@ def sync_assignment_to_atlas(ticket_id: str, assignee_user_id: Optional[str]) ->
             timeout=15,
         )
         resp.raise_for_status()
-        logger.info(
-            f"Synced assignment to Atlas: ticket={ticket_id}, "
-            f"conv={atlas_conv_id}, agent={atlas_agent_id or 'unassigned'}"
-        )
+        logger.info(f"[ATLAS←] Assignment: ticket={ticket_id} agent={atlas_agent_id or 'unassigned'}")
         return True
     except Exception as e:
-        logger.error(f"Failed to sync assignment to Atlas for {ticket_id}: {e}")
+        logger.error(f"[ATLAS←] Assignment failed for {ticket_id}: {e}")
         return False
+
+
+# Reverse mappings: Trinity field values → Atlas API values
+_REVERSE_STATUS_MAP = {
+    "todo": "OPEN",
+    "in_progress": "OPEN",
+    "waiting": "SNOOZED",
+    "closed": "CLOSED",
+}
+
+_REVERSE_PRIORITY_MAP = {
+    "low": "LOW",
+    "medium": "MEDIUM",
+    "high": "HIGH",
+    "urgent": "URGENT",
+}
+
+# Cache: tag name → Atlas UUID (built from _fetch_tags)
+_tag_name_to_id_cache = {"map": {}, "last_refresh": None}
+_TAG_NAME_CACHE_TTL = 600  # 10 minutes
+
+
+def _get_tag_name_to_id_map() -> dict:
+    """Get or refresh the tag name→UUID reverse lookup."""
+    now = datetime.now(timezone.utc)
+    if (
+        not _tag_name_to_id_cache["last_refresh"]
+        or (now - _tag_name_to_id_cache["last_refresh"]).total_seconds() > _TAG_NAME_CACHE_TTL
+    ):
+        tags = _fetch_tags()  # returns {uuid: name}
+        _tag_name_to_id_cache["map"] = {name.lower(): uid for uid, name in tags.items()}
+        _tag_name_to_id_cache["last_refresh"] = now
+    return _tag_name_to_id_cache["map"]
+
+
+def sync_ticket_to_atlas(ticket_id: str, changed_fields: dict) -> bool:
+    """
+    Push field changes from Trinity to Atlas. Atlas remains the source of truth.
+    
+    changed_fields: dict of Trinity field names → new values, e.g.:
+        {"status": "closed", "priority": "high", "tags": ["billing", "urgent"]}
+    
+    Supported fields: status, priority, tags, custom_fields, assignee_id
+    """
+    if not ATLAS_KEY:
+        return False
+
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0, "atlas_conversation_id": 1})
+    if not ticket:
+        return False
+    atlas_conv_id = ticket.get("atlas_conversation_id")
+    if not atlas_conv_id:
+        return False
+
+    atlas_payload = {}
+
+    # Status
+    if "status" in changed_fields:
+        atlas_status = _REVERSE_STATUS_MAP.get(changed_fields["status"])
+        if atlas_status:
+            atlas_payload["status"] = atlas_status
+
+    # Priority
+    if "priority" in changed_fields:
+        atlas_priority = _REVERSE_PRIORITY_MAP.get(changed_fields["priority"])
+        if atlas_priority:
+            atlas_payload["priority"] = atlas_priority
+
+    # Tags (convert names → UUIDs)
+    if "tags" in changed_fields:
+        tag_map = _get_tag_name_to_id_map()
+        atlas_tags = []
+        for tag_name in (changed_fields["tags"] or []):
+            tag_id = tag_map.get(tag_name.lower())
+            if tag_id:
+                atlas_tags.append(tag_id)
+            # Skip tags without a UUID — they don't exist on Atlas
+        atlas_payload["tags"] = atlas_tags
+
+    # Custom fields
+    if "custom_fields" in changed_fields:
+        atlas_payload["customFields"] = changed_fields["custom_fields"]
+
+    # Assignment (delegate to existing function for agent ID resolution)
+    if "assignee_id" in changed_fields:
+        sync_assignment_to_atlas(ticket_id, changed_fields["assignee_id"])
+        # Don't include in the general payload — handled separately
+
+    if not atlas_payload:
+        return True  # Nothing to push
+
+    try:
+        resp = requests.post(
+            f"{ATLAS_API}/conversations/{atlas_conv_id}",
+            headers=_headers(),
+            json=atlas_payload,
+            timeout=15,
+        )
+        resp.raise_for_status()
+        logger.info(f"[ATLAS←] Fields synced: ticket={ticket_id} fields={list(atlas_payload.keys())}")
+        return True
+    except Exception as e:
+        logger.error(f"[ATLAS←] Field sync failed for {ticket_id}: {e} payload={atlas_payload}")
+        return False
+
+
+def sync_tags_to_atlas(ticket_id: str) -> bool:
+    """Push current tag list from Trinity ticket to Atlas."""
+    if not ATLAS_KEY:
+        return False
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0, "atlas_conversation_id": 1, "tags": 1})
+    if not ticket or not ticket.get("atlas_conversation_id"):
+        return False
+    return sync_ticket_to_atlas(ticket_id, {"tags": ticket.get("tags", [])})
 
 
 # ══════════════════════════════════════════════════════════════

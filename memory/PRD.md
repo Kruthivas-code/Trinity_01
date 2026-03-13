@@ -90,10 +90,13 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
   - Closed 10 drift tickets (Atlas CLOSED, Trinity still open)
   - Fixed 5,736 stale `atlas_status` metadata records on closed tickets
   - Force-synced 1,272 non-closed tickets with stale data (354 status corrections)
-- [x] **Expanded sync window** (2026-03-13)
-  - `FULL_SYNC_WINDOW_DAYS`: 45 → 90 days
-  - `FULL_SYNC_BATCH_SIZE`: 100 → 200/cycle
-  - Covers long-tail open tickets beyond the previous 45-day mark
+- [x] **Bidirectional sync: Trinity → Atlas push** (2026-03-13)
+  - Built `sync_ticket_to_atlas()` — pushes status, priority, tags, custom_fields changes to Atlas API
+  - Built `sync_tags_to_atlas()` — helper for tag-specific sync (name → UUID resolution)
+  - Reverse mappings: Trinity status/priority → Atlas enum values (verified against Atlas API)
+  - Hooked into all mutation points: single ticket update, tag add/remove, Kanban drag-drop, bulk update/tag/close
+  - Atlas remains sole source of truth: Trinity pushes changes TO Atlas, sync engine reads them back
+  - Known limitation: Atlas API doesn't support clearing tags via empty array (add works, remove is a no-op)
 
 ## Upcoming Tasks
 - [ ] P0: Deploy and verify @imported.local migration + assign button fix on production

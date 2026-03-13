@@ -36,7 +36,7 @@ from realtime import (
     broadcast_ticket_update, broadcast_ticket_created,
     broadcast_ticket_deleted, broadcast_mention_notification,
 )
-from services.atlas_sync import sync_assignment_to_atlas
+from services.atlas_sync import sync_assignment_to_atlas, sync_ticket_to_atlas, sync_tags_to_atlas
 
 logger = logging.getLogger(__name__)
 
@@ -449,6 +449,10 @@ async def add_tags(ticket_id: str, tags: List[str], current_user: dict = Depends
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Ticket not found")
     ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    try:
+        sync_tags_to_atlas(ticket_id)
+    except Exception:
+        pass
     return {"tags": ticket.get("tags", [])}
 
 
@@ -459,6 +463,10 @@ async def remove_tag(ticket_id: str, tag: str, current_user: dict = Depends(get_
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Ticket not found")
     ticket = tickets_collection.find_one({"ticket_id": ticket_id})
+    try:
+        sync_tags_to_atlas(ticket_id)
+    except Exception:
+        pass
     return {"tags": ticket.get("tags", [])}
 
 
@@ -737,11 +745,13 @@ async def update_ticket(
                     asyncio.create_task(trigger_webhooks("ticket.closed", serialized))
             elif field == "assignee_id":
                 asyncio.create_task(trigger_webhooks("ticket.assigned", {**serialized, "previous_assignee_id": old_val, "new_assignee_id": new_val}))
-                # Push assignment change to Atlas so it doesn't get overwritten on next sync
-                try:
-                    sync_assignment_to_atlas(ticket_id, new_val)
-                except Exception as e:
-                    logger.warning(f"Failed to sync assignment to Atlas for {ticket_id}: {e}")
+        # Push ALL field changes to Atlas (Atlas = source of truth)
+        atlas_fields = {k: v for k, (_, v) in changes.items() if k in ("status", "priority", "tags", "custom_fields", "assignee_id")}
+        if atlas_fields:
+            try:
+                sync_ticket_to_atlas(ticket_id, atlas_fields)
+            except Exception as e:
+                logger.warning(f"Failed to sync fields to Atlas for {ticket_id}: {e}")
     return serialized
 
 
@@ -884,11 +894,18 @@ async def reorder_tickets(reorder_data: TicketReorder, current_user: dict = Depe
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
     new_status = reorder_data.new_status
+    old_status = ticket.get("status")
     tickets_collection.update_one({"ticket_id": reorder_data.ticket_id}, {"$set": {"status": new_status, "order": reorder_data.new_order, "updated_at": datetime.now(timezone.utc)}})
     tickets_in_new_status = list(tickets_collection.find({"status": new_status, "ticket_id": {"$ne": reorder_data.ticket_id}}).sort("order", ASCENDING))
     for idx, t in enumerate(tickets_in_new_status):
         new_order = idx if idx < reorder_data.new_order else idx + 1
         tickets_collection.update_one({"ticket_id": t["ticket_id"]}, {"$set": {"order": new_order}})
+    # Push status change to Atlas if it changed
+    if new_status != old_status:
+        try:
+            sync_ticket_to_atlas(reorder_data.ticket_id, {"status": new_status})
+        except Exception:
+            pass
     return {"message": "Tickets reordered successfully"}
 
 

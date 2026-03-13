@@ -22,6 +22,7 @@ from utils import (
     trigger_webhooks,
 )
 from realtime import broadcast_ticket_update
+from services.atlas_sync import sync_ticket_to_atlas, sync_tags_to_atlas
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,15 @@ async def bulk_update_tickets(
     if changelog_entries:
         ticket_changelog_collection.insert_many(changelog_entries)
     
+    # Push changes to Atlas for each ticket
+    atlas_fields = {k: v for k, v in update_fields.items() if k in ("status", "priority", "tags", "custom_fields", "assignee_id")}
+    if atlas_fields:
+        for ticket_id in request.ticket_ids:
+            try:
+                sync_ticket_to_atlas(ticket_id, atlas_fields)
+            except Exception:
+                pass
+
     return {
         "message": f"Updated {result.modified_count} tickets",
         "matched": result.matched_count,
@@ -109,6 +119,13 @@ async def bulk_tag_tickets(
             {"$pull": {"tags": {"$in": request.tags_to_remove}}}
         )
     
+    # Push tag changes to Atlas
+    for ticket_id in request.ticket_ids:
+        try:
+            sync_tags_to_atlas(ticket_id)
+        except Exception:
+            pass
+
     return {
         "message": f"Updated tags for {len(request.ticket_ids)} tickets",
         "tags_added": request.tags_to_add,
@@ -137,6 +154,13 @@ async def bulk_close_tickets(
         }}
     )
     
+    # Push status change to Atlas
+    for tid in ticket_ids:
+        try:
+            sync_ticket_to_atlas(tid, {"status": "closed"})
+        except Exception:
+            pass
+
     return {
         "message": f"Closed {result.modified_count} tickets",
         "modified": result.modified_count
