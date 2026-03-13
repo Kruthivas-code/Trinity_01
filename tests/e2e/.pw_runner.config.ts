@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260304_163716/results.json' }],
   ],
   use: {
-    baseURL: 'https://data-integrity-fix-37.preview.emergentagent.com',
+    baseURL: 'https://sync-engine-4.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,
