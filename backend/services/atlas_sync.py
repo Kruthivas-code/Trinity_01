@@ -868,8 +868,8 @@ def _create_or_link_ticket(conv: dict, tag_lookup: dict, agent_email_map: dict) 
 # Phase 2: Full Comprehensive Sync
 # ══════════════════════════════════════════════════════════════
 
-FULL_SYNC_WINDOW_DAYS = 45      # 15 days for 99% close rate + 30 days safety margin
-FULL_SYNC_BATCH_SIZE = 100      # Conversations per cycle
+FULL_SYNC_WINDOW_DAYS = 90      # Extended: covers long-tail open tickets beyond 45-day mark
+FULL_SYNC_BATCH_SIZE = 200      # Doubled to compensate for wider window
 
 def _run_full_sync_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -> dict:
     """
