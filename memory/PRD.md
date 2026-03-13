@@ -97,6 +97,16 @@ Build and maintain a full-stack ticket management system (React, FastAPI, MongoD
   - Hooked into all mutation points: single ticket update, tag add/remove, Kanban drag-drop, bulk update/tag/close
   - Atlas remains sole source of truth: Trinity pushes changes TO Atlas, sync engine reads them back
   - Known limitation: Atlas API doesn't support clearing tags via empty array (add works, remove is a no-op)
+- [x] **Routing & Auto-Assignment Enhancements** (2026-03-13)
+  - Added `least_tickets_assign()` — assigns to agent with fewest open tickets in team
+  - Added `assign_by_method()` — dispatcher that supports both `round_robin` and `least_tickets`
+  - Wired routing rules into Atlas sync — `_create_ticket_from_conv()` runs routing rules on new tickets
+  - Built recurring "unassigned ticket sweep" job (every 5 min, batch of 50, oldest first)
+  - Sweep: tries routing rules first, then falls back to default team + assignment method
+  - Zeus filtering: sweep, routing, and all assignment logic skip `atlas_assigned_to_zeus` tickets
+  - Admin API: `/admin/ticket-sweep/run` (manual trigger), `/admin/ticket-sweep/stats` (stats)
+  - Admin settings: `assignment_method` and `default_team_id` fields added
+  - Testing: 23/23 backend tests passed
 
 ## Upcoming Tasks
 - [ ] P0: Deploy and verify @imported.local migration + assign button fix on production
