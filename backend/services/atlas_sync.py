@@ -899,44 +899,66 @@ def _create_or_link_ticket(conv: dict, tag_lookup: dict, agent_email_map: dict) 
     or create a new Trinity ticket. Returns ticket_id or None.
     """
     atlas_conv_id = str(conv.get("id", ""))
+    atlas_number = conv.get("number")
     customer_email = ((conv.get("customer") or {}).get("email") or "").lower().strip()
     conv_title = (conv.get("title") or conv.get("subject") or "").strip()
 
-    # Check for existing IMAP-created ticket
-    imap_match = None
+    # Match 1: Try by ticket_id (TKT-{number}) — most reliable
+    if atlas_number:
+        expected_tid = f"TKT-{atlas_number}"
+        existing_by_id = tickets_collection.find_one(
+            {"ticket_id": expected_tid, "$or": [
+                {"atlas_conversation_id": None},
+                {"atlas_conversation_id": {"$exists": False}},
+            ]},
+            {"_id": 0, "ticket_id": 1},
+        )
+        if existing_by_id:
+            tickets_collection.update_one(
+                {"ticket_id": expected_tid},
+                {"$set": {
+                    "atlas_conversation_id": atlas_conv_id,
+                    "atlas_number": atlas_number,
+                }},
+            )
+            logger.info(f"[SYNC] Linked ticket {expected_tid} to Atlas conv {atlas_conv_id} (by ticket_id)")
+            return expected_tid
+
+    # Match 2: Try by customer_email + title
     if customer_email and conv_title:
         imap_match = tickets_collection.find_one(
             {
-                "atlas_conversation_id": {"$exists": False},
+                "$or": [
+                    {"atlas_conversation_id": None},
+                    {"atlas_conversation_id": {"$exists": False}},
+                ],
                 "customer_email": customer_email,
                 "title": conv_title,
             },
             {"_id": 0, "ticket_id": 1},
         )
-
-    if imap_match:
-        ticket_id = imap_match["ticket_id"]
-        atlas_number = conv.get("number")
-        new_ticket_id = f"TKT-{atlas_number}" if atlas_number else ticket_id
-        link_fields = {
-            "atlas_conversation_id": atlas_conv_id,
-            "atlas_number": atlas_number,
-        }
-        if new_ticket_id != ticket_id and not tickets_collection.find_one({"ticket_id": new_ticket_id}):
-            link_fields["ticket_id"] = new_ticket_id
-            for ref_col in ["messages", "email_threads", "ticket_changelog",
-                            "notifications", "email_replies", "csat_tokens", "csat_responses"]:
-                db[ref_col].update_many(
-                    {"ticket_id": ticket_id},
-                    {"$set": {"ticket_id": new_ticket_id}},
-                )
-            ticket_id = new_ticket_id
-        tickets_collection.update_one(
-            {"ticket_id": imap_match["ticket_id"]},
-            {"$set": link_fields},
-        )
-        logger.info(f"[SYNC] Linked IMAP ticket {ticket_id} to Atlas conv {atlas_conv_id}")
-        return ticket_id
+        if imap_match:
+            ticket_id = imap_match["ticket_id"]
+            new_ticket_id = f"TKT-{atlas_number}" if atlas_number else ticket_id
+            link_fields = {
+                "atlas_conversation_id": atlas_conv_id,
+                "atlas_number": atlas_number,
+            }
+            if new_ticket_id != ticket_id and not tickets_collection.find_one({"ticket_id": new_ticket_id}):
+                link_fields["ticket_id"] = new_ticket_id
+                for ref_col in ["messages", "email_threads", "ticket_changelog",
+                                "notifications", "email_replies", "csat_tokens", "csat_responses"]:
+                    db[ref_col].update_many(
+                        {"ticket_id": ticket_id},
+                        {"$set": {"ticket_id": new_ticket_id}},
+                    )
+                ticket_id = new_ticket_id
+            tickets_collection.update_one(
+                {"ticket_id": imap_match["ticket_id"]},
+                {"$set": link_fields},
+            )
+            logger.info(f"[SYNC] Linked IMAP ticket {ticket_id} to Atlas conv {atlas_conv_id} (by email+title)")
+            return ticket_id
 
     return _create_ticket_from_conv(conv, tag_lookup, agent_email_map)
 
