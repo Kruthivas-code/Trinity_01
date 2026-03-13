@@ -1,14 +1,15 @@
 """
-Atlas Shadow Mode — Real-Time Sync Engine
-==========================================
-Polls Atlas for recently active conversations and syncs new tickets,
-new messages, and sidebar (internal note) content into Trinity.
+Unified Atlas Sync Engine — 5-Layer Architecture
+=================================================
+Consolidates all Atlas↔Trinity data synchronization into a single service.
 
-Trinity takes precedence in conflicts: if a ticket was modified in
-Trinity after the last sync, Atlas field changes are skipped (logged
-as conflict).
+Layer 1: Webhooks    — Real-time event processing (called by HTTP handler)
+Layer 2: Poller      — Safety-net polling for recent conversations (every 60s)
+Layer 3: Full Crawl  — Historical reconciliation walk (batch per cycle)
+Layer 4: Push-back   — Trinity → Atlas field/assignment sync
+Layer 5: Sweep       — Separate module (ticket_sweep.py)
 
-State is persisted in MongoDB (`atlas_sync_state`, _type="shadow").
+State is persisted in MongoDB (`atlas_backfill_state`, _type="shadow").
 Runs as a daemon thread that auto-starts on server boot.
 """
 
@@ -29,12 +30,16 @@ from database import (
 )
 from utils import generate_ticket_id
 
-logger = logging.getLogger("atlas_shadow")
+logger = logging.getLogger("atlas_sync")
+
+# ══════════════════════════════════════════════════════════════
+# Constants & Field Mappings
+# ══════════════════════════════════════════════════════════════
 
 ATLAS_API = "https://api.atlas.so/v1"
 ATLAS_KEY = os.environ.get("ATLAS_API_KEY", "")
 
-# State collection (shared with backfill, different _type)
+# State collection (shared with other services like zeus_cleanup, attachment_migration)
 _state_col = db.atlas_backfill_state
 
 # Thread control
@@ -44,8 +49,10 @@ _stop_event = threading.Event()
 # Defaults
 DEFAULT_POLL_INTERVAL = 60       # seconds between sync cycles
 DEFAULT_LOOKBACK_MINUTES = 60    # how far back to look for updated conversations
+FULL_SYNC_WINDOW_DAYS = 90       # covers long-tail open tickets
+FULL_SYNC_BATCH_SIZE = 200       # conversations per full-crawl batch
 
-# Field mappings (same as backfill)
+# Atlas → Trinity field mappings
 STATUS_MAP = {
     "OPEN": "todo",
     "CLOSED": "closed",
@@ -69,46 +76,52 @@ MESSAGE_TYPE_MAP = {
     "SYSTEM": "system",
 }
 
+# Trinity → Atlas reverse mappings (Layer 4: Push-back)
+_REVERSE_STATUS_MAP = {
+    "todo": "OPEN",
+    "in_progress": "OPEN",
+    "waiting": "SNOOZED",
+    "closed": "CLOSED",
+}
+
+_REVERSE_PRIORITY_MAP = {
+    "low": "LOW",
+    "medium": "MEDIUM",
+    "high": "HIGH",
+    "urgent": "URGENT",
+}
+
 
 # ══════════════════════════════════════════════════════════════
-# State Management
+# Shared Lookup Cache
 # ══════════════════════════════════════════════════════════════
 
-def _get_state() -> dict:
-    state = _state_col.find_one({"_type": "shadow"}, {"_id": 0})
-    if not state:
-        return {
-            "_type": "shadow",
-            "status": "stopped",
-            "poll_interval": DEFAULT_POLL_INTERVAL,
-            "lookback_minutes": DEFAULT_LOOKBACK_MINUTES,
-            "last_sync_at": None,
-            "cycles_completed": 0,
-            "conversations_checked": 0,
-            "new_tickets_created": 0,
-            "messages_synced": 0,
-            "sidebars_synced": 0,
-            "field_updates": 0,
-            "conflicts_skipped": 0,
-            "errors": [],
-            "started_at": None,
-        }
-    return state
+_lookup_cache = {
+    "agent_email_map": {},
+    "tag_lookup": {},
+    "agent_last_refresh": 0,
+    "tag_last_refresh": 0,
+}
+_AGENT_CACHE_TTL = 300   # 5 minutes
+_TAG_CACHE_TTL = 600     # 10 minutes
 
 
-def _save_state(state: dict):
-    state["_type"] = "shadow"
-    _state_col.update_one({"_type": "shadow"}, {"$set": state}, upsert=True)
+def _get_cached_agent_map() -> dict:
+    """Get agent email→user_id map, refreshing if stale."""
+    now = time.time()
+    if now - _lookup_cache["agent_last_refresh"] > _AGENT_CACHE_TTL:
+        _lookup_cache["agent_email_map"] = _build_agent_email_map()
+        _lookup_cache["agent_last_refresh"] = now
+    return _lookup_cache["agent_email_map"]
 
 
-def get_sync_status() -> dict:
-    state = _get_state()
-    state.pop("_type", None)
-    state["is_running"] = _worker_thread is not None and _worker_thread.is_alive()
-    # Trim errors to last 20
-    if len(state.get("errors", [])) > 20:
-        state["errors"] = state["errors"][-20:]
-    return state
+def _get_cached_tag_lookup() -> dict:
+    """Get tag UUID→name map, refreshing if stale."""
+    now = time.time()
+    if now - _lookup_cache["tag_last_refresh"] > _TAG_CACHE_TTL:
+        _lookup_cache["tag_lookup"] = _fetch_tags()
+        _lookup_cache["tag_last_refresh"] = now
+    return _lookup_cache["tag_lookup"]
 
 
 # ══════════════════════════════════════════════════════════════
@@ -172,6 +185,7 @@ def _extract_domain(email_addr: str) -> Optional[str]:
 
 
 def _fetch_tags() -> dict:
+    """Fetch all tags from Atlas. Returns {uuid: label_name}."""
     try:
         resp = requests.get(f"{ATLAS_API}/tags", headers=_headers(), timeout=30)
         resp.raise_for_status()
@@ -179,11 +193,12 @@ def _fetch_tags() -> dict:
         tags = data if isinstance(data, list) else data.get("data", data.get("tags", []))
         return {str(t.get("id", "")): (t.get("label") or t.get("name") or str(t.get("id", ""))) for t in tags if t.get("id")}
     except Exception as e:
-        logger.warning(f"[SHADOW] Failed to fetch tags: {e}")
+        logger.warning(f"[SYNC] Failed to fetch tags: {e}")
         return {}
 
 
 def _build_agent_email_map() -> dict:
+    """Build email→user_id map from Trinity users."""
     all_users = list(users_collection.find({}, {"_id": 0, "user_id": 1, "email": 1}))
     return {u["email"].lower(): u["user_id"] for u in all_users if u.get("email")}
 
@@ -200,7 +215,22 @@ def _fetch_atlas_users() -> list:
         return []
 
 
-# Cache for email → Atlas agent ID mapping
+def _fetch_conversation(conv_id: str) -> dict:
+    """Fetch full conversation details from Atlas API."""
+    try:
+        resp = requests.get(
+            f"{ATLAS_API}/conversations/{conv_id}",
+            headers=_headers(),
+            timeout=30,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        logger.error(f"[SYNC] Failed to fetch conversation {conv_id}: {e}")
+        return {}
+
+
+# Atlas agent ID cache (for push-back layer)
 _atlas_agent_cache = {"map": {}, "last_refresh": None}
 _ATLAS_AGENT_CACHE_TTL = 300  # 5 minutes
 
@@ -222,62 +252,7 @@ def _get_atlas_agent_id_by_email(email: str) -> Optional[str]:
     return _atlas_agent_cache["map"].get(email.lower()) if email else None
 
 
-def sync_assignment_to_atlas(ticket_id: str, assignee_user_id: Optional[str]) -> bool:
-    """
-    Push an assignment change from Trinity to Atlas.
-    Returns True if the Atlas API call succeeded, False otherwise.
-    """
-    if not ATLAS_KEY:
-        return False
-    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
-    if not ticket:
-        return False
-    atlas_conv_id = ticket.get("atlas_conversation_id")
-    if not atlas_conv_id:
-        return False
-
-    atlas_agent_id = None
-    if assignee_user_id:
-        user = users_collection.find_one({"user_id": assignee_user_id}, {"_id": 0, "email": 1})
-        if user and user.get("email"):
-            atlas_agent_id = _get_atlas_agent_id_by_email(user["email"])
-            if not atlas_agent_id:
-                logger.warning(f"No Atlas agent for {user['email']}, skipping Atlas sync")
-                return False
-        else:
-            return False
-
-    try:
-        resp = requests.post(
-            f"{ATLAS_API}/conversations/{atlas_conv_id}",
-            headers=_headers(),
-            json={"assignedAgentId": atlas_agent_id},
-            timeout=15,
-        )
-        resp.raise_for_status()
-        logger.info(f"[ATLAS←] Assignment: ticket={ticket_id} agent={atlas_agent_id or 'unassigned'}")
-        return True
-    except Exception as e:
-        logger.error(f"[ATLAS←] Assignment failed for {ticket_id}: {e}")
-        return False
-
-
-# Reverse mappings: Trinity field values → Atlas API values
-_REVERSE_STATUS_MAP = {
-    "todo": "OPEN",
-    "in_progress": "OPEN",
-    "waiting": "SNOOZED",
-    "closed": "CLOSED",
-}
-
-_REVERSE_PRIORITY_MAP = {
-    "low": "LOW",
-    "medium": "MEDIUM",
-    "high": "HIGH",
-    "urgent": "URGENT",
-}
-
-# Cache: tag name → Atlas UUID (built from _fetch_tags)
+# Tag name→UUID reverse cache (for push-back layer)
 _tag_name_to_id_cache = {"map": {}, "last_refresh": None}
 _TAG_NAME_CACHE_TTL = 600  # 10 minutes
 
@@ -289,95 +264,55 @@ def _get_tag_name_to_id_map() -> dict:
         not _tag_name_to_id_cache["last_refresh"]
         or (now - _tag_name_to_id_cache["last_refresh"]).total_seconds() > _TAG_NAME_CACHE_TTL
     ):
-        tags = _fetch_tags()  # returns {uuid: name}
+        tags = _fetch_tags()
         _tag_name_to_id_cache["map"] = {name.lower(): uid for uid, name in tags.items()}
         _tag_name_to_id_cache["last_refresh"] = now
     return _tag_name_to_id_cache["map"]
 
 
-def sync_ticket_to_atlas(ticket_id: str, changed_fields: dict) -> bool:
-    """
-    Push field changes from Trinity to Atlas. Atlas remains the source of truth.
-    
-    changed_fields: dict of Trinity field names → new values, e.g.:
-        {"status": "closed", "priority": "high", "tags": ["billing", "urgent"]}
-    
-    Supported fields: status, priority, tags, custom_fields, assignee_id
-    """
-    if not ATLAS_KEY:
-        return False
+# ══════════════════════════════════════════════════════════════
+# State Management
+# ══════════════════════════════════════════════════════════════
 
-    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0, "atlas_conversation_id": 1})
-    if not ticket:
-        return False
-    atlas_conv_id = ticket.get("atlas_conversation_id")
-    if not atlas_conv_id:
-        return False
-
-    atlas_payload = {}
-
-    # Status
-    if "status" in changed_fields:
-        atlas_status = _REVERSE_STATUS_MAP.get(changed_fields["status"])
-        if atlas_status:
-            atlas_payload["status"] = atlas_status
-
-    # Priority
-    if "priority" in changed_fields:
-        atlas_priority = _REVERSE_PRIORITY_MAP.get(changed_fields["priority"])
-        if atlas_priority:
-            atlas_payload["priority"] = atlas_priority
-
-    # Tags (convert names → UUIDs)
-    if "tags" in changed_fields:
-        tag_map = _get_tag_name_to_id_map()
-        atlas_tags = []
-        for tag_name in (changed_fields["tags"] or []):
-            tag_id = tag_map.get(tag_name.lower())
-            if tag_id:
-                atlas_tags.append(tag_id)
-            # Skip tags without a UUID — they don't exist on Atlas
-        atlas_payload["tags"] = atlas_tags
-
-    # Custom fields
-    if "custom_fields" in changed_fields:
-        atlas_payload["customFields"] = changed_fields["custom_fields"]
-
-    # Assignment (delegate to existing function for agent ID resolution)
-    if "assignee_id" in changed_fields:
-        sync_assignment_to_atlas(ticket_id, changed_fields["assignee_id"])
-        # Don't include in the general payload — handled separately
-
-    if not atlas_payload:
-        return True  # Nothing to push
-
-    try:
-        resp = requests.post(
-            f"{ATLAS_API}/conversations/{atlas_conv_id}",
-            headers=_headers(),
-            json=atlas_payload,
-            timeout=15,
-        )
-        resp.raise_for_status()
-        logger.info(f"[ATLAS←] Fields synced: ticket={ticket_id} fields={list(atlas_payload.keys())}")
-        return True
-    except Exception as e:
-        logger.error(f"[ATLAS←] Field sync failed for {ticket_id}: {e} payload={atlas_payload}")
-        return False
+def _get_state() -> dict:
+    state = _state_col.find_one({"_type": "shadow"}, {"_id": 0})
+    if not state:
+        return {
+            "_type": "shadow",
+            "status": "stopped",
+            "poll_interval": DEFAULT_POLL_INTERVAL,
+            "lookback_minutes": DEFAULT_LOOKBACK_MINUTES,
+            "last_sync_at": None,
+            "cycles_completed": 0,
+            "conversations_checked": 0,
+            "new_tickets_created": 0,
+            "messages_synced": 0,
+            "sidebars_synced": 0,
+            "field_updates": 0,
+            "conflicts_skipped": 0,
+            "webhook_events_processed": 0,
+            "errors": [],
+            "started_at": None,
+        }
+    return state
 
 
-def sync_tags_to_atlas(ticket_id: str) -> bool:
-    """Push current tag list from Trinity ticket to Atlas."""
-    if not ATLAS_KEY:
-        return False
-    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0, "atlas_conversation_id": 1, "tags": 1})
-    if not ticket or not ticket.get("atlas_conversation_id"):
-        return False
-    return sync_ticket_to_atlas(ticket_id, {"tags": ticket.get("tags", [])})
+def _save_state(state: dict):
+    state["_type"] = "shadow"
+    _state_col.update_one({"_type": "shadow"}, {"$set": state}, upsert=True)
+
+
+def get_sync_status() -> dict:
+    state = _get_state()
+    state.pop("_type", None)
+    state["is_running"] = _worker_thread is not None and _worker_thread.is_alive()
+    if len(state.get("errors", [])) > 20:
+        state["errors"] = state["errors"][-20:]
+    return state
 
 
 # ══════════════════════════════════════════════════════════════
-# Customer helper
+# Shared Sync Logic: Customer
 # ══════════════════════════════════════════════════════════════
 
 def _get_or_create_customer(email_addr: str, name: str, atlas_customer: dict = None) -> Optional[dict]:
@@ -415,7 +350,7 @@ def _get_or_create_customer(email_addr: str, name: str, atlas_customer: dict = N
 
 
 # ══════════════════════════════════════════════════════════════
-# Conversation → Ticket creation (for NEW conversations)
+# Shared Sync Logic: Ticket Creation
 # ══════════════════════════════════════════════════════════════
 
 def _create_ticket_from_conv(conv: dict, tag_lookup: dict, agent_email_map: dict) -> Optional[str]:
@@ -434,11 +369,9 @@ def _create_ticket_from_conv(conv: dict, tag_lookup: dict, agent_email_map: dict
     customer_email = customer.get("email") or (customer.get("defaultSenders") or {}).get("email")
     created_at = _parse_dt(conv.get("createdAt")) or _parse_dt(conv.get("startedAt")) or datetime.now(timezone.utc)
 
-    # Use Atlas conversation number for ticket_id to maintain parity
     atlas_number = conv.get("number")
     if atlas_number:
         ticket_id = f"TKT-{atlas_number}"
-        # Check for collision (shouldn't happen, but safety)
         if tickets_collection.find_one({"ticket_id": ticket_id}):
             ticket_id = generate_ticket_id()
     else:
@@ -485,18 +418,15 @@ def _create_ticket_from_conv(conv: dict, tag_lookup: dict, agent_email_map: dict
         "atlas_assigned_to_zeus": conv.get("assignedToZeus") or False,
     }
 
-    # Link customer
     if customer_email:
         cust = _get_or_create_customer(customer_email, ticket_doc["customer_name"], atlas_customer=customer)
         if cust:
             ticket_doc["customer_id"] = cust.get("customer_id")
 
-    # Map agent
     agent_email = assigned_agent.get("email")
     if agent_email and agent_email.lower() in agent_email_map:
         ticket_doc["assignee_id"] = agent_email_map[agent_email.lower()]
 
-    # Last message snapshot
     last_msg = conv.get("lastMessage")
     if last_msg:
         ticket_doc["last_message_text"] = (_strip_html(last_msg.get("text") or ""))[:200]
@@ -507,24 +437,92 @@ def _create_ticket_from_conv(conv: dict, tag_lookup: dict, agent_email_map: dict
     try:
         tickets_collection.insert_one(ticket_doc)
         ticket_doc.pop("_id", None)
-        # Run routing rules on newly synced Atlas tickets (same as manual creation)
         try:
             from ticket_helpers import run_routing_rules
             if not ticket_doc.get("atlas_assigned_to_zeus"):
                 run_routing_rules(ticket_doc)
         except Exception as e:
-            logger.warning(f"[SHADOW] Routing rules failed for {ticket_id}: {e}")
+            logger.warning(f"[SYNC] Routing rules failed for {ticket_id}: {e}")
         return ticket_id
     except Exception as e:
-        # Duplicate atlas_conversation_id — already exists
         if "duplicate key" in str(e).lower():
             return None
-        logger.error(f"[SHADOW] Error creating ticket: {e}")
+        logger.error(f"[SYNC] Error creating ticket: {e}")
         return None
 
 
+def _create_or_link_ticket(conv: dict, tag_lookup: dict, agent_email_map: dict) -> Optional[str]:
+    """
+    For a new Atlas conversation, either link it to an existing IMAP ticket
+    or create a new Trinity ticket. Returns ticket_id or None.
+    """
+    atlas_conv_id = str(conv.get("id", ""))
+    atlas_number = conv.get("number")
+    customer_email = ((conv.get("customer") or {}).get("email") or "").lower().strip()
+    conv_title = (conv.get("title") or conv.get("subject") or "").strip()
+
+    # Match 1: Try by ticket_id (TKT-{number})
+    if atlas_number:
+        expected_tid = f"TKT-{atlas_number}"
+        existing_by_id = tickets_collection.find_one(
+            {"ticket_id": expected_tid, "$or": [
+                {"atlas_conversation_id": None},
+                {"atlas_conversation_id": {"$exists": False}},
+            ]},
+            {"_id": 0, "ticket_id": 1},
+        )
+        if existing_by_id:
+            tickets_collection.update_one(
+                {"ticket_id": expected_tid},
+                {"$set": {
+                    "atlas_conversation_id": atlas_conv_id,
+                    "atlas_number": atlas_number,
+                }},
+            )
+            logger.info(f"[SYNC] Linked ticket {expected_tid} to Atlas conv {atlas_conv_id} (by ticket_id)")
+            return expected_tid
+
+    # Match 2: Try by customer_email + title
+    if customer_email and conv_title:
+        imap_match = tickets_collection.find_one(
+            {
+                "$or": [
+                    {"atlas_conversation_id": None},
+                    {"atlas_conversation_id": {"$exists": False}},
+                ],
+                "customer_email": customer_email,
+                "title": conv_title,
+            },
+            {"_id": 0, "ticket_id": 1},
+        )
+        if imap_match:
+            ticket_id = imap_match["ticket_id"]
+            new_ticket_id = f"TKT-{atlas_number}" if atlas_number else ticket_id
+            link_fields = {
+                "atlas_conversation_id": atlas_conv_id,
+                "atlas_number": atlas_number,
+            }
+            if new_ticket_id != ticket_id and not tickets_collection.find_one({"ticket_id": new_ticket_id}):
+                link_fields["ticket_id"] = new_ticket_id
+                for ref_col in ["messages", "email_threads", "ticket_changelog",
+                                "notifications", "email_replies", "csat_tokens", "csat_responses"]:
+                    db[ref_col].update_many(
+                        {"ticket_id": ticket_id},
+                        {"$set": {"ticket_id": new_ticket_id}},
+                    )
+                ticket_id = new_ticket_id
+            tickets_collection.update_one(
+                {"ticket_id": imap_match["ticket_id"]},
+                {"$set": link_fields},
+            )
+            logger.info(f"[SYNC] Linked IMAP ticket {ticket_id} to Atlas conv {atlas_conv_id} (by email+title)")
+            return ticket_id
+
+    return _create_ticket_from_conv(conv, tag_lookup, agent_email_map)
+
+
 # ══════════════════════════════════════════════════════════════
-# Message sync (for existing AND new tickets)
+# Shared Sync Logic: Messages
 # ══════════════════════════════════════════════════════════════
 
 def _sync_messages(atlas_conv_id: str, ticket_id: str) -> int:
@@ -548,10 +546,9 @@ def _sync_messages(atlas_conv_id: str, ticket_id: str) -> int:
                 break
             cursor += len(items)
     except Exception as e:
-        logger.warning(f"[SHADOW] Failed to fetch messages for conv {atlas_conv_id}: {e}")
+        logger.warning(f"[SYNC] Failed to fetch messages for conv {atlas_conv_id}: {e}")
         return 0
 
-    # Get existing atlas_message_ids for this ticket
     existing_ids = set()
     for doc in messages_collection.find({"ticket_id": ticket_id, "atlas_message_id": {"$exists": True}}, {"atlas_message_id": 1, "_id": 0}):
         existing_ids.add(doc.get("atlas_message_id"))
@@ -610,13 +607,13 @@ def _sync_messages(atlas_conv_id: str, ticket_id: str) -> int:
             new_count += 1
         except Exception as e:
             if "duplicate key" not in str(e).lower():
-                logger.warning(f"[SHADOW] Error inserting message {atlas_msg_id}: {e}")
+                logger.warning(f"[SYNC] Error inserting message {atlas_msg_id}: {e}")
 
     return new_count
 
 
 # ══════════════════════════════════════════════════════════════
-# Sidebar (internal notes) sync
+# Shared Sync Logic: Sidebars (Internal Notes)
 # ══════════════════════════════════════════════════════════════
 
 def _sync_sidebars(atlas_conv_id: str, ticket_id: str) -> int:
@@ -631,7 +628,7 @@ def _sync_sidebars(atlas_conv_id: str, ticket_id: str) -> int:
         data = resp.json()
         sidebars = data.get("data", []) if isinstance(data, dict) else data
     except Exception as e:
-        logger.warning(f"[SHADOW] Failed to fetch sidebars for conv {atlas_conv_id}: {e}")
+        logger.warning(f"[SYNC] Failed to fetch sidebars for conv {atlas_conv_id}: {e}")
         return 0
 
     if not sidebars:
@@ -643,22 +640,10 @@ def _sync_sidebars(atlas_conv_id: str, ticket_id: str) -> int:
         if not sidebar_id:
             continue
 
-        # Each sidebar may have messages inside it
         sidebar_messages = sidebar.get("messages") or []
-        if not sidebar_messages:
-            try:
-                requests.get(
-                    f"{ATLAS_API}/conversations/{atlas_conv_id}/sidebars",
-                    headers=_headers(),
-                    timeout=15,
-                )
-            except Exception:
-                pass
-
         for smsg in sidebar_messages:
             smsg_id = f"sidebar_{sidebar_id}_{smsg.get('id', uuid.uuid4().hex[:8])}"
 
-            # Check if already synced
             exists = messages_collection.find_one({"atlas_message_id": smsg_id}, {"_id": 0, "message_id": 1})
             if exists:
                 continue
@@ -688,13 +673,13 @@ def _sync_sidebars(atlas_conv_id: str, ticket_id: str) -> int:
                 new_count += 1
             except Exception as e:
                 if "duplicate key" not in str(e).lower():
-                    logger.warning(f"[SHADOW] Error inserting sidebar msg: {e}")
+                    logger.warning(f"[SYNC] Error inserting sidebar msg: {e}")
 
     return new_count
 
 
 # ══════════════════════════════════════════════════════════════
-# Field sync (status, priority, assignee) with conflict detection
+# Shared Sync Logic: Field Sync (Atlas → Trinity)
 # ══════════════════════════════════════════════════════════════
 
 def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict, tag_lookup: dict = None) -> tuple:
@@ -713,10 +698,9 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict, tag_lookup: di
         if trinity_assigned_at.tzinfo is None:
             trinity_assigned_at = trinity_assigned_at.replace(tzinfo=timezone.utc)
         age = (datetime.now(timezone.utc) - trinity_assigned_at).total_seconds()
-        if age < 300:  # 5-minute protection window
+        if age < 300:
             assignment_protected = True
 
-    # Build field updates — Atlas is source of truth
     updates = {}
     atlas_status = (conv.get("status") or "OPEN").upper()
     atlas_priority = (conv.get("priority") or "NO_PRIORITY").upper()
@@ -738,7 +722,6 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict, tag_lookup: di
             if new_assignee and ticket.get("assignee_id") != new_assignee:
                 updates["assignee_id"] = new_assignee
         elif ticket.get("assignee_id"):
-            # Atlas unassigned the agent — clear Trinity assignment
             updates["assignee_id"] = None
     else:
         logger.debug(f"[SYNC] Skipping assignment overwrite for {ticket_id} — Trinity assignment protected")
@@ -750,11 +733,10 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict, tag_lookup: di
         if sorted(mapped_tags) != sorted(ticket.get("tags") or []):
             updates["tags"] = mapped_tags
 
-    # Custom fields from Atlas
+    # Custom fields
     custom_fields = conv.get("customFields")
     if custom_fields and custom_fields != ticket.get("custom_fields"):
         updates["custom_fields"] = custom_fields
-        # Sync escalation_level from support_level custom field
         support_level = custom_fields.get("support_level")
         if support_level and ticket.get("escalation_level") != support_level:
             updates["escalation_level"] = support_level
@@ -791,20 +773,223 @@ def _sync_fields(conv: dict, ticket: dict, agent_email_map: dict, tag_lookup: di
     if updates:
         tickets_collection.update_one({"ticket_id": ticket_id}, {"$set": updates})
 
-    # Count real field changes (excluding metadata-only updates)
-    real_changes = sum(1 for k in updates if k not in ("atlas_status", "atlas_priority", "atlas_assigned_agent_name", "atlas_assigned_agent_email", "last_synced_at", "first_response_time", "avg_response_time", "total_resolution_time"))
+    real_changes = sum(1 for k in updates if k not in (
+        "atlas_status", "atlas_priority", "atlas_assigned_agent_name",
+        "atlas_assigned_agent_email", "last_synced_at",
+        "first_response_time", "avg_response_time", "total_resolution_time",
+    ))
     return real_changes, 0
 
 
 # ══════════════════════════════════════════════════════════════
-# Phase 1: Real-time Sync (recent conversations)
+# Layer 1: Webhook Handlers
+# ══════════════════════════════════════════════════════════════
+
+def _extract_conversation_id(payload: dict) -> str:
+    """Extract conversation ID from various webhook payload shapes."""
+    for key in ("conversationId", "conversation_id", "id"):
+        if key in payload and isinstance(payload[key], str):
+            return payload[key]
+    for wrapper in ("conversation", "data", "payload"):
+        nested = payload.get(wrapper)
+        if isinstance(nested, dict):
+            for key in ("id", "conversationId", "conversation_id"):
+                if key in nested:
+                    return str(nested[key])
+    return ""
+
+
+def _webhook_conversation_created(payload: dict):
+    """Handle new conversation — create ticket + sync messages."""
+    agent_map = _get_cached_agent_map()
+    tag_map = _get_cached_tag_lookup()
+    conv_id = _extract_conversation_id(payload)
+
+    if conv_id and tickets_collection.find_one({"atlas_conversation_id": conv_id}, {"_id": 0, "ticket_id": 1}):
+        logger.info(f"[WEBHOOK] Conversation {conv_id} already exists, skipping create")
+        return
+
+    conv = payload.get("conversation") or payload.get("data") or {}
+    if not conv.get("id") and conv_id:
+        conv = _fetch_conversation(conv_id)
+
+    if not conv.get("id"):
+        logger.warning("[WEBHOOK] Could not get conversation data for created event")
+        return
+
+    ticket_id = _create_ticket_from_conv(conv, tag_map, agent_map)
+    if ticket_id:
+        atlas_id = str(conv.get("id", ""))
+        _sync_messages(atlas_id, ticket_id)
+        _sync_sidebars(atlas_id, ticket_id)
+        logger.info(f"[WEBHOOK] Created ticket {ticket_id} from conversation #{conv.get('number')}")
+
+
+def _webhook_field_change(payload: dict, change_type: str):
+    """Handle status/agent/priority changes — update existing ticket fields."""
+    agent_map = _get_cached_agent_map()
+    conv_id = _extract_conversation_id(payload)
+
+    if not conv_id:
+        logger.warning(f"[WEBHOOK] No conversation ID in {change_type} event")
+        return
+
+    ticket = tickets_collection.find_one(
+        {"atlas_conversation_id": conv_id},
+        {"_id": 0},
+    )
+
+    if not ticket:
+        logger.info(f"[WEBHOOK] Ticket for {conv_id} not found, creating from {change_type} event")
+        _webhook_conversation_created(payload)
+        return
+
+    conv = _fetch_conversation(conv_id)
+    if not conv.get("id"):
+        return
+
+    updates_applied, conflicts = _sync_fields(conv, ticket, agent_map)
+
+    tickets_collection.update_one(
+        {"ticket_id": ticket["ticket_id"]},
+        {"$set": {"updated_at": datetime.now(timezone.utc)}},
+    )
+
+    logger.info(f"[WEBHOOK] {change_type}: ticket {ticket['ticket_id']} — {updates_applied} updates, {conflicts} conflicts")
+
+
+def _webhook_new_message(payload: dict):
+    """Handle new message — sync messages + update ticket timestamps + sync fields."""
+    conv_id = _extract_conversation_id(payload)
+    if not conv_id:
+        logger.warning("[WEBHOOK] No conversation ID in new message event")
+        return
+
+    ticket = tickets_collection.find_one(
+        {"atlas_conversation_id": conv_id},
+        {"_id": 0},
+    )
+
+    if not ticket:
+        logger.info(f"[WEBHOOK] Ticket for {conv_id} not found, creating from message event")
+        _webhook_conversation_created(payload)
+        return
+
+    ticket_id = ticket["ticket_id"]
+    new_msgs = _sync_messages(conv_id, ticket_id)
+
+    now = datetime.now(timezone.utc)
+    tickets_collection.update_one(
+        {"ticket_id": ticket_id},
+        {"$set": {"updated_at": now, "last_message_at": now}},
+    )
+
+    # Also sync field changes (status, priority, assignee may have changed)
+    agent_map = _get_cached_agent_map()
+    conv = _fetch_conversation(conv_id)
+    if conv.get("id"):
+        _sync_fields(conv, ticket, agent_map)
+
+    if new_msgs:
+        logger.info(f"[WEBHOOK] Synced {new_msgs} new messages for {ticket_id}")
+    else:
+        logger.debug(f"[WEBHOOK] Message event for {ticket_id}, no new messages found")
+
+
+def _webhook_tags_changed(payload: dict):
+    """Handle tag changes — update ticket tags + sync all fields."""
+    conv_id = _extract_conversation_id(payload)
+    if not conv_id:
+        return
+
+    ticket = tickets_collection.find_one(
+        {"atlas_conversation_id": conv_id},
+        {"_id": 0},
+    )
+    if not ticket:
+        _webhook_conversation_created(payload)
+        return
+
+    conv = _fetch_conversation(conv_id)
+    if not conv.get("id"):
+        return
+
+    agent_map = _get_cached_agent_map()
+    tag_map = _get_cached_tag_lookup()
+
+    raw_tags = conv.get("tags") or []
+    mapped_tags = [tag_map.get(str(t), str(t)) for t in raw_tags]
+    tickets_collection.update_one(
+        {"ticket_id": ticket["ticket_id"]},
+        {"$set": {"tags": mapped_tags, "updated_at": datetime.now(timezone.utc)}},
+    )
+    logger.info(f"[WEBHOOK] Updated tags for {ticket['ticket_id']}: {mapped_tags}")
+
+    _sync_fields(conv, ticket, agent_map)
+
+
+# Webhook event type → handler mapping
+_WEBHOOK_HANDLERS = {
+    "conversation.created": _webhook_conversation_created,
+    "conversation_created": _webhook_conversation_created,
+    "conversation.agent_changed": lambda p: _webhook_field_change(p, "agent_changed"),
+    "conversation_agent_changed": lambda p: _webhook_field_change(p, "agent_changed"),
+    "conversation.status_changed": lambda p: _webhook_field_change(p, "status_changed"),
+    "conversation_status_changed": lambda p: _webhook_field_change(p, "status_changed"),
+    "conversation.priority_changed": lambda p: _webhook_field_change(p, "priority_changed"),
+    "conversation_priority_changed": lambda p: _webhook_field_change(p, "priority_changed"),
+    "conversation.tags_changed": _webhook_tags_changed,
+    "conversation_tags_changed": _webhook_tags_changed,
+    "message.received": _webhook_new_message,
+    "new_message_received": _webhook_new_message,
+    "message.created": _webhook_new_message,
+    "sidebar.created": lambda p: _webhook_field_change(p, "sidebar_created"),
+    "sidebar.message_created": lambda p: _webhook_field_change(p, "sidebar_message"),
+}
+
+
+def handle_webhook_event(event_type: str, payload: dict):
+    """
+    Main entry point for Layer 1 (Webhooks).
+    Called by the thin HTTP handler in routes/atlas_webhooks.py.
+    """
+    handler = _WEBHOOK_HANDLERS.get(event_type)
+
+    if handler:
+        handler(payload)
+    else:
+        # Unknown event type — try to infer from payload
+        logger.info(f"[WEBHOOK] Unknown event type '{event_type}', attempting inference")
+        conv_id = _extract_conversation_id(payload)
+        if conv_id:
+            exists = tickets_collection.find_one(
+                {"atlas_conversation_id": conv_id},
+                {"_id": 0, "ticket_id": 1},
+            )
+            if exists:
+                _webhook_field_change(payload, f"inferred_{event_type or 'unknown'}")
+            else:
+                _webhook_conversation_created(payload)
+
+    # Track webhook events in state
+    try:
+        _state_col.update_one(
+            {"_type": "shadow"},
+            {"$inc": {"webhook_events_processed": 1}},
+        )
+    except Exception:
+        pass
+
+
+# ══════════════════════════════════════════════════════════════
+# Layer 2: Poller (Realtime Sync — Safety Net)
 # ══════════════════════════════════════════════════════════════
 
 def _run_realtime_sync(state: dict, tag_lookup: dict, agent_email_map: dict) -> dict:
     """
-    Phase 1: Fetch Atlas conversations updated in the last N minutes
+    Layer 2: Fetch Atlas conversations updated in the last N minutes
     and sync new tickets, messages, sidebars, and field changes.
-    This keeps Trinity in near-real-time with Atlas.
+    Safety net for anything webhooks might miss.
     """
     lookback = state.get("lookback_minutes", DEFAULT_LOOKBACK_MINUTES)
     start_date = (datetime.now(timezone.utc) - timedelta(minutes=lookback)).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -883,106 +1068,25 @@ def _run_realtime_sync(state: dict, tag_lookup: dict, agent_email_map: dict) -> 
                 break
 
         except requests.Timeout:
-            logger.warning(f"[SHADOW] Timeout at cursor {cursor}, retrying...")
+            logger.warning(f"[POLLER] Timeout at cursor {cursor}, retrying...")
             time.sleep(5)
             continue
         except Exception as e:
-            logger.error(f"[SHADOW] Error in realtime sync at cursor {cursor}: {e}")
+            logger.error(f"[POLLER] Error in realtime sync at cursor {cursor}: {e}")
             break
 
     return stats
 
 
-def _create_or_link_ticket(conv: dict, tag_lookup: dict, agent_email_map: dict) -> Optional[str]:
-    """
-    For a new Atlas conversation, either link it to an existing IMAP ticket
-    or create a new Trinity ticket. Returns ticket_id or None.
-    """
-    atlas_conv_id = str(conv.get("id", ""))
-    atlas_number = conv.get("number")
-    customer_email = ((conv.get("customer") or {}).get("email") or "").lower().strip()
-    conv_title = (conv.get("title") or conv.get("subject") or "").strip()
-
-    # Match 1: Try by ticket_id (TKT-{number}) — most reliable
-    if atlas_number:
-        expected_tid = f"TKT-{atlas_number}"
-        existing_by_id = tickets_collection.find_one(
-            {"ticket_id": expected_tid, "$or": [
-                {"atlas_conversation_id": None},
-                {"atlas_conversation_id": {"$exists": False}},
-            ]},
-            {"_id": 0, "ticket_id": 1},
-        )
-        if existing_by_id:
-            tickets_collection.update_one(
-                {"ticket_id": expected_tid},
-                {"$set": {
-                    "atlas_conversation_id": atlas_conv_id,
-                    "atlas_number": atlas_number,
-                }},
-            )
-            logger.info(f"[SYNC] Linked ticket {expected_tid} to Atlas conv {atlas_conv_id} (by ticket_id)")
-            return expected_tid
-
-    # Match 2: Try by customer_email + title
-    if customer_email and conv_title:
-        imap_match = tickets_collection.find_one(
-            {
-                "$or": [
-                    {"atlas_conversation_id": None},
-                    {"atlas_conversation_id": {"$exists": False}},
-                ],
-                "customer_email": customer_email,
-                "title": conv_title,
-            },
-            {"_id": 0, "ticket_id": 1},
-        )
-        if imap_match:
-            ticket_id = imap_match["ticket_id"]
-            new_ticket_id = f"TKT-{atlas_number}" if atlas_number else ticket_id
-            link_fields = {
-                "atlas_conversation_id": atlas_conv_id,
-                "atlas_number": atlas_number,
-            }
-            if new_ticket_id != ticket_id and not tickets_collection.find_one({"ticket_id": new_ticket_id}):
-                link_fields["ticket_id"] = new_ticket_id
-                for ref_col in ["messages", "email_threads", "ticket_changelog",
-                                "notifications", "email_replies", "csat_tokens", "csat_responses"]:
-                    db[ref_col].update_many(
-                        {"ticket_id": ticket_id},
-                        {"$set": {"ticket_id": new_ticket_id}},
-                    )
-                ticket_id = new_ticket_id
-            tickets_collection.update_one(
-                {"ticket_id": imap_match["ticket_id"]},
-                {"$set": link_fields},
-            )
-            logger.info(f"[SYNC] Linked IMAP ticket {ticket_id} to Atlas conv {atlas_conv_id} (by email+title)")
-            return ticket_id
-
-    return _create_ticket_from_conv(conv, tag_lookup, agent_email_map)
-
-
 # ══════════════════════════════════════════════════════════════
-# Phase 2: Full Comprehensive Sync
+# Layer 3: Full Crawl (Historical Reconciliation)
 # ══════════════════════════════════════════════════════════════
-
-FULL_SYNC_WINDOW_DAYS = 90      # Extended: covers long-tail open tickets beyond 45-day mark
-FULL_SYNC_BATCH_SIZE = 200      # Doubled to compensate for wider window
 
 def _run_full_sync_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -> dict:
     """
-    Phase 2: Full comprehensive sync.
-
-    Walks through ALL Atlas conversations (including CLOSED) created
-    in the last FULL_SYNC_WINDOW_DAYS days. Processes one batch per cycle,
-    tracking position with a cursor. When it reaches the end, resets
-    and starts a new pass.
-
-    This catches:
-    - Tickets opened AND closed during downtime (the old gap audit's blind spot)
-    - Any messages or field changes missed by the realtime lookback window
-    - Conversations in any status (OPEN, CLOSED, SNOOZED, PENDING, etc.)
+    Layer 3: Walk through ALL Atlas conversations (including CLOSED) created
+    in the last FULL_SYNC_WINDOW_DAYS days. Processes one batch per cycle.
+    Catches anything missed by webhooks and poller.
     """
     stats = {"checked": 0, "new_tickets": 0, "messages_synced": 0,
              "field_updates": 0, "sidebars_synced": 0}
@@ -1004,13 +1108,12 @@ def _run_full_sync_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -
         total = data.get("total", 0)
 
         if not convs:
-            # Reached end or empty window — mark pass as complete
             full_sync["cursor"] = 0
             full_sync["completed_passes"] = full_sync.get("completed_passes", 0) + 1
             full_sync["last_completed_at"] = datetime.now(timezone.utc).isoformat()
             state["full_sync"] = full_sync
             _save_state(state)
-            logger.info(f"[FULL_SYNC] Pass #{full_sync['completed_passes']} complete. Total={full_sync.get('total', 0)}")
+            logger.info(f"[CRAWL] Pass #{full_sync['completed_passes']} complete. Total={full_sync.get('total', 0)}")
             return stats
 
         for conv in convs:
@@ -1065,7 +1168,7 @@ def _run_full_sync_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -
             full_sync["cursor"] = 0
             full_sync["completed_passes"] = full_sync.get("completed_passes", 0) + 1
             full_sync["last_completed_at"] = datetime.now(timezone.utc).isoformat()
-            logger.info(f"[FULL_SYNC] Pass #{full_sync['completed_passes']} complete. Total={total}")
+            logger.info(f"[CRAWL] Pass #{full_sync['completed_passes']} complete. Total={total}")
         else:
             full_sync["cursor"] = new_cursor
 
@@ -1074,30 +1177,137 @@ def _run_full_sync_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -
         _save_state(state)
 
     except requests.Timeout:
-        logger.warning(f"[FULL_SYNC] Timeout at cursor {cursor}")
+        logger.warning(f"[CRAWL] Timeout at cursor {cursor}")
     except Exception as e:
-        logger.error(f"[FULL_SYNC] Error at cursor {cursor}: {e}")
+        logger.error(f"[CRAWL] Error at cursor {cursor}: {e}")
 
     return stats
 
 
 # ══════════════════════════════════════════════════════════════
-# Daemon Loop (2-Phase Architecture)
+# Layer 4: Push-back (Trinity → Atlas)
+# ══════════════════════════════════════════════════════════════
+
+def sync_assignment_to_atlas(ticket_id: str, assignee_user_id: Optional[str]) -> bool:
+    """Push an assignment change from Trinity to Atlas."""
+    if not ATLAS_KEY:
+        return False
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0})
+    if not ticket:
+        return False
+    atlas_conv_id = ticket.get("atlas_conversation_id")
+    if not atlas_conv_id:
+        return False
+
+    atlas_agent_id = None
+    if assignee_user_id:
+        user = users_collection.find_one({"user_id": assignee_user_id}, {"_id": 0, "email": 1})
+        if user and user.get("email"):
+            atlas_agent_id = _get_atlas_agent_id_by_email(user["email"])
+            if not atlas_agent_id:
+                logger.warning(f"No Atlas agent for {user['email']}, skipping Atlas sync")
+                return False
+        else:
+            return False
+
+    try:
+        resp = requests.post(
+            f"{ATLAS_API}/conversations/{atlas_conv_id}",
+            headers=_headers(),
+            json={"assignedAgentId": atlas_agent_id},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        logger.info(f"[PUSH] Assignment: ticket={ticket_id} agent={atlas_agent_id or 'unassigned'}")
+        return True
+    except Exception as e:
+        logger.error(f"[PUSH] Assignment failed for {ticket_id}: {e}")
+        return False
+
+
+def sync_ticket_to_atlas(ticket_id: str, changed_fields: dict) -> bool:
+    """
+    Push field changes from Trinity to Atlas. Atlas remains the source of truth.
+
+    changed_fields: dict of Trinity field names → new values, e.g.:
+        {"status": "closed", "priority": "high", "tags": ["billing", "urgent"]}
+    """
+    if not ATLAS_KEY:
+        return False
+
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0, "atlas_conversation_id": 1})
+    if not ticket:
+        return False
+    atlas_conv_id = ticket.get("atlas_conversation_id")
+    if not atlas_conv_id:
+        return False
+
+    atlas_payload = {}
+
+    if "status" in changed_fields:
+        atlas_status = _REVERSE_STATUS_MAP.get(changed_fields["status"])
+        if atlas_status:
+            atlas_payload["status"] = atlas_status
+
+    if "priority" in changed_fields:
+        atlas_priority = _REVERSE_PRIORITY_MAP.get(changed_fields["priority"])
+        if atlas_priority:
+            atlas_payload["priority"] = atlas_priority
+
+    if "tags" in changed_fields:
+        tag_map = _get_tag_name_to_id_map()
+        atlas_tags = []
+        for tag_name in (changed_fields["tags"] or []):
+            tag_id = tag_map.get(tag_name.lower())
+            if tag_id:
+                atlas_tags.append(tag_id)
+        atlas_payload["tags"] = atlas_tags
+
+    if "custom_fields" in changed_fields:
+        atlas_payload["customFields"] = changed_fields["custom_fields"]
+
+    if "assignee_id" in changed_fields:
+        sync_assignment_to_atlas(ticket_id, changed_fields["assignee_id"])
+
+    if not atlas_payload:
+        return True
+
+    try:
+        resp = requests.post(
+            f"{ATLAS_API}/conversations/{atlas_conv_id}",
+            headers=_headers(),
+            json=atlas_payload,
+            timeout=15,
+        )
+        resp.raise_for_status()
+        logger.info(f"[PUSH] Fields synced: ticket={ticket_id} fields={list(atlas_payload.keys())}")
+        return True
+    except Exception as e:
+        logger.error(f"[PUSH] Field sync failed for {ticket_id}: {e} payload={atlas_payload}")
+        return False
+
+
+def sync_tags_to_atlas(ticket_id: str) -> bool:
+    """Push current tag list from Trinity ticket to Atlas."""
+    if not ATLAS_KEY:
+        return False
+    ticket = tickets_collection.find_one({"ticket_id": ticket_id}, {"_id": 0, "atlas_conversation_id": 1, "tags": 1})
+    if not ticket or not ticket.get("atlas_conversation_id"):
+        return False
+    return sync_ticket_to_atlas(ticket_id, {"tags": ticket.get("tags", [])})
+
+
+# ══════════════════════════════════════════════════════════════
+# Daemon Loop (Layers 2 + 3)
 # ══════════════════════════════════════════════════════════════
 
 def _sync_loop():
     """
-    Main daemon loop — 2-phase architecture:
-
-    Phase 1 (Realtime): Syncs conversations updated in the last 15 minutes.
-                        Runs every cycle. Keeps Trinity in near-real-time.
-
-    Phase 2 (Full):     Walks ALL conversations from the last 45 days
-                        (including closed). Processes 100/cycle. When it
-                        reaches the end, starts over. Catches everything
-                        Phase 1 might miss (downtime, closed tickets, etc.)
+    Main daemon loop combining Layer 2 (Poller) and Layer 3 (Full Crawl).
+    Layer 1 (Webhooks) runs independently via HTTP requests.
+    Layer 4 (Push-back) runs on demand from ticket mutation endpoints.
     """
-    logger.info("[SHADOW] Sync daemon started (2-phase architecture)")
+    logger.info("[SYNC] Unified sync engine started (Layers 2+3)")
 
     state = _get_state()
     state["status"] = "running"
@@ -1106,34 +1316,30 @@ def _sync_loop():
         state["full_sync"] = {"cursor": 0, "completed_passes": 0, "total": 0}
     _save_state(state)
 
+    # Prime the shared caches
     tag_lookup = _fetch_tags()
     agent_email_map = _build_agent_email_map()
-    logger.info(f"[SHADOW] Loaded {len(tag_lookup)} tags, {len(agent_email_map)} agent mappings")
-
-    last_agent_refresh = time.time()
-    last_tag_refresh = time.time()
-    AGENT_REFRESH_INTERVAL = 300  # 5 minutes
-    TAG_REFRESH_INTERVAL = 600   # 10 minutes
+    _lookup_cache["tag_lookup"] = tag_lookup
+    _lookup_cache["agent_email_map"] = agent_email_map
+    _lookup_cache["tag_last_refresh"] = time.time()
+    _lookup_cache["agent_last_refresh"] = time.time()
+    logger.info(f"[SYNC] Loaded {len(tag_lookup)} tags, {len(agent_email_map)} agent mappings")
 
     while not _stop_event.is_set():
         try:
-            now = time.time()
-            if now - last_agent_refresh > AGENT_REFRESH_INTERVAL:
-                agent_email_map = _build_agent_email_map()
-                last_agent_refresh = now
-            if now - last_tag_refresh > TAG_REFRESH_INTERVAL:
-                tag_lookup = _fetch_tags()
-                last_tag_refresh = now
+            # Refresh caches
+            tag_lookup = _get_cached_tag_lookup()
+            agent_email_map = _get_cached_agent_map()
 
             state = _get_state()
 
-            # ── Phase 1: Realtime sync ──
+            # Layer 2: Poller (realtime safety net)
             realtime_stats = _run_realtime_sync(state, tag_lookup, agent_email_map)
 
-            # ── Phase 2: Full comprehensive sync ──
+            # Layer 3: Full Crawl (historical reconciliation)
             full_stats = _run_full_sync_batch(state, tag_lookup, agent_email_map)
 
-            # ── Update state ──
+            # Update state
             state = _get_state()
             state["cycles_completed"] = state.get("cycles_completed", 0) + 1
             state["conversations_checked"] = state.get("conversations_checked", 0) + realtime_stats["conversations_checked"]
@@ -1153,18 +1359,18 @@ def _sync_loop():
             if total_activity > 0 or full_stats["checked"] > 0:
                 fs = state.get("full_sync", {})
                 logger.info(
-                    f"[SHADOW] Cycle #{state['cycles_completed']}: "
-                    f"P1[checked={realtime_stats['conversations_checked']} new={realtime_stats['new_tickets']} "
+                    f"[SYNC] Cycle #{state['cycles_completed']}: "
+                    f"L2[checked={realtime_stats['conversations_checked']} new={realtime_stats['new_tickets']} "
                     f"msgs={realtime_stats['messages_synced']} fields={realtime_stats['field_updates']}] "
-                    f"P2[batch={full_stats['checked']} new={full_stats['new_tickets']} "
+                    f"L3[batch={full_stats['checked']} new={full_stats['new_tickets']} "
                     f"msgs={full_stats['messages_synced']} cursor={fs.get('cursor',0)}/{fs.get('total',0)} "
                     f"pass#{fs.get('completed_passes',0)}]"
                 )
             else:
-                logger.debug(f"[SHADOW] Cycle #{state['cycles_completed']}: no changes")
+                logger.debug(f"[SYNC] Cycle #{state['cycles_completed']}: no changes")
 
         except Exception as e:
-            logger.error(f"[SHADOW] Error in sync loop: {e}")
+            logger.error(f"[SYNC] Error in sync loop: {e}")
             state = _get_state()
             errors = state.get("errors", [])
             errors.append({"time": datetime.now(timezone.utc).isoformat(), "error": str(e)})
@@ -1179,7 +1385,7 @@ def _sync_loop():
     state = _get_state()
     state["status"] = "stopped"
     _save_state(state)
-    logger.info("[SHADOW] Sync daemon stopped")
+    logger.info("[SYNC] Unified sync engine stopped")
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1187,20 +1393,20 @@ def _sync_loop():
 # ══════════════════════════════════════════════════════════════
 
 def start_sync() -> dict:
-    """Start the shadow sync daemon."""
+    """Start the unified sync engine."""
     global _worker_thread
     if not ATLAS_KEY:
         return {"error": "No ATLAS_API_KEY configured"}
     if _worker_thread and _worker_thread.is_alive():
         return {"message": "Sync is already running", "status": "running"}
     _stop_event.clear()
-    _worker_thread = threading.Thread(target=_sync_loop, daemon=True, name="atlas_shadow_sync")
+    _worker_thread = threading.Thread(target=_sync_loop, daemon=True, name="atlas_unified_sync")
     _worker_thread.start()
-    return {"message": "Shadow sync started", "status": "running"}
+    return {"message": "Unified sync engine started", "status": "running"}
 
 
 def stop_sync() -> dict:
-    """Stop the shadow sync daemon."""
+    """Stop the unified sync engine."""
     global _worker_thread
     if not _worker_thread or not _worker_thread.is_alive():
         return {"message": "Sync is not running", "status": "stopped"}
@@ -1210,7 +1416,7 @@ def stop_sync() -> dict:
     state = _get_state()
     state["status"] = "stopped"
     _save_state(state)
-    return {"message": "Shadow sync stopped", "status": "stopped"}
+    return {"message": "Unified sync engine stopped", "status": "stopped"}
 
 
 def update_config(poll_interval: int = None, lookback_minutes: int = None) -> dict:
@@ -1225,9 +1431,9 @@ def update_config(poll_interval: int = None, lookback_minutes: int = None) -> di
 
 
 def auto_start_on_boot():
-    """Called on server startup. Auto-starts the sync daemon if Atlas key is configured."""
+    """Called on server startup. Auto-starts the sync engine if Atlas key is configured."""
     if not ATLAS_KEY:
-        logger.info("[SHADOW] No ATLAS_API_KEY — shadow sync disabled")
+        logger.info("[SYNC] No ATLAS_API_KEY — sync engine disabled")
         return
-    logger.info("[SHADOW] Auto-starting shadow sync on boot...")
+    logger.info("[SYNC] Auto-starting unified sync engine on boot...")
     start_sync()

@@ -547,10 +547,7 @@ async def startup_event():
     # Start email IMAP poller
     from services.email_poller import start_poller as start_email_poller
     start_email_poller()
-    # Auto-resume Atlas backfill if it was interrupted
-    from services.atlas_backfill import auto_resume_on_startup
-    auto_resume_on_startup()
-    # Auto-start Atlas shadow sync
+    # Start unified Atlas sync engine (Layers 2+3; Layer 1 runs via webhooks)
     from services.atlas_sync import auto_start_on_boot
     auto_start_on_boot()
     # Start unassigned ticket sweep daemon

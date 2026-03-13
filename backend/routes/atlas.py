@@ -13,11 +13,7 @@ import requests
 
 from dependencies import get_current_user
 from database import db, tickets_collection, users_collection
-from services.atlas_backfill import (
-    start_backfill, stop_backfill, reset_backfill,
-    get_status, test_batch, import_atlas_agents,
-    run_enrichment_pass, get_enrichment_status, stop_enrichment,
-)
+# Legacy backfill service removed — import_atlas_agents kept inline below
 from services.atlas_sync import (
     start_sync, stop_sync, get_sync_status, update_config as update_sync_config,
 )
@@ -43,8 +39,8 @@ class TestBatchRequest(BaseModel):
 
 @router.get("/backfill/status")
 async def backfill_status(current_user: dict = Depends(get_current_user)):
-    """Get current backfill progress."""
-    return get_status()
+    """Legacy endpoint — backfill completed, now handled by unified sync engine."""
+    return {"status": "completed", "message": "Historical backfill completed. Use /sync/ endpoints for the unified engine."}
 
 
 @router.post("/backfill/start")
@@ -52,23 +48,20 @@ async def backfill_start(
     req: BackfillStartRequest = BackfillStartRequest(),
     current_user: dict = Depends(get_current_user),
 ):
-    """Start or resume the Atlas historical backfill."""
-    result = start_backfill(max_batches=req.max_batches)
-    return result
+    """Legacy endpoint — backfill replaced by unified sync engine."""
+    return {"status": "completed", "message": "Backfill is no longer needed. The unified sync engine handles all data synchronization."}
 
 
 @router.post("/backfill/stop")
 async def backfill_stop(current_user: dict = Depends(get_current_user)):
-    """Gracefully stop the running backfill. Can be resumed later."""
-    result = stop_backfill()
-    return result
+    """Legacy endpoint — backfill replaced by unified sync engine."""
+    return {"status": "completed", "message": "No backfill running. Use /sync/stop to stop the unified engine."}
 
 
 @router.post("/backfill/reset")
 async def backfill_reset(current_user: dict = Depends(get_current_user)):
-    """Reset backfill state to start from scratch. Stop first if running."""
-    result = reset_backfill()
-    return result
+    """Legacy endpoint — backfill replaced by unified sync engine."""
+    return {"status": "completed", "message": "Backfill state is managed by the unified sync engine."}
 
 
 @router.post("/backfill/test")
@@ -76,37 +69,108 @@ async def backfill_test(
     req: TestBatchRequest = TestBatchRequest(),
     current_user: dict = Depends(get_current_user),
 ):
-    """Run a test batch import (synchronous, blocking). Returns sample results."""
-    if req.count > 200:
-        raise HTTPException(status_code=400, detail="Test batch max 200 conversations")
-    result = test_batch(count=req.count)
-    return result
+    """Legacy endpoint — test batch no longer needed."""
+    return {"status": "completed", "message": "Use /sync-health for data parity auditing."}
 
 
 @router.post("/agents/import")
 async def atlas_import_agents(current_user: dict = Depends(get_current_user)):
     """Import all Atlas agents into Trinity users. Safe to re-run (upserts by email)."""
-    result = import_atlas_agents()
-    return result
+    from services.atlas_sync import ATLAS_API, ATLAS_KEY, _headers, _parse_dt, _fetch_atlas_users
+    import uuid as _uuid
+
+    if not ATLAS_KEY:
+        return {"error": "No ATLAS_API_KEY configured"}
+
+    results = {"total_fetched": 0, "created": 0, "updated": 0, "errors": []}
+
+    cursor = 0
+    all_agents = []
+    while True:
+        resp = requests.get(
+            f"{ATLAS_API}/users",
+            params={"cursor": cursor, "limit": 200},
+            headers=_headers(),
+            timeout=60,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        agents = data.get("data", data) if isinstance(data, dict) else data
+        if not agents:
+            break
+        all_agents.extend(agents)
+        total = data.get("total", 0) if isinstance(data, dict) else 0
+        if len(all_agents) >= total or not total:
+            break
+        cursor += len(agents)
+
+    results["total_fetched"] = len(all_agents)
+
+    for agent in all_agents:
+        email = (agent.get("email") or "").lower().strip()
+        if not email:
+            results["errors"].append(f"Agent {agent.get('id')}: no email, skipped")
+            continue
+
+        atlas_user_id = str(agent.get("id", ""))
+        first_name = agent.get("firstName") or ""
+        last_name = agent.get("lastName") or ""
+        full_name = f"{first_name} {last_name}".strip() or email
+        profile_url = agent.get("profileUrl")
+        access_types = agent.get("accessTypes") or []
+        role = "admin" if "ADMIN" in access_types else "agent"
+        created_at = _parse_dt(agent.get("createdAt")) or datetime.now(timezone.utc)
+
+        try:
+            existing = users_collection.find_one({"email": email}, {"_id": 0, "user_id": 1})
+            if existing:
+                users_collection.update_one(
+                    {"email": email},
+                    {"$set": {
+                        "atlas_user_id": atlas_user_id,
+                        "atlas_access_types": access_types,
+                        "atlas_profile_url": profile_url,
+                    }},
+                )
+                results["updated"] += 1
+            else:
+                user_id = f"user_{_uuid.uuid4().hex[:12]}"
+                users_collection.insert_one({
+                    "user_id": user_id,
+                    "email": email,
+                    "name": full_name,
+                    "picture": profile_url,
+                    "role": role,
+                    "created_at": created_at,
+                    "updated_at": datetime.now(timezone.utc),
+                    "source": "atlas_import",
+                    "atlas_user_id": atlas_user_id,
+                    "atlas_access_types": access_types,
+                    "atlas_profile_url": profile_url,
+                })
+                results["created"] += 1
+        except Exception as e:
+            results["errors"].append(f"{email}: {str(e)[:200]}")
+
+    return results
 
 
 @router.post("/backfill/enrich")
 async def backfill_enrich(current_user: dict = Depends(get_current_user)):
-    """Start the enrichment pass for previously-imported tickets (runs in background)."""
-    result = run_enrichment_pass()
-    return result
+    """Legacy endpoint — enrichment replaced by unified sync engine."""
+    return {"status": "completed", "message": "Enrichment is handled by the unified sync engine's full crawl (Layer 3)."}
 
 
 @router.get("/backfill/enrich/status")
 async def enrichment_status(current_user: dict = Depends(get_current_user)):
-    """Get current enrichment progress."""
-    return get_enrichment_status()
+    """Legacy endpoint — enrichment replaced by unified sync engine."""
+    return {"status": "completed", "message": "Use /sync/status for engine status."}
 
 
 @router.post("/backfill/enrich/stop")
 async def enrichment_stop(current_user: dict = Depends(get_current_user)):
-    """Stop the enrichment pass."""
-    return stop_enrichment()
+    """Legacy endpoint — enrichment replaced by unified sync engine."""
+    return {"status": "completed"}
 
 
 # ══════════════════════════════════════════════════════════════
