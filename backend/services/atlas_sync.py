@@ -47,10 +47,13 @@ _worker_thread: Optional[threading.Thread] = None
 _stop_event = threading.Event()
 
 # Defaults
-DEFAULT_POLL_INTERVAL = 60       # seconds between sync cycles
-DEFAULT_LOOKBACK_MINUTES = 60    # how far back to look for updated conversations
+DEFAULT_POLL_INTERVAL = 30       # seconds between sync cycles (was 60)
+DEFAULT_LOOKBACK_MINUTES = 60    # how far back to look for new conversations
 FULL_SYNC_WINDOW_DAYS = 90       # covers long-tail open tickets
-FULL_SYNC_BATCH_SIZE = 200       # conversations per full-crawl batch
+HOT_BATCH_SIZE = 500             # conversations per hot-crawl batch (active tickets)
+COLD_BATCH_SIZE = 500            # conversations per cold-crawl batch (all tickets)
+FULL_SYNC_BATCH_SIZE = COLD_BATCH_SIZE  # backward compat alias
+HOT_STATUSES = ["OPEN", "PENDING", "SNOOZED"]  # statuses for hot crawl
 
 # Atlas → Trinity field mappings
 STATUS_MAP = {
@@ -945,6 +948,8 @@ _WEBHOOK_HANDLERS = {
     "message.created": _webhook_new_message,
     "sidebar.created": lambda p: _webhook_field_change(p, "sidebar_created"),
     "sidebar.message_created": lambda p: _webhook_field_change(p, "sidebar_message"),
+    "conversation.custom_fields": lambda p: _webhook_field_change(p, "custom_fields"),
+    "conversation_custom_fields": lambda p: _webhook_field_change(p, "custom_fields"),
 }
 
 
@@ -1061,7 +1066,7 @@ def _run_realtime_sync(state: dict, tag_lookup: dict, agent_email_map: dict) -> 
                         new_sidebars = _sync_sidebars(atlas_conv_id, ticket_id)
                         stats["sidebars_synced"] += new_sidebars
 
-                time.sleep(0.2)
+                time.sleep(0.05)
 
             cursor += len(convs)
             if cursor >= total:
@@ -1079,26 +1084,119 @@ def _run_realtime_sync(state: dict, tag_lookup: dict, agent_email_map: dict) -> 
 
 
 # ══════════════════════════════════════════════════════════════
-# Layer 3: Full Crawl (Historical Reconciliation)
+# Layer 3: Two-Tier Crawl (Hot + Cold)
 # ══════════════════════════════════════════════════════════════
+# Hot Crawl: OPEN + PENDING + SNOOZED only (~2K convos, full pass in ~3-5 min)
+# Cold Crawl: All conversations in 90-day window (~46K, full pass in ~45 min)
 
-def _run_full_sync_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -> dict:
+_TICKET_PROJECTION = {
+    "_id": 0, "ticket_id": 1, "status": 1, "priority": 1,
+    "assignee_id": 1, "updated_at": 1, "last_synced_at": 1,
+    "custom_fields": 1, "closed_at": 1, "atlas_csat_score": 1,
+    "trinity_assigned_at": 1, "tags": 1, "escalation_level": 1,
+}
+
+
+def _process_conversation_batch(convs: list, tag_lookup: dict, agent_email_map: dict, skip_messages_if_recent: int = 0) -> dict:
     """
-    Layer 3: Walk through ALL Atlas conversations (including CLOSED) created
-    in the last FULL_SYNC_WINDOW_DAYS days. Processes one batch per cycle.
-    Catches anything missed by webhooks and poller.
+    Process a batch of Atlas conversations — shared by both hot and cold crawls.
+    If skip_messages_if_recent > 0, skip message sync for tickets synced within that many seconds.
     """
     stats = {"checked": 0, "new_tickets": 0, "messages_synced": 0,
              "field_updates": 0, "sidebars_synced": 0}
 
-    full_sync = state.get("full_sync", {})
-    cursor = full_sync.get("cursor", 0)
-    window_start = (datetime.now(timezone.utc) - timedelta(days=FULL_SYNC_WINDOW_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(timezone.utc)
+
+    for conv in convs:
+        if _stop_event.is_set():
+            break
+
+        atlas_conv_id = str(conv.get("id", ""))
+        if not atlas_conv_id:
+            continue
+
+        stats["checked"] += 1
+
+        existing_ticket = tickets_collection.find_one(
+            {"atlas_conversation_id": atlas_conv_id},
+            _TICKET_PROJECTION,
+        )
+
+        if existing_ticket:
+            ticket_id = existing_ticket["ticket_id"]
+
+            # Always sync fields (cheap — no API call, just compares conv data)
+            field_updates, _ = _sync_fields(conv, existing_ticket, agent_email_map, tag_lookup)
+            stats["field_updates"] += field_updates
+
+            # Skip message sync if ticket was recently synced (avoids redundant API calls)
+            should_sync_messages = True
+            if skip_messages_if_recent > 0:
+                last_synced = existing_ticket.get("last_synced_at")
+                if last_synced:
+                    if last_synced.tzinfo is None:
+                        last_synced = last_synced.replace(tzinfo=timezone.utc)
+                    if (now - last_synced).total_seconds() < skip_messages_if_recent:
+                        should_sync_messages = False
+
+            if should_sync_messages:
+                new_msgs = _sync_messages(atlas_conv_id, ticket_id)
+                stats["messages_synced"] += new_msgs
+                new_sidebars = _sync_sidebars(atlas_conv_id, ticket_id)
+                stats["sidebars_synced"] += new_sidebars
+                if new_msgs > 0 or new_sidebars > 0:
+                    tickets_collection.update_one(
+                        {"ticket_id": ticket_id},
+                        {"$set": {"updated_at": now}},
+                    )
+        else:
+            ticket_id = _create_or_link_ticket(conv, tag_lookup, agent_email_map)
+            if ticket_id:
+                stats["new_tickets"] += 1
+                new_msgs = _sync_messages(atlas_conv_id, ticket_id)
+                stats["messages_synced"] += new_msgs
+                new_sidebars = _sync_sidebars(atlas_conv_id, ticket_id)
+                stats["sidebars_synced"] += new_sidebars
+
+        time.sleep(0.03)
+
+    return stats
+
+
+def _run_hot_crawl_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -> dict:
+    """
+    Hot Crawl: Cycle through OPEN, PENDING, SNOOZED conversations.
+    ~2,300 total. At 500/batch, full pass completes in ~5 batches = ~3-5 minutes.
+    Catches status/agent changes on active tickets that webhooks don't cover.
+    """
+    hot = state.get("hot_crawl", {
+        "status_idx": 0,
+        "cursor": 0,
+        "completed_passes": 0,
+        "total": 0,
+    })
+
+    status_idx = hot.get("status_idx", 0)
+    cursor = hot.get("cursor", 0)
+
+    if status_idx >= len(HOT_STATUSES):
+        # All statuses done — pass complete
+        hot["status_idx"] = 0
+        hot["cursor"] = 0
+        hot["completed_passes"] = hot.get("completed_passes", 0) + 1
+        hot["last_completed_at"] = datetime.now(timezone.utc).isoformat()
+        state["hot_crawl"] = hot
+        _save_state(state)
+        logger.info(f"[HOT] Pass #{hot['completed_passes']} complete")
+        return {"checked": 0, "new_tickets": 0, "messages_synced": 0,
+                "field_updates": 0, "sidebars_synced": 0}
+
+    current_status = HOT_STATUSES[status_idx]
 
     try:
         resp = requests.get(
             f"{ATLAS_API}/conversations",
-            params={"startDate": window_start, "cursor": cursor, "limit": FULL_SYNC_BATCH_SIZE},
+            params={"status": current_status, "cursor": cursor, "limit": HOT_BATCH_SIZE},
             headers=_headers(),
             timeout=30,
         )
@@ -1108,78 +1206,99 @@ def _run_full_sync_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -
         total = data.get("total", 0)
 
         if not convs:
-            full_sync["cursor"] = 0
-            full_sync["completed_passes"] = full_sync.get("completed_passes", 0) + 1
-            full_sync["last_completed_at"] = datetime.now(timezone.utc).isoformat()
-            state["full_sync"] = full_sync
+            # This status is exhausted — move to next
+            hot["status_idx"] = status_idx + 1
+            hot["cursor"] = 0
+            state["hot_crawl"] = hot
             _save_state(state)
-            logger.info(f"[CRAWL] Pass #{full_sync['completed_passes']} complete. Total={full_sync.get('total', 0)}")
-            return stats
+            return {"checked": 0, "new_tickets": 0, "messages_synced": 0,
+                    "field_updates": 0, "sidebars_synced": 0}
 
-        for conv in convs:
-            if _stop_event.is_set():
-                break
-
-            atlas_conv_id = str(conv.get("id", ""))
-            if not atlas_conv_id:
-                continue
-
-            stats["checked"] += 1
-
-            existing_ticket = tickets_collection.find_one(
-                {"atlas_conversation_id": atlas_conv_id},
-                {"_id": 0, "ticket_id": 1, "status": 1, "priority": 1,
-                 "assignee_id": 1, "updated_at": 1, "last_synced_at": 1,
-                 "custom_fields": 1, "closed_at": 1, "atlas_csat_score": 1,
-                 "trinity_assigned_at": 1, "tags": 1, "escalation_level": 1},
-            )
-
-            if existing_ticket:
-                ticket_id = existing_ticket["ticket_id"]
-                new_msgs = _sync_messages(atlas_conv_id, ticket_id)
-                stats["messages_synced"] += new_msgs
-                new_sidebars = _sync_sidebars(atlas_conv_id, ticket_id)
-                stats["sidebars_synced"] += new_sidebars
-                field_updates, _ = _sync_fields(conv, existing_ticket, agent_email_map, tag_lookup)
-                stats["field_updates"] += field_updates
-                tickets_collection.update_one(
-                    {"ticket_id": ticket_id},
-                    {"$set": {"last_synced_at": datetime.now(timezone.utc)}},
-                )
-                if new_msgs > 0:
-                    tickets_collection.update_one(
-                        {"ticket_id": ticket_id},
-                        {"$set": {"updated_at": datetime.now(timezone.utc)}},
-                    )
-            else:
-                ticket_id = _create_or_link_ticket(conv, tag_lookup, agent_email_map)
-                if ticket_id:
-                    stats["new_tickets"] += 1
-                    new_msgs = _sync_messages(atlas_conv_id, ticket_id)
-                    stats["messages_synced"] += new_msgs
-                    new_sidebars = _sync_sidebars(atlas_conv_id, ticket_id)
-                    stats["sidebars_synced"] += new_sidebars
-
-            time.sleep(0.15)
+        # Skip message sync if synced in last 120s (hot crawl focuses on field changes)
+        stats = _process_conversation_batch(convs, tag_lookup, agent_email_map, skip_messages_if_recent=120)
 
         # Advance cursor
         new_cursor = cursor + len(convs)
         if new_cursor >= total:
-            full_sync["cursor"] = 0
-            full_sync["completed_passes"] = full_sync.get("completed_passes", 0) + 1
-            full_sync["last_completed_at"] = datetime.now(timezone.utc).isoformat()
-            logger.info(f"[CRAWL] Pass #{full_sync['completed_passes']} complete. Total={total}")
+            hot["status_idx"] = status_idx + 1
+            hot["cursor"] = 0
         else:
-            full_sync["cursor"] = new_cursor
+            hot["cursor"] = new_cursor
 
-        full_sync["total"] = total
-        state["full_sync"] = full_sync
+        hot["total"] = total
+        hot["current_status"] = current_status
+        state["hot_crawl"] = hot
+        _save_state(state)
+
+        if stats["field_updates"] > 0 or stats["new_tickets"] > 0:
+            logger.info(
+                f"[HOT] {current_status}: batch={stats['checked']} "
+                f"fields={stats['field_updates']} new={stats['new_tickets']} "
+                f"cursor={hot.get('cursor', 0)}/{total}"
+            )
+
+    except requests.Timeout:
+        logger.warning(f"[HOT] Timeout on {current_status} cursor={cursor}")
+    except Exception as e:
+        logger.error(f"[HOT] Error on {current_status} cursor={cursor}: {e}")
+
+    return stats
+
+
+def _run_cold_crawl_batch(state: dict, tag_lookup: dict, agent_email_map: dict) -> dict:
+    """
+    Cold Crawl: Walk through ALL Atlas conversations (including CLOSED) in the
+    90-day window. At 500/batch, full pass takes ~45 minutes (vs old ~4 hours).
+    Background reconciliation — catches everything eventually.
+    """
+    stats = {"checked": 0, "new_tickets": 0, "messages_synced": 0,
+             "field_updates": 0, "sidebars_synced": 0}
+
+    cold = state.get("full_sync", {})
+    cursor = cold.get("cursor", 0)
+    window_start = (datetime.now(timezone.utc) - timedelta(days=FULL_SYNC_WINDOW_DAYS)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    try:
+        resp = requests.get(
+            f"{ATLAS_API}/conversations",
+            params={"startDate": window_start, "cursor": cursor, "limit": COLD_BATCH_SIZE},
+            headers=_headers(),
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        convs = data.get("data", [])
+        total = data.get("total", 0)
+
+        if not convs:
+            cold["cursor"] = 0
+            cold["completed_passes"] = cold.get("completed_passes", 0) + 1
+            cold["last_completed_at"] = datetime.now(timezone.utc).isoformat()
+            state["full_sync"] = cold
+            _save_state(state)
+            logger.info(f"[COLD] Pass #{cold['completed_passes']} complete. Total={cold.get('total', 0)}")
+            return stats
+
+        stats = _process_conversation_batch(convs, tag_lookup, agent_email_map)
+
+        # Advance cursor
+        new_cursor = cursor + len(convs)
+        if new_cursor >= total:
+            cold["cursor"] = 0
+            cold["completed_passes"] = cold.get("completed_passes", 0) + 1
+            cold["last_completed_at"] = datetime.now(timezone.utc).isoformat()
+            logger.info(f"[COLD] Pass #{cold['completed_passes']} complete. Total={total}")
+        else:
+            cold["cursor"] = new_cursor
+
+        cold["total"] = total
+        state["full_sync"] = cold
         _save_state(state)
 
     except requests.Timeout:
-        logger.warning(f"[CRAWL] Timeout at cursor {cursor}")
+        logger.warning(f"[COLD] Timeout at cursor {cursor}")
     except Exception as e:
-        logger.error(f"[CRAWL] Error at cursor {cursor}: {e}")
+        logger.error(f"[COLD] Error at cursor {cursor}: {e}")
 
     return stats
 
@@ -1303,17 +1422,22 @@ def sync_tags_to_atlas(ticket_id: str) -> bool:
 
 def _sync_loop():
     """
-    Main daemon loop combining Layer 2 (Poller) and Layer 3 (Full Crawl).
-    Layer 1 (Webhooks) runs independently via HTTP requests.
-    Layer 4 (Push-back) runs on demand from ticket mutation endpoints.
+    Main daemon loop:
+    - Layer 2 (Poller): catches newly created conversations
+    - Layer 3 Hot Crawl: syncs active tickets (OPEN/PENDING/SNOOZED) every ~3-5 min
+    - Layer 3 Cold Crawl: full historical reconciliation every ~45 min
+    - Layer 1 (Webhooks) runs independently via HTTP
+    - Layer 4 (Push-back) runs on demand from ticket mutation endpoints
     """
-    logger.info("[SYNC] Unified sync engine started (Layers 2+3)")
+    logger.info("[SYNC] Unified sync engine started (L2 + L3-Hot + L3-Cold)")
 
     state = _get_state()
     state["status"] = "running"
     state["started_at"] = datetime.now(timezone.utc)
     if "full_sync" not in state:
         state["full_sync"] = {"cursor": 0, "completed_passes": 0, "total": 0}
+    if "hot_crawl" not in state:
+        state["hot_crawl"] = {"status_idx": 0, "cursor": 0, "completed_passes": 0, "total": 0}
     _save_state(state)
 
     # Prime the shared caches
@@ -1333,41 +1457,59 @@ def _sync_loop():
 
             state = _get_state()
 
-            # Layer 2: Poller (realtime safety net)
+            # Layer 2: Poller (catches new conversations by creation date)
             realtime_stats = _run_realtime_sync(state, tag_lookup, agent_email_map)
 
-            # Layer 3: Full Crawl (historical reconciliation)
-            full_stats = _run_full_sync_batch(state, tag_lookup, agent_email_map)
+            # Layer 3 Hot: Active tickets (OPEN/PENDING/SNOOZED) — fast pass
+            hot_stats = _run_hot_crawl_batch(state, tag_lookup, agent_email_map)
+
+            # Layer 3 Cold: All conversations — background reconciliation
+            cold_stats = _run_cold_crawl_batch(state, tag_lookup, agent_email_map)
 
             # Update state
             state = _get_state()
             state["cycles_completed"] = state.get("cycles_completed", 0) + 1
             state["conversations_checked"] = state.get("conversations_checked", 0) + realtime_stats["conversations_checked"]
-            state["new_tickets_created"] = state.get("new_tickets_created", 0) + realtime_stats["new_tickets"] + full_stats["new_tickets"]
-            state["messages_synced"] = state.get("messages_synced", 0) + realtime_stats["messages_synced"] + full_stats["messages_synced"]
-            state["sidebars_synced"] = state.get("sidebars_synced", 0) + realtime_stats["sidebars_synced"] + full_stats["sidebars_synced"]
-            state["field_updates"] = state.get("field_updates", 0) + realtime_stats["field_updates"] + full_stats["field_updates"]
+            state["new_tickets_created"] = (
+                state.get("new_tickets_created", 0)
+                + realtime_stats["new_tickets"] + hot_stats.get("new_tickets", 0) + cold_stats.get("new_tickets", 0)
+            )
+            state["messages_synced"] = (
+                state.get("messages_synced", 0)
+                + realtime_stats["messages_synced"] + hot_stats.get("messages_synced", 0) + cold_stats.get("messages_synced", 0)
+            )
+            state["sidebars_synced"] = (
+                state.get("sidebars_synced", 0)
+                + realtime_stats["sidebars_synced"] + hot_stats.get("sidebars_synced", 0) + cold_stats.get("sidebars_synced", 0)
+            )
+            state["field_updates"] = (
+                state.get("field_updates", 0)
+                + realtime_stats["field_updates"] + hot_stats.get("field_updates", 0) + cold_stats.get("field_updates", 0)
+            )
             state["conflicts_skipped"] = state.get("conflicts_skipped", 0) + realtime_stats["conflicts"]
             state["last_sync_at"] = datetime.now(timezone.utc)
             state["status"] = "running"
             _save_state(state)
 
+            # Log cycle summary
             total_activity = (
-                realtime_stats["new_tickets"] + realtime_stats["messages_synced"] + realtime_stats["sidebars_synced"]
-                + full_stats["new_tickets"] + full_stats["messages_synced"] + full_stats["sidebars_synced"]
+                realtime_stats["new_tickets"] + realtime_stats["messages_synced"]
+                + hot_stats.get("new_tickets", 0) + hot_stats.get("field_updates", 0)
+                + cold_stats.get("new_tickets", 0) + cold_stats.get("messages_synced", 0)
             )
-            if total_activity > 0 or full_stats["checked"] > 0:
-                fs = state.get("full_sync", {})
+            if total_activity > 0 or hot_stats.get("checked", 0) > 0 or cold_stats.get("checked", 0) > 0:
+                hs = state.get("hot_crawl", {})
+                cs = state.get("full_sync", {})
+                hot_status = HOT_STATUSES[hs.get("status_idx", 0)] if hs.get("status_idx", 0) < len(HOT_STATUSES) else "DONE"
                 logger.info(
                     f"[SYNC] Cycle #{state['cycles_completed']}: "
-                    f"L2[checked={realtime_stats['conversations_checked']} new={realtime_stats['new_tickets']} "
-                    f"msgs={realtime_stats['messages_synced']} fields={realtime_stats['field_updates']}] "
-                    f"L3[batch={full_stats['checked']} new={full_stats['new_tickets']} "
-                    f"msgs={full_stats['messages_synced']} cursor={fs.get('cursor',0)}/{fs.get('total',0)} "
-                    f"pass#{fs.get('completed_passes',0)}]"
+                    f"L2[new={realtime_stats['new_tickets']} msgs={realtime_stats['messages_synced']}] "
+                    f"HOT[{hot_status} batch={hot_stats.get('checked',0)} fields={hot_stats.get('field_updates',0)} pass#{hs.get('completed_passes',0)}] "
+                    f"COLD[batch={cold_stats.get('checked',0)} new={cold_stats.get('new_tickets',0)} "
+                    f"cursor={cs.get('cursor',0)}/{cs.get('total',0)} pass#{cs.get('completed_passes',0)}]"
                 )
             else:
-                logger.debug(f"[SYNC] Cycle #{state['cycles_completed']}: no changes")
+                logger.debug(f"[SYNC] Cycle #{state['cycles_completed']}: idle")
 
         except Exception as e:
             logger.error(f"[SYNC] Error in sync loop: {e}")
