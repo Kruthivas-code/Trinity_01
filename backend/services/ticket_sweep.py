@@ -57,7 +57,7 @@ def sweep_unassigned_tickets() -> dict:
 
     # Find unassigned, non-Zeus, open tickets older than threshold
     query = {
-        "status": {"$in": ["todo", "in_progress", "waiting"]},
+        "status": {"$in": ["todo", "in_progress"]},
         "assignee_id": None,
         "atlas_assigned_to_zeus": {"$ne": True},
         "created_at": {"$lt": age_threshold},
