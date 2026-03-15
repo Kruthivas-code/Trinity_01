@@ -534,7 +534,7 @@ async def startup_event():
     global auto_close_task, zeus_cleanup_task
     from motor.motor_asyncio import AsyncIOMotorClient
     motor_client = AsyncIOMotorClient(MONGO_URL)
-    motor_db = motor_client[os.environ.get('DB_NAME', 'tickflow')]
+    motor_db = motor_client[os.environ.get('DB_NAME')]
     set_database(motor_db)
     initialize_realtime(motor_db)
     await start_pubsub()
