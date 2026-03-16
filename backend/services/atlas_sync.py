@@ -119,11 +119,17 @@ def _get_cached_agent_map() -> dict:
 
 
 def _get_cached_tag_lookup() -> dict:
-    """Get tag UUID→name map, refreshing if stale."""
+    """Get tag UUID→name map, refreshing if stale. Never caches empty results over existing data."""
     now = time.time()
     if now - _lookup_cache["tag_last_refresh"] > _TAG_CACHE_TTL:
-        _lookup_cache["tag_lookup"] = _fetch_tags()
-        _lookup_cache["tag_last_refresh"] = now
+        fresh = _fetch_tags()
+        # Fix 8: Don't poison cache with empty results if we already have data
+        if fresh or not _lookup_cache["tag_lookup"]:
+            _lookup_cache["tag_lookup"] = fresh
+            _lookup_cache["tag_last_refresh"] = now
+        else:
+            logger.warning("[SYNC] Tag fetch returned empty, keeping existing cache")
+            _lookup_cache["tag_last_refresh"] = now  # don't retry every call
     return _lookup_cache["tag_lookup"]
 
 
