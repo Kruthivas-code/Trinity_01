@@ -418,7 +418,7 @@ async def create_mongodb_indexes():
         _safe_create(api_keys_collection, "key_hash", unique=True, background=True)
         _safe_create(api_keys_collection, "key_sha256", unique=True, sparse=True, background=True)
         _safe_create(api_keys_collection, [("user_id", ASCENDING)], background=True)
-        _safe_create(feature_requests_collection, "feature_id", unique=True, background=True)
+        _safe_create(feature_requests_collection, "feature_id", unique=True, sparse=True, background=True)
         _safe_create(feature_requests_collection, [("status", ASCENDING)], background=True)
         _safe_create(csat_responses_collection, [("ticket_id", ASCENDING)], background=True)
         _safe_create(csat_tokens_collection, "token", unique=True, background=True)

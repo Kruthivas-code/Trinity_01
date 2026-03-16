@@ -671,13 +671,24 @@ def poll_inbox():
 
             # Process in batches — reconnect between batches to avoid SSL timeouts
             batch_size = 50
+            overquota_backoff = 0  # exponential backoff counter for OVERQUOTA errors
             for i in range(0, len(email_ids), batch_size):
                 batch = email_ids[i:i + batch_size]
                 for eid in batch:
                     try:
                         _process_email(mail, eid, folder="inbox")
+                        overquota_backoff = 0  # reset on success
                     except (imaplib.IMAP4.abort, ssl.SSLError, OSError) as e:
-                        logger.warning(f"[POLL] Connection lost mid-batch: {e}, reconnecting...")
+                        error_str = str(e)
+                        is_overquota = "OVERQUOTA" in error_str.upper()
+                        if is_overquota:
+                            overquota_backoff = min(overquota_backoff + 1, 6)
+                            wait_time = min(30 * (2 ** overquota_backoff), 600)  # 60s, 120s, 240s... up to 600s
+                            logger.warning(f"[POLL] OVERQUOTA hit, backing off {wait_time}s (attempt {overquota_backoff})")
+                            import time
+                            time.sleep(wait_time)
+                        else:
+                            logger.warning(f"[POLL] Connection lost mid-batch: {e}, reconnecting...")
                         try:
                             mail.logout()
                         except Exception:
@@ -685,11 +696,12 @@ def poll_inbox():
                         mail = imaplib.IMAP4_SSL(host, 993, ssl_context=ctx)
                         mail.login(user, password)
                         mail.select("INBOX")
-                        # Retry the failed email
-                        try:
-                            _process_email(mail, eid, folder="inbox")
-                        except Exception:
-                            pass
+                        # Retry the failed email (skip if overquota to avoid hammering)
+                        if not is_overquota:
+                            try:
+                                _process_email(mail, eid, folder="inbox")
+                            except Exception:
+                                pass
                     except Exception as e:
                         logger.error(f"[POLL] INBOX error {eid}: {e}", exc_info=True)
 
