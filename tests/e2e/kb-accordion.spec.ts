@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'https://sync-engine-fixes.preview.emergentagent.com';
+const BASE_URL = 'https://audit-engine-13.preview.emergentagent.com';
 const SESSION_TOKEN = 'test_kb_session_token';
 
 test.describe('KB Accordion - Public Docs', () => {

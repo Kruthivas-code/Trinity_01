@@ -10,7 +10,7 @@ import os
 import uuid
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://sync-engine-fixes.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://audit-engine-13.preview.emergentagent.com')
 SESSION_TOKEN = "test_kb_editor_session_2026"
 
 @pytest.fixture
