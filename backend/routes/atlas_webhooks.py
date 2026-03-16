@@ -41,7 +41,12 @@ async def atlas_webhook(request: Request):
             or ""
         ).lower().strip()
 
-        handle_webhook_event(event_type, payload)
+        import threading
+        threading.Thread(
+            target=handle_webhook_event,
+            args=(event_type, payload),
+            daemon=True,
+        ).start()
 
         return JSONResponse({"status": "ok"})
 
