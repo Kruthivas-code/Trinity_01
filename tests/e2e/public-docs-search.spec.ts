@@ -4,7 +4,7 @@
  */
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'https://audit-engine-13.preview.emergentagent.com';
+const BASE_URL = 'https://qasweep.preview.emergentagent.com';
 
 test.describe('Public Docs Page Load', () => {
   test('Public docs page loads with main components', async ({ page }) => {

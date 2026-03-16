@@ -235,14 +235,22 @@ async def test_routing_rule(
     rules = list(routing_rules_collection.find({"is_active": True}, {"_id": 0}).sort("priority", -1))
     matched_rules = []
     for rule in rules:
-        conditions = rule.get("conditions", [])
-        all_match = True
+        condition_groups = rule.get("condition_groups", [])
+        if not condition_groups:
+            conditions = rule.get("conditions", [])
+            condition_groups = [conditions] if conditions else []
+        all_match = False
         condition_results = []
-        for condition in conditions:
-            result = evaluate_condition(ticket_data, condition)
-            condition_results.append({"condition": condition, "matched": result})
-            if not result:
-                all_match = False
+        for group in condition_groups:
+            group_match = True
+            for condition in group:
+                result = evaluate_condition(ticket_data, condition)
+                condition_results.append({"condition": condition, "matched": result})
+                if not result:
+                    group_match = False
+            if group_match and group:
+                all_match = True
+                break
         if all_match:
             matched_rules.append({
                 "rule_id": rule.get("rule_id"),

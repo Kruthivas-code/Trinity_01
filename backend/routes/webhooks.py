@@ -29,6 +29,55 @@ def serialize_webhook(webhook: dict) -> dict:
         result["has_secret"] = False
     return result
 
+@router.get("/webhooks/events")
+async def list_webhook_events(current_user: dict = Depends(get_current_user)):
+    """List all available webhook event types"""
+    return {
+        "events": WEBHOOK_EVENT_TYPES,
+        "descriptions": {
+            "ticket.created": "Triggered when a new ticket is created",
+            "ticket.updated": "Triggered when ticket fields are updated",
+            "ticket.assigned": "Triggered when a ticket is assigned to a user or team",
+            "ticket.status_changed": "Triggered when ticket status changes",
+            "ticket.resolved": "Triggered when a ticket is closed (legacy alias for ticket.closed)",
+            "ticket.closed": "Triggered when a ticket is closed",
+            "ticket.deleted": "Triggered when a ticket is deleted",
+            "ticket.reply_added": "Triggered when a reply is added to a ticket",
+            "ticket.note_added": "Triggered when an internal note is added",
+            "customer.created": "Triggered when a new customer is created",
+            "customer.updated": "Triggered when customer information is updated",
+            "sla.breach": "Triggered when an SLA is breached",
+            "sla.warning": "Triggered when an SLA breach is imminent"
+        }
+    }
+
+
+@router.get("/webhooks/logs")
+async def get_all_webhook_logs(
+    cursor: int = 0,
+    limit: int = 50,
+    status: Optional[str] = None,
+    event: Optional[str] = None,
+    current_user: dict = Depends(require_admin)
+):
+    """Get all webhook delivery logs (admin only)"""
+    query = {}
+    if status:
+        query["status"] = status
+    if event:
+        query["event"] = event
+
+    logs = list(webhook_logs_collection.find(query).sort("created_at", -1).skip(cursor).limit(limit))
+    total = webhook_logs_collection.count_documents(query)
+
+    return {
+        "data": [serialize_doc(log) for log in logs],
+        "total": total,
+        "cursor": cursor,
+        "limit": limit
+    }
+
+
 @router.get("/webhooks")
 async def list_webhooks(
     cursor: int = 0,

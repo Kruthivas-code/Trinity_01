@@ -13,7 +13,7 @@ from pymongo import ASCENDING, DESCENDING
 
 from database import (
     db, tickets_collection, users_collection, teams_collection,
-    messages_collection, ticket_changelog_collection,
+    messages_collection, ticket_changelog_collection, customers_collection,
 )
 from dependencies import get_current_user
 from models.schemas import BulkUpdateRequest, BulkTagRequest
