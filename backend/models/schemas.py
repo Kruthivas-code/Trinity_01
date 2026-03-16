@@ -208,24 +208,36 @@ class APIKeyResponse(BaseModel):
 # ==================== Teams ====================
 
 class TeamCreate(BaseModel):
-    name: str
-    escalation_level: str = "L1"
-    description: Optional[str] = ""
+    name: str = Field(..., min_length=1, max_length=200)
+    escalation_level: str = Field(default="L1", max_length=10)
+    description: Optional[str] = Field(default="", max_length=1000)
 
     model_config = {"json_schema_extra": {"examples": [{"name": "Tier 1", "escalation_level": "L1", "description": "Frontline handling initial customer inquiries"}]}}
 
+    @validator('escalation_level')
+    def validate_escalation_level(cls, v):
+        if v not in VALID_ESCALATION_LEVELS:
+            raise ValueError(f'Escalation level must be one of: {", ".join(VALID_ESCALATION_LEVELS)}')
+        return v
+
 
 class TeamUpdate(BaseModel):
-    name: Optional[str] = None
-    escalation_level: Optional[str] = None
-    description: Optional[str] = None
-    lead_id: Optional[str] = None
+    name: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    escalation_level: Optional[str] = Field(default=None, max_length=10)
+    description: Optional[str] = Field(default=None, max_length=1000)
+    lead_id: Optional[str] = Field(default=None, max_length=100)
 
     model_config = {"json_schema_extra": {"examples": [{"name": "Tier 2 Engineering", "escalation_level": "L2", "lead_id": "user_jsmith"}]}}
 
+    @validator('escalation_level')
+    def validate_escalation_level(cls, v):
+        if v is not None and v not in VALID_ESCALATION_LEVELS:
+            raise ValueError(f'Escalation level must be one of: {", ".join(VALID_ESCALATION_LEVELS)}')
+        return v
+
 
 class TeamMemberAdd(BaseModel):
-    user_id: str
+    user_id: str = Field(..., min_length=1, max_length=100)
 
     model_config = {"json_schema_extra": {"examples": [{"user_id": "user_abc123"}]}}
 

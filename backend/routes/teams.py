@@ -11,7 +11,7 @@ from database import (
     users_collection, teams_collection, shifts_collection,
     user_shifts_collection, SYSTEM_TIMEZONE,
 )
-from dependencies import get_current_user, require_lead_or_admin
+from dependencies import get_current_user, require_lead_or_admin, require_admin
 from models.schemas import TeamCreate, TeamUpdate, TeamMemberAdd
 from utils import serialize_doc, get_ist_now, parse_time_str
 
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/api", tags=["teams"])
 @router.post("/teams")
 async def create_team(
     team_data: TeamCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_lead_or_admin)
 ):
     """Create a new team"""
     team_id = f"team_{uuid.uuid4().hex[:12]}"
@@ -150,7 +150,7 @@ async def get_team(
 async def update_team(
     team_id: str,
     team_data: TeamUpdate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_lead_or_admin)
 ):
     """Update team details"""
     update_data = {k: v for k, v in team_data.dict().items() if v is not None}
@@ -190,7 +190,7 @@ async def delete_team(
 async def add_team_member(
     team_id: str,
     member: TeamMemberAdd,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_lead_or_admin)
 ):
     """Add a member to a team"""
     team = teams_collection.find_one({"team_id": team_id})
@@ -221,7 +221,7 @@ async def add_team_member(
 async def remove_team_member(
     team_id: str,
     user_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_lead_or_admin)
 ):
     """Remove a member from a team"""
     result = teams_collection.update_one(

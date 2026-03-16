@@ -112,21 +112,36 @@ async def get_current_user(
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
-    session_doc = sessions_collection.find_one({"session_token": token}, {"_id": 0})
+    try:
+        session_doc = sessions_collection.find_one({"session_token": token}, {"_id": 0})
+    except Exception:
+        raise HTTPException(status_code=500, detail="Authentication service unavailable")
     if not session_doc:
         raise HTTPException(status_code=401, detail="Invalid session")
 
-    expires_at = session_doc["expires_at"]
-    if isinstance(expires_at, str):
-        expires_at = datetime.fromisoformat(expires_at)
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    user_id = session_doc.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid session data")
+
+    try:
+        expires_at = session_doc.get("expires_at")
+        if expires_at is None:
+            raise HTTPException(status_code=401, detail="Invalid session")
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at)
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid session")
 
     if expires_at < datetime.now(timezone.utc):
         sessions_collection.delete_one({"session_token": token})
         raise HTTPException(status_code=401, detail="Session expired")
 
-    user_doc = users_collection.find_one({"user_id": session_doc["user_id"]}, {"_id": 0})
+    try:
+        user_doc = users_collection.find_one({"user_id": user_id}, {"_id": 0})
+    except Exception:
+        raise HTTPException(status_code=500, detail="Authentication service unavailable")
     if not user_doc:
         raise HTTPException(status_code=401, detail="User not found")
 
