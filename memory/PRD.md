@@ -7,7 +7,7 @@ Trinity is an enterprise ticket management platform that synchronizes data with 
 - **Frontend:** React (port 3000)
 - **Backend:** FastAPI (port 8001)
 - **Database:** MongoDB
-- **External:** Atlas API, Amazon SES, Gmail IMAP, Gemini (summarization), Google OAuth
+- **External:** Atlas API, Amazon SES, Gmail IMAP, Gemini (summarization via Emergent LLM Key), Google OAuth
 
 ## Sync Engine — 5-Layer Architecture
 1. **Webhooks** — Real-time event processing from Atlas
@@ -26,29 +26,32 @@ Trinity is an enterprise ticket management platform that synchronizes data with 
 - Deep sync logic audit (found 20 flaws)
 - **All 20 sync engine flaws fixed and verified (100% test pass rate)**
 
-### 20 Flaws Fixed (March 16, 2026)
-1. Poller docstring corrected (creation-date-only filtering)
-2. Message sync poisoning — uses `last_message_synced_at` not `last_synced_at`
-3. Tag removal — handles empty tags from Atlas
-4. >90d invisibility — cold crawl covers ALL conversations (no date window)
-5. CSAT/closed_at one-shot — allows re-updates
-6. Unstable hot crawl pagination — documented, mitigated by multi-layer architecture
-7. Per-conversation error boundary with consecutive failure abort
-8. Empty tag cache poisoning protection
-9. False-positive ticket matching — time+source constraints
-10. Webhook projection optimization
-11. Hot crawl status transition — documented, covered by cold crawl + poller
-12. Redundant poller sync — skips recently message-synced tickets
-13. Webhook IMAP linking — uses `_create_or_link_ticket`
-14. Per-conversation error boundary in batch processor
-15. Webhook async processing — background thread, immediate 200 response
-16. Reverse priority map — "medium" → "NORMAL" (not "MEDIUM")
-17. Team ID sync from Atlas
-18. Messages with attachments but no text are now preserved
-19. Conflict counter tracks actual conflicts
-20. Tags webhook uses unified `_sync_fields` (no double update)
+### Backend Audit — 15 Issues (March 2026)
+**Already Fixed (before this session):**
+- Issue 1 (P0): Hardcoded Gemini key → summaries.py uses EMERGENT_LLM_KEY from env
+- Issue 2 (P0): Auth bypass → No /auth/google endpoint; uses Emergent session flow
+- Issue 3 (P0): Route conflict → atlas_webhooks.py has clean routes
+- Issue 14 (P3): Admin auth → All admin routes use require_admin
+
+**Fixed This Session (verified 24/24 tests):**
+- Issue 4 (P1): Robustified get_current_user in dependencies.py with proper error handling for edge cases
+- Issue 7 (P1): Teams authorization — create_team, update_team, add/remove members now require lead/admin role
+- Issue 8 (P1): TeamCreate/TeamUpdate validation — name length constraints, escalation_level validation
+- Issue 15 (P3): Removed ~200 lines of dead one-time migration code from server.py startup
+
+**Not Applicable (verified correct in current code):**
+- Issue 5: No mutable default arguments found
+- Issue 6: No soft deletion logic exists
+- Issue 9: Search uses proper MongoDB text indexes
+- Issue 10: Routes use string ticket_id, not ObjectId
+- Issue 11: Single-tenant architecture, no cross-tenant risk
+- Issue 12: Sweep is properly batched (50 tickets max)
+- Issue 13: No hardcoded Slack webhook URL in codebase
 
 ## Prioritized Backlog
+
+### P0 — Next
+- Frontend Codebase QA Audit (same thorough review as backend)
 
 ### P1 — Upcoming
 - Configure full webhooks in production (status_changed, conversation_created, agent_changed)
@@ -61,10 +64,14 @@ Trinity is an enterprise ticket management platform that synchronizes data with 
 - Recurring job for auto-closing stale tickets
 
 ## Key Files
-- `/app/backend/services/atlas_sync.py` — Unified sync engine
+- `/app/backend/services/atlas_sync.py` — Unified sync engine (stable, do not modify)
 - `/app/backend/routes/atlas_webhooks.py` — Webhook HTTP handler
 - `/app/backend/services/ticket_sweep.py` — Ticket sweep daemon
 - `/app/backend/routes/atlas.py` — Admin sync controls
+- `/app/backend/dependencies.py` — Auth dependencies
+- `/app/backend/routes/teams.py` — Team management
+- `/app/backend/models/schemas.py` — All Pydantic schemas
 
 ## Test Reports
-- `/app/test_reports/iteration_79.json` — 20-fix verification (23/23 passed)
+- `/app/test_reports/iteration_79.json` — 20-fix sync verification (23/23 passed)
+- `/app/test_reports/iteration_80.json` — Backend audit fixes (24/24 passed)
