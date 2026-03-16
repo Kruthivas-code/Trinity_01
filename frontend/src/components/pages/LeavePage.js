@@ -158,7 +158,6 @@ const LeavePage = ({ user }) => {
       
       if (eventUserId && eventUserId !== currentUserId) {
         // Silent update - no notification needed
-        console.log('Leave update from another user');
       }
     });
     

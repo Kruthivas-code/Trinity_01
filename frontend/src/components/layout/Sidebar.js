@@ -147,7 +147,7 @@ const Sidebar = ({ user, customInboxes = [], onInboxesChange }) => {
         method: 'POST',
         credentials: 'include'
       });
-      localStorage.removeItem('theme');
+      localStorage.removeItem('sidebarWidth');
       clearCachedUser();
       navigate('/login', { replace: true });
     } catch (error) {

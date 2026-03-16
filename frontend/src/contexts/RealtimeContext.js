@@ -48,7 +48,6 @@ export const RealtimeProvider = ({ children, user }) => {
 
     // Connection events
     newSocket.on('connect', () => {
-      console.log('🔌 Connected to real-time server');
       setIsConnected(true);
       reconnectAttempts.current = 0;
       
@@ -61,37 +60,25 @@ export const RealtimeProvider = ({ children, user }) => {
       });
     });
 
-    newSocket.on('disconnect', (reason) => {
-      console.log('🔌 Disconnected:', reason);
+    newSocket.on('disconnect', () => {
       setIsConnected(false);
     });
 
     newSocket.on('connect_error', (error) => {
       console.error('Connection error:', error);
       reconnectAttempts.current++;
-      if (reconnectAttempts.current >= maxReconnectAttempts) {
-        console.log('Max reconnection attempts reached');
-      }
     });
 
     // Authentication response
-    newSocket.on('authenticated', async (data) => {
-      console.log('✅ Authenticated:', data);
-      
+    newSocket.on('authenticated', async () => {
       // Trigger shift-start auto-assignment
       try {
-        const response = await fetch(`${BACKEND_URL}/api/auth/shift-start`, {
+        await fetch(`${BACKEND_URL}/api/auth/shift-start`, {
           method: 'POST',
           credentials: 'include'
         });
-        if (response.ok) {
-          const result = await response.json();
-          if (result.tickets_assigned > 0) {
-            console.log(`📋 Shift start: ${result.tickets_assigned} tickets assigned`);
-          }
-        }
-      } catch (error) {
-        console.log('Shift-start trigger skipped:', error.message);
+      } catch {
+        // Shift-start trigger skipped silently
       }
     });
 

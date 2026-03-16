@@ -409,13 +409,6 @@ function AppWithRealtime({ user, children }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [keyboardHelpOpen]);
 
-  // Store current user ID for presence filtering
-  useEffect(() => {
-    if (user?.user_id) {
-      window.__CURRENT_USER_ID__ = user.user_id;
-    }
-  }, [user]);
-
   const openCommandPalette = useCallback(() => {
     setCommandPaletteOpen(true);
   }, []);

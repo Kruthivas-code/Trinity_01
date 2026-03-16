@@ -17,7 +17,6 @@ const AuthCallback = () => {
       try {
         // Extract session_id from URL fragment
         const hash = window.location.hash;
-        console.log('AuthCallback: Processing hash:', hash);
         const sessionIdMatch = hash.match(/session_id=([^&]+)/);
         
         if (!sessionIdMatch) {
@@ -25,7 +24,6 @@ const AuthCallback = () => {
         }
 
         const sessionId = sessionIdMatch[1];
-        console.log('AuthCallback: Found session_id, calling backend...');
 
         // Exchange session_id for session_token
         const response = await fetch(`${BACKEND_URL}/api/auth/session`, {
@@ -35,9 +33,7 @@ const AuthCallback = () => {
           body: JSON.stringify({ session_id: sessionId })
         });
 
-        console.log('AuthCallback: Response status:', response.status);
         const data = await response.json();
-        console.log('AuthCallback: Response data:', data);
 
         if (!response.ok) {
           throw new Error(data.detail || 'Authentication failed');
@@ -46,7 +42,6 @@ const AuthCallback = () => {
         const userData = data;
 
         // Cache user data and navigate to dashboard
-        console.log('AuthCallback: Success! Navigating to dashboard');
         setCachedUser(userData);
         navigate('/dashboard', { replace: true });
         

@@ -264,3 +264,12 @@ async def revoke_api_key(
         raise HTTPException(status_code=404, detail="API key not found")
 
     return {"message": "API key revoked"}
+
+
+
+@router.post("/auth/shift-start")
+async def shift_start(current_user: dict = Depends(get_current_user)):
+    """Auto-assign queued tickets when a user starts their shift."""
+    from ticket_helpers import trigger_shift_start_assignment
+    assigned = trigger_shift_start_assignment(current_user["user_id"])
+    return {"tickets_assigned": len(assigned), "ticket_ids": assigned}
