@@ -330,58 +330,6 @@ async def zeus_cleanup_recurring():
         await asyncio.sleep(1800)  # 30 minutes
 
 
-def _run_atlas_reingest_reset():
-    """One-time: wipe all ticket data so the cold crawl re-ingests from Atlas.
-    Safe for multi-pod: atomic upsert claims the job, losing pod waits for completion."""
-    import time
-
-    # Atomic claim — only one pod can insert, the other gets matched_count > 0
-    result = db["backfill_state"].update_one(
-        {"_type": "atlas_reingest_v1"},
-        {"$setOnInsert": {
-            "status": "running",
-            "started_at": datetime.now(timezone.utc),
-            "instance": _instance_id,
-        }},
-        upsert=True,
-    )
-
-    if result.matched_count > 0:
-        # Flag already exists — either completed or another pod is running it
-        for _ in range(120):  # Wait up to 2 minutes for the other pod to finish
-            flag = db["backfill_state"].find_one({"_type": "atlas_reingest_v1"})
-            if flag and flag.get("status") == "completed":
-                logger.info("[REINGEST] Already completed (by another instance), skipping")
-                return
-            time.sleep(1)
-        logger.warning("[REINGEST] Timed out waiting for other instance, proceeding anyway")
-        return
-
-    # We won the claim — do the wipe
-    logger.info(f"[REINGEST] Instance {_instance_id} starting clean Atlas re-ingestion reset...")
-
-    collections_to_wipe = [
-        "tickets", "messages", "email_threads", "ticket_changelog",
-        "notifications", "email_replies", "csat_tokens", "csat_responses",
-        "atlas_sync_state", "customers",
-        "feature_requests", "starred_tickets", "webhook_logs",
-    ]
-
-    total = 0
-    for col_name in collections_to_wipe:
-        col = db[col_name]
-        result = col.delete_many({})
-        total += result.deleted_count
-        if result.deleted_count > 0:
-            logger.info(f"[REINGEST] Wiped {result.deleted_count} docs from {col_name}")
-
-    # Mark complete — the other pod is polling for this
-    db["backfill_state"].update_one(
-        {"_type": "atlas_reingest_v1"},
-        {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc), "documents_deleted": total}},
-    )
-
-    logger.info(f"[REINGEST] Reset complete — wiped {total} documents. Cold crawl will re-ingest from Atlas.")
 
 
 # ==================== Startup / Shutdown ====================
@@ -400,8 +348,6 @@ async def startup_event():
     seed_default_categories()
     # Backfill: ensure every user has a role (safe for production deploys)
     _backfill_user_roles()
-    # One-time: wipe ticket data and re-ingest from Atlas only
-    _run_atlas_reingest_reset()
     # Start email IMAP poller (DISABLED — re-ingesting from Atlas only)
     # from services.email_poller import start_poller as start_email_poller
     # start_email_poller()
