@@ -20,7 +20,7 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
 - Data reset features removed (production deploys to fresh DB)
 - Authenticated UI testing via session cookie injection
 
-### Session: Feb 2026 (Current)
+### Session: Mar 2026 (Current)
 - **KB Reimport Script Fixed** (`backend/scripts/reimport_kb.py`):
   - Now includes `created_at` and `updated_at` from source API
   - Auto-generates `description` from article content
@@ -30,17 +30,21 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
   - Fetches from `help.emergent.sh/api/public/default-project`
   - Idempotent — skips if articles already exist
   - Hooked into `server.py` startup alongside `seed_default_categories()`
+- **Deployment Fix — Frontend Build**:
+  - Cleaned up corrupted root `.gitignore` (dozens of malformed `-e` entries removed)
+  - Added `frontend/yarn.lock` to git tracking for reproducible dependency installs
+  - Verified frontend builds successfully under production conditions (CI=true)
 
 ## Architecture
 - **Backend**: FastAPI (Python), MongoDB
-- **Frontend**: React with Shadcn/UI
+- **Frontend**: React with Craco + Shadcn/UI
 - **Sync Engine**: 5-layer Atlas sync (Webhooks → Poller → Hot/Cold Crawl → Push-back → Sweep)
 - **Auth**: Emergent-managed Google Auth
 - **Email**: Amazon SES (outbound), Gmail IMAP (disabled)
 - **AI**: Gemini for ticket summarization
 
 ## Key Collections
-- `kb_articles` — Help docs (seeded from help.emergent.sh)
+- `kb_articles` — Help docs (seeded from help.emergent.sh on fresh deploy)
 - `kb_navigation` — Navigation structure
 - `portal_categories` — Support portal categories (seeded on startup)
 - `tickets` — Support tickets (synced from Atlas)
