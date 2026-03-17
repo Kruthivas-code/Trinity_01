@@ -332,22 +332,33 @@ async def zeus_cleanup_recurring():
 
 def _run_atlas_reingest_reset():
     """One-time: wipe all ticket data so the cold crawl re-ingests from Atlas.
-    Uses a DB flag so it only runs once. Atomic claim prevents race conditions."""
-    flag = db["backfill_state"].find_one({"_type": "atlas_reingest_v1"})
-    if flag:
-        return
+    Safe for multi-pod: atomic upsert claims the job, losing pod waits for completion."""
+    import time
 
-    # Atomic claim — if another instance beats us, we skip
-    try:
-        db["backfill_state"].insert_one({
-            "_type": "atlas_reingest_v1",
+    # Atomic claim — only one pod can insert, the other gets matched_count > 0
+    result = db["backfill_state"].update_one(
+        {"_type": "atlas_reingest_v1"},
+        {"$setOnInsert": {
             "status": "running",
             "started_at": datetime.now(timezone.utc),
-        })
-    except Exception:
-        return  # Another instance already claimed it
+            "instance": _instance_id,
+        }},
+        upsert=True,
+    )
 
-    logger.info("[REINGEST] Starting clean Atlas re-ingestion reset...")
+    if result.matched_count > 0:
+        # Flag already exists — either completed or another pod is running it
+        for _ in range(120):  # Wait up to 2 minutes for the other pod to finish
+            flag = db["backfill_state"].find_one({"_type": "atlas_reingest_v1"})
+            if flag and flag.get("status") == "completed":
+                logger.info("[REINGEST] Already completed (by another instance), skipping")
+                return
+            time.sleep(1)
+        logger.warning("[REINGEST] Timed out waiting for other instance, proceeding anyway")
+        return
+
+    # We won the claim — do the wipe
+    logger.info(f"[REINGEST] Instance {_instance_id} starting clean Atlas re-ingestion reset...")
 
     collections_to_wipe = [
         "tickets", "messages", "email_threads", "ticket_changelog",
@@ -364,7 +375,7 @@ def _run_atlas_reingest_reset():
         if result.deleted_count > 0:
             logger.info(f"[REINGEST] Wiped {result.deleted_count} docs from {col_name}")
 
-    # Mark complete
+    # Mark complete — the other pod is polling for this
     db["backfill_state"].update_one(
         {"_type": "atlas_reingest_v1"},
         {"$set": {"status": "completed", "completed_at": datetime.now(timezone.utc), "documents_deleted": total}},
