@@ -131,6 +131,7 @@ from routes.exports import router as exports_router
 from routes.knowledge_base import router as knowledge_base_router
 from routes.summaries import router as summaries_router
 from routes.portal import router as portal_router, seed_default_categories
+from routes.kb import seed_kb_articles
 from routes.kb import router as kb_router
 from routes.atlas import router as atlas_router
 
@@ -346,6 +347,7 @@ async def startup_event():
     auto_close_task = asyncio.create_task(auto_close_resolved_tickets())
     zeus_cleanup_task = asyncio.create_task(zeus_cleanup_recurring())
     seed_default_categories()
+    seed_kb_articles()
     # Backfill: ensure every user has a role (safe for production deploys)
     _backfill_user_roles()
     # Start email IMAP poller (DISABLED — re-ingesting from Atlas only)

@@ -10,6 +10,10 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
 import uuid
+import logging
+import requests
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/kb", tags=["knowledge_base_public"])
 
@@ -18,6 +22,104 @@ kb_navigation = db["kb_navigation"]
 kb_image_files = db["kb_image_files"]
 kb_feedback = db["kb_feedback"]
 kb_settings = db["kb_settings"]
+
+KB_SOURCE_API = "https://help.emergent.sh/api/public/default-project"
+
+
+def seed_kb_articles():
+    """Seed KB articles from help.emergent.sh if the collection is empty.
+    Called on server startup — idempotent, only runs on fresh databases."""
+    if kb_articles.count_documents({}) > 0:
+        return
+
+    logger.info("[KB] kb_articles is empty — seeding from help.emergent.sh...")
+    try:
+        resp = requests.get(KB_SOURCE_API, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        logger.error(f"[KB] Failed to fetch from help.emergent.sh: {e}")
+        return
+
+    documents = data.get("documents", [])
+    config = data.get("config", {})
+    tabs = config.get("navigation", {}).get("tabs", [])
+
+    doc_map = {doc["slug"]: doc for doc in documents if doc.get("slug")}
+
+    # Build nav_groups for kb_navigation
+    nav_groups = []
+    for tab in tabs:
+        sections = []
+        for group in tab.get("groups", []):
+            section_key = group["group"].lower().replace(" ", "-").replace("'", "")
+            pages = group.get("pages", [])
+            page_slugs = [p.get("page") if isinstance(p, dict) else p for p in pages]
+            sections.append({"key": section_key, "label": group["group"], "articles": page_slugs})
+        nav_groups.append({
+            "key": tab["id"],
+            "label": tab.get("label", tab["id"]),
+            "icon": tab.get("icon", "file-text"),
+            "sections": sections,
+        })
+
+    # Insert articles with full metadata
+    order = 0
+    inserted = 0
+    for tab in tabs:
+        for group in tab.get("groups", []):
+            section_key = group["group"].lower().replace(" ", "-").replace("'", "")
+            for page in group.get("pages", []):
+                slug = page.get("page") if isinstance(page, dict) else page
+                doc = doc_map.get(slug)
+                if not doc:
+                    continue
+
+                content = doc.get("content", "")
+                title = doc.get("title") or (page.get("title") if isinstance(page, dict) else slug)
+                icon = (page.get("icon", "") if isinstance(page, dict) else "") or doc.get("icon", "")
+
+                # Generate description from first ~160 chars of plain content
+                desc_text = content.replace("#", "").replace(">", "").replace("*", "").strip()
+                desc_lines = [l.strip() for l in desc_text.split("\n") if l.strip() and not l.strip().startswith("<")]
+                description = (desc_lines[0][:160] + "...") if desc_lines and len(desc_lines[0]) > 160 else (desc_lines[0] if desc_lines else "")
+
+                article = {
+                    "slug": slug,
+                    "title": title,
+                    "description": description,
+                    "content_markdown": content,
+                    "nav_group_key": tab["id"],
+                    "nav_group_label": tab.get("label", tab["id"]),
+                    "section_key": section_key,
+                    "section_label": group["group"],
+                    "icon": icon,
+                    "order": order,
+                    "published": True,
+                    "source_url": f"https://help.emergent.sh/{slug}",
+                    "created_at": _parse_api_date(doc.get("created_at")),
+                    "updated_at": _parse_api_date(doc.get("updated_at")),
+                }
+                kb_articles.insert_one(article)
+                inserted += 1
+                order += 1
+
+    # Update navigation
+    kb_navigation.delete_many({})
+    kb_navigation.insert_one({"nav_groups": nav_groups})
+
+    logger.info(f"[KB] Seeded {inserted} articles and {len(nav_groups)} nav groups from help.emergent.sh")
+
+
+def _parse_api_date(val) -> datetime:
+    """Parse a date string from the API, falling back to now()."""
+    if not val:
+        return datetime.now(timezone.utc)
+    try:
+        dt = datetime.fromisoformat(str(val).replace("Z", "+00:00"))
+        return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+    except (ValueError, TypeError):
+        return datetime.now(timezone.utc)
 
 
 # ── Image serving ─────────────────────────────────────────────
