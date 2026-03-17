@@ -346,9 +346,10 @@ async def startup_event():
     seed_default_categories()
     # Backfill: ensure every user has a role (safe for production deploys)
     _backfill_user_roles()
-    # Start email IMAP poller
-    from services.email_poller import start_poller as start_email_poller
-    start_email_poller()
+    # Start email IMAP poller (DISABLED — re-ingesting from Atlas only)
+    # from services.email_poller import start_poller as start_email_poller
+    # start_email_poller()
+    logger.info("[STARTUP] IMAP poller DISABLED — Atlas-only ingestion mode")
     # Start unified Atlas sync engine (Layers 2+3; Layer 1 runs via webhooks)
     from services.atlas_sync import auto_start_on_boot
     auto_start_on_boot()

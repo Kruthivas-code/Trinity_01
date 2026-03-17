@@ -475,26 +475,30 @@ def _create_or_link_ticket(conv: dict, tag_lookup: dict, agent_email_map: dict) 
     customer_email = ((conv.get("customer") or {}).get("email") or "").lower().strip()
     conv_title = (conv.get("title") or conv.get("subject") or "").strip()
 
-    # Match 1: Try by ticket_id (TKT-{number})
-    if atlas_number:
+    # Match 1: Try by ticket_id (TKT-{number}) — ONLY if customer email matches
+    if atlas_number and customer_email:
         expected_tid = f"TKT-{atlas_number}"
         existing_by_id = tickets_collection.find_one(
             {"ticket_id": expected_tid, "$or": [
                 {"atlas_conversation_id": None},
                 {"atlas_conversation_id": {"$exists": False}},
             ]},
-            {"_id": 0, "ticket_id": 1},
+            {"_id": 0, "ticket_id": 1, "customer_email": 1},
         )
         if existing_by_id:
-            tickets_collection.update_one(
-                {"ticket_id": expected_tid},
-                {"$set": {
-                    "atlas_conversation_id": atlas_conv_id,
-                    "atlas_number": atlas_number,
-                }},
-            )
-            logger.info(f"[SYNC] Linked ticket {expected_tid} to Atlas conv {atlas_conv_id} (by ticket_id)")
-            return expected_tid
+            existing_email = (existing_by_id.get("customer_email") or "").lower().strip()
+            if existing_email == customer_email:
+                tickets_collection.update_one(
+                    {"ticket_id": expected_tid},
+                    {"$set": {
+                        "atlas_conversation_id": atlas_conv_id,
+                        "atlas_number": atlas_number,
+                    }},
+                )
+                logger.info(f"[SYNC] Linked ticket {expected_tid} to Atlas conv {atlas_conv_id} (by ticket_id + email)")
+                return expected_tid
+            else:
+                logger.info(f"[SYNC] Skipped linking {expected_tid} — customer mismatch: {existing_email} vs {customer_email}")
 
     # Match 2: Try by customer_email + title (only recent, email-sourced tickets)
     if customer_email and conv_title:

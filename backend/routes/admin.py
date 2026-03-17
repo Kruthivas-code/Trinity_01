@@ -459,3 +459,44 @@ async def get_ticket_sweep_stats(current_user: dict = Depends(require_admin)):
         "unassigned_stale_tickets": unassigned_stale,
         "sweep_interval_seconds": 300,
     }
+
+
+
+@router.post("/admin/reset-for-reingest")
+async def reset_for_reingest(current_user: dict = Depends(require_admin)):
+    """
+    Wipe all ticket data and reset sync state for a clean Atlas re-ingestion.
+    Preserves: users, teams, settings, routing rules, canned responses, KB, categories.
+    """
+    from database import db
+    from services.atlas_sync import stop_sync, auto_start_on_boot
+
+    # Stop the sync engine first
+    stop_sync()
+
+    collections_to_wipe = [
+        "tickets", "messages", "email_threads", "ticket_changelog",
+        "notifications", "email_replies", "csat_tokens", "csat_responses",
+        "atlas_sync_state", "backfill_state", "customers",
+        "feature_requests", "starred_tickets", "webhook_logs",
+    ]
+
+    results = {}
+    for col_name in collections_to_wipe:
+        col = db[col_name]
+        count = col.count_documents({})
+        col.delete_many({})
+        results[col_name] = count
+
+    total = sum(results.values())
+    logger.info(f"[RESET] Wiped {total} documents across {len(collections_to_wipe)} collections")
+
+    # Restart sync engine — cold crawl will start from scratch
+    auto_start_on_boot()
+
+    return {
+        "status": "reset_complete",
+        "documents_deleted": total,
+        "collections_wiped": results,
+        "message": "Sync engine restarted. Cold crawl will re-ingest all Atlas conversations.",
+    }
