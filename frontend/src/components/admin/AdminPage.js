@@ -488,36 +488,7 @@ const AtlasSyncTab = () => {
     { id: 'api-health', label: 'API Health', icon: Zap },
     { id: 'parity', label: 'Data Parity', icon: Database },
     { id: 'config', label: 'Configuration', icon: Settings },
-    { id: 'reingest', label: 'Re-ingest', icon: AlertTriangle },
   ];
-
-  const [reingestConfirm, setReingestConfirm] = useState('');
-  const [reingestLoading, setReingestLoading] = useState(false);
-  const [reingestResult, setReingestResult] = useState(null);
-
-  const handleReingest = async () => {
-    if (reingestConfirm !== 'RESET') return;
-    setReingestLoading(true);
-    setReingestResult(null);
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/admin/reset-for-reingest`, {
-        method: 'POST', credentials: 'include',
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setReingestResult({ success: true, ...data });
-        setReingestConfirm('');
-        // Refresh sync status after a moment
-        setTimeout(fetchStatus, 3000);
-      } else {
-        setReingestResult({ success: false, error: data.detail || 'Reset failed' });
-      }
-    } catch (e) {
-      setReingestResult({ success: false, error: e.message });
-    } finally {
-      setReingestLoading(false);
-    }
-  };
 
   return (
     <div className="max-w-5xl" data-testid="atlas-control-panel">
@@ -978,72 +949,6 @@ const AtlasSyncTab = () => {
               <li><strong className="text-amber-300">Phase 2 (Full):</strong> Walks ALL conversations from the last 45 days (including CLOSED). Processes 100/cycle. When it reaches the end, starts a new pass. Catches everything Phase 1 might miss.</li>
               <li><strong className="text-foreground">Protection:</strong> Trinity-made changes (assignments, status) are protected for 5 minutes to prevent Atlas sync from overwriting them.</li>
             </ul>
-          </div>
-        </div>
-      )}
-
-      {/* Re-ingest Section */}
-      {activeSection === 'reingest' && (
-        <div className="space-y-4" data-testid="reingest-panel">
-          <div className="p-5 rounded-xl border border-red-500/30 bg-red-500/5">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle size={18} className="text-red-400" />
-              <h3 className="text-sm font-medium text-red-400">Reset & Re-ingest from Atlas</h3>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">
-              This will <strong className="text-foreground">delete all ticket data</strong> (tickets, messages, threads, changelog, notifications, customers) and reset the sync cursor. 
-              The crawl engine will then re-ingest everything fresh from Atlas. 
-              Users, teams, settings, and routing rules are preserved.
-            </p>
-            <p className="text-xs text-muted-foreground mb-4">
-              <strong className="text-foreground">Multi-pod safe:</strong> Both pods share the same MongoDB — once the data is wiped, both pods' sync engines will pick up clean state on their next cycle. Ticket creation is idempotent.
-            </p>
-            <p className="text-xs text-muted-foreground mb-4">
-              <strong className="text-foreground">Re-ingestion time:</strong> ~500 conversations per batch. Full re-ingest takes approximately 45-60 minutes for ~78K conversations.
-            </p>
-
-            {reingestResult?.success && (
-              <div className="mb-4 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10">
-                <p className="text-xs font-medium text-emerald-400">Reset complete</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Deleted {reingestResult.documents_deleted?.toLocaleString()} documents. Cold crawl is now re-ingesting from Atlas.
-                </p>
-              </div>
-            )}
-            {reingestResult && !reingestResult.success && (
-              <div className="mb-4 p-3 rounded-lg border border-red-500/30 bg-red-500/10">
-                <p className="text-xs font-medium text-red-400">Reset failed</p>
-                <p className="text-xs text-muted-foreground mt-1">{reingestResult.error}</p>
-              </div>
-            )}
-
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
-                <label className="block text-xs text-muted-foreground mb-1.5">
-                  Type <strong className="text-foreground">RESET</strong> to confirm
-                </label>
-                <input
-                  type="text"
-                  value={reingestConfirm}
-                  onChange={(e) => setReingestConfirm(e.target.value)}
-                  placeholder="Type RESET"
-                  className="w-full h-9 px-3 rounded-lg bg-background border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-red-500 text-sm"
-                  data-testid="reingest-confirm-input"
-                />
-              </div>
-              <button
-                onClick={handleReingest}
-                disabled={reingestConfirm !== 'RESET' || reingestLoading}
-                className="h-9 px-4 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-red-500 text-white hover:bg-red-600"
-                data-testid="reingest-submit-btn"
-              >
-                {reingestLoading ? (
-                  <span className="flex items-center gap-1.5"><Loader2 size={14} className="animate-spin" /> Resetting...</span>
-                ) : (
-                  'Wipe & Re-ingest'
-                )}
-              </button>
-            </div>
           </div>
         </div>
       )}
