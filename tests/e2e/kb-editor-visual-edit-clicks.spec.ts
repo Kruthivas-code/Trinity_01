@@ -6,7 +6,7 @@
  */
 import { test, expect, Page } from '@playwright/test';
 
-const BASE_URL = 'https://qasweep.preview.emergentagent.com';
+const BASE_URL = 'https://backend-refresh-3.preview.emergentagent.com';
 const SESSION_TOKEN = 'qa_test_admin_session_token_2026';
 
 async function authenticateKBEditor(page: Page) {

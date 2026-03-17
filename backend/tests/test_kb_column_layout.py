@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://qasweep.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://backend-refresh-3.preview.emergentagent.com').rstrip('/')
 SESSION_TOKEN = 'test_kb_session_token'
 
 
