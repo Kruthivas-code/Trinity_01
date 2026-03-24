@@ -24,31 +24,29 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
 - **KB Reimport Script Fixed** (`backend/scripts/reimport_kb.py`):
   - Now includes `created_at` and `updated_at` from source API
   - Auto-generates `description` from article content
-  - Preserves `icon` from both navigation and document sources
 - **KB Auto-Seed on Startup** (`routes/kb.py` → `seed_kb_articles()`):
   - Runs on server boot if `kb_articles` collection is empty
-  - Fetches from `help.emergent.sh/api/public/default-project`
   - Idempotent — skips if articles already exist
-  - Hooked into `server.py` startup alongside `seed_default_categories()`
 - **Deployment Fix — Frontend Build**:
-  - Cleaned up corrupted root `.gitignore` (dozens of malformed `-e` entries removed)
-  - Added `frontend/yarn.lock` to git tracking for reproducible dependency installs
-  - Verified frontend builds successfully under production conditions (CI=true)
+  - Cleaned up corrupted root `.gitignore`
+  - Added `frontend/yarn.lock` to git tracking
+- **KB Editor Visual Callout Blocks** (New Feature):
+  - Created `CalloutBlock.jsx` TipTap extension with 6 types:
+    - Info (gray), Check (green), Note (blue), Tip (teal), Warning (amber), Danger (red)
+  - Each type has distinct bg color, border, icon (from lucide-react)
+  - Callouts render as visual editable blocks in the editor (not raw MDX code)
+  - Insert menu and Slash command menu updated with all 6 types
+  - MDX `<Callout type="..." title="...">` syntax parsed into visual blocks
+  - Visual blocks serialize back to MDX on save
+  - Testing: 8/8 features passed (tested via testing_agent_v3_fork)
 
 ## Architecture
 - **Backend**: FastAPI (Python), MongoDB
-- **Frontend**: React with Craco + Shadcn/UI
-- **Sync Engine**: 5-layer Atlas sync (Webhooks → Poller → Hot/Cold Crawl → Push-back → Sweep)
+- **Frontend**: React with Craco + Shadcn/UI + TipTap editor
+- **Sync Engine**: 5-layer Atlas sync
 - **Auth**: Emergent-managed Google Auth
 - **Email**: Amazon SES (outbound), Gmail IMAP (disabled)
 - **AI**: Gemini for ticket summarization
-
-## Key Collections
-- `kb_articles` — Help docs (seeded from help.emergent.sh on fresh deploy)
-- `kb_navigation` — Navigation structure
-- `portal_categories` — Support portal categories (seeded on startup)
-- `tickets` — Support tickets (synced from Atlas)
-- `messages` — Ticket messages/conversations
 
 ## Pending Tasks
 
