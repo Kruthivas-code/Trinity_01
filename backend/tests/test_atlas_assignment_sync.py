@@ -20,7 +20,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import patch, MagicMock
 
 # Get backend URL from environment
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://docs-sync-test.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://docs-rebuild-polish.preview.emergentagent.com').rstrip('/')
 
 # MongoDB connection
 MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')

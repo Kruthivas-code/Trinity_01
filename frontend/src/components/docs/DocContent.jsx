@@ -52,7 +52,21 @@ const CodeBlockRenderer = ({ children, className }) => {
   const [copied, setCopied] = useState(false);
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
-  const code = String(children).replace(/\n$/, '');
+  
+  // Extract plain text content from children (handles strings, arrays, and React elements)
+  const extractText = (c) => {
+    if (c == null) return '';
+    if (typeof c === 'string') return c;
+    if (Array.isArray(c)) return c.map(extractText).join('');
+    if (c.props?.children) return extractText(c.props.children);
+    return '';
+  };
+  
+  const code = extractText(children).replace(/\n$/, '');
+  
+  // Don't render empty or whitespace-only code blocks
+  if (!code.trim()) return null;
+  
   const langName = LANG_NAMES[language] || language?.toUpperCase() || 'CODE';
   const isTerminal = ['bash', 'sh', 'shell', 'zsh'].includes(language);
 
@@ -62,7 +76,14 @@ const CodeBlockRenderer = ({ children, className }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!match) return <code className={className}>{children}</code>;
+  // No language specified: render as simple pre block without container
+  if (!match) {
+    return (
+      <pre className="my-3 px-4 py-3 rounded-lg bg-gray-50 dark:bg-slate-900 text-sm text-gray-700 dark:text-[#999999] overflow-x-auto whitespace-pre-wrap break-words" data-testid="code-block-plain">
+        <code>{children}</code>
+      </pre>
+    );
+  }
 
   return (
     <div className="code-block my-4 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-800" data-testid="code-block">
@@ -136,9 +157,7 @@ const Figure = ({ src, alt, caption }) => {
   if (!src) return null;
   return (
     <figure className="my-6 relative z-10" data-testid="figure">
-      <div className="rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800 shadow-lg bg-gray-50 dark:bg-slate-900">
-        <img src={src} alt={alt || caption || 'Image'} className="w-full h-auto" loading="lazy" />
-      </div>
+      <img src={src} alt={alt || caption || 'Image'} className="rounded-lg max-w-full h-auto" loading="lazy" />
       {caption && caption.trim() && (
         <figcaption className="mt-2 text-sm text-gray-500 dark:text-[#999999] text-center">{caption}</figcaption>
       )}
@@ -207,12 +226,16 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
   // Preprocess content: convert GitHub-style blockquote callouts to <Callout> components
   const preprocessed = useMemo(() => {
     if (!content) return content;
-    // Match blockquotes that start with > [!TYPE]
+    // Handle both escaped \[!TYPE\] and unescaped [!TYPE] brackets, with body on same or next lines
     return content.replace(
-      /^(>\s*\[!(NOTE|INFO|TIP|WARNING|CAUTION|ERROR|DANGER|SUCCESS)\])\s*\n((?:>.*\n?)*)/gim,
-      (match, marker, type, body) => {
-        const cleanBody = body.replace(/^>\s?/gm, '').trim();
-        return `<Callout type="${type}">\n${cleanBody}\n</Callout>\n`;
+      /^>\s*\\?\[!(NOTE|INFO|TIP|WARNING|CAUTION|ERROR|DANGER|SUCCESS)\\?\][ \t]*(.*(?:\\\n.*)*)\n?((?:>.*\n?)*)/gim,
+      (match, type, sameLine, rest) => {
+        // Clean the same-line body text (remove trailing backslash continuations)
+        let body = (sameLine || '').replace(/\\$/gm, '').trim();
+        // Clean the subsequent > lines
+        const restBody = (rest || '').replace(/^>\s?/gm, '').replace(/\\$/gm, '').trim();
+        if (restBody) body = body ? `${body}\n${restBody}` : restBody;
+        return `<Callout type="${type}">\n${body}\n</Callout>\n`;
       }
     );
   }, [content]);
@@ -233,6 +256,10 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
       if (inline) return <code className="px-1.5 py-0.5 bg-gray-100 dark:bg-slate-800 text-pink-600 dark:text-pink-400 rounded text-[0.875em] font-mono" {...props}>{children}</code>;
       return <CodeBlockRenderer className={className}>{children}</CodeBlockRenderer>;
     },
+    pre: ({ children }) => {
+      // Let CodeBlockRenderer handle its own container - skip the default pre wrapper
+      return <>{children}</>;
+    },
     h1: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h1 id={id} className="scroll-mt-20 !text-gray-900 dark:!text-white font-bold">{children}</h1>; },
     h2: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h2 id={id} className="scroll-mt-20 !text-gray-900 dark:!text-white text-2xl font-semibold mt-10 mb-4">{children}</h2>; },
     h3: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h3 id={id} className="scroll-mt-20 !text-gray-900 dark:!text-white text-xl font-semibold mt-8 mb-3">{children}</h3>; },
@@ -240,12 +267,12 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
     blockquote: ({ children }) => {
       return <blockquote className="lead-quote my-6 pl-4 border-l-4 border-indigo-500 italic [&>*]:!text-gray-600 dark:[&>*]:!text-[#999999] [&_p]:!text-gray-600 dark:[&_p]:!text-[#999999]">{children}</blockquote>;
     },
-    table: ({ children }) => <div className="overflow-x-auto my-6 rounded-lg border border-gray-200 dark:border-slate-800 max-w-full"><table className="w-full border-collapse min-w-[400px]">{children}</table></div>,
+    table: ({ children }) => <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-slate-800 max-w-full"><table className="w-full border-collapse min-w-[400px]">{children}</table></div>,
     thead: ({ children }) => <thead className="bg-gray-50 dark:bg-slate-900">{children}</thead>,
     th: ({ children }) => <th className="text-left px-4 py-3 text-sm font-semibold !text-gray-900 dark:!text-white border-b border-gray-200 dark:border-slate-800 whitespace-nowrap">{children}</th>,
     td: ({ children }) => <td className="px-4 py-3 text-sm !text-gray-700 dark:!text-[#999999] border-b border-gray-100 dark:border-slate-800/50 break-words">{children}</td>,
     a: ({ href, children }) => { const ext = href?.startsWith('http'); return <a href={href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined} className="text-[#00A1B2] hover:text-[#00bdd0] underline-offset-2 hover:underline">{children}</a>; },
-    img: ({ src, alt }) => <img src={src} alt={alt} className="rounded-lg border border-gray-200 dark:border-slate-800 my-6 max-w-full" loading="lazy" />,
+    img: ({ src, alt }) => <img src={src} alt={alt} className="rounded-lg my-4 max-w-full" loading="lazy" />,
     hr: () => <hr className="border-gray-200 dark:border-slate-800 my-8" />,
     ul: ({ children }) => <ul className="my-4 ml-6 list-disc space-y-2 !text-gray-700 dark:!text-[#999999]">{children}</ul>,
     ol: ({ children }) => <ol className="my-4 ml-6 list-decimal space-y-2 !text-gray-700 dark:!text-[#999999]">{children}</ol>,

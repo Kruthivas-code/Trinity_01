@@ -265,6 +265,46 @@ aside::-webkit-scrollbar-track { background: transparent; }
   width: 100%;
 }
 
+/* Step body content: normalize code styling */
+.step-body code {
+  color: inherit !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+  padding: 0.15em 0.4em !important;
+  border-radius: 4px !important;
+  font-size: 0.9em !important;
+}
+:is(.dark) .step-body code {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0 !important;
+}
+/* Remove the code block header within steps for cleaner look */
+.step-body .code-block > div:first-child {
+  display: none !important;
+}
+/* Simplify plain pre blocks within steps */
+.step-body pre {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border: none !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: 8px !important;
+  margin: 0.5rem 0 !important;
+  font-size: 0.875rem !important;
+}
+:is(.dark) .step-body pre {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+.step-body pre code {
+  background: none !important;
+  padding: 0 !important;
+  font-size: inherit !important;
+}
+
+/* Step content overflow handling */
+.step-item {
+  max-width: 100%;
+  overflow: visible;
+}
+
 /* Responsive callout improvements */
 .callout-container {
   overflow-wrap: break-word;

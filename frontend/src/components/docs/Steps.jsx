@@ -38,8 +38,8 @@ export const Step = ({ title, children, stepNumber = 1, isLast = false, icon = n
         <div className="w-8 flex justify-center flex-shrink-0">
           {!isLast && <div className="w-0.5 h-full bg-[#00A1B2]/30 min-h-[40px]" />}
         </div>
-        <div className={`flex-1 ${isLast ? 'pb-0' : 'pb-6'}`}>
-          <div className="text-[15px] !text-gray-600 dark:!text-[#999999] leading-relaxed [&>p]:mb-3 [&>p:last-child]:mb-0">
+        <div className={`flex-1 min-w-0 ${isLast ? 'pb-0' : 'pb-6'}`}>
+          <div className="step-body text-[15px] !text-gray-600 dark:!text-[#999999] leading-relaxed [&>p]:mb-3 [&>p:last-child]:mb-0">
             {children}
           </div>
         </div>

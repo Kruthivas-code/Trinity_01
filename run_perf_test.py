@@ -12,7 +12,7 @@ import statistics
 import sys
 import os
 
-PREVIEW_URL = "https://docs-sync-test.preview.emergentagent.com"
+PREVIEW_URL = "https://docs-rebuild-polish.preview.emergentagent.com"
 CADDY_URL = "https://sync-engine-fixes.internal.emergent.host"
 CLOUDFLARE_URL = "https://sync-engine-fixes.internal.emergent.host"
 
