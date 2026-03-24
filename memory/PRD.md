@@ -76,6 +76,14 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
 - **Draft filtering confirmed**: Backend already filters `published:True` on all public endpoints — drafts never go live
 - **Testing**: 100% pass (10/10 frontend, 7/7 backend)
 
+### Session: Mar 24, 2026 (KB Editor Bug Fixes & Slider Refinement)
+- **Save new page fix**: useEffect was overwriting pre-filled form state (nav_group_key/section_key) on /new route. Fixed via `pendingNewForm` ref that handlers set before navigation.
+- **Sidebar reflection fix**: New pages now appear under correct category/section after save.
+- **Slider positioning**: Moved to appear behind sidebar (z-20 < sidebar z-30), starts below header (top:56px), min-width 400px, smooth CSS transition-transform.
+- **Overlay fix**: Backdrop only covers main content area (left:256px, top:56px), sidebar remains unaffected.
+- **Draft tag restyled**: Grey fill (bg-slate-500/20 text-slate-400) with proper right padding (mr-1.5).
+- **Testing**: 100% pass (16/16 frontend features)
+
 ## Architecture
 - **Backend**: FastAPI (Python), MongoDB
 - **Frontend**: React with Craco + Shadcn/UI + TipTap editor
