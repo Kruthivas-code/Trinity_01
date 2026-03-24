@@ -84,6 +84,14 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
 - **Draft tag restyled**: Grey fill (bg-slate-500/20 text-slate-400) with proper right padding (mr-1.5).
 - **Testing**: 100% pass (16/16 frontend features)
 
+### Session: Mar 24, 2026 (Docs & Editor Content Rendering Fixes)
+- **Standalone callout tag parsing**: `<Tip>`, `<Info>`, `<Warning>`, `<Note>`, `<Caution>`, `<Error>`, `<Danger>`, `<Success>` opening/closing pairs now render as proper callout components in both docs and KB editor.
+- **NOTE callout color**: Changed from blue/purple to grey (bg-slate-500/10, text-slate-400) in both docs CALLOUT_CONFIG and editor CALLOUT_STYLES.
+- **Steps width**: Article container widened from max-w-[800px] to max-w-4xl so Steps components have more room.
+- **System theme default**: Both docs and KB editor now detect `prefers-color-scheme: dark` when no stored preference exists.
+- **Mobile sidebar fix**: Removed stale `transform` class from docs sidebar that was overriding `-translate-x-full` on mobile viewports.
+- **Responsive CSS**: Added mobile-specific styles for headings, code blocks, and tables.
+
 ## Architecture
 - **Backend**: FastAPI (Python), MongoDB
 - **Frontend**: React with Craco + Shadcn/UI + TipTap editor
