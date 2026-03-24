@@ -69,6 +69,13 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
 
 - **Testing**: 100% pass (17/17 frontend, 11/11 backend)
 
+### Session: Mar 24, 2026 (KB Editor Fixes)
+- **Slider repositioned**: Now appears next to left sidebar (left:256px) with left-side slide-in animation, matching reference design
+- **Draft tag moved**: From navbar to sidebar page item (right-aligned). Hides on hover, replaced by settings gear (CSS group-hover)
+- **Draft persistence fixed**: Slider auto-saves on close. Fixed useEffect dependency that was overwriting unsaved form changes on article list refresh
+- **Draft filtering confirmed**: Backend already filters `published:True` on all public endpoints — drafts never go live
+- **Testing**: 100% pass (10/10 frontend, 7/7 backend)
+
 ## Architecture
 - **Backend**: FastAPI (Python), MongoDB
 - **Frontend**: React with Craco + Shadcn/UI + TipTap editor
