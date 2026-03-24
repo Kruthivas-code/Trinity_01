@@ -146,7 +146,7 @@ const KBEditor = () => {
       const url = isNew ? `${API}/api/kb/admin/articles` : `${API}/api/kb/admin/articles/${originalSlug}`;
       const method = isNew ? 'POST' : 'PUT';
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload) });
-      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || 'Save failed'); }
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `Save failed (${res.status})`); }
       setLastSaved(new Date());
       if (isNew || slug !== originalSlug) {
         setIsNew(false);
