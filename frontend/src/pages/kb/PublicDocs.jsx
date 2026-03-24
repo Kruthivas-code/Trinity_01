@@ -481,10 +481,9 @@ const CopyButton = ({ text, theme }) => {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => { await navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); };
   return (
-    <button onClick={handleCopy} className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 ${theme.inputBg} rounded-lg text-sm ${theme.textMuted} ${theme.hoverText} transition-colors flex-shrink-0`} data-testid="copy-page-btn">
+    <button onClick={handleCopy} className={`flex items-center gap-1.5 px-3 py-1.5 ${theme.inputBg} rounded-lg text-sm ${theme.textMuted} ${theme.hoverText} transition-colors flex-shrink-0 w-fit`} data-testid="copy-page-btn">
       {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
       <span className="hidden sm:inline">{copied ? 'Copied!' : 'Copy page'}</span>
-      <ChevronDown className="w-3 h-3 hidden sm:block" />
     </button>
   );
 };

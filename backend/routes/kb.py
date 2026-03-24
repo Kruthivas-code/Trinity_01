@@ -168,8 +168,14 @@ async def get_public_data():
     # Build navigation tabs from nav_groups
     tabs = []
     for group in nav_groups:
+        # Skip hidden categories
+        if group.get("published") is False:
+            continue
         tab_groups = []
         for section in group.get("sections", []):
+            # Skip hidden subcategories
+            if section.get("published") is False:
+                continue
             section_articles = [
                 a for a in all_articles
                 if a.get("nav_group_key") == group["key"] and a.get("section_key") == section["key"]

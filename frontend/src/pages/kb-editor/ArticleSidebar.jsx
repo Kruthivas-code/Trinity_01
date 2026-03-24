@@ -1,6 +1,6 @@
 /**
  * ArticleSidebar — Left sidebar with navigation tree
- * - Hover on category/subcategory shows "+" to create a page underneath
+ * - Hover on category/subcategory shows "+" and settings gear
  * - Chevron click only toggles expand/collapse
  * - Hover on page shows settings gear icon (via CSS group-hover)
  * - Main "+" in header opens settings to create new tabs (categories)
@@ -11,9 +11,10 @@ import {
 } from 'lucide-react';
 
 /* ---------- Section (subcategory) ---------- */
-const NavSection = ({ section, groupKey, sectionKey, articles, selectedSlug, onSelect, expanded, setExpanded, onOpenSettings, onCreateInSection, theme }) => {
+const NavSection = ({ section, groupKey, sectionKey, articles, selectedSlug, onSelect, expanded, setExpanded, onOpenSettings, onCreateInSection, onOpenCategorySettings, theme }) => {
   const expKey = `${groupKey}-${sectionKey}`;
   const isExpanded = expanded[expKey] !== false;
+  const isHidden = section.published === false;
 
   return (
     <div>
@@ -28,17 +29,34 @@ const NavSection = ({ section, groupKey, sectionKey, articles, selectedSlug, onS
         </button>
 
         <FolderOpen className={`w-3.5 h-3.5 ${theme.textSecondary} flex-shrink-0`} />
-        <span className="text-xs font-medium truncate flex-1">{section.label}</span>
+        <span className={`text-xs font-medium truncate flex-1 ${isHidden ? 'opacity-50' : ''}`}>{section.label}</span>
 
-        {/* "+" icon on hover to create page under this section */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onCreateInSection(groupKey, section); }}
-          className={`p-0.5 rounded transition-all opacity-0 group-hover/sec:opacity-100 ${theme.textSecondary} hover:text-[#00A1B2]`}
-          title={`New page in ${section.label}`}
-          data-testid={`add-page-in-section-${sectionKey}`}
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
+        {/* Hidden tag — visible when NOT hovered */}
+        {isHidden && (
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-400 flex-shrink-0 group-hover/sec:hidden" data-testid={`hidden-tag-section-${sectionKey}`}>
+            hidden
+          </span>
+        )}
+
+        {/* Action icons on hover */}
+        <div className="flex items-center gap-0.5 opacity-0 group-hover/sec:opacity-100 transition-all">
+          <button
+            onClick={(e) => { e.stopPropagation(); onCreateInSection(groupKey, section); }}
+            className={`p-0.5 rounded transition-colors ${theme.textSecondary} hover:text-[#00A1B2]`}
+            title={`New page in ${section.label}`}
+            data-testid={`add-page-in-section-${sectionKey}`}
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenCategorySettings(section, 'subcategory', groupKey); }}
+            className={`p-0.5 rounded transition-colors ${theme.textSecondary} hover:text-[#00A1B2]`}
+            title={`${section.label} settings`}
+            data-testid={`settings-section-${sectionKey}`}
+          >
+            <Settings className="w-3 h-3" />
+          </button>
+        </div>
       </div>
       {isExpanded && (
         <div className="ml-5 space-y-0.5">
@@ -95,9 +113,10 @@ const ArticleItem = ({ article, selectedSlug, onSelect, onOpenSettings, theme })
 };
 
 /* ---------- Group (top-level category) ---------- */
-const GroupItem = ({ group, selectedSlug, onSelect, expanded, setExpanded, onOpenSettings, onCreateInSection, onCreateInGroup, theme }) => {
+const GroupItem = ({ group, selectedSlug, onSelect, expanded, setExpanded, onOpenSettings, onCreateInSection, onCreateInGroup, onOpenCategorySettings, theme }) => {
   const expKey = `group-${group.key}`;
   const isExpanded = expanded[expKey] !== false;
+  const isHidden = group.published === false;
 
   return (
     <div className="mb-3">
@@ -109,19 +128,36 @@ const GroupItem = ({ group, selectedSlug, onSelect, expanded, setExpanded, onOpe
         >
           {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         </button>
-        <span className={`text-[11px] font-semibold uppercase tracking-wider flex-1 truncate ${theme.id === 'dark' ? 'text-[#00A1B2]/70' : 'text-[#00A1B2]'}`}>
+        <span className={`text-[11px] font-semibold uppercase tracking-wider flex-1 truncate ${isHidden ? 'opacity-50' : ''} ${theme.id === 'dark' ? 'text-[#00A1B2]/70' : 'text-[#00A1B2]'}`}>
           {group.label}
         </span>
 
-        {/* "+" icon on hover to create page under this group */}
-        <button
-          onClick={(e) => { e.stopPropagation(); onCreateInGroup(group); }}
-          className={`p-0.5 rounded transition-all opacity-0 group-hover/grp:opacity-100 ${theme.textSecondary} hover:text-[#00A1B2]`}
-          title={`New page in ${group.label}`}
-          data-testid={`add-page-in-group-${group.key}`}
-        >
-          <Plus className="w-3.5 h-3.5" />
-        </button>
+        {/* Hidden tag — visible when NOT hovered */}
+        {isHidden && (
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-400 flex-shrink-0 group-hover/grp:hidden" data-testid={`hidden-tag-group-${group.key}`}>
+            hidden
+          </span>
+        )}
+
+        {/* Action icons on hover */}
+        <div className="flex items-center gap-0.5 opacity-0 group-hover/grp:opacity-100 transition-all">
+          <button
+            onClick={(e) => { e.stopPropagation(); onCreateInGroup(group); }}
+            className={`p-0.5 rounded transition-colors ${theme.textSecondary} hover:text-[#00A1B2]`}
+            title={`New page in ${group.label}`}
+            data-testid={`add-page-in-group-${group.key}`}
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenCategorySettings(group, 'category'); }}
+            className={`p-0.5 rounded transition-colors ${theme.textSecondary} hover:text-[#00A1B2]`}
+            title={`${group.label} settings`}
+            data-testid={`settings-group-${group.key}`}
+          >
+            <Settings className="w-3 h-3" />
+          </button>
+        </div>
       </div>
 
       {isExpanded && (
@@ -139,6 +175,7 @@ const GroupItem = ({ group, selectedSlug, onSelect, expanded, setExpanded, onOpe
               setExpanded={setExpanded}
               onOpenSettings={onOpenSettings}
               onCreateInSection={onCreateInSection}
+              onOpenCategorySettings={onOpenCategorySettings}
               theme={theme}
             />
           ))}
@@ -159,6 +196,7 @@ export const ArticleSidebar = ({
   onOpenSettings,
   onCreateInSection,
   onCreateInGroup,
+  onOpenCategorySettings,
   theme
 }) => (
   <aside
@@ -189,6 +227,7 @@ export const ArticleSidebar = ({
           onOpenSettings={onOpenSettings}
           onCreateInSection={onCreateInSection}
           onCreateInGroup={onCreateInGroup}
+          onOpenCategorySettings={onOpenCategorySettings}
           theme={theme}
         />
       ))}
