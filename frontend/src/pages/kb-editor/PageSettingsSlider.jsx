@@ -101,15 +101,15 @@ export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, i
 
   return (
     <>
-      {/* Backdrop — only covers the main content area (right of sidebar+slider), below header */}
+      {/* Backdrop — only covers the main content area (right of sidebar + slider), below header */}
       <div
-        className={`fixed z-30 transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
-        style={{ top: '56px', left: '256px', right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.25)' }}
+        className={`fixed z-10 transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        style={{ top: '56px', left: '656px', right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.25)' }}
         onClick={handleClose}
         data-testid="settings-slider-backdrop"
       />
 
-      {/* Slider Panel — behind the sidebar (z-20), slides from behind it */}
+      {/* Slider Panel — behind the sidebar (z-20 < sidebar z-30), above backdrop */}
       <div
         ref={sliderRef}
         className={`fixed z-20 flex flex-col border-r shadow-xl transition-transform duration-200 ease-out ${
