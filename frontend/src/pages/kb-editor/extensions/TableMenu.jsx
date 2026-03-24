@@ -142,7 +142,7 @@ const focusInRow = (editor, rowEl) => {
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
-export const TableRowMenu = ({ editor }) => {
+export const TableRowMenu = ({ editor, theme }) => {
   const [rowInfos, setRowInfos] = useState([]);
   const [activeRowIdx, setActiveRowIdx] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -323,6 +323,9 @@ export const TableRowMenu = ({ editor }) => {
     document.addEventListener('mouseup', onUp);
   }, [editor]);
 
+  /* ---- Derived theme values ---- */
+  const isDark = theme?.id === 'dark';
+
   /* ---- Render nothing if no table ---- */
   if (rowInfos.length === 0) return null;
 
@@ -336,6 +339,17 @@ export const TableRowMenu = ({ editor }) => {
         : tgtRow.top + tgtRow.height - 1;
     }
   }
+
+  /* ---- Compute context menu position: left on wide screens, right on narrow ---- */
+  const getMenuPos = () => {
+    if (!showMenu || activeRowIdx === null || !rowInfos[activeRowIdx]) return {};
+    const row = rowInfos[activeRowIdx];
+    const top = row.top + row.height / 2 - 10;
+    const tableLeft = tableElRef.current?.getBoundingClientRect()?.left ?? 300;
+    return tableLeft < 220
+      ? { top, left: 8 }
+      : { top, left: -198 };
+  };
 
   return (
     <>
@@ -357,7 +371,7 @@ export const TableRowMenu = ({ editor }) => {
           title="Drag to reorder or click for options"
           data-testid={`table-row-grip-${row.index}`}
         >
-          <GripVertical className="w-4 h-4 text-emerald-400" />
+          <GripVertical className={`w-4 h-4 ${isDark ? 'text-emerald-400' : 'text-[#00A1B2]'}`} />
         </div>
       ))}
 
@@ -370,8 +384,8 @@ export const TableRowMenu = ({ editor }) => {
             right: 0,
             top: rowInfos[dragFrom].top,
             height: rowInfos[dragFrom].height,
-            background: 'rgba(16,185,129,0.08)',
-            border: '1px solid rgba(16,185,129,0.25)',
+            background: isDark ? 'rgba(16,185,129,0.08)' : 'rgba(0,161,178,0.08)',
+            border: isDark ? '1px solid rgba(16,185,129,0.25)' : '1px solid rgba(0,161,178,0.25)',
           }}
           data-testid="drag-source-highlight"
         />
@@ -384,9 +398,9 @@ export const TableRowMenu = ({ editor }) => {
           style={{ left: 0, right: 0, top: dropLineTop }}
           data-testid="drop-indicator"
         >
-          <div className="h-0.5 bg-emerald-400 rounded-full" />
-          <div className="absolute -left-1.5 -top-[3px] w-2 h-2 rounded-full bg-emerald-400" />
-          <div className="absolute -right-1.5 -top-[3px] w-2 h-2 rounded-full bg-emerald-400" />
+          <div className={`h-0.5 rounded-full ${isDark ? 'bg-emerald-400' : 'bg-[#00A1B2]'}`} />
+          <div className={`absolute -left-1.5 -top-[3px] w-2 h-2 rounded-full ${isDark ? 'bg-emerald-400' : 'bg-[#00A1B2]'}`} />
+          <div className={`absolute -right-1.5 -top-[3px] w-2 h-2 rounded-full ${isDark ? 'bg-emerald-400' : 'bg-[#00A1B2]'}`} />
         </div>
       )}
 
@@ -394,11 +408,8 @@ export const TableRowMenu = ({ editor }) => {
       {showMenu && !isDragging && activeRowIdx !== null && rowInfos[activeRowIdx] && !rowInfos[activeRowIdx].isHeader && (
         <div
           ref={menuRef}
-          className="absolute z-30 bg-[#1a1a2e] border border-slate-700 rounded-lg shadow-xl py-1 min-w-[160px]"
-          style={{
-            top: rowInfos[activeRowIdx].top + rowInfos[activeRowIdx].height / 2 - 10,
-            left: -198,
-          }}
+          className={`absolute z-30 rounded-lg shadow-xl py-1 min-w-[160px] border ${isDark ? 'bg-[#1a1a2e] border-slate-700' : 'bg-white border-gray-200'}`}
+          style={getMenuPos()}
           data-testid="table-row-context-menu"
         >
           {MENU_ITEMS.map((item) => (
@@ -408,7 +419,9 @@ export const TableRowMenu = ({ editor }) => {
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors ${
                 item.danger
                   ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
-                  : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                  : isDark
+                    ? 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
               data-testid={`table-row-${item.key}`}
             >

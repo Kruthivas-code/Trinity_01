@@ -738,11 +738,11 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
       </div>
 
       {/* Slash command hint */}
-      <p className={`text-[11px] ${theme.textTertiary} mb-2`}>Type <kbd className="px-1 py-0.5 rounded text-[10px] bg-slate-800/50 border border-white/5">/</kbd> for commands</p>
+      <p className={`text-[11px] ${theme.textTertiary} mb-2`}>Type <kbd className={`px-1 py-0.5 rounded text-[10px] ${theme.id === 'dark' ? 'bg-slate-800/50 border border-white/5' : 'bg-gray-100 border border-gray-200 text-gray-500'}`}>/</kbd> for commands</p>
 
       {/* Editor Content with Table Menu */}
       <div className="relative">
-        <TableRowMenu editor={editor} />
+        <TableRowMenu editor={editor} theme={theme} />
         <EditorContent
           editor={editor}
           className={`tiptap-editor prose ${theme.proseClass} max-w-none ${theme.text} [&_.tiptap]:outline-none [&_.tiptap]:min-h-[400px]`}
@@ -750,7 +750,7 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
         />
       </div>
 
-      {/* Table styles for the editor */}
+      {/* Table styles for the editor — adapts to light / dark via html.dark class */}
       <style>{`
         .tiptap-editor .editor-table {
           border-collapse: collapse;
@@ -758,31 +758,51 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
           margin: 1rem 0;
           overflow: hidden;
           border-radius: 0.5rem;
+          border: 1px solid rgba(0,0,0,0.12);
+        }
+        .dark .tiptap-editor .editor-table {
           border: 1px solid rgba(255,255,255,0.1);
         }
         .tiptap-editor .editor-table th,
         .tiptap-editor .editor-table td {
-          border: 1px solid rgba(255,255,255,0.1);
+          border: 1px solid rgba(0,0,0,0.08);
           padding: 0.5rem 0.75rem;
           position: relative;
           min-width: 100px;
           vertical-align: top;
         }
+        .dark .tiptap-editor .editor-table th,
+        .dark .tiptap-editor .editor-table td {
+          border-color: rgba(255,255,255,0.1);
+        }
         .tiptap-editor .editor-table th {
           font-weight: 600;
+          background: rgba(0,0,0,0.03);
+        }
+        .dark .tiptap-editor .editor-table th {
           background: rgba(255,255,255,0.05);
         }
         .tiptap-editor .editor-table td {
           background: transparent;
         }
         .tiptap-editor .editor-table .selectedCell {
+          background: rgba(0,161,178,0.08);
+          border-color: #00A1B2;
+        }
+        .dark .tiptap-editor .editor-table .selectedCell {
           background: rgba(16,185,129,0.08);
           border-color: #10b981;
         }
         .tiptap-editor .editor-table th.selectedCell {
+          background: rgba(0,161,178,0.12);
+        }
+        .dark .tiptap-editor .editor-table th.selectedCell {
           background: rgba(16,185,129,0.12);
         }
         .tiptap-editor .editor-table tr:hover td {
+          background: rgba(0,0,0,0.015);
+        }
+        .dark .tiptap-editor .editor-table tr:hover td {
           background: rgba(255,255,255,0.02);
         }
         .tiptap-editor .editor-table p {
@@ -795,9 +815,12 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
           top: 0;
           bottom: 0;
           width: 4px;
-          background: #10b981;
+          background: #00A1B2;
           cursor: col-resize;
           z-index: 20;
+        }
+        .dark .tiptap-editor .column-resize-handle {
+          background: #10b981;
         }
         .tiptap-editor .tableWrapper {
           overflow-x: auto;
