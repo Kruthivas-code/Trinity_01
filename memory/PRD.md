@@ -39,10 +39,35 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
   - Added CHECK callout type to DocContent CALLOUT_CONFIG
   - Fixed slash command hint styling for both themes
   - Made context menu position responsive for narrow screens
-  - Verified: Public docs callouts (16 found), tables (7 found), theme toggle, mobile responsive
 
 - **Backend Audit Review** (P1):
   - All 3 reported issues verified as already resolved
+
+### Session: Mar 24, 2026 (KB Editor Redesign)
+- **Sidebar Redesign**:
+  - Removed likes/dislikes metrics and page icons from sidebar
+  - Settings gear icon appears on hover over any page (CSS group-hover)
+  - "+" icon appears on hover over categories and subcategories to create pages underneath
+  - Chevron click only toggles expand/collapse (not entire row)
+  - Main "+" in Navigation header opens settings for creating new categories
+  - Header label changed from "Articles" to "Navigation"
+
+- **PageSettingsSlider** (new component):
+  - Slide-in panel from right with backdrop
+  - Fields: Title, Slug, Description, Sidebar title, Keywords (add/remove), Tags (add/remove), Publishing toggle
+  - Delete button with confirmation overlay modal
+  - Close button and Escape key to dismiss
+
+- **Editor Area Simplified**:
+  - Removed Document section (meta fields) and Publishing section from main editor
+  - Only inline title input and content editor remain
+  - "Draft" tag shown in navbar when page is unpublished
+
+- **Backend Model Extension**:
+  - Added `sidebar_title`, `keywords`, `tags` fields to ArticleCreate and ArticleUpdate models
+  - All new fields persist correctly via API
+
+- **Testing**: 100% pass (17/17 frontend, 11/11 backend)
 
 ## Architecture
 - **Backend**: FastAPI (Python), MongoDB
@@ -61,3 +86,8 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
 ### P2 — Future
 - Real-time agent notifications
 - Auto-close stale tickets job
+
+### Feature Ideas
+- Keyboard shortcuts for editor (Alt+Up/Down for row reorder)
+- Live preview split-pane while editing
+- Consolidate KBArticleManager (admin) to use shared TipTap RichTextEditor
