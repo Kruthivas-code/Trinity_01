@@ -8,7 +8,7 @@ import os
 import json
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://customer-support-app-2.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://docs-sync-test.preview.emergentagent.com')
 SESSION_COOKIE = {'session_token': '7N_TW_9vqeefrLlsBi_s9cZyXCYznDfSPaSt8iwcJic'}
 
 class TestKnowledgeBaseAPI:

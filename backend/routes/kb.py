@@ -352,6 +352,9 @@ class ArticleUpdate(BaseModel):
     published: Optional[bool] = None
     order: Optional[int] = None
     icon: Optional[str] = None
+    sidebar_title: Optional[str] = None
+    keywords: Optional[list] = None
+    tags: Optional[list] = None
 
 
 class ArticleCreate(BaseModel):
@@ -366,6 +369,9 @@ class ArticleCreate(BaseModel):
     published: bool = False
     order: int = 0
     icon: str = ""
+    sidebar_title: str = ""
+    keywords: list = []
+    tags: list = []
 
 
 @router.post("/admin/articles")

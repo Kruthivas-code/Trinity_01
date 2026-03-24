@@ -1,13 +1,14 @@
 /**
  * KBEditor — Knowledge Base article editor
- * Single-page layout with Document Settings, Draft, and Rich Text Content sections.
- * Supports Visual Edit and Markdown modes with a full Preview page.
+ * Single-page layout: sidebar + content editor.
+ * Page settings moved to a separate slider (accessed via sidebar hover gear icon).
+ * Draft tag shown in header when page is unpublished.
  */
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Save, Loader2, Settings,
-  Sun, Moon, Eye, Globe
+  Sun, Moon, Eye
 } from 'lucide-react';
 import { ArticleSidebar } from './kb-editor/ArticleSidebar';
 import { RichTextEditor } from './kb-editor/RichTextEditor';
@@ -15,6 +16,7 @@ import { EDITOR_THEMES } from './kb-editor/editorTheme';
 import { EditorThemeProvider } from './kb-editor/EditorThemeContext';
 import { ArticlePreview } from './kb-editor/ArticlePreview';
 import { UnifiedSettings } from './kb-editor/UnifiedSettings';
+import { PageSettingsSlider } from './kb-editor/PageSettingsSlider';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -35,6 +37,7 @@ const KBEditor = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [editMode, setEditMode] = useState('visual');
   const [showPreview, setShowPreview] = useState(false);
+  const [showPageSettings, setShowPageSettings] = useState(false);
 
   // Theme
   const [editorTheme, setEditorTheme] = useState(() => localStorage.getItem('kb-editor-theme') || 'dark');
@@ -72,8 +75,11 @@ const KBEditor = () => {
         setArticles(data.articles || []);
         setNavGroups(data.nav_groups || []);
         const exp = {};
-        (data.nav_groups || []).forEach(g => { g.sections?.forEach(s => { exp[`${g.key}-${s.key}`] = true; }); });
-        setExpanded(exp);
+        (data.nav_groups || []).forEach(g => {
+          exp[`group-${g.key}`] = true;
+          g.sections?.forEach(s => { exp[`${g.key}-${s.key}`] = true; });
+        });
+        setExpanded(prev => ({ ...exp, ...prev }));
         return data;
       }
     } catch (e) { console.error(e); }
@@ -93,14 +99,14 @@ const KBEditor = () => {
           title: '', slug: '', description: '', content_markdown: '',
           nav_group_key: '', nav_group_label: '',
           section_key: '', section_label: '',
-          published: false, order: articles.length
+          published: false, order: articles.length,
+          sidebar_title: '', keywords: [], tags: []
         });
       } else if (articles.length > 0 && !form) {
         navigate(`/dashboard/kb-editor/${articles[0].slug}`, { replace: true });
       }
       return;
     }
-    // Lazy-load full article content (content_markdown excluded from listing)
     const loadArticle = async () => {
       try {
         const res = await fetch(`${API}/api/kb/admin/articles/${paramSlug}`, { credentials: 'include' });
@@ -108,14 +114,13 @@ const KBEditor = () => {
           const art = await res.json();
           setIsNew(false);
           setOriginalSlug(art.slug);
-          setForm({ ...art });
+          setForm({ ...art, keywords: art.keywords || [], tags: art.tags || [], sidebar_title: art.sidebar_title || '' });
         }
       } catch (e) { console.error('Failed to load article:', e); }
     };
     loadArticle();
   }, [paramSlug, articles, navGroups, navigate]);
 
-  // Validation
   const canSave = form && form.title?.trim() && form.slug?.trim();
 
   // Save
@@ -150,7 +155,6 @@ const KBEditor = () => {
   }, [handleSave]);
 
   const handleDelete = async (slug) => {
-    if (!window.confirm('Delete this article permanently?')) return;
     setDeleting(slug);
     try {
       await fetch(`${API}/api/kb/admin/articles/${slug}`, { method: 'DELETE', credentials: 'include' });
@@ -163,7 +167,7 @@ const KBEditor = () => {
     finally { setDeleting(null); }
   };
 
-  // Image upload — returns URL
+  // Image upload
   const uploadImage = useCallback(async (file) => {
     if (!file || !file.type.startsWith('image/')) return null;
     try {
@@ -206,17 +210,49 @@ const KBEditor = () => {
     })),
   })), [navGroups, articles]);
 
-  // Flatten sections for category dropdown
-  const categoryOptions = useMemo(() => {
-    const opts = [];
-    navGroups.forEach(g => {
-      opts.push({ type: 'group', key: g.key, label: g.label });
-      (g.sections || []).forEach(s => {
-        opts.push({ type: 'section', groupKey: g.key, groupLabel: g.label, key: s.key, label: s.label });
-      });
+  // Open settings slider for a specific article
+  const handleOpenSettings = useCallback((article) => {
+    if (article.slug !== paramSlug) {
+      navigate(`/dashboard/kb-editor/${article.slug}`);
+    }
+    // Small delay to let form load if navigating
+    setTimeout(() => setShowPageSettings(true), article.slug !== paramSlug ? 200 : 0);
+  }, [paramSlug, navigate]);
+
+  // Create page under a specific group (first section)
+  const handleCreateInGroup = useCallback((group) => {
+    const firstSection = group.sections?.[0];
+    setIsNew(true);
+    setOriginalSlug(null);
+    setForm({
+      title: '', slug: '', description: '', content_markdown: '',
+      nav_group_key: group.key, nav_group_label: group.label,
+      section_key: firstSection?.key || '', section_label: firstSection?.label || '',
+      published: false, order: articles.length,
+      sidebar_title: '', keywords: [], tags: []
     });
-    return opts;
-  }, [navGroups]);
+    navigate('/dashboard/kb-editor/new', { replace: true });
+  }, [articles, navigate]);
+
+  // Create page under a specific section
+  const handleCreateInSection = useCallback((groupKey, section) => {
+    const group = navGroups.find(g => g.key === groupKey);
+    setIsNew(true);
+    setOriginalSlug(null);
+    setForm({
+      title: '', slug: '', description: '', content_markdown: '',
+      nav_group_key: groupKey, nav_group_label: group?.label || '',
+      section_key: section.key, section_label: section.label,
+      published: false, order: articles.length,
+      sidebar_title: '', keywords: [], tags: []
+    });
+    navigate('/dashboard/kb-editor/new', { replace: true });
+  }, [articles, navGroups, navigate]);
+
+  // Create new category (tab) via NavManager/UnifiedSettings
+  const handleNewCategory = useCallback(() => {
+    setShowSettings(true);
+  }, []);
 
   if (loading) {
     return <div className={`h-screen flex items-center justify-center ${theme.bg}`}><Loader2 className="w-6 h-6 animate-spin text-[#00A1B2]" /></div>;
@@ -224,9 +260,6 @@ const KBEditor = () => {
 
   const bgStyle = isDark ? {} : { backgroundColor: '#ffffff' };
   const panelBgStyle = isDark ? {} : { backgroundColor: '#f9fafb' };
-
-  // Get the preview URL for the slug
-  const docsBaseUrl = window.location.origin + '/docs/';
 
   return (
     <div className={`h-screen ${theme.bg} flex flex-col`} style={bgStyle} data-testid="kb-editor-page">
@@ -239,21 +272,30 @@ const KBEditor = () => {
 
         {/* Edit Mode Toggle */}
         {form ? (
-          <div className={`flex items-center rounded-lg p-0.5 ${isDark ? 'bg-slate-800/80' : 'bg-gray-100'}`} data-testid="edit-mode-toggle">
-            <button
-              onClick={() => setEditMode('visual')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${editMode === 'visual' ? 'bg-[#00A1B2] text-white shadow-sm' : `${theme.textMuted} ${theme.hoverText}`}`}
-              data-testid="visual-edit-toggle"
-            >
-              Visual Edit
-            </button>
-            <button
-              onClick={() => setEditMode('markdown')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${editMode === 'markdown' ? 'bg-[#00A1B2] text-white shadow-sm' : `${theme.textMuted} ${theme.hoverText}`}`}
-              data-testid="markdown-edit-toggle"
-            >
-              Markdown
-            </button>
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center rounded-lg p-0.5 ${isDark ? 'bg-slate-800/80' : 'bg-gray-100'}`} data-testid="edit-mode-toggle">
+              <button
+                onClick={() => setEditMode('visual')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${editMode === 'visual' ? 'bg-[#00A1B2] text-white shadow-sm' : `${theme.textMuted} ${theme.hoverText}`}`}
+                data-testid="visual-edit-toggle"
+              >
+                Visual Edit
+              </button>
+              <button
+                onClick={() => setEditMode('markdown')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${editMode === 'markdown' ? 'bg-[#00A1B2] text-white shadow-sm' : `${theme.textMuted} ${theme.hoverText}`}`}
+                data-testid="markdown-edit-toggle"
+              >
+                Markdown
+              </button>
+            </div>
+
+            {/* Draft tag in navbar */}
+            {!form.published && (
+              <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${isDark ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' : 'bg-amber-50 text-amber-600 border border-amber-200'}`} data-testid="navbar-draft-tag">
+                Draft
+              </span>
+            )}
           </div>
         ) : (
           <span className={`text-sm font-medium ${theme.text} truncate`}>Knowledge Base Editor</span>
@@ -290,148 +332,42 @@ const KBEditor = () => {
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Sidebar */}
-        <ArticleSidebar tree={tree} selectedSlug={paramSlug} onSelect={(slug) => navigate(`/dashboard/kb-editor/${slug}`)} onDelete={handleDelete} deleting={deleting} expanded={expanded} setExpanded={setExpanded} onNewArticle={() => navigate('/dashboard/kb-editor/new')} theme={theme} />
+        <ArticleSidebar
+          tree={tree}
+          selectedSlug={paramSlug}
+          onSelect={(slug) => navigate(`/dashboard/kb-editor/${slug}`)}
+          expanded={expanded}
+          setExpanded={setExpanded}
+          onNewCategory={handleNewCategory}
+          onOpenSettings={handleOpenSettings}
+          onCreateInSection={handleCreateInSection}
+          onCreateInGroup={handleCreateInGroup}
+          theme={theme}
+        />
 
-        {/* Main Content — Single Scrollable Page */}
+        {/* Main Content — Editor Only */}
         <div className="flex-1 overflow-y-auto" data-testid="editor-main-area">
           {form ? (
-            <div className="max-w-[800px] mx-auto px-6 py-8 space-y-8">
+            <div className="max-w-[800px] mx-auto px-6 py-8">
+              {/* Editable title inline */}
+              <div className="mb-6">
+                <input
+                  value={form.title || ''}
+                  onChange={e => {
+                    const title = e.target.value;
+                    setForm(f => ({
+                      ...f, title,
+                      slug: isNew || f.slug === slugify(f.title || '') ? slugify(title) : f.slug
+                    }));
+                  }}
+                  placeholder="Untitled page"
+                  className={`w-full text-3xl font-bold bg-transparent border-none outline-none ${theme.text} ${theme.placeholder}`}
+                  data-testid="editor-title-input"
+                />
+              </div>
 
-              {/* === Document Section (Meta) === */}
-              <section data-testid="document-section">
-                <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-4`}>Document</h2>
-
-                {/* Meta Title */}
-                <div className="mb-4">
-                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Meta Title <span className="text-red-400">*</span></label>
-                  <input
-                    value={form.title || ''}
-                    onChange={e => {
-                      const title = e.target.value;
-                      setForm(f => ({
-                        ...f, title,
-                        slug: isNew || f.slug === slugify(f.title || '') ? slugify(title) : f.slug
-                      }));
-                    }}
-                    placeholder="Article meta title..."
-                    className={`w-full px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors`}
-                    style={theme.inputBgStyle}
-                    data-testid="editor-title-input"
-                  />
-                </div>
-
-                {/* Meta Description */}
-                <div className="mb-4">
-                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Meta Description</label>
-                  <input
-                    value={form.description || ''}
-                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    placeholder="Brief meta description for SEO..."
-                    className={`w-full px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors`}
-                    style={theme.inputBgStyle}
-                    data-testid="editor-description-input"
-                  />
-                </div>
-
-                {/* Slug */}
-                <div className="mb-1">
-                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Slug <span className="text-red-400">*</span></label>
-                  <input
-                    value={form.slug || ''}
-                    onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
-                    placeholder="article-slug"
-                    className={`w-full px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} font-mono ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors`}
-                    style={theme.inputBgStyle}
-                    data-testid="editor-slug-input"
-                  />
-                </div>
-                {form.slug && (
-                  <div className={`flex items-center gap-2 text-xs ${theme.textSecondary} mt-1.5 mb-4`} data-testid="slug-preview">
-                    <Globe className="w-3.5 h-3.5" />
-                    <span className="font-mono">{docsBaseUrl}{form.slug}</span>
-                  </div>
-                )}
-
-                {/* Category */}
-                <div className="mb-4">
-                  <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Category</label>
-                  <select
-                    value={form.nav_group_key || ''}
-                    onChange={e => {
-                      const groupKey = e.target.value;
-                      const g = navGroups.find(g => g.key === groupKey);
-                      setForm(f => ({
-                        ...f,
-                        nav_group_key: groupKey,
-                        nav_group_label: g?.label || '',
-                        section_key: '',
-                        section_label: '',
-                      }));
-                    }}
-                    className={`w-full px-3 py-2.5 ${theme.selectBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} focus:border-[#00A1B2] focus:outline-none transition-colors`}
-                    data-testid="editor-category-select"
-                  >
-                    <option value="">No category</option>
-                    {navGroups.map(g => <option key={g.key} value={g.key}>{g.label}</option>)}
-                  </select>
-                </div>
-
-                {/* Subcategory (Section) — optional */}
-                {form.nav_group_key && (
-                  <div className="mb-4">
-                    <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>Subcategory <span className={`${theme.textSecondary} font-normal`}>(optional)</span></label>
-                    <select
-                      value={form.section_key || ''}
-                      onChange={e => {
-                        const sectionKey = e.target.value;
-                        const g = navGroups.find(g => g.key === form.nav_group_key);
-                        const s = g?.sections?.find(s => s.key === sectionKey);
-                        setForm(f => ({
-                          ...f,
-                          section_key: sectionKey,
-                          section_label: s?.label || '',
-                        }));
-                      }}
-                      className={`w-full px-3 py-2.5 ${theme.selectBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} focus:border-[#00A1B2] focus:outline-none transition-colors`}
-                      data-testid="editor-subcategory-select"
-                    >
-                      <option value="">None (directly under category)</option>
-                      {(navGroups.find(g => g.key === form.nav_group_key)?.sections || []).map(s => (
-                        <option key={s.key} value={s.key}>{s.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </section>
-
-              {/* === Draft Section === */}
-              <section className={`border-t ${theme.border} pt-6`} data-testid="draft-section">
-                <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-4`}>Publishing</h2>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className={`text-sm font-medium ${theme.text}`}>
-                      {form.published ? 'Published' : 'Draft'}
-                    </p>
-                    <p className={`text-xs ${theme.textSecondary} mt-0.5`}>
-                      {form.published ? 'This article is visible to the public.' : 'This article is saved as a draft and not visible to the public.'}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setForm(f => ({ ...f, published: !f.published }))}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${form.published ? 'bg-[#00A1B2]' : isDark ? 'bg-slate-700' : 'bg-gray-300'}`}
-                    role="switch"
-                    aria-checked={form.published}
-                    data-testid="publish-toggle"
-                  >
-                    <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${form.published ? 'translate-x-5' : 'translate-x-0'}`} />
-                  </button>
-                </div>
-              </section>
-
-              {/* === Content Section === */}
-              <section className={`border-t ${theme.border} pt-6`} data-testid="content-section">
-                <h2 className={`text-xs font-semibold uppercase tracking-wider ${theme.textSecondary} mb-4`}>Content</h2>
+              {/* Content Section */}
+              <section data-testid="content-section">
                 {editMode === 'visual' ? (
                   <EditorThemeProvider value={editorTheme}>
                     <RichTextEditor
@@ -452,7 +388,6 @@ const KBEditor = () => {
                   />
                 )}
               </section>
-
             </div>
           ) : (
             <div className={`flex-1 flex items-center justify-center h-full ${theme.textSecondary}`}>
@@ -482,6 +417,18 @@ const KBEditor = () => {
           onBulkMove={bulkMoveArticles}
           onClose={() => setShowSettings(false)}
           theme={theme}
+          isDark={isDark}
+        />
+      )}
+
+      {/* Page Settings Slider */}
+      {showPageSettings && form && (
+        <PageSettingsSlider
+          form={form}
+          setForm={setForm}
+          onSave={handleSave}
+          onDelete={handleDelete}
+          onClose={() => setShowPageSettings(false)}
           isDark={isDark}
         />
       )}

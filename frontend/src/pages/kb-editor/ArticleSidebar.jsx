@@ -1,69 +1,196 @@
 /**
- * ArticleSidebar — Left sidebar with article navigation tree
+ * ArticleSidebar — Left sidebar with navigation tree
+ * - Hover on category/subcategory shows "+" to create a page underneath
+ * - Chevron click only toggles expand/collapse
+ * - Hover on page shows settings gear icon (via CSS group-hover)
+ * - Main "+" in header opens settings to create new tabs (categories)
+ * - No page icons, no feedback metrics
  */
-import { useState } from 'react';
 import {
-  ChevronDown, ChevronRight, Plus,
-  FolderOpen, FileText, Trash2, Loader2, ThumbsUp
+  ChevronDown, ChevronRight, Plus, Settings, FolderOpen
 } from 'lucide-react';
 
-const NavGroup = ({ group, groupKey, articles, selectedSlug, onSelect, expanded, setExpanded, onDelete, deleting, theme }) => {
-  const isExpanded = expanded[groupKey] !== false;
+/* ---------- Section (subcategory) ---------- */
+const NavSection = ({ section, groupKey, sectionKey, articles, selectedSlug, onSelect, expanded, setExpanded, onOpenSettings, onCreateInSection, theme }) => {
+  const expKey = `${groupKey}-${sectionKey}`;
+  const isExpanded = expanded[expKey] !== false;
+
   return (
     <div>
-      <button onClick={() => setExpanded(prev => ({ ...prev, [groupKey]: !prev[groupKey] }))}
-        className={`w-full flex items-center gap-2 px-2 py-1.5 ${theme.textMuted} ${theme.hoverText} transition-colors`}>
-        {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        <FolderOpen className={`w-3.5 h-3.5 ${theme.textSecondary}`} />
-        <span className="text-xs font-medium truncate">{group.group || group.label}</span>
-        <span className={`text-[10px] ${theme.textTertiary} ml-auto`}>{articles.length}</span>
-      </button>
+      <div className={`group/sec flex items-center gap-1 px-2 py-1.5 rounded-md transition-colors ${theme.textMuted} ${theme.hover}`}>
+        {/* Chevron — only this toggles */}
+        <button
+          onClick={() => setExpanded(prev => ({ ...prev, [expKey]: !prev[expKey] }))}
+          className={`p-0.5 rounded transition-colors ${theme.hoverText}`}
+          data-testid={`toggle-section-${sectionKey}`}
+        >
+          {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        </button>
+
+        <FolderOpen className={`w-3.5 h-3.5 ${theme.textSecondary} flex-shrink-0`} />
+        <span className="text-xs font-medium truncate flex-1">{section.label}</span>
+
+        {/* "+" icon on hover to create page under this section */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onCreateInSection(groupKey, section); }}
+          className={`p-0.5 rounded transition-all opacity-0 group-hover/sec:opacity-100 ${theme.textSecondary} hover:text-[#00A1B2]`}
+          title={`New page in ${section.label}`}
+          data-testid={`add-page-in-section-${sectionKey}`}
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </div>
       {isExpanded && (
         <div className="ml-5 space-y-0.5">
-          {articles.map(art => {
-            const isActive = art.slug === selectedSlug;
-            const fbPct = art.feedback_total > 0 ? Math.round((art.feedback_helpful / art.feedback_total) * 100) : null;
-            return (
-              <div key={art.slug} className={`group flex items-center gap-1 rounded-lg transition-colors ${isActive ? theme.activeItem : `${theme.textMuted} ${theme.hover} ${theme.hoverText}`}`}>
-                <button onClick={() => onSelect(art.slug)} className="flex-1 flex items-center gap-2 px-2 py-1.5 text-left min-w-0" data-testid={`nav-article-${art.slug}`}>
-                  <FileText className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span className="text-sm truncate">{art.title}</span>
-                </button>
-                {fbPct !== null && (
-                  <span className={`text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5 flex-shrink-0 ${fbPct >= 70 ? 'bg-emerald-500/15 text-emerald-400' : fbPct >= 40 ? 'bg-amber-500/15 text-amber-400' : 'bg-red-500/15 text-red-400'}`} title={`${art.feedback_helpful}/${art.feedback_total} found helpful`}>
-                    <ThumbsUp className="w-2.5 h-2.5" />{fbPct}%
-                  </span>
-                )}
-                {!art.published && <span className="text-[9px] px-1 py-0.5 rounded bg-amber-500/20 text-amber-400">draft</span>}
-                <button onClick={() => onDelete(art.slug)} disabled={deleting === art.slug}
-                  className={`p-1 opacity-0 group-hover:opacity-100 ${theme.textSecondary} hover:text-red-400 rounded transition-all flex-shrink-0`}>
-                  {deleting === art.slug ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                </button>
-              </div>
-            );
-          })}
+          {articles.map(art => (
+            <ArticleItem
+              key={art.slug}
+              article={art}
+              selectedSlug={selectedSlug}
+              onSelect={onSelect}
+              onOpenSettings={onOpenSettings}
+              theme={theme}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 };
 
-export const ArticleSidebar = ({ tree, selectedSlug, onSelect, onDelete, deleting, expanded, setExpanded, onNewArticle, theme }) => (
-  <aside className={`w-64 flex-shrink-0 border-r ${theme.border} ${theme.panelBg} flex flex-col overflow-hidden`} style={theme.panelBgStyle} data-testid="editor-sidebar">
+/* ---------- Single article item ---------- */
+const ArticleItem = ({ article, selectedSlug, onSelect, onOpenSettings, theme }) => {
+  const isActive = article.slug === selectedSlug;
+
+  return (
+    <div
+      className={`group/art flex items-center gap-1 rounded-lg transition-colors ${isActive ? theme.activeItem : `${theme.textMuted} ${theme.hover} ${theme.hoverText}`}`}
+    >
+      <button
+        onClick={() => onSelect(article.slug)}
+        className="flex-1 flex items-center gap-2 px-2 py-1.5 text-left min-w-0"
+        data-testid={`nav-article-${article.slug}`}
+      >
+        <span className="text-sm truncate">{article.sidebar_title || article.title}</span>
+      </button>
+
+      {/* Draft tag — always visible for unpublished */}
+      {!article.published && (
+        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 flex-shrink-0" data-testid={`draft-tag-${article.slug}`}>
+          draft
+        </span>
+      )}
+
+      {/* Settings gear on hover (CSS-based) */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onOpenSettings(article); }}
+        className={`p-1 rounded transition-all flex-shrink-0 opacity-0 group-hover/art:opacity-100 ${theme.textSecondary} hover:text-[#00A1B2]`}
+        title="Page settings"
+        data-testid={`settings-btn-${article.slug}`}
+      >
+        <Settings className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+};
+
+/* ---------- Group (top-level category) ---------- */
+const GroupItem = ({ group, selectedSlug, onSelect, expanded, setExpanded, onOpenSettings, onCreateInSection, onCreateInGroup, theme }) => {
+  const expKey = `group-${group.key}`;
+  const isExpanded = expanded[expKey] !== false;
+
+  return (
+    <div className="mb-3">
+      <div className={`group/grp flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${theme.hover}`}>
+        <button
+          onClick={() => setExpanded(prev => ({ ...prev, [expKey]: !prev[expKey] }))}
+          className={`p-0.5 rounded transition-colors ${theme.textSecondary} ${theme.hoverText}`}
+          data-testid={`toggle-group-${group.key}`}
+        >
+          {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+        </button>
+        <span className={`text-[11px] font-semibold uppercase tracking-wider flex-1 truncate ${theme.id === 'dark' ? 'text-[#00A1B2]/70' : 'text-[#00A1B2]'}`}>
+          {group.label}
+        </span>
+
+        {/* "+" icon on hover to create page under this group */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onCreateInGroup(group); }}
+          className={`p-0.5 rounded transition-all opacity-0 group-hover/grp:opacity-100 ${theme.textSecondary} hover:text-[#00A1B2]`}
+          title={`New page in ${group.label}`}
+          data-testid={`add-page-in-group-${group.key}`}
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {isExpanded && (
+        <div className="mt-0.5">
+          {group.sections.map(sec => (
+            <NavSection
+              key={sec.key}
+              section={sec}
+              groupKey={group.key}
+              sectionKey={sec.key}
+              articles={sec.articles || []}
+              selectedSlug={selectedSlug}
+              onSelect={onSelect}
+              expanded={expanded}
+              setExpanded={setExpanded}
+              onOpenSettings={onOpenSettings}
+              onCreateInSection={onCreateInSection}
+              theme={theme}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ---------- Main sidebar export ---------- */
+export const ArticleSidebar = ({
+  tree,
+  selectedSlug,
+  onSelect,
+  expanded,
+  setExpanded,
+  onNewCategory,
+  onOpenSettings,
+  onCreateInSection,
+  onCreateInGroup,
+  theme
+}) => (
+  <aside
+    className={`w-64 flex-shrink-0 border-r ${theme.border} ${theme.panelBg} flex flex-col overflow-hidden`}
+    style={theme.panelBgStyle}
+    data-testid="editor-sidebar"
+  >
     <div className={`px-3 py-3 flex items-center justify-between border-b ${theme.border}`}>
-      <span className={`text-xs font-semibold ${theme.textSecondary} uppercase tracking-wider`}>Articles</span>
-      <button onClick={onNewArticle} className={`p-1 ${theme.textSecondary} hover:text-[#00A1B2] rounded transition-colors`} title="New article" data-testid="new-article-btn">
+      <span className={`text-xs font-semibold ${theme.textSecondary} uppercase tracking-wider`}>Navigation</span>
+      <button
+        onClick={onNewCategory}
+        className={`p-1 ${theme.textSecondary} hover:text-[#00A1B2] rounded transition-colors`}
+        title="New category"
+        data-testid="new-category-btn"
+      >
         <Plus className="w-4 h-4" />
       </button>
     </div>
     <div className="flex-1 overflow-y-auto scrollbar-on-hover px-2 py-2">
       {tree.map(group => (
-        <div key={group.key} className="mb-3">
-          <div className="px-2 py-1 text-[10px] font-semibold text-[#00A1B2]/70 uppercase tracking-wider">{group.label}</div>
-          {group.sections.map(sec => (
-            <NavGroup key={sec.key} group={sec} groupKey={`${group.key}-${sec.key}`} articles={sec.articles} selectedSlug={selectedSlug} onSelect={onSelect} expanded={expanded} setExpanded={setExpanded} onDelete={onDelete} deleting={deleting} theme={theme} />
-          ))}
-        </div>
+        <GroupItem
+          key={group.key}
+          group={group}
+          selectedSlug={selectedSlug}
+          onSelect={onSelect}
+          expanded={expanded}
+          setExpanded={setExpanded}
+          onOpenSettings={onOpenSettings}
+          onCreateInSection={onCreateInSection}
+          onCreateInGroup={onCreateInGroup}
+          theme={theme}
+        />
       ))}
     </div>
   </aside>
