@@ -239,10 +239,10 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
     blockquote: ({ children }) => {
       return <blockquote className="lead-quote my-6 pl-4 border-l-4 border-indigo-500 italic [&>*]:!text-gray-600 dark:[&>*]:!text-[#999999] [&_p]:!text-gray-600 dark:[&_p]:!text-[#999999]">{children}</blockquote>;
     },
-    table: ({ children }) => <div className="overflow-x-auto my-6 rounded-lg border border-gray-200 dark:border-slate-800"><table className="w-full">{children}</table></div>,
+    table: ({ children }) => <div className="overflow-x-auto my-6 rounded-lg border border-gray-200 dark:border-slate-800 max-w-full"><table className="w-full border-collapse min-w-[400px]">{children}</table></div>,
     thead: ({ children }) => <thead className="bg-gray-50 dark:bg-slate-900">{children}</thead>,
-    th: ({ children }) => <th className="text-left px-4 py-3 text-sm font-semibold !text-gray-900 dark:!text-white border-b border-gray-200 dark:border-slate-800">{children}</th>,
-    td: ({ children }) => <td className="px-4 py-3 text-sm !text-gray-700 dark:!text-[#999999] border-b border-gray-100 dark:border-slate-800/50">{children}</td>,
+    th: ({ children }) => <th className="text-left px-4 py-3 text-sm font-semibold !text-gray-900 dark:!text-white border-b border-gray-200 dark:border-slate-800 whitespace-nowrap">{children}</th>,
+    td: ({ children }) => <td className="px-4 py-3 text-sm !text-gray-700 dark:!text-[#999999] border-b border-gray-100 dark:border-slate-800/50 break-words">{children}</td>,
     a: ({ href, children }) => { const ext = href?.startsWith('http'); return <a href={href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined} className="text-[#00A1B2] hover:text-[#00bdd0] underline-offset-2 hover:underline">{children}</a>; },
     img: ({ src, alt }) => <img src={src} alt={alt} className="rounded-lg border border-gray-200 dark:border-slate-800 my-6 max-w-full" loading="lazy" />,
     hr: () => <hr className="border-gray-200 dark:border-slate-800 my-8" />,

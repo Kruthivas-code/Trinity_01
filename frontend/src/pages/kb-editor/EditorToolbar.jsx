@@ -6,7 +6,7 @@ import {
   Bold, Italic, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon,
   MoreHorizontal, Info, AlertTriangle, Lightbulb, CheckCircle, AlertCircle,
-  Columns, Youtube
+  Columns, Youtube, TableIcon
 } from 'lucide-react';
 
 const ToolBtn = ({ onClick, active, disabled, children, title, theme }) => (
@@ -28,6 +28,7 @@ const SNIPPET_MAP = {
   tabs: '<Tabs>\n<Tab label="Tab 1">\nContent\n</Tab>\n<Tab label="Tab 2">\nContent\n</Tab>\n</Tabs>',
   accordion: '<Accordion>\n<AccordionItem title="Item 1">\nContent\n</AccordionItem>\n</Accordion>',
   youtube: '<YouTube id="VIDEO_ID" title="Video Title" />',
+  table: '| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n| Cell 1 | Cell 2 | Cell 3 |\n| Cell 4 | Cell 5 | Cell 6 |',
   columns: '<Columns cols={2}>\n<Card title="Left" icon="zap">\nContent\n</Card>\n<Card title="Right" icon="code">\nContent\n</Card>\n</Columns>',
 };
 
@@ -43,6 +44,7 @@ const INSERT_ITEMS = [
   { key: 'tabs', label: 'Tabs', icon: <Columns className="w-4 h-4 text-cyan-400" /> },
   { key: 'accordion', label: 'Accordion', icon: <MoreHorizontal className="w-4 h-4 text-slate-400" /> },
   { key: 'youtube', label: 'YouTube Video', icon: <Youtube className="w-4 h-4 text-red-400" /> },
+  { key: 'table', label: 'Table', icon: <TableIcon className="w-4 h-4 text-blue-400" /> },
   { key: 'columns', label: 'Columns', icon: <Columns className="w-4 h-4 text-teal-400" /> },
 ];
 

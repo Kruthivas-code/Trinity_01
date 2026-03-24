@@ -11,7 +11,7 @@ import {
   Type, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Code, Minus,
   Info, Lightbulb, AlertTriangle, CheckCircle, AlertCircle,
-  Columns, Youtube, MoreHorizontal, LayoutGrid
+  Columns, Youtube, MoreHorizontal, LayoutGrid, TableIcon
 } from 'lucide-react';
 
 import { useEditorTheme } from '../EditorThemeContext';
@@ -36,6 +36,7 @@ const SLASH_ITEMS = [
   { key: 'callout_tip', label: 'Tip Callout', description: 'Suggest a helpful tip', icon: Lightbulb, group: 'Callouts' },
   { key: 'callout_warning', label: 'Warning Callout', description: 'Raise a warning', icon: AlertTriangle, group: 'Callouts' },
   { key: 'callout_danger', label: 'Danger Callout', description: 'Highlight a danger', icon: AlertCircle, group: 'Callouts' },
+  { key: 'table', label: 'Table', description: 'Insert a table', icon: TableIcon, group: 'Components' },
   { key: 'steps', label: 'Steps', description: 'Step-by-step guide', icon: CheckCircle, group: 'Components' },
   { key: 'tabs', label: 'Tabs', description: 'Tabbed content', icon: Columns, group: 'Components' },
   { key: 'accordion', label: 'Accordion', description: 'Collapsible section', icon: MoreHorizontal, group: 'Components' },
@@ -257,6 +258,9 @@ export const SlashCommand = Extension.create({
                   { type: 'columnPane', content: [{ type: 'paragraph' }] },
                 ],
               }).run();
+              break;
+            case 'table':
+              editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
               break;
             case 'card_group':
               editor.chain().focus().insertContent({

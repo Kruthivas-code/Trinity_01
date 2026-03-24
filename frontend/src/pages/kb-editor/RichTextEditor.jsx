@@ -9,6 +9,10 @@ import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
 import { Markdown } from 'tiptap-markdown';
 import { marked } from 'marked';
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -17,7 +21,7 @@ import {
   List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon,
   Undo2, Redo2, ChevronDown, Plus,
   Info, Lightbulb, AlertTriangle, CheckCircle, AlertCircle, MoreHorizontal,
-  Columns, Youtube, Minus
+  Columns, Youtube, Minus, TableIcon
 } from 'lucide-react';
 import { SlashCommand } from './extensions/SlashCommand';
 import { ColumnsBlockNode, ColumnCardNode } from './extensions/ColumnsBlock';
@@ -26,6 +30,7 @@ import { StepsBlockNode, StepItemNode } from './extensions/StepsBlock';
 import { ColumnLayoutNode, ColumnPaneNode } from './extensions/ColumnLayout';
 import { AccordionBlockNode, AccordionItemNode } from './extensions/AccordionBlock';
 import { CalloutBlockNode } from './extensions/CalloutBlock';
+import { TableRowMenu } from './extensions/TableMenu';
 
 // ============= Markdown <-> HTML Conversion Pipeline =============
 
@@ -411,6 +416,7 @@ const INSERT_ITEMS = [
   { key: 'columns_2', label: '2 Columns', icon: <Columns className="w-4 h-4 text-teal-400" />, isColumnLayout: true, cols: 2 },
   { key: 'columns_3', label: '3 Columns', icon: <Columns className="w-4 h-4 text-teal-400" />, isColumnLayout: true, cols: 3 },
   { key: 'code_block', label: 'Code Block', icon: <Code className="w-4 h-4 text-green-400" />, snippet: '```javascript\n// Your code here\n```' },
+  { key: 'table', label: 'Table', icon: <TableIcon className="w-4 h-4 text-blue-400" />, isTable: true },
   { key: 'horizontal_rule', label: 'Horizontal Rule', icon: <Minus className="w-4 h-4 text-gray-400" />, snippet: '---' },
 ];
 
@@ -467,6 +473,10 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
       AccordionBlockNode,
       AccordionItemNode,
       CalloutBlockNode,
+      Table.configure({ resizable: false, HTMLAttributes: { class: 'editor-table' } }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: content ? mdToHtml(content) : '',
     editorProps: {
@@ -597,6 +607,12 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
     setShowInsert(false);
   }, [editor]);
 
+  const insertTable = useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    setShowInsert(false);
+  }, [editor]);
+
   const handleImageUpload = useCallback(async (file) => {
     if (!file || !file.type.startsWith('image/') || !onUploadImage) return;
     const url = await onUploadImage(file);
@@ -649,7 +665,7 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => item.isCallout ? insertCallout(item.calloutType) : item.isColumnLayout ? insertColumnLayout(item.cols) : item.isVisualSteps ? insertVisualSteps() : item.isAccordion ? insertAccordion() : insertSnippet(item.snippet)}
+                  onClick={() => item.isCallout ? insertCallout(item.calloutType) : item.isTable ? insertTable() : item.isColumnLayout ? insertColumnLayout(item.cols) : item.isVisualSteps ? insertVisualSteps() : item.isAccordion ? insertAccordion() : insertSnippet(item.snippet)}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm ${theme.textMuted} ${theme.hover} ${theme.hoverText} transition-colors`}
                   data-testid={`insert-${item.key}`}
                 >
@@ -724,12 +740,70 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
       {/* Slash command hint */}
       <p className={`text-[11px] ${theme.textTertiary} mb-2`}>Type <kbd className="px-1 py-0.5 rounded text-[10px] bg-slate-800/50 border border-white/5">/</kbd> for commands</p>
 
-      {/* Editor Content */}
-      <EditorContent
-        editor={editor}
-        className={`tiptap-editor prose ${theme.proseClass} max-w-none ${theme.text} [&_.tiptap]:outline-none [&_.tiptap]:min-h-[400px]`}
-        data-testid="editor-content-area"
-      />
+      {/* Editor Content with Table Menu */}
+      <div className="relative">
+        <TableRowMenu editor={editor} />
+        <EditorContent
+          editor={editor}
+          className={`tiptap-editor prose ${theme.proseClass} max-w-none ${theme.text} [&_.tiptap]:outline-none [&_.tiptap]:min-h-[400px]`}
+          data-testid="editor-content-area"
+        />
+      </div>
+
+      {/* Table styles for the editor */}
+      <style>{`
+        .tiptap-editor .editor-table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 1rem 0;
+          overflow: hidden;
+          border-radius: 0.5rem;
+          border: 1px solid rgba(255,255,255,0.1);
+        }
+        .tiptap-editor .editor-table th,
+        .tiptap-editor .editor-table td {
+          border: 1px solid rgba(255,255,255,0.1);
+          padding: 0.5rem 0.75rem;
+          position: relative;
+          min-width: 100px;
+          vertical-align: top;
+        }
+        .tiptap-editor .editor-table th {
+          font-weight: 600;
+          background: rgba(255,255,255,0.05);
+        }
+        .tiptap-editor .editor-table td {
+          background: transparent;
+        }
+        .tiptap-editor .editor-table .selectedCell {
+          background: rgba(16,185,129,0.08);
+          border-color: #10b981;
+        }
+        .tiptap-editor .editor-table th.selectedCell {
+          background: rgba(16,185,129,0.12);
+        }
+        .tiptap-editor .editor-table tr:hover td {
+          background: rgba(255,255,255,0.02);
+        }
+        .tiptap-editor .editor-table p {
+          margin: 0;
+        }
+        /* Column resize handle */
+        .tiptap-editor .column-resize-handle {
+          position: absolute;
+          right: -2px;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          background: #10b981;
+          cursor: col-resize;
+          z-index: 20;
+        }
+        .tiptap-editor .tableWrapper {
+          overflow-x: auto;
+          margin: 1rem 0;
+        }
+      `}</style>
     </div>
   );
 };

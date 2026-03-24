@@ -244,8 +244,12 @@ aside::-webkit-scrollbar-track { background: transparent; }
 
 /* Responsive: prevent tables from overflowing on mobile */
 .prose table {
-  display: block;
-  overflow-x: auto;
+  display: table;
+  width: 100%;
+  overflow: hidden;
+}
+
+.doc-content .overflow-x-auto {
   -webkit-overflow-scrolling: touch;
 }
 
