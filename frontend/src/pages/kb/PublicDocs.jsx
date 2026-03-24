@@ -91,9 +91,9 @@ const THEMES = {
 // ============= TOP NAVIGATION =============
 const TopNavigation = ({ theme, onThemeToggle, isDark, onSearchOpen }) => {
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 ${theme.navBg} border-b ${theme.border}`} data-testid="kb-header">
+    <header className={`fixed top-0 left-0 right-0 z-50 ${theme.navBg} border-b ${theme.border}`} role="banner" data-testid="kb-header">
       <div className="h-14 px-4 sm:px-6 flex items-center justify-between">
-        <a href="https://app.emergent.sh" className="flex items-center gap-2 flex-shrink-0" data-testid="logo-link">
+        <a href="https://app.emergent.sh" className="flex items-center gap-2 flex-shrink-0" aria-label="Emergent home" data-testid="logo-link">
           <img src="/images/emergent-logo-dark.png" alt="Emergent" className={`h-6 ${theme.logoInvert ? 'invert' : ''}`} />
         </a>
 
@@ -149,6 +149,8 @@ const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle, mobileMe
         <button
           className={`lg:hidden p-1 rounded ${theme.textSecondary} ${theme.hoverText} transition-colors`}
           onClick={onMobileMenuToggle}
+          aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={mobileMenuOpen}
           data-testid="breadcrumb-menu-toggle"
         >
           <Menu className="w-4 h-4" />
@@ -196,6 +198,7 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
           <button
             onClick={onMobileClose}
             className="absolute top-4 right-4 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 dark:bg-white/15 text-gray-600 dark:text-white shadow-lg transition-transform hover:scale-105"
+            aria-label="Close navigation"
             data-testid="sidebar-close-btn"
           >
             <X className="w-5 h-5" />
@@ -208,6 +211,8 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
           lg:top-14 lg:bottom-0 lg:left-0 lg:w-64
           top-0 bottom-0 left-0 w-[80%] max-w-[320px]
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        role="navigation"
+        aria-label="Documentation navigation"
         data-testid="kb-sidebar"
       >
         <div className="lg:hidden p-4 flex items-center gap-3">
@@ -240,6 +245,7 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
                         onClick={() => toggleGroup(groupKey)}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-colors ${theme.textMuted} ${theme.hoverText} ${theme.hover}`}
                         style={{ fontSize: '14px', lineHeight: '20px' }}
+                        aria-expanded={!isCollapsed}
                         data-testid={`sidebar-group-toggle-${gi}`}
                       >
                         <span className="truncate">{group.group}</span>
@@ -258,6 +264,7 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
                             return (
                               <button key={pi} onClick={() => { if (!isMissing) { onDocSelect(pageSlug); onMobileClose(); } }} disabled={isMissing}
                                 className={`w-full text-left pl-6 pr-3 py-2 rounded-lg text-[13.5px] leading-snug transition-colors ${isActive ? `${theme.activeBg} ${theme.activeText} font-medium` : isMissing ? 'text-gray-400 cursor-not-allowed' : `${theme.textMuted} ${theme.hover} ${theme.hoverText}`}`}
+                                aria-current={isActive ? 'page' : undefined}
                                 data-testid={`sidebar-page-${pageSlug}`}>
                                 <span className={isMissing ? 'italic opacity-50' : ''}>{title}</span>
                               </button>
@@ -309,7 +316,7 @@ const RightSidebar = ({ headings, theme }) => {
   if (validHeadings.length === 0) return null;
 
   return (
-    <aside className={`hidden xl:block fixed top-14 right-0 bottom-0 w-64 overflow-y-auto z-10`} data-testid="kb-toc">
+    <aside className={`hidden xl:block fixed top-14 right-0 bottom-0 w-64 overflow-y-auto z-10`} role="complementary" aria-label="Table of contents" data-testid="kb-toc">
       <div className="p-4 pt-6">
         <h4 className={`text-xs font-semibold ${theme.text} mb-4 flex items-center gap-2`}>
           <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="10" y2="8"/><line x1="2" y1="12" x2="12" y2="12"/></svg>
@@ -701,6 +708,54 @@ const PublicDocs = () => {
     }
   }, [documents, docSlug, selectedDoc, getFirstNavDocument, isNavigating]);
 
+  // SEO: Update document title when selected doc changes
+  useEffect(() => {
+    document.title = selectedDoc ? `${selectedDoc.title} - Emergent Docs` : 'Emergent Documentation';
+    
+    // Set HTML lang
+    document.documentElement.lang = 'en';
+    
+    // Helper to upsert meta tags
+    const setMeta = (attr, key, content) => {
+      let el = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
+      el.setAttribute('content', content);
+    };
+    
+    const desc = selectedDoc?.description || 'Emergent documentation - Learn how to build apps with AI.';
+    const title = selectedDoc?.title || 'Emergent Documentation';
+    const url = `${window.location.origin}/docs/${selectedDoc?.slug || ''}`;
+    
+    setMeta('name', 'description', desc);
+    setMeta('property', 'og:type', 'article');
+    setMeta('property', 'og:title', title);
+    setMeta('property', 'og:description', desc);
+    setMeta('property', 'og:url', url);
+    setMeta('property', 'og:site_name', 'Emergent');
+    setMeta('name', 'twitter:card', 'summary');
+    setMeta('name', 'twitter:title', title);
+    setMeta('name', 'twitter:description', desc);
+    
+    // Canonical link
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) { canonical = document.createElement('link'); canonical.setAttribute('rel', 'canonical'); document.head.appendChild(canonical); }
+    canonical.setAttribute('href', url);
+    
+    // JSON-LD structured data
+    let jsonLd = document.querySelector('script[data-seo="article"]');
+    if (!jsonLd) { jsonLd = document.createElement('script'); jsonLd.setAttribute('type', 'application/ld+json'); jsonLd.setAttribute('data-seo', 'article'); document.head.appendChild(jsonLd); }
+    if (selectedDoc) {
+      jsonLd.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        headline: title,
+        description: desc,
+        url,
+        publisher: { '@type': 'Organization', name: 'Emergent' },
+      });
+    }
+  }, [selectedDoc]);
+
   const handleDocSelect = useCallback((slug) => {
     if (isNavigating) return;
     const doc = documents.find(d => d.slug?.toLowerCase() === slug?.toLowerCase());
@@ -767,19 +822,24 @@ const PublicDocs = () => {
   return (
     <div className={`min-h-screen ${theme.bg} relative`} data-testid="kb-docs">
 
+      {/* Skip to main content link (accessibility) */}
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-[#00A1B2] focus:text-white focus:rounded-lg focus:text-sm focus:font-medium" data-testid="skip-to-content">
+        Skip to main content
+      </a>
+
       <TopNavigation theme={theme} onThemeToggle={toggleKbTheme} isDark={isDark} onSearchOpen={() => setSearchOpen(true)} />
       <BreadcrumbBar breadcrumb={getBreadcrumb()} theme={theme} isDark={isDark} onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} mobileMenuOpen={mobileMenuOpen} />
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} documents={documents} onSelect={handleDocSelect} theme={theme} config={config} />
       <LeftSidebar activeTab={activeTab} tabs={tabs} documents={documents} selectedDocSlug={selectedDoc?.slug} onDocSelect={handleDocSelect} theme={theme} onSearchOpen={() => setSearchOpen(true)} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} isDark={isDark} />
 
-      <main className="lg:ml-64 xl:mr-64 min-h-screen pt-24 min-[810px]:pt-14 relative z-10">
+      <main id="main-content" role="main" className="lg:ml-64 xl:mr-64 min-h-screen pt-24 min-[810px]:pt-14 relative z-10">
         {selectedDoc ? (
-          <article key={selectedDoc.id} className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-20 animate-fadeIn">
+          <article key={selectedDoc.id} className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-20 animate-fadeIn" itemScope itemType="https://schema.org/Article">
             {getBreadcrumb()?.section && (
               <span className="text-[#00A1B2] font-medium mb-3 block" style={{ fontSize: '14px', lineHeight: '20px' }} data-testid="kb-category-tag">{getBreadcrumb().section}</span>
             )}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-8">
-              <h1 className={`font-bold ${theme.text}`} style={{ fontFamily: "'Brockmann', sans-serif", fontSize: '30px', lineHeight: '36px', letterSpacing: '-0.01em' }} data-testid="kb-page-title">{selectedDoc.title}</h1>
+              <h1 itemProp="headline" className={`font-bold ${theme.text}`} style={{ fontFamily: "'Brockmann', sans-serif", fontSize: '30px', lineHeight: '36px', letterSpacing: '-0.01em' }} data-testid="kb-page-title">{selectedDoc.title}</h1>
               <CopyButton text={window.location.href} theme={theme} />
             </div>
             <div className={`docs-prose prose ${theme.proseClass} max-w-none prose-headings:font-semibold prose-headings:text-inherit prose-h2:text-xl prose-h2:sm:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-lg prose-h3:sm:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:text-[15px] prose-p:sm:text-base prose-p:leading-7 prose-p:break-words prose-a:text-[#00A1B2] prose-a:no-underline hover:prose-a:underline prose-code:text-[#00A1B2] prose-code:bg-[#00A1B2]/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:break-words prose-code:text-[13px] prose-code:sm:text-sm prose-pre:rounded-xl prose-pre:overflow-x-auto prose-pre:text-[13px] prose-pre:sm:text-sm prose-img:rounded-lg prose-img:max-w-full prose-img:h-auto prose-table:overflow-x-auto prose-table:block prose-table:w-full`} data-testid="kb-article-body">
@@ -788,13 +848,13 @@ const PublicDocs = () => {
             <FeedbackWidget slug={selectedDoc.slug} theme={theme} />
             <div className={`flex flex-col sm:flex-row justify-between gap-3 sm:gap-4 mt-12 sm:mt-16 pt-8 border-t ${theme.border}`} data-testid="kb-prev-next">
               {prevDoc ? (
-                <button onClick={() => handleDocSelect(prevDoc.slug)} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${theme.border} ${theme.hover} transition-colors w-full sm:w-auto`} data-testid="prev-doc-btn">
+                <button onClick={() => handleDocSelect(prevDoc.slug)} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${theme.border} ${theme.hover} transition-colors w-full sm:w-auto`} aria-label={`Previous: ${prevDoc.title}`} data-testid="prev-doc-btn">
                   <ArrowLeft className={`w-4 h-4 flex-shrink-0 ${theme.navArrowColor}`} />
                   <div className="text-left min-w-0"><span className={`block text-xs ${theme.navArrowColor}`}>Previous</span><span className={`text-sm font-medium ${theme.text} truncate block`}>{prevDoc.title}</span></div>
                 </button>
               ) : <div />}
               {nextDoc && (
-                <button onClick={() => handleDocSelect(nextDoc.slug)} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${theme.border} ${theme.hover} transition-colors w-full sm:w-auto sm:ml-auto`} data-testid="next-doc-btn">
+                <button onClick={() => handleDocSelect(nextDoc.slug)} className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${theme.border} ${theme.hover} transition-colors w-full sm:w-auto sm:ml-auto`} aria-label={`Next: ${nextDoc.title}`} data-testid="next-doc-btn">
                   <div className="text-right min-w-0 flex-1 sm:flex-initial"><span className={`block text-xs ${theme.navArrowColor}`}>Next</span><span className={`text-sm font-medium ${theme.text} truncate block`}>{nextDoc.title}</span></div>
                   <ArrowRight className={`w-4 h-4 flex-shrink-0 ${theme.navArrowColor}`} />
                 </button>

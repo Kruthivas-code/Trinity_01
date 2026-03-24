@@ -117,6 +117,13 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
 - **CopyButton fix**: Removed ChevronDown dropdown icon. Added `w-fit` to constrain width on mobile (no longer stretches full width).
 - **Testing**: 18/18 tests pass (9 frontend UI, 2 backend API, 7 docs visual).
 
+### Session: Mar 24, 2026 (Code Color + Table Gap + SEO + Accessibility)
+- **Inline code color**: Changed from `text-pink-600` (purple) to `text-[#00A1B2]` (primary teal). Background also updated to `bg-[#00A1B2]/10`.
+- **Table gap fix**: Reduced cell padding from `py-3` to `py-2.5`. Added `[&_tr:last-child_td]:border-b-0` to remove bottom border gap on last row.
+- **SEO**: Dynamic `document.title`, `meta description`, Open Graph tags (`og:title`, `og:description`, `og:url`), Twitter Card tags, canonical URL, JSON-LD structured data (`TechArticle` schema), `html lang="en"`.
+- **Accessibility**: Skip-to-content link, `role="navigation"` on sidebar, `role="main"` on main content, `role="complementary"` on TOC, `aria-expanded` on collapsible groups, `aria-current="page"` on active nav item, `aria-label` on close/copy/nav buttons, `tabIndex={-1}` on heading anchors, `focus-visible` outline styles (primary color), `prefers-reduced-motion` support.
+- **Testing**: 16/16 tests pass (6 SEO, 7 accessibility, 3 visual).
+
 ## Pending Tasks
 
 ### P0 — Data Integrity
