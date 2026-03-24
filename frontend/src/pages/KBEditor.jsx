@@ -354,7 +354,7 @@ const KBEditor = () => {
         {/* Main Content — Editor Only */}
         <div className="flex-1 overflow-y-auto" data-testid="editor-main-area">
           {form ? (
-            <div className="max-w-[800px] mx-auto px-6 py-8">
+            <div className="max-w-[800px] mx-auto px-6 py-8 flex flex-col" style={{ minHeight: 'calc(100vh - 56px)' }}>
               {/* Editable title inline */}
               <div className="mb-6">
                 <input
@@ -373,7 +373,7 @@ const KBEditor = () => {
               </div>
 
               {/* Content Section */}
-              <section data-testid="content-section">
+              <section data-testid="content-section" className="flex-1 flex flex-col">
                 {editMode === 'visual' ? (
                   <EditorThemeProvider value={editorTheme}>
                     <RichTextEditor
@@ -387,7 +387,7 @@ const KBEditor = () => {
                   <textarea
                     value={form.content_markdown || ''}
                     onChange={(e) => setForm(f => ({ ...f, content_markdown: e.target.value }))}
-                    className={`w-full min-h-[500px] px-4 py-3 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm font-mono ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors resize-y leading-relaxed`}
+                    className={`w-full flex-1 px-4 py-3 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm font-mono ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors resize-none leading-relaxed`}
                     style={theme.inputBgStyle}
                     placeholder="Write your article content in Markdown..."
                     data-testid="markdown-textarea"
