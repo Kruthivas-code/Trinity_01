@@ -16,7 +16,7 @@ import {
   Bold, Italic,
   List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon,
   Undo2, Redo2, ChevronDown, Plus,
-  Info, Lightbulb, AlertTriangle, CheckCircle, StickyNote, ShieldAlert, MoreHorizontal,
+  Info, Lightbulb, AlertTriangle, CheckCircle, AlertCircle, MoreHorizontal,
   Columns, Youtube, Minus
 } from 'lucide-react';
 import { SlashCommand } from './extensions/SlashCommand';
@@ -397,12 +397,12 @@ const HEADING_OPTIONS = [
 ];
 
 const INSERT_ITEMS = [
-  { key: 'callout_info', label: 'Info Callout', icon: <Info className="w-4 h-4 text-slate-400" />, isCallout: true, calloutType: 'info' },
-  { key: 'callout_check', label: 'Check Callout', icon: <CheckCircle className="w-4 h-4 text-emerald-400" />, isCallout: true, calloutType: 'check' },
-  { key: 'callout_note', label: 'Note Callout', icon: <StickyNote className="w-4 h-4 text-blue-400" />, isCallout: true, calloutType: 'note' },
-  { key: 'callout_tip', label: 'Tip Callout', icon: <Lightbulb className="w-4 h-4 text-teal-400" />, isCallout: true, calloutType: 'tip' },
+  { key: 'callout_info', label: 'Info Callout', icon: <Info className="w-4 h-4 text-blue-400" />, isCallout: true, calloutType: 'info' },
+  { key: 'callout_check', label: 'Check Callout', icon: <CheckCircle className="w-4 h-4 text-[#00A1B2]" />, isCallout: true, calloutType: 'check' },
+  { key: 'callout_note', label: 'Note Callout', icon: <Info className="w-4 h-4 text-blue-400" />, isCallout: true, calloutType: 'note' },
+  { key: 'callout_tip', label: 'Tip Callout', icon: <Lightbulb className="w-4 h-4 text-[#00A1B2]" />, isCallout: true, calloutType: 'tip' },
   { key: 'callout_warning', label: 'Warning Callout', icon: <AlertTriangle className="w-4 h-4 text-amber-400" />, isCallout: true, calloutType: 'warning' },
-  { key: 'callout_danger', label: 'Danger Callout', icon: <ShieldAlert className="w-4 h-4 text-red-400" />, isCallout: true, calloutType: 'danger' },
+  { key: 'callout_danger', label: 'Danger Callout', icon: <AlertCircle className="w-4 h-4 text-red-400" />, isCallout: true, calloutType: 'danger' },
   { key: 'steps', label: 'Steps', icon: <CheckCircle className="w-4 h-4 text-emerald-400" />, isVisualSteps: true },
   { key: 'tabs', label: 'Tabs', icon: <Columns className="w-4 h-4 text-cyan-400" />, snippet: '<Tabs>\n<Tab label="Tab 1">\nContent\n</Tab>\n<Tab label="Tab 2">\nContent\n</Tab>\n</Tabs>' },
   { key: 'accordion', label: 'Accordion', icon: <MoreHorizontal className="w-4 h-4 text-slate-400" />, isAccordion: true },

@@ -10,7 +10,7 @@ import tippy from 'tippy.js';
 import {
   Type, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Code, Minus,
-  Info, Lightbulb, AlertTriangle, CheckCircle, StickyNote, ShieldAlert,
+  Info, Lightbulb, AlertTriangle, CheckCircle, AlertCircle,
   Columns, Youtube, MoreHorizontal, LayoutGrid
 } from 'lucide-react';
 
@@ -32,10 +32,10 @@ const SLASH_ITEMS = [
   { key: 'card_group', label: 'Card Group', description: 'Group of cards', icon: LayoutGrid, group: 'Components' },
   { key: 'callout_info', label: 'Info Callout', description: 'Make writing stand out', icon: Info, group: 'Callouts' },
   { key: 'callout_check', label: 'Check Callout', description: 'Content with a checkmark', icon: CheckCircle, group: 'Callouts' },
-  { key: 'callout_note', label: 'Note Callout', description: 'Add a note', icon: StickyNote, group: 'Callouts' },
+  { key: 'callout_note', label: 'Note Callout', description: 'Add a note', icon: Info, group: 'Callouts' },
   { key: 'callout_tip', label: 'Tip Callout', description: 'Suggest a helpful tip', icon: Lightbulb, group: 'Callouts' },
   { key: 'callout_warning', label: 'Warning Callout', description: 'Raise a warning', icon: AlertTriangle, group: 'Callouts' },
-  { key: 'callout_danger', label: 'Danger Callout', description: 'Highlight a danger', icon: ShieldAlert, group: 'Callouts' },
+  { key: 'callout_danger', label: 'Danger Callout', description: 'Highlight a danger', icon: AlertCircle, group: 'Callouts' },
   { key: 'steps', label: 'Steps', description: 'Step-by-step guide', icon: CheckCircle, group: 'Components' },
   { key: 'tabs', label: 'Tabs', description: 'Tabbed content', icon: Columns, group: 'Components' },
   { key: 'accordion', label: 'Accordion', description: 'Collapsible section', icon: MoreHorizontal, group: 'Components' },
