@@ -5,7 +5,7 @@ import { useState, useRef } from 'react';
 import {
   Bold, Italic, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon,
-  MoreHorizontal, Info, AlertTriangle, Lightbulb, CheckCircle,
+  MoreHorizontal, Info, AlertTriangle, Lightbulb, CheckCircle, StickyNote, ShieldAlert,
   Columns, Youtube
 } from 'lucide-react';
 
@@ -17,9 +17,12 @@ const ToolBtn = ({ onClick, active, disabled, children, title, theme }) => (
 );
 
 const SNIPPET_MAP = {
+  callout_info: '<Callout type="INFO" title="Info">\nYour content here\n</Callout>',
+  callout_check: '<Callout type="CHECK" title="Check">\nYour content here\n</Callout>',
   callout_note: '<Callout type="NOTE" title="Note">\nYour content here\n</Callout>',
   callout_tip: '<Callout type="TIP" title="Tip">\nYour content here\n</Callout>',
   callout_warning: '<Callout type="WARNING" title="Warning">\nYour content here\n</Callout>',
+  callout_danger: '<Callout type="DANGER" title="Danger">\nYour content here\n</Callout>',
   steps: '<Steps>\n<Step title="Step 1">\nDescription\n</Step>\n<Step title="Step 2">\nDescription\n</Step>\n</Steps>',
   card_group: '<CardGroup>\n<Card title="Card 1" icon="rocket">\nDescription\n</Card>\n<Card title="Card 2" icon="code">\nDescription\n</Card>\n</CardGroup>',
   tabs: '<Tabs>\n<Tab label="Tab 1">\nContent\n</Tab>\n<Tab label="Tab 2">\nContent\n</Tab>\n</Tabs>',
@@ -29,9 +32,12 @@ const SNIPPET_MAP = {
 };
 
 const INSERT_ITEMS = [
-  { key: 'callout_note', label: 'Note Callout', icon: <Info className="w-4 h-4 text-blue-400" /> },
-  { key: 'callout_tip', label: 'Tip Callout', icon: <Lightbulb className="w-4 h-4 text-amber-400" /> },
-  { key: 'callout_warning', label: 'Warning Callout', icon: <AlertTriangle className="w-4 h-4 text-red-400" /> },
+  { key: 'callout_info', label: 'Info Callout', icon: <Info className="w-4 h-4 text-slate-400" /> },
+  { key: 'callout_check', label: 'Check Callout', icon: <CheckCircle className="w-4 h-4 text-emerald-400" /> },
+  { key: 'callout_note', label: 'Note Callout', icon: <StickyNote className="w-4 h-4 text-blue-400" /> },
+  { key: 'callout_tip', label: 'Tip Callout', icon: <Lightbulb className="w-4 h-4 text-teal-400" /> },
+  { key: 'callout_warning', label: 'Warning Callout', icon: <AlertTriangle className="w-4 h-4 text-amber-400" /> },
+  { key: 'callout_danger', label: 'Danger Callout', icon: <ShieldAlert className="w-4 h-4 text-red-400" /> },
   { key: 'steps', label: 'Steps', icon: <CheckCircle className="w-4 h-4 text-emerald-400" /> },
   { key: 'card_group', label: 'Card Group', icon: <Columns className="w-4 h-4 text-purple-400" /> },
   { key: 'tabs', label: 'Tabs', icon: <Columns className="w-4 h-4 text-cyan-400" /> },

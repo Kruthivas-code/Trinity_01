@@ -10,7 +10,7 @@ import tippy from 'tippy.js';
 import {
   Type, Heading1, Heading2, Heading3,
   List, ListOrdered, Quote, Code, Minus,
-  Info, Lightbulb, AlertTriangle, CheckCircle,
+  Info, Lightbulb, AlertTriangle, CheckCircle, StickyNote, ShieldAlert,
   Columns, Youtube, MoreHorizontal, LayoutGrid
 } from 'lucide-react';
 
@@ -30,9 +30,12 @@ const SLASH_ITEMS = [
   { key: 'columns_2', label: '2 Columns', description: 'Two column layout', icon: Columns, group: 'Layout' },
   { key: 'columns_3', label: '3 Columns', description: 'Three column layout', icon: LayoutGrid, group: 'Layout' },
   { key: 'card_group', label: 'Card Group', description: 'Group of cards', icon: LayoutGrid, group: 'Components' },
-  { key: 'callout_note', label: 'Note', description: 'Info callout', icon: Info, group: 'Components' },
-  { key: 'callout_tip', label: 'Tip', description: 'Tip callout', icon: Lightbulb, group: 'Components' },
-  { key: 'callout_warning', label: 'Warning', description: 'Warning callout', icon: AlertTriangle, group: 'Components' },
+  { key: 'callout_info', label: 'Info Callout', description: 'Make writing stand out', icon: Info, group: 'Callouts' },
+  { key: 'callout_check', label: 'Check Callout', description: 'Content with a checkmark', icon: CheckCircle, group: 'Callouts' },
+  { key: 'callout_note', label: 'Note Callout', description: 'Add a note', icon: StickyNote, group: 'Callouts' },
+  { key: 'callout_tip', label: 'Tip Callout', description: 'Suggest a helpful tip', icon: Lightbulb, group: 'Callouts' },
+  { key: 'callout_warning', label: 'Warning Callout', description: 'Raise a warning', icon: AlertTriangle, group: 'Callouts' },
+  { key: 'callout_danger', label: 'Danger Callout', description: 'Highlight a danger', icon: ShieldAlert, group: 'Callouts' },
   { key: 'steps', label: 'Steps', description: 'Step-by-step guide', icon: CheckCircle, group: 'Components' },
   { key: 'tabs', label: 'Tabs', description: 'Tabbed content', icon: Columns, group: 'Components' },
   { key: 'accordion', label: 'Accordion', description: 'Collapsible section', icon: MoreHorizontal, group: 'Components' },
@@ -290,11 +293,22 @@ export const SlashCommand = Extension.create({
                 }).run();
                 break;
               }
-              // Component snippets — insert as markdown text
+              // Component snippets — insert as markdown text or visual nodes
+              const calloutTypes = {
+                callout_info: 'info', callout_check: 'check', callout_note: 'note',
+                callout_tip: 'tip', callout_warning: 'warning', callout_danger: 'danger',
+              };
+              if (calloutTypes[item.key]) {
+                const ct = calloutTypes[item.key];
+                const labels = { info: 'Info', check: 'Check', note: 'Note', tip: 'Tip', warning: 'Warning', danger: 'Danger' };
+                editor.chain().focus().insertContent({
+                  type: 'calloutBlock',
+                  attrs: { calloutType: ct, title: labels[ct] },
+                  content: [{ type: 'paragraph' }],
+                }).run();
+                break;
+              }
               const snippets = {
-                callout_note: '<Callout type="NOTE" title="Note">\nYour content here\n</Callout>',
-                callout_tip: '<Callout type="TIP" title="Tip">\nYour content here\n</Callout>',
-                callout_warning: '<Callout type="WARNING" title="Warning">\nYour content here\n</Callout>',
                 tabs: '<Tabs>\n<Tab label="Tab 1">\nContent\n</Tab>\n<Tab label="Tab 2">\nContent\n</Tab>\n</Tabs>',
                 youtube: '<YouTube id="VIDEO_ID" title="Video Title" />',
               };

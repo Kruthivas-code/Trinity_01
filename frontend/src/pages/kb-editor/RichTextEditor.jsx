@@ -16,7 +16,7 @@ import {
   Bold, Italic,
   List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon,
   Undo2, Redo2, ChevronDown, Plus,
-  Info, Lightbulb, AlertTriangle, CheckCircle, MoreHorizontal,
+  Info, Lightbulb, AlertTriangle, CheckCircle, StickyNote, ShieldAlert, MoreHorizontal,
   Columns, Youtube, Minus
 } from 'lucide-react';
 import { SlashCommand } from './extensions/SlashCommand';
@@ -25,21 +25,23 @@ import { IframeEmbed } from './extensions/IframeEmbed';
 import { StepsBlockNode, StepItemNode } from './extensions/StepsBlock';
 import { ColumnLayoutNode, ColumnPaneNode } from './extensions/ColumnLayout';
 import { AccordionBlockNode, AccordionItemNode } from './extensions/AccordionBlock';
+import { CalloutBlockNode } from './extensions/CalloutBlock';
 
 // ============= Markdown <-> HTML Conversion Pipeline =============
 
 // Tags that wrap children
-const WRAPPER_TAGS = ['Columns', 'Callout', 'Steps', 'CardGroup', 'Tabs', 'Accordion', 'AccordionGroup'];
+const WRAPPER_TAGS = ['Columns', 'Steps', 'CardGroup', 'Tabs', 'Accordion', 'AccordionGroup'];
 const STANDALONE_TAGS = ['YouTube', 'Loom', 'Figure', 'Video', 'Info', 'Note', 'Tip', 'Warning', 'Caution', 'Error', 'Danger', 'Success'];
 const INNER_TAGS = ['Card', 'Step', 'Tab', 'AccordionItem'];
 
 const preprocessMd = (md) => {
-  if (!md) return { processed: '', placeholders: [], columnsBlocks: [], standaloneIframes: [], stepsBlocks: [], columnLayouts: [], accordionBlocks: [] };
+  if (!md) return { processed: '', placeholders: [], columnsBlocks: [], standaloneIframes: [], stepsBlocks: [], columnLayouts: [], accordionBlocks: [], calloutBlocks: [] };
   const placeholders = [];
   const columnsBlocks = [];
   const stepsBlocks = [];
   const columnLayouts = [];
   const accordionBlocks = [];
+  const calloutBlocks = [];
   let processed = md;
 
   // 1. Extract <Columns> blocks with <Card> children → convert to visual nodes
@@ -184,6 +186,21 @@ const preprocessMd = (md) => {
     return `\n\nACCORDION_VISUAL_${idx}\n\n`;
   });
 
+  // 3d. Extract <Callout> blocks → visual callout nodes
+  const calloutRegex = /<Callout(?:\s+[^>]*)?>[\s\S]*?<\/Callout>/gi;
+  processed = processed.replace(calloutRegex, (match) => {
+    const typeMatch = match.match(/type=["']([^"']+)["']/i);
+    const titleMatch = match.match(/title=["']([^"']+)["']/i);
+    const calloutType = (typeMatch ? typeMatch[1] : 'info').toLowerCase();
+    const title = titleMatch ? titleMatch[1] : '';
+    // Extract inner content between tags
+    const innerMatch = match.match(/<Callout[^>]*>([\s\S]*?)<\/Callout>/i);
+    const content = innerMatch ? innerMatch[1].trim() : '';
+    const idx = calloutBlocks.length;
+    calloutBlocks.push({ calloutType, title, content });
+    return `\n\nCALLOUT_VISUAL_${idx}\n\n`;
+  });
+
   // 4. Remaining wrapper components → code blocks
   WRAPPER_TAGS.forEach(tag => {
     if (tag === 'Columns' || tag === 'CardGroup' || tag === 'Steps' || tag === 'Accordion') return; // Already handled
@@ -230,13 +247,13 @@ const preprocessMd = (md) => {
     return `\n\nCOMPONENT_BLOCK_${idx}\n\n`;
   });
 
-  return { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks, columnLayouts, accordionBlocks };
+  return { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks, columnLayouts, accordionBlocks, calloutBlocks };
 };
 
 const mdToHtml = (md) => {
   if (!md) return '';
   try {
-    const { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks, columnLayouts, accordionBlocks } = preprocessMd(md);
+    const { processed, placeholders, columnsBlocks, standaloneIframes, stepsBlocks, columnLayouts, accordionBlocks, calloutBlocks } = preprocessMd(md);
     let html = marked.parse(processed, { breaks: false, gfm: true });
 
     // Restore visual columns blocks as TipTap-compatible HTML
@@ -305,6 +322,18 @@ const mdToHtml = (md) => {
       html = html.replace(`ACCORDION_VISUAL_${idx}`, blockHtml);
     });
 
+    // Restore visual callout blocks as TipTap-compatible HTML
+    calloutBlocks.forEach((callout, idx) => {
+      const contentHtml = callout.content
+        ? marked.parse(callout.content, { breaks: false, gfm: true })
+        : '<p></p>';
+      const safeType = (callout.calloutType || 'info').replace(/"/g, '&quot;');
+      const safeTitle = (callout.title || '').replace(/"/g, '&quot;');
+      const blockHtml = `<div data-type="callout-block" data-callout-type="${safeType}" data-callout-title="${safeTitle}">${contentHtml}</div>`;
+      html = html.replace(`<p>CALLOUT_VISUAL_${idx}</p>`, blockHtml);
+      html = html.replace(`CALLOUT_VISUAL_${idx}`, blockHtml);
+    });
+
     // Restore code-block components
     placeholders.forEach((component, idx) => {
       const escaped = component
@@ -368,9 +397,12 @@ const HEADING_OPTIONS = [
 ];
 
 const INSERT_ITEMS = [
-  { key: 'callout_note', label: 'Note Callout', icon: <Info className="w-4 h-4 text-blue-400" />, snippet: '<Callout type="NOTE" title="Note">\nYour content here\n</Callout>' },
-  { key: 'callout_tip', label: 'Tip Callout', icon: <Lightbulb className="w-4 h-4 text-amber-400" />, snippet: '<Callout type="TIP" title="Tip">\nYour content here\n</Callout>' },
-  { key: 'callout_warning', label: 'Warning Callout', icon: <AlertTriangle className="w-4 h-4 text-red-400" />, snippet: '<Callout type="WARNING" title="Warning">\nYour content here\n</Callout>' },
+  { key: 'callout_info', label: 'Info Callout', icon: <Info className="w-4 h-4 text-slate-400" />, isCallout: true, calloutType: 'info' },
+  { key: 'callout_check', label: 'Check Callout', icon: <CheckCircle className="w-4 h-4 text-emerald-400" />, isCallout: true, calloutType: 'check' },
+  { key: 'callout_note', label: 'Note Callout', icon: <StickyNote className="w-4 h-4 text-blue-400" />, isCallout: true, calloutType: 'note' },
+  { key: 'callout_tip', label: 'Tip Callout', icon: <Lightbulb className="w-4 h-4 text-teal-400" />, isCallout: true, calloutType: 'tip' },
+  { key: 'callout_warning', label: 'Warning Callout', icon: <AlertTriangle className="w-4 h-4 text-amber-400" />, isCallout: true, calloutType: 'warning' },
+  { key: 'callout_danger', label: 'Danger Callout', icon: <ShieldAlert className="w-4 h-4 text-red-400" />, isCallout: true, calloutType: 'danger' },
   { key: 'steps', label: 'Steps', icon: <CheckCircle className="w-4 h-4 text-emerald-400" />, isVisualSteps: true },
   { key: 'tabs', label: 'Tabs', icon: <Columns className="w-4 h-4 text-cyan-400" />, snippet: '<Tabs>\n<Tab label="Tab 1">\nContent\n</Tab>\n<Tab label="Tab 2">\nContent\n</Tab>\n</Tabs>' },
   { key: 'accordion', label: 'Accordion', icon: <MoreHorizontal className="w-4 h-4 text-slate-400" />, isAccordion: true },
@@ -434,6 +466,7 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
       ColumnPaneNode,
       AccordionBlockNode,
       AccordionItemNode,
+      CalloutBlockNode,
     ],
     content: content ? mdToHtml(content) : '',
     editorProps: {
@@ -553,6 +586,17 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
     setShowInsert(false);
   }, [editor]);
 
+  const insertCallout = useCallback((calloutType) => {
+    if (!editor) return;
+    const labels = { info: 'Info', check: 'Check', note: 'Note', tip: 'Tip', warning: 'Warning', danger: 'Danger' };
+    editor.chain().focus().insertContent({
+      type: 'calloutBlock',
+      attrs: { calloutType, title: labels[calloutType] || 'Info' },
+      content: [{ type: 'paragraph' }],
+    }).run();
+    setShowInsert(false);
+  }, [editor]);
+
   const handleImageUpload = useCallback(async (file) => {
     if (!file || !file.type.startsWith('image/') || !onUploadImage) return;
     const url = await onUploadImage(file);
@@ -605,7 +649,7 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => item.isColumnLayout ? insertColumnLayout(item.cols) : item.isVisualSteps ? insertVisualSteps() : item.isAccordion ? insertAccordion() : insertSnippet(item.snippet)}
+                  onClick={() => item.isCallout ? insertCallout(item.calloutType) : item.isColumnLayout ? insertColumnLayout(item.cols) : item.isVisualSteps ? insertVisualSteps() : item.isAccordion ? insertAccordion() : insertSnippet(item.snippet)}
                   className={`w-full flex items-center gap-3 px-3 py-2 text-sm ${theme.textMuted} ${theme.hover} ${theme.hoverText} transition-colors`}
                   data-testid={`insert-${item.key}`}
                 >
