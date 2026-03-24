@@ -48,7 +48,7 @@ const CalloutBlockView = ({ node, deleteNode }) => {
             <IconComp className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`font-semibold ${style.iconColor} mb-1 leading-5`}>{displayTitle}</p>
+            <p className={`font-semibold ${style.iconColor} mb-1 mt-0 leading-5`}>{displayTitle}</p>
             <NodeViewContent className="callout-content text-[15px] leading-relaxed" />
           </div>
           <button
