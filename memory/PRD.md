@@ -109,7 +109,13 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
 - **Steps width fix**: Removed `overflow-hidden` from prose container, added `min-width: 0` to step flex children, ensured steps container uses full width.
 - **No-language code blocks**: Now render as simple pre blocks without the header bar (language name + copy button).
 - **Responsive verified**: Mobile layout (375px) confirmed working — sidebar hidden, breadcrumb bar with hamburger menu, content fills screen.
-- **Testing**: DOM verification passed (8 callouts on first-app, 16 on plans-and-credits, 0 empty blocks, 0 teal-accented code in steps, 0 shadow images).
+
+### Session: Mar 24, 2026 (Category/Subcategory Settings + CopyButton Fix)
+- **CategorySettingsSlider** (new component): Slide-in settings panel for categories and subcategories with title input (rename), public/hidden toggle, delete button with confirmation modal. Auto-saves on close.
+- **Sidebar updated**: Settings gear icon appears next to "+" icon on hover for both categories (groups) and subcategories (sections). "Hidden" tag shown on sidebar for unpublished categories/subcategories.
+- **Backend visibility filtering**: `GET /api/kb/public-data` now skips categories with `published: false` and subcategories with `published: false`.
+- **CopyButton fix**: Removed ChevronDown dropdown icon. Added `w-fit` to constrain width on mobile (no longer stretches full width).
+- **Testing**: 18/18 tests pass (9 frontend UI, 2 backend API, 7 docs visual).
 
 ## Pending Tasks
 

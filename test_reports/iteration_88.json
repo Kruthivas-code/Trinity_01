@@ -1,0 +1,28 @@
+{
+  "iteration": 88,
+  "timestamp": "2026-03-24T17:52:00Z",
+  "summary": "Category/Subcategory Settings + CopyButton Fix + Docs Visual Polish",
+  "tests": [
+    {"id": "T1", "name": "Category gear icon on hover", "status": "PASS", "type": "frontend"},
+    {"id": "T2", "name": "Category settings slider opens", "status": "PASS", "type": "frontend"},
+    {"id": "T3", "name": "Category title pre-filled correctly", "status": "PASS", "type": "frontend"},
+    {"id": "T4", "name": "Category public toggle present", "status": "PASS", "type": "frontend"},
+    {"id": "T5", "name": "Category delete button present", "status": "PASS", "type": "frontend"},
+    {"id": "T6", "name": "Subcategory gear icon on hover", "status": "PASS", "type": "frontend"},
+    {"id": "T7", "name": "Subcategory settings slider opens", "status": "PASS", "type": "frontend"},
+    {"id": "T8", "name": "Subcategory header says 'Subcategory Settings'", "status": "PASS", "type": "frontend"},
+    {"id": "T9", "name": "Page settings gear still works", "status": "PASS", "type": "frontend"},
+    {"id": "T10", "name": "Hidden category filtered from public-data API", "status": "PASS", "type": "backend"},
+    {"id": "T11", "name": "Hidden subcategory filtered from public-data API", "status": "PASS", "type": "backend"},
+    {"id": "T12", "name": "CopyButton has no ChevronDown icon (1 SVG only)", "status": "PASS", "type": "frontend"},
+    {"id": "T13", "name": "CopyButton mobile w-fit constraint", "status": "PASS", "type": "frontend"},
+    {"id": "T14", "name": "Callouts render as styled components (not blockquotes)", "status": "PASS", "type": "frontend"},
+    {"id": "T15", "name": "Images have no shadow container", "status": "PASS", "type": "frontend"},
+    {"id": "T16", "name": "Tables have my-4 spacing", "status": "PASS", "type": "frontend"},
+    {"id": "T17", "name": "Empty code blocks not rendered", "status": "PASS", "type": "frontend"},
+    {"id": "T18", "name": "Step code has no teal accent", "status": "PASS", "type": "frontend"}
+  ],
+  "pass_count": 18,
+  "fail_count": 0,
+  "total": 18
+}
