@@ -89,22 +89,26 @@ const KBEditor = () => {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // Load article when slug changes or auto-select first
+  // Auto-select first article when no slug is specified
   useEffect(() => {
-    if (!paramSlug || paramSlug === 'new') {
-      if (paramSlug === 'new') {
-        setIsNew(true);
-        setOriginalSlug(null);
-        setForm({
-          title: '', slug: '', description: '', content_markdown: '',
-          nav_group_key: '', nav_group_label: '',
-          section_key: '', section_label: '',
-          published: false, order: articles.length,
-          sidebar_title: '', keywords: [], tags: []
-        });
-      } else if (articles.length > 0 && !form) {
-        navigate(`/dashboard/kb-editor/${articles[0].slug}`, { replace: true });
-      }
+    if (!paramSlug && !form && articles.length > 0) {
+      navigate(`/dashboard/kb-editor/${articles[0].slug}`, { replace: true });
+    }
+  }, [paramSlug, articles, form, navigate]);
+
+  // Load article when slug changes
+  useEffect(() => {
+    if (!paramSlug) return;
+    if (paramSlug === 'new') {
+      setIsNew(true);
+      setOriginalSlug(null);
+      setForm({
+        title: '', slug: '', description: '', content_markdown: '',
+        nav_group_key: '', nav_group_label: '',
+        section_key: '', section_label: '',
+        published: false, order: 0,
+        sidebar_title: '', keywords: [], tags: []
+      });
       return;
     }
     const loadArticle = async () => {
@@ -119,7 +123,7 @@ const KBEditor = () => {
       } catch (e) { console.error('Failed to load article:', e); }
     };
     loadArticle();
-  }, [paramSlug, articles, navGroups, navigate]);
+  }, [paramSlug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const canSave = form && form.title?.trim() && form.slug?.trim();
 
@@ -272,8 +276,7 @@ const KBEditor = () => {
 
         {/* Edit Mode Toggle */}
         {form ? (
-          <div className="flex items-center gap-3">
-            <div className={`flex items-center rounded-lg p-0.5 ${isDark ? 'bg-slate-800/80' : 'bg-gray-100'}`} data-testid="edit-mode-toggle">
+          <div className={`flex items-center rounded-lg p-0.5 ${isDark ? 'bg-slate-800/80' : 'bg-gray-100'}`} data-testid="edit-mode-toggle">
               <button
                 onClick={() => setEditMode('visual')}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${editMode === 'visual' ? 'bg-[#00A1B2] text-white shadow-sm' : `${theme.textMuted} ${theme.hoverText}`}`}
@@ -289,14 +292,6 @@ const KBEditor = () => {
                 Markdown
               </button>
             </div>
-
-            {/* Draft tag in navbar */}
-            {!form.published && (
-              <span className={`px-2.5 py-1 rounded-md text-xs font-medium ${isDark ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' : 'bg-amber-50 text-amber-600 border border-amber-200'}`} data-testid="navbar-draft-tag">
-                Draft
-              </span>
-            )}
-          </div>
         ) : (
           <span className={`text-sm font-medium ${theme.text} truncate`}>Knowledge Base Editor</span>
         )}

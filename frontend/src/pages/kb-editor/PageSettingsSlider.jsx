@@ -1,7 +1,7 @@
 /**
- * PageSettingsSlider — Right slide-in panel for page-level settings
+ * PageSettingsSlider — Slide-in panel positioned next to the left sidebar
  * Fields: meta title, slug, meta description, sidebar title, keywords, tags, publishing status
- * Includes delete with confirmation overlay
+ * Includes delete with confirmation overlay. Auto-saves on close.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Trash2, Plus, Globe, Tag, Search, FileText, AlignLeft, Type, ToggleLeft } from 'lucide-react';
@@ -44,6 +44,12 @@ export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, i
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
+
+  // Auto-save on close
+  const handleClose = useCallback(() => {
+    onSave();
+    onClose();
+  }, [onSave, onClose]);
 
   const addKeyword = useCallback(() => {
     const kw = newKeyword.trim();
@@ -89,16 +95,21 @@ export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, i
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} data-testid="settings-slider-backdrop" />
+      {/* Backdrop — only covers the content area (right of sidebar) */}
+      <div
+        className="fixed inset-0 z-40 bg-black/30"
+        style={{ left: '256px' }}
+        onClick={handleClose}
+        data-testid="settings-slider-backdrop"
+      />
 
-      {/* Slider Panel */}
+      {/* Slider Panel — positioned immediately right of the 256px sidebar */}
       <div
         ref={sliderRef}
-        className={`fixed top-0 right-0 z-50 h-full w-[380px] max-w-[90vw] flex flex-col border-l shadow-2xl transition-transform duration-200 ease-out ${
+        className={`fixed top-0 z-50 h-full w-[340px] max-w-[calc(100vw-256px)] flex flex-col border-r shadow-2xl ${
           isDark ? 'bg-[#111111] border-slate-800' : 'bg-white border-gray-200'
         }`}
-        style={{ animation: 'slideInRight 0.2s ease-out' }}
+        style={{ left: '256px', animation: 'slideInFromLeft 0.2s ease-out' }}
         data-testid="page-settings-slider"
       >
         {/* Header */}
@@ -116,7 +127,7 @@ export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, i
               <Trash2 className="w-4 h-4" />
             </button>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-white hover:bg-slate-800' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'}`}
               data-testid="slider-close-btn"
             >
@@ -296,8 +307,8 @@ export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, i
       )}
 
       <style>{`
-        @keyframes slideInRight {
-          from { transform: translateX(100%); }
+        @keyframes slideInFromLeft {
+          from { transform: translateX(-100%); }
           to { transform: translateX(0); }
         }
       `}</style>
