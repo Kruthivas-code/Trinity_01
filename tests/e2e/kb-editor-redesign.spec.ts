@@ -4,7 +4,7 @@
  */
 import { test, expect, Page } from '@playwright/test';
 
-const BASE_URL = 'https://backend-refresh-3.preview.emergentagent.com';
+const BASE_URL = 'https://customer-support-app-2.preview.emergentagent.com';
 const SESSION_TOKEN = 'test_kb_editor_session_2026';
 
 async function authenticateKBEditor(page: Page) {

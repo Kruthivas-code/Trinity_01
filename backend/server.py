@@ -192,7 +192,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "").split(",")
 if not ALLOWED_ORIGINS or ALLOWED_ORIGINS == [""]:
     ALLOWED_ORIGINS = [
-        "https://backend-refresh-3.preview.emergentagent.com",
+        "https://customer-support-app-2.preview.emergentagent.com",
         "http://localhost:3000",
         "http://127.0.0.1:3000"
     ]
