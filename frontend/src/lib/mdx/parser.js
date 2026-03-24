@@ -107,6 +107,7 @@ export function extractComponents(content) {
     { regex: /<Columns\s+cols=\{(\d+)\}>([\s\S]*?)<\/Columns>/gi, type: 'columns' },
     { regex: /<ColumnLayout\s+cols=\{(\d+)\}>([\s\S]*?)<\/ColumnLayout>/gi, type: 'column-layout' },
     { regex: /<Callout\s+type="([^"]*)"(?:\s+title="([^"]*)")?>([\s\S]*?)<\/Callout>/gi, type: 'callout' },
+    { regex: /<(Info|Note|Tip|Warning|Caution|Error|Danger|Success)(?:\s+title="([^"]*)")?(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi, type: 'standalone-callout' },
     { regex: /<(YouTube|Loom|Video|Figure)\s+([^>]*?)\/>/gi, type: 'media' },
     { regex: /<Card\s+([^>]*?)>([\s\S]*?)<\/Card>/gi, type: 'standalone-card' },
     { regex: /<iframe\s+([^>]*?)(?:\/>|><\/iframe>|>[\s\S]*?<\/iframe>)/gi, type: 'iframe' },
@@ -140,6 +141,9 @@ export function extractComponents(content) {
       }
       result.push({ type: 'component', component: 'ColumnLayout', props: { cols }, children: panes });
     } else if (item.type === 'callout') {
+      result.push({ type: 'component', component: 'Callout', props: { type: item.match[1], title: item.match[2] }, content: item.match[3].trim() });
+    } else if (item.type === 'standalone-callout') {
+      // <Info>, <Tip>, <Warning>, etc. → treat as Callout with the tag name as type
       result.push({ type: 'component', component: 'Callout', props: { type: item.match[1], title: item.match[2] }, content: item.match[3].trim() });
     } else if (item.type === 'media') {
       const props = {};

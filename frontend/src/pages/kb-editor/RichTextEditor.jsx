@@ -206,6 +206,18 @@ const preprocessMd = (md) => {
     return `\n\nCALLOUT_VISUAL_${idx}\n\n`;
   });
 
+  // 3e. Convert standalone callout tags (<Tip>, <Note>, <Info>, <Warning>, etc.) → visual callout nodes
+  const calloutTagNames = ['Info', 'Note', 'Tip', 'Warning', 'Caution', 'Error', 'Danger', 'Success'];
+  calloutTagNames.forEach(tagName => {
+    const regex = new RegExp(`<${tagName}(?:\\s+title=["']([^"']+)["'])?(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tagName}>`, 'gi');
+    processed = processed.replace(regex, (match, title, content) => {
+      const calloutType = tagName.toLowerCase();
+      const idx = calloutBlocks.length;
+      calloutBlocks.push({ calloutType, title: title || '', content: (content || '').trim() });
+      return `\n\nCALLOUT_VISUAL_${idx}\n\n`;
+    });
+  });
+
   // 4. Remaining wrapper components → code blocks
   WRAPPER_TAGS.forEach(tag => {
     if (tag === 'Columns' || tag === 'CardGroup' || tag === 'Steps' || tag === 'Accordion') return; // Already handled

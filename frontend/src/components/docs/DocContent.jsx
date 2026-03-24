@@ -37,7 +37,7 @@ const LANG_NAMES = {
 };
 
 const CALLOUT_CONFIG = {
-  NOTE: { icon: Info, bg: 'bg-blue-500/10', border: 'border-blue-500/30', iconColor: 'text-blue-400', title: 'Note' },
+  NOTE: { icon: Info, bg: 'bg-slate-500/10', border: 'border-slate-500/20', iconColor: 'text-slate-400', title: 'Note' },
   INFO: { icon: Info, bg: 'bg-blue-500/10', border: 'border-blue-500/30', iconColor: 'text-blue-400', title: 'Info' },
   CHECK: { icon: CheckCircle, bg: 'bg-[#00A1B2]/10', border: 'border-[#00A1B2]/30', iconColor: 'text-[#00A1B2]', title: 'Check' },
   TIP: { icon: Lightbulb, bg: 'bg-[#00A1B2]/10', border: 'border-[#00A1B2]/30', iconColor: 'text-[#00A1B2]', title: 'Tip' },

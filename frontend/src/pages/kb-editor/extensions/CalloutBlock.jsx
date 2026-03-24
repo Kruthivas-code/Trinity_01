@@ -17,7 +17,7 @@ const CALLOUT_STYLES = {
     Icon: CheckCircle, label: 'Check',
   },
   note: {
-    bg: 'bg-blue-500/10', border: 'border-blue-500/30', iconColor: 'text-blue-400',
+    bg: 'bg-slate-500/10', border: 'border-slate-500/20', iconColor: 'text-slate-400',
     Icon: Info, label: 'Note',
   },
   tip: {

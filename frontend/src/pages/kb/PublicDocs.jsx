@@ -204,8 +204,8 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
       )}
       {/* Desktop: below both headers. Mobile: full screen overlay from top */}
       <aside
-        className={`fixed z-[46] ${theme.sidebarBg} border-r ${theme.border} flex flex-col transform transition-transform duration-300 ease-out
-          lg:top-14 lg:bottom-0 lg:left-0 lg:w-64 lg:translate-x-0
+        className={`fixed z-[46] ${theme.sidebarBg} border-r ${theme.border} flex flex-col transition-transform duration-300 ease-out
+          lg:top-14 lg:bottom-0 lg:left-0 lg:w-64
           top-0 bottom-0 left-0 w-[80%] max-w-[320px]
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
         data-testid="kb-sidebar"
@@ -621,7 +621,13 @@ const PublicDocs = () => {
   const [activeTab, setActiveTab] = useState('');
   const [isNavigating, setIsNavigating] = useState(false);
   const [kbTheme, setKbTheme] = useState(() => {
-    return localStorage.getItem('kb-theme') || 'light';
+    const stored = localStorage.getItem('kb-theme');
+    if (stored) return stored;
+    // Follow system default
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
   });
 
   const isDark = kbTheme === 'dark';
@@ -769,7 +775,7 @@ const PublicDocs = () => {
 
       <main className="lg:ml-64 xl:mr-64 min-h-screen pt-24 min-[810px]:pt-14 relative z-10">
         {selectedDoc ? (
-          <article key={selectedDoc.id} className="max-w-[800px] mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-20 animate-fadeIn">
+          <article key={selectedDoc.id} className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-20 animate-fadeIn">
             {getBreadcrumb()?.section && (
               <span className="text-[#00A1B2] font-medium mb-3 block" style={{ fontSize: '14px', lineHeight: '20px' }} data-testid="kb-category-tag">{getBreadcrumb().section}</span>
             )}

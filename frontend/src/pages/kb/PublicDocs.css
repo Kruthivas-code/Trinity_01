@@ -257,3 +257,44 @@ aside::-webkit-scrollbar-track { background: transparent; }
 .prose a {
   word-break: break-word;
 }
+
+
+/* Steps component — extend beyond prose width */
+.docs-prose .steps-container {
+  max-width: none;
+  width: 100%;
+}
+
+/* Responsive callout improvements */
+.callout-container {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.callout-body p {
+  margin: 0.25rem 0;
+}
+.callout-body p:first-child {
+  margin-top: 0;
+}
+.callout-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Mobile responsive tweaks */
+@media (max-width: 639px) {
+  .docs-prose h2 {
+    font-size: 1.25rem;
+    margin-top: 2rem;
+  }
+  .docs-prose h3 {
+    font-size: 1.1rem;
+  }
+  .docs-prose .code-block {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    border-radius: 0;
+  }
+  .docs-prose table {
+    font-size: 0.8rem;
+  }
+}

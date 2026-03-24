@@ -40,8 +40,13 @@ const KBEditor = () => {
   const [showPageSettings, setShowPageSettings] = useState(false);
   const pendingNewForm = useRef(null);
 
-  // Theme
-  const [editorTheme, setEditorTheme] = useState(() => localStorage.getItem('kb-editor-theme') || 'dark');
+  // Theme — follow system preference if no stored preference
+  const [editorTheme, setEditorTheme] = useState(() => {
+    const stored = localStorage.getItem('kb-editor-theme');
+    if (stored) return stored;
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) return 'dark';
+    return 'light';
+  });
   const isDark = editorTheme === 'dark';
   const theme = isDark ? EDITOR_THEMES.dark : EDITOR_THEMES.light;
 
