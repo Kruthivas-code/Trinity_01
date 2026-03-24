@@ -100,7 +100,24 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
 - **Email**: Amazon SES (outbound), Gmail IMAP (disabled)
 - **AI**: Gemini for ticket summarization
 
+### Session: Mar 24, 2026 (Docs Visual Polish — Callouts, Tables, Steps, Images)
+- **Callout blockquote fix**: Updated preprocessor regex in DocContent.jsx to handle escaped brackets `\[!TYPE\]` and same-line body text. All callouts on all pages now render as styled components (Tip, Info, Warning, Note, Success, etc.) instead of blockquotes.
+- **Image shadow removal**: Removed shadow-lg/border container from Figure component and img renderer. Images now render cleanly without outer wrapper.
+- **Table spacing reduced**: Changed table wrapper from `my-6` to `my-4` for tighter spacing.
+- **Empty code block fix**: Added robust text extraction in CodeBlockRenderer to properly detect and skip empty/whitespace-only code blocks. Overrode `pre` component to remove default wrapper.
+- **Steps accent fix**: Added CSS rules for `.step-body` to normalize inline code color (inherit instead of teal accent) and simplify code block appearance within steps.
+- **Steps width fix**: Removed `overflow-hidden` from prose container, added `min-width: 0` to step flex children, ensured steps container uses full width.
+- **No-language code blocks**: Now render as simple pre blocks without the header bar (language name + copy button).
+- **Responsive verified**: Mobile layout (375px) confirmed working — sidebar hidden, breadcrumb bar with hamburger menu, content fills screen.
+- **Testing**: DOM verification passed (8 callouts on first-app, 16 on plans-and-credits, 0 empty blocks, 0 teal-accented code in steps, 0 shadow images).
+
 ## Pending Tasks
+
+### P0 — Data Integrity
+- Restore lost accordion content on 6 pages (faqs, deployment-information, mobile-app-development, rollback-feature, stripe-integration, using-apis-on-emergent) — blocked on user input
+
+### P2 — Content Quality
+- Raw HTML (`<div data-type="column-card">`) on `context-limits` page needs parser handling
 
 ### P2 — Production Readiness
 - Configure full Atlas webhooks in production
@@ -114,3 +131,4 @@ A full-stack application (React, FastAPI, MongoDB) for customer support ticket m
 - Keyboard shortcuts for editor (Alt+Up/Down for row reorder)
 - Live preview split-pane while editing
 - Consolidate KBArticleManager (admin) to use shared TipTap RichTextEditor
+- Unify markdown parsing logic between RichTextEditor.jsx and lib/mdx/parser.js into shared utility
