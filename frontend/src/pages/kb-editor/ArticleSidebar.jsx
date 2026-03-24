@@ -76,7 +76,7 @@ const ArticleItem = ({ article, selectedSlug, onSelect, onOpenSettings, theme })
 
       {/* Draft tag — visible when NOT hovered, hidden on hover (replaced by gear) */}
       {!article.published && (
-        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 flex-shrink-0 group-hover/art:hidden" data-testid={`draft-tag-${article.slug}`}>
+        <span className="text-[9px] px-1.5 py-0.5 mr-1.5 rounded bg-slate-500/20 text-slate-400 flex-shrink-0 group-hover/art:hidden" data-testid={`draft-tag-${article.slug}`}>
           draft
         </span>
       )}
@@ -84,7 +84,7 @@ const ArticleItem = ({ article, selectedSlug, onSelect, onOpenSettings, theme })
       {/* Settings gear — hidden by default, visible on hover */}
       <button
         onClick={(e) => { e.stopPropagation(); onOpenSettings(article); }}
-        className={`p-1 rounded transition-all flex-shrink-0 hidden group-hover/art:block ${theme.textSecondary} hover:text-[#00A1B2]`}
+        className={`p-1 mr-1 rounded transition-all flex-shrink-0 hidden group-hover/art:block ${theme.textSecondary} hover:text-[#00A1B2]`}
         title="Page settings"
         data-testid={`settings-btn-${article.slug}`}
       >
@@ -162,7 +162,7 @@ export const ArticleSidebar = ({
   theme
 }) => (
   <aside
-    className={`w-64 flex-shrink-0 border-r ${theme.border} ${theme.panelBg} flex flex-col overflow-hidden`}
+    className={`w-64 flex-shrink-0 border-r ${theme.border} ${theme.panelBg} flex flex-col overflow-hidden relative z-30`}
     style={theme.panelBgStyle}
     data-testid="editor-sidebar"
   >

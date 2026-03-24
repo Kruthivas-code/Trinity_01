@@ -1,7 +1,8 @@
 /**
- * PageSettingsSlider — Slide-in panel positioned next to the left sidebar
- * Fields: meta title, slug, meta description, sidebar title, keywords, tags, publishing status
- * Includes delete with confirmation overlay. Auto-saves on close.
+ * PageSettingsSlider — Slides out from behind the left sidebar
+ * Positioned adjacent to the sidebar, below the top nav (top:56px).
+ * Overlay only covers the main content area, not the sidebar.
+ * Auto-saves on close.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Trash2, Plus, Globe, Tag, Search, FileText, AlignLeft, Type, ToggleLeft } from 'lucide-react';
@@ -36,26 +37,32 @@ export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, i
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newKeyword, setNewKeyword] = useState('');
   const [newTag, setNewTag] = useState('');
+  const [visible, setVisible] = useState(false);
   const sliderRef = useRef(null);
+
+  // Animate in
+  useEffect(() => {
+    requestAnimationFrame(() => setVisible(true));
+  }, []);
 
   // Close on Escape
   useEffect(() => {
-    const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const handleKey = (e) => { if (e.key === 'Escape') handleClose(); };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-save on close
+  // Auto-save on close with animation
   const handleClose = useCallback(() => {
     onSave();
-    onClose();
+    setVisible(false);
+    setTimeout(onClose, 200);
   }, [onSave, onClose]);
 
   const addKeyword = useCallback(() => {
     const kw = newKeyword.trim();
     if (!kw) return;
-    const current = form.keywords || [];
-    if (!current.includes(kw)) {
+    if (!(form.keywords || []).includes(kw)) {
       setForm(f => ({ ...f, keywords: [...(f.keywords || []), kw] }));
     }
     setNewKeyword('');
@@ -68,8 +75,7 @@ export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, i
   const addTag = useCallback(() => {
     const t = newTag.trim();
     if (!t) return;
-    const current = form.tags || [];
-    if (!current.includes(t)) {
+    if (!(form.tags || []).includes(t)) {
       setForm(f => ({ ...f, tags: [...(f.tags || []), t] }));
     }
     setNewTag('');
@@ -95,21 +101,28 @@ export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, i
 
   return (
     <>
-      {/* Backdrop — only covers the content area (right of sidebar) */}
+      {/* Backdrop — only covers the main content area (right of sidebar+slider), below header */}
       <div
-        className="fixed inset-0 z-40 bg-black/30"
-        style={{ left: '256px' }}
+        className={`fixed z-30 transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        style={{ top: '56px', left: '256px', right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.25)' }}
         onClick={handleClose}
         data-testid="settings-slider-backdrop"
       />
 
-      {/* Slider Panel — positioned immediately right of the 256px sidebar */}
+      {/* Slider Panel — behind the sidebar (z-20), slides from behind it */}
       <div
         ref={sliderRef}
-        className={`fixed top-0 z-50 h-full w-[340px] max-w-[calc(100vw-256px)] flex flex-col border-r shadow-2xl ${
+        className={`fixed z-20 flex flex-col border-r shadow-xl transition-transform duration-200 ease-out ${
           isDark ? 'bg-[#111111] border-slate-800' : 'bg-white border-gray-200'
-        }`}
-        style={{ left: '256px', animation: 'slideInFromLeft 0.2s ease-out' }}
+        } ${visible ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{
+          top: '56px',
+          left: '256px',
+          bottom: 0,
+          minWidth: '400px',
+          width: '400px',
+          maxWidth: 'calc(100vw - 256px)',
+        }}
         data-testid="page-settings-slider"
       >
         {/* Header */}
@@ -305,13 +318,6 @@ export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, i
           isDark={isDark}
         />
       )}
-
-      <style>{`
-        @keyframes slideInFromLeft {
-          from { transform: translateX(-100%); }
-          to { transform: translateX(0); }
-        }
-      `}</style>
     </>
   );
 };

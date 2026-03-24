@@ -4,7 +4,7 @@
  * Page settings moved to a separate slider (accessed via sidebar hover gear icon).
  * Draft tag shown in header when page is unpublished.
  */
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Save, Loader2, Settings,
@@ -38,6 +38,7 @@ const KBEditor = () => {
   const [editMode, setEditMode] = useState('visual');
   const [showPreview, setShowPreview] = useState(false);
   const [showPageSettings, setShowPageSettings] = useState(false);
+  const pendingNewForm = useRef(null);
 
   // Theme
   const [editorTheme, setEditorTheme] = useState(() => localStorage.getItem('kb-editor-theme') || 'dark');
@@ -102,13 +103,19 @@ const KBEditor = () => {
     if (paramSlug === 'new') {
       setIsNew(true);
       setOriginalSlug(null);
-      setForm({
-        title: '', slug: '', description: '', content_markdown: '',
-        nav_group_key: '', nav_group_label: '',
-        section_key: '', section_label: '',
-        published: false, order: 0,
-        sidebar_title: '', keywords: [], tags: []
-      });
+      // Use pre-filled form from handleCreateInSection/Group if available
+      if (pendingNewForm.current) {
+        setForm(pendingNewForm.current);
+        pendingNewForm.current = null;
+      } else {
+        setForm({
+          title: '', slug: '', description: '', content_markdown: '',
+          nav_group_key: '', nav_group_label: '',
+          section_key: '', section_label: '',
+          published: false, order: 0,
+          sidebar_title: '', keywords: [], tags: []
+        });
+      }
       return;
     }
     const loadArticle = async () => {
@@ -228,13 +235,15 @@ const KBEditor = () => {
     const firstSection = group.sections?.[0];
     setIsNew(true);
     setOriginalSlug(null);
-    setForm({
+    const newForm = {
       title: '', slug: '', description: '', content_markdown: '',
       nav_group_key: group.key, nav_group_label: group.label,
       section_key: firstSection?.key || '', section_label: firstSection?.label || '',
       published: false, order: articles.length,
       sidebar_title: '', keywords: [], tags: []
-    });
+    };
+    pendingNewForm.current = newForm;
+    setForm(newForm);
     navigate('/dashboard/kb-editor/new', { replace: true });
   }, [articles, navigate]);
 
@@ -243,13 +252,15 @@ const KBEditor = () => {
     const group = navGroups.find(g => g.key === groupKey);
     setIsNew(true);
     setOriginalSlug(null);
-    setForm({
+    const newForm = {
       title: '', slug: '', description: '', content_markdown: '',
       nav_group_key: groupKey, nav_group_label: group?.label || '',
       section_key: section.key, section_label: section.label,
       published: false, order: articles.length,
       sidebar_title: '', keywords: [], tags: []
-    });
+    };
+    pendingNewForm.current = newForm;
+    setForm(newForm);
     navigate('/dashboard/kb-editor/new', { replace: true });
   }, [articles, navGroups, navigate]);
 
