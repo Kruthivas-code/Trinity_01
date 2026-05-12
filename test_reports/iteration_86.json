@@ -38,8 +38,8 @@
   "test_credentials": {
     "auth_method": "Cookie-based auth with session_token",
     "session_cookie": "test_kb_editor_session_2026",
-    "kb_editor_url": "https://docs-sync-test.preview.emergentagent.com/dashboard/kb-editor",
-    "docs_url": "https://docs-sync-test.preview.emergentagent.com/docs"
+    "kb_editor_url": "https://repo-builder-71.preview.emergentagent.com/dashboard/kb-editor",
+    "docs_url": "https://repo-builder-71.preview.emergentagent.com/docs"
   },
   "seed_data_creation": "Created temporary test draft articles for testing, cleaned up after tests",
   "retest_needed": false,

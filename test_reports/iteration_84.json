@@ -29,7 +29,7 @@
   "test_credentials": {
     "auth_method": "Mocked /api/auth/me endpoint via page.route()",
     "session_cookie": "test_kb_editor_session_2026",
-    "kb_editor_url": "https://docs-sync-test.preview.emergentagent.com/dashboard/kb-editor/welcome"
+    "kb_editor_url": "https://repo-builder-71.preview.emergentagent.com/dashboard/kb-editor/welcome"
   },
   "seed_data_creation": "None required - tested with new table creation",
   "retest_needed": false,
