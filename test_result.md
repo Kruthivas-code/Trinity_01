@@ -107,12 +107,15 @@ user_problem_statement: "After signing in with Google (Emergent Auth), the app k
 backend:
   - task: "Auth session cookie + CORS for credentialed requests"
     implemented: true
-    working: false
+    working: true
     file: "backend/server.py, backend/routes/auth.py, frontend/.env"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ VERIFICATION COMPLETE - LOGIN REDIRECT LOOP FIXED. Performed comprehensive browser-level testing per review request. FIX APPLIED: REACT_APP_BACKEND_URL changed to https://github-clone-tool-6.internal.preview.emergentagent.com (same-origin with app). EVIDENCE: (1) CORS Check PASSED: fetch() from .internal origin to .internal backend RESOLVED with 401 status (expected for invalid session_id), NO CORS errors, correct headers (Access-Control-Allow-Origin: https://github-clone-tool-6.internal.preview.emergentagent.com, Access-Control-Allow-Credentials: true). (2) Admin Session Test PASSED: Created MongoDB session for admin user (kruthivas@emergent.sh, user_60da7151f020), injected cookie (session_token=fe_admin_sess_7788990011, domain=.preview.emergentagent.com). Results: /dashboard loaded successfully (200, no redirect to /login), /api/auth/me returned 200 with correct admin user data (role: admin), /dashboard/kb-editor (CMS) loaded successfully (200, URL: /dashboard/kb-editor/welcome), /dashboard/review loaded successfully (200). (3) VERDICT: Login redirect loop is RESOLVED. Pages load with valid session, no CORS errors, CMS is accessible to admin users. The same-origin fix eliminates the cross-origin issue that was causing Cloudflare to respond with wildcard CORS headers. Test session cleaned up from MongoDB."
         - working: false
           agent: "testing"
           comment: "❌ REAL ROOT CAUSE FOUND via comprehensive browser testing. The infrastructure 307-redirects *.preview.emergentagent.com → *.internal.preview.emergentagent.com. React app loads from .internal origin, but REACT_APP_BACKEND_URL=https://github-clone-tool-6.preview.emergentagent.com creates CROSS-ORIGIN requests. Cloudflare responds to OPTIONS preflight with 'Access-Control-Allow-Origin: *' BEFORE reaching FastAPI, causing browser to reject credentialed requests. Browser console error: 'Response to preflight request doesn't pass access control check: The value of the Access-Control-Allow-Origin header in the response must not be the wildcard * when the request's credentials mode is include.' Evidence: (1) fetch() from .internal to .preview fails with TypeError: Failed to fetch + CORS error (2) Same-origin (.internal → .internal) works perfectly, NO CORS errors (3) curl OPTIONS to .preview returns '*', to .internal returns correct reflected origin. FIX REQUIRED: Change REACT_APP_BACKEND_URL to https://github-clone-tool-6.internal.preview.emergentagent.com AND COOKIE_DOMAIN to .internal.preview.emergentagent.com to match the actual origin. Previous testing was incomplete - only tested curl, not real browser fetch() behavior."
@@ -129,18 +132,19 @@ backend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 3
+  test_sequence: 4
   run_ui: false
 
 test_plan:
   current_focus:
     - "Auth session cookie + CORS for credentialed requests"
-  stuck_tasks:
-    - "Auth session cookie + CORS for credentialed requests"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
+    - agent: "testing"
+      message: "✅ VERIFICATION COMPLETE - FIX CONFIRMED WORKING. Performed all three requested verification tests: (1) CORS/cross-origin check: fetch() from page context to same-origin backend RESOLVED with expected 401 status, NO CORS errors, correct headers (Access-Control-Allow-Origin reflects exact origin, Access-Control-Allow-Credentials: true). (2) Admin session + CMS access: Created MongoDB session for admin user (kruthivas@emergent.sh), injected cookie, verified /dashboard loads (200, no redirect), /api/auth/me returns 200 with admin user data, /dashboard/kb-editor (CMS) loads successfully, /dashboard/review loads successfully. (3) VERDICT: Login redirect loop is RESOLVED. The same-origin fix (REACT_APP_BACKEND_URL = https://github-clone-tool-6.internal.preview.emergentagent.com) eliminates the cross-origin issue. All protected pages load correctly with valid session, no CORS errors. Test session cleaned up. Screenshots captured: test1_cors_check.png, test2a_dashboard.png, test2b_kb_editor.png, test2c_review.png. The fix is working as intended."
     - agent: "main"
       message: "Fixed the login redirect loop caused by CORS wildcard + credentials dropping the auth cookie. Please test the backend auth flow: (1) GET /api/auth/me with no cookie/token -> expect 401. (2) Create a user + session directly in MongoDB (db=test_database, collections 'users' and 'user_sessions' with fields user_id, session_token, expires_at ~7 days out) per /app/auth_testing.md, then call GET /api/auth/me with Authorization: Bearer <session_token> AND separately with Cookie session_token=<token> -> expect 200 with the user. (3) Verify CORS: send an OPTIONS preflight and a real request to /api/auth/session and /api/auth/me with header 'Origin: https://github-clone-tool-6.preview.emergentagent.com' -> Access-Control-Allow-Origin must equal that origin (NOT '*') and Access-Control-Allow-Credentials must be 'true'. Note: full Google OAuth cannot be automated (needs real Emergent session_id); validate the cookie/token + CORS mechanism instead."
     - agent: "testing"
