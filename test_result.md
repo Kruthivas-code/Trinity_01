@@ -115,6 +115,9 @@ backend:
     status_history:
         - working: true
           agent: "testing"
+          comment: "✅ COMPREHENSIVE RE-TEST COMPLETE - NO LOGIN LOOP DETECTED. Performed systematic testing per user's detailed review request with admin session (session_token=probe_admin_sess_9911, user_id=user_60da7151f020, email=kruthivas@emergent.sh, role=admin). RESULTS: (1) Cookie properly set and present in browser (domain=.preview.emergentagent.com, secure=true, httpOnly=false, sameSite=None). (2) /api/auth/me returns 200 with correct admin user data. (3) ALL CMS ROUTES LOAD SUCCESSFULLY: /dashboard (200, stayed on dashboard), /dashboard/kb-editor (200, redirects to /welcome), /dashboard/kb-editor/welcome (200), /dashboard/review (200), /knowledge-base (200), /admin (200). (4) NO REDIRECTS TO /LOGIN detected on any route. (5) User authentication confirmed - user name visible on page, fetch('/api/auth/me') returns 200 with user data. VERDICT: The login redirect loop issue reported by user is NOT REPRODUCIBLE with current code. All protected routes and CMS access work correctly with valid admin session. The previous fixes (same-origin REACT_APP_BACKEND_URL, COOKIE_DOMAIN=.preview.emergentagent.com, CORS allow_origin_regex) appear to have resolved the issue. Screenshots captured for all routes showing successful loads."
+        - working: true
+          agent: "testing"
           comment: "✅ VERIFICATION COMPLETE - LOGIN REDIRECT LOOP FIXED. Performed comprehensive browser-level testing per review request. FIX APPLIED: REACT_APP_BACKEND_URL changed to https://github-clone-tool-6.internal.preview.emergentagent.com (same-origin with app). EVIDENCE: (1) CORS Check PASSED: fetch() from .internal origin to .internal backend RESOLVED with 401 status (expected for invalid session_id), NO CORS errors, correct headers (Access-Control-Allow-Origin: https://github-clone-tool-6.internal.preview.emergentagent.com, Access-Control-Allow-Credentials: true). (2) Admin Session Test PASSED: Created MongoDB session for admin user (kruthivas@emergent.sh, user_60da7151f020), injected cookie (session_token=fe_admin_sess_7788990011, domain=.preview.emergentagent.com). Results: /dashboard loaded successfully (200, no redirect to /login), /api/auth/me returned 200 with correct admin user data (role: admin), /dashboard/kb-editor (CMS) loaded successfully (200, URL: /dashboard/kb-editor/welcome), /dashboard/review loaded successfully (200). (3) VERDICT: Login redirect loop is RESOLVED. Pages load with valid session, no CORS errors, CMS is accessible to admin users. The same-origin fix eliminates the cross-origin issue that was causing Cloudflare to respond with wildcard CORS headers. Test session cleaned up from MongoDB."
         - working: false
           agent: "testing"
@@ -132,7 +135,7 @@ backend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 4
+  test_sequence: 5
   run_ui: false
 
 test_plan:
@@ -143,6 +146,8 @@ test_plan:
   test_priority: "high_first"
 
 agent_communication:
+    - agent: "testing"
+      message: "✅ COMPREHENSIVE RE-TEST COMPLETE - NO LOGIN LOOP DETECTED. Performed systematic testing per user's detailed review request (reproduce CMS login-loop). Created admin session in MongoDB (session_token=probe_admin_sess_9911, user_id=user_60da7151f020, email=kruthivas@emergent.sh, role=admin) and injected cookie (domain=.preview.emergentagent.com, secure=true, httpOnly=false, sameSite=None). TESTED ALL ROUTES: (1) /dashboard - loaded successfully (200, stayed on dashboard, user authenticated). (2) /dashboard/kb-editor - loaded successfully (200, redirects to /welcome). (3) /dashboard/kb-editor/welcome - loaded successfully (200). (4) /dashboard/review - loaded successfully (200). (5) /knowledge-base - loaded successfully (200). (6) /admin - loaded successfully (200). (7) Public docs (/) - loaded, found Edit/CMS buttons. VERDICT: NO LOGIN LOOP DETECTED. All CMS routes are accessible with valid admin session. Cookie is properly set and sent. /api/auth/me returns 200 with correct user data. The login redirect loop issue reported by user is NOT REPRODUCIBLE with current code. The previous fixes (same-origin REACT_APP_BACKEND_URL, COOKIE_DOMAIN=.preview.emergentagent.com, CORS allow_origin_regex) have successfully resolved the issue. Screenshots captured for all routes."
     - agent: "testing"
       message: "✅ VERIFICATION COMPLETE - FIX CONFIRMED WORKING. Performed all three requested verification tests: (1) CORS/cross-origin check: fetch() from page context to same-origin backend RESOLVED with expected 401 status, NO CORS errors, correct headers (Access-Control-Allow-Origin reflects exact origin, Access-Control-Allow-Credentials: true). (2) Admin session + CMS access: Created MongoDB session for admin user (kruthivas@emergent.sh), injected cookie, verified /dashboard loads (200, no redirect), /api/auth/me returns 200 with admin user data, /dashboard/kb-editor (CMS) loads successfully, /dashboard/review loads successfully. (3) VERDICT: Login redirect loop is RESOLVED. The same-origin fix (REACT_APP_BACKEND_URL = https://github-clone-tool-6.internal.preview.emergentagent.com) eliminates the cross-origin issue. All protected pages load correctly with valid session, no CORS errors. Test session cleaned up. Screenshots captured: test1_cors_check.png, test2a_dashboard.png, test2b_kb_editor.png, test2c_review.png. The fix is working as intended."
     - agent: "main"
