@@ -32,7 +32,7 @@
   },
   "test_credentials": {
     "auth_method": "Mocked /api/auth/me endpoint via page.route()",
-    "kb_editor_url": "https://docs-rebuild-polish.preview.emergentagent.com/dashboard/kb-editor"
+    "kb_editor_url": "https://github-clone-tool-6.preview.emergentagent.com/dashboard/kb-editor"
   },
   "seed_data_creation": "None required - tested with new article creation",
   "retest_needed": false,

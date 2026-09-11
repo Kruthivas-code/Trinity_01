@@ -10,7 +10,7 @@ import time
 from datetime import datetime
 import statistics
 
-PREVIEW_URL = "https://docs-rebuild-polish.preview.emergentagent.com"
+PREVIEW_URL = "https://github-clone-tool-6.preview.emergentagent.com"
 CADDY_URL = "https://sync-engine-fixes.internal.emergent.host"
 CLOUDFLARE_URL = "https://sync-engine-fixes.internal.emergent.host"
 

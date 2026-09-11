@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260304_163716/results.json' }],
   ],
   use: {
-    baseURL: 'https://docs-rebuild-polish.preview.emergentagent.com',
+    baseURL: 'https://github-clone-tool-6.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BASE_URL = 'https://docs-rebuild-polish.preview.emergentagent.com';
+const BASE_URL = 'https://github-clone-tool-6.preview.emergentagent.com';
 const SESSION_TOKEN = 'test_kb_session_token';
 
 test.describe('KB Column Layout - Public Docs', () => {

@@ -58,9 +58,9 @@ This guide will help you set up Gmail Push Notifications using Google Cloud Pub/
    - **Application type:** Web application
    - **Name:** TickFlow Production
    - **Authorized JavaScript origins:** 
-     - `https://docs-rebuild-polish.preview.emergentagent.com`
+     - `https://github-clone-tool-6.preview.emergentagent.com`
    - **Authorized redirect URIs:**
-     - `https://docs-rebuild-polish.preview.emergentagent.com/api/gmail/auth/callback`
+     - `https://github-clone-tool-6.preview.emergentagent.com/api/gmail/auth/callback`
 5. Click **CREATE**
 6. **SAVE THESE CREDENTIALS:**
    ```
@@ -93,7 +93,7 @@ This guide will help you set up Gmail Push Notifications using Google Cloud Pub/
 3. Enter:
    - **Subscription ID:** `tickflow-webhook`
    - **Delivery type:** Push
-   - **Endpoint URL:** `https://docs-rebuild-polish.preview.emergentagent.com/api/gmail/webhook`
+   - **Endpoint URL:** `https://github-clone-tool-6.preview.emergentagent.com/api/gmail/webhook`
    - **Acknowledgement deadline:** 60 seconds
 4. Click **CREATE**
 
