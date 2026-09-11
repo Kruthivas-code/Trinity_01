@@ -38,6 +38,8 @@ import PortalTicketDetail from './portal/PortalTicketDetail';
 // KB Docs imports
 import PublicDocs from './pages/kb/PublicDocs';
 import KBEditor from './pages/KBEditor';
+import ReviewConsole from './pages/review/ReviewConsole';
+import ReviewPage from './pages/review/ReviewPage';
 
 function AppRouter() {
   const location = useLocation();
@@ -72,6 +74,8 @@ function AppRouter() {
       {/* KB Editor - Full-page editor (protected) */}
       <Route path="/dashboard/kb-editor" element={<ProtectedRoute>{() => <KBEditor />}</ProtectedRoute>} />
       <Route path="/dashboard/kb-editor/:slug" element={<ProtectedRoute>{() => <KBEditor />}</ProtectedRoute>} />
+      <Route path="/dashboard/review" element={<ProtectedRoute>{(user) => <ReviewConsole user={user} />}</ProtectedRoute>} />
+      <Route path="/dashboard/review/:slug" element={<ProtectedRoute>{(user) => <ReviewPage user={user} />}</ProtectedRoute>} />
       <Route
         path="/dashboard"
         element={

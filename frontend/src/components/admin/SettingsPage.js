@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Sun, Moon, Mail, CheckCircle, XCircle, Loader2, RefreshCw, ExternalLink, LogOut, Key, Copy, Trash2, Plus, Download, FileText, Users, Ticket, LayoutGrid, BookOpen } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Mail, CheckCircle, XCircle, Loader2, RefreshCw, ExternalLink, LogOut, Key, Copy, Trash2, Plus, Download, FileText, Users, Ticket, LayoutGrid, BookOpen, ClipboardList } from 'lucide-react';
 import PortalCategoryManager from './PortalCategoryManager';
 import KBArticleManager from './KBArticleManager';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -485,6 +485,30 @@ const SettingsPage = ({ user }) => {
               </div>
             </div>
             <KBArticleManager />
+          </div>
+
+          {/* Content Review Section */}
+          <div className="glass rounded-2xl p-6 md:p-8 border border-border/60">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-gradient-primary flex items-center justify-center">
+                  <ClipboardList size={20} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium">Content Review</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Assign KB pages for review, track comments and verdicts, and gate publishing until review is resolved
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/dashboard/review')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-medium hover:opacity-90 transition-opacity flex-shrink-0"
+                data-testid="open-review-console"
+              >
+                Open review console <ExternalLink size={14} />
+              </button>
+            </div>
           </div>
 
           {/* Data Export Section */}
