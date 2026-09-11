@@ -19,8 +19,8 @@
 ## Infrastructure Context
 
 The Emergent preview infrastructure implements a 307-redirect pattern:
-- **External URL:** `https://github-clone-tool-6.preview.emergentagent.com`
-- **Internal URL:** `https://github-clone-tool-6.internal.preview.emergentagent.com`
+- **External URL:** `https://repo-builder-83.preview.emergentagent.com`
+- **Internal URL:** `https://repo-builder-83.internal.preview.emergentagent.com`
 - **Redirect:** All requests to `*.preview.emergentagent.com` are 307-redirected to `*.internal.preview.emergentagent.com`
 
 ---
@@ -32,8 +32,8 @@ The Emergent preview infrastructure implements a 307-redirect pattern:
 **Objective:** Reproduce the POST /api/auth/session call exactly as the app does
 
 **Setup:**
-- Browser on: `https://github-clone-tool-6.internal.preview.emergentagent.com/login` (after 307 redirect)
-- Fetch to: `https://github-clone-tool-6.preview.emergentagent.com/api/auth/session` (REACT_APP_BACKEND_URL)
+- Browser on: `https://repo-builder-83.internal.preview.emergentagent.com/login` (after 307 redirect)
+- Fetch to: `https://repo-builder-83.preview.emergentagent.com/api/auth/session` (REACT_APP_BACKEND_URL)
 - Method: POST with `credentials: 'include'`
 
 **Result:** ❌ FETCH REJECTED
@@ -44,8 +44,8 @@ TypeError: Failed to fetch
 
 **Browser Console Error:**
 ```
-Access to fetch at 'https://github-clone-tool-6.preview.emergentagent.com/api/auth/session' 
-from origin 'https://github-clone-tool-6.internal.preview.emergentagent.com' 
+Access to fetch at 'https://repo-builder-83.preview.emergentagent.com/api/auth/session' 
+from origin 'https://repo-builder-83.internal.preview.emergentagent.com' 
 has been blocked by CORS policy: Response to preflight request doesn't pass access control check: 
 The value of the 'Access-Control-Allow-Origin' header in the response must not be the wildcard '*' 
 when the request's credentials mode is 'include'.
@@ -115,7 +115,7 @@ The 307 redirect may interfere with Set-Cookie header propagation in cross-origi
 **Objective:** Confirm that same-origin requests work correctly
 
 **Setup:**
-- Browser on: `https://github-clone-tool-6.internal.preview.emergentagent.com/login`
+- Browser on: `https://repo-builder-83.internal.preview.emergentagent.com/login`
 - Fetch to: `/api/auth/session` (relative URL, same origin)
 
 **Result:** ✅ FETCH RESOLVED
@@ -136,8 +136,8 @@ Body: {"detail":"Invalid session_id"}
 
 ### OPTIONS to .preview URL (External):
 ```bash
-curl -X OPTIONS "https://github-clone-tool-6.preview.emergentagent.com/api/auth/session" \
-  -H "Origin: https://github-clone-tool-6.internal.preview.emergentagent.com"
+curl -X OPTIONS "https://repo-builder-83.preview.emergentagent.com/api/auth/session" \
+  -H "Origin: https://repo-builder-83.internal.preview.emergentagent.com"
 ```
 
 **Response:**
@@ -153,14 +153,14 @@ access-control-allow-methods: GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH
 
 ### OPTIONS to .internal URL (Internal):
 ```bash
-curl -X OPTIONS "https://github-clone-tool-6.internal.preview.emergentagent.com/api/auth/session" \
-  -H "Origin: https://github-clone-tool-6.internal.preview.emergentagent.com"
+curl -X OPTIONS "https://repo-builder-83.internal.preview.emergentagent.com/api/auth/session" \
+  -H "Origin: https://repo-builder-83.internal.preview.emergentagent.com"
 ```
 
 **Response:**
 ```
 access-control-allow-credentials: true
-access-control-allow-origin: https://github-clone-tool-6.internal.preview.emergentagent.com
+access-control-allow-origin: https://repo-builder-83.internal.preview.emergentagent.com
 access-control-allow-methods: GET, POST, PUT, DELETE, PATCH, OPTIONS
 ```
 
@@ -172,8 +172,8 @@ access-control-allow-methods: GET, POST, PUT, DELETE, PATCH, OPTIONS
 
 ### The Problem Chain:
 
-1. **User navigates to:** `https://github-clone-tool-6.preview.emergentagent.com/dashboard`
-2. **Infrastructure 307-redirects to:** `https://github-clone-tool-6.internal.preview.emergentagent.com/dashboard`
+1. **User navigates to:** `https://repo-builder-83.preview.emergentagent.com/dashboard`
+2. **Infrastructure 307-redirects to:** `https://repo-builder-83.internal.preview.emergentagent.com/dashboard`
 3. **React app loads from:** `.internal` origin
 4. **AuthCallback tries to POST to:** `REACT_APP_BACKEND_URL` = `.preview` origin
 5. **This creates:** CROSS-ORIGIN request (`.internal` → `.preview`)
@@ -201,7 +201,7 @@ Real browser testing with `fetch()` revealed the actual failure point.
 
 1. **Update frontend/.env:**
    ```bash
-   REACT_APP_BACKEND_URL=https://github-clone-tool-6.internal.preview.emergentagent.com
+   REACT_APP_BACKEND_URL=https://repo-builder-83.internal.preview.emergentagent.com
    ```
 
 2. **Update backend/.env:**

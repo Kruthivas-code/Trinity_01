@@ -10,7 +10,7 @@
 
 ### Notes for testing agents
 - App is served (after platform 307 redirect) on the .internal host.
-- REACT_APP_BACKEND_URL is set to https://github-clone-tool-6.internal.preview.emergentagent.com
+- REACT_APP_BACKEND_URL is set to https://repo-builder-83.internal.preview.emergentagent.com
   as a TEMPORARY unblock so frontend<->backend calls are same-origin (platform edge
   redirects *.preview -> *.internal for all routes, which broke cross-origin auth).
 - COOKIE_DOMAIN=.preview.emergentagent.com (valid across .preview and .internal subdomains).

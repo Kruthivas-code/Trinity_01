@@ -9,7 +9,7 @@
  */
 import { test, expect, Page } from '@playwright/test';
 
-const BASE_URL = 'https://github-clone-tool-6.preview.emergentagent.com';
+const BASE_URL = 'https://repo-builder-83.preview.emergentagent.com';
 const ADMIN_SESSION_TOKEN = 'test_review_mode_admin_session';
 const REVIEWER_SESSION_TOKEN = 'test_review_mode_reviewer_session';
 

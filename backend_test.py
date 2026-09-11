@@ -11,11 +11,11 @@ from datetime import datetime, timedelta, timezone
 from pymongo import MongoClient
 
 # Configuration
-BACKEND_URL_EXTERNAL = "https://github-clone-tool-6.preview.emergentagent.com"
-BACKEND_URL_INTERNAL = "https://github-clone-tool-6.internal.preview.emergentagent.com"
+BACKEND_URL_EXTERNAL = "https://repo-builder-83.preview.emergentagent.com"
+BACKEND_URL_INTERNAL = "https://repo-builder-83.internal.preview.emergentagent.com"
 MONGO_URL = "mongodb://localhost:27017"
 DB_NAME = "test_database"
-ORIGIN = "https://github-clone-tool-6.preview.emergentagent.com"
+ORIGIN = "https://repo-builder-83.preview.emergentagent.com"
 
 # Test data
 TEST_USER_ID = "user_testadmin1"
