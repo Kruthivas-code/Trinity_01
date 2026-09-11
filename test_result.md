@@ -107,12 +107,15 @@ user_problem_statement: "After signing in with Google (Emergent Auth), the app k
 backend:
   - task: "Auth session cookie + CORS for credentialed requests"
     implemented: true
-    working: true
-    file: "backend/server.py, backend/routes/auth.py"
-    stuck_count: 0
+    working: false
+    file: "backend/server.py, backend/routes/auth.py, frontend/.env"
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
+        - working: false
+          agent: "testing"
+          comment: "❌ REAL ROOT CAUSE FOUND via comprehensive browser testing. The infrastructure 307-redirects *.preview.emergentagent.com → *.internal.preview.emergentagent.com. React app loads from .internal origin, but REACT_APP_BACKEND_URL=https://github-clone-tool-6.preview.emergentagent.com creates CROSS-ORIGIN requests. Cloudflare responds to OPTIONS preflight with 'Access-Control-Allow-Origin: *' BEFORE reaching FastAPI, causing browser to reject credentialed requests. Browser console error: 'Response to preflight request doesn't pass access control check: The value of the Access-Control-Allow-Origin header in the response must not be the wildcard * when the request's credentials mode is include.' Evidence: (1) fetch() from .internal to .preview fails with TypeError: Failed to fetch + CORS error (2) Same-origin (.internal → .internal) works perfectly, NO CORS errors (3) curl OPTIONS to .preview returns '*', to .internal returns correct reflected origin. FIX REQUIRED: Change REACT_APP_BACKEND_URL to https://github-clone-tool-6.internal.preview.emergentagent.com AND COOKIE_DOMAIN to .internal.preview.emergentagent.com to match the actual origin. Previous testing was incomplete - only tested curl, not real browser fetch() behavior."
         - working: true
           agent: "main"
           comment: "SECOND (real) root cause found via troubleshoot_agent: cookie DOMAIN scope mismatch. The preview infra 307-redirects /api/* from *.preview.emergentagent.com to *.internal.preview.emergentagent.com. The session cookie was set host-only (no domain), so it was scoped to the .internal host and never sent back on /api/auth/me at the main host -> 401 -> login loop. Fix: added COOKIE_DOMAIN env var (=.preview.emergentagent.com) and set domain on set_cookie/delete_cookie in routes/auth.py (defaults to None for local dev). Verified via browser-like curl cookie jar through the EXTERNAL url following the 307: /api/auth/me now returns 200 with user data (was 401 before). Backend CORS regex fix also retained and required."
@@ -126,13 +129,14 @@ backend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: false
 
 test_plan:
   current_focus:
     - "Auth session cookie + CORS for credentialed requests"
-  stuck_tasks: []
+  stuck_tasks:
+    - "Auth session cookie + CORS for credentialed requests"
   test_all: false
   test_priority: "high_first"
 
@@ -141,3 +145,7 @@ agent_communication:
       message: "Fixed the login redirect loop caused by CORS wildcard + credentials dropping the auth cookie. Please test the backend auth flow: (1) GET /api/auth/me with no cookie/token -> expect 401. (2) Create a user + session directly in MongoDB (db=test_database, collections 'users' and 'user_sessions' with fields user_id, session_token, expires_at ~7 days out) per /app/auth_testing.md, then call GET /api/auth/me with Authorization: Bearer <session_token> AND separately with Cookie session_token=<token> -> expect 200 with the user. (3) Verify CORS: send an OPTIONS preflight and a real request to /api/auth/session and /api/auth/me with header 'Origin: https://github-clone-tool-6.preview.emergentagent.com' -> Access-Control-Allow-Origin must equal that origin (NOT '*') and Access-Control-Allow-Credentials must be 'true'. Note: full Google OAuth cannot be automated (needs real Emergent session_id); validate the cookie/token + CORS mechanism instead."
     - agent: "testing"
       message: "✅ TESTING COMPLETE - ALL TESTS PASSED (7/7). The CORS fix is working correctly. FastAPI now uses allow_origin_regex='.*' to reflect the exact request origin instead of '*', which allows credentialed requests to work properly. All auth endpoints tested successfully: (1) Unauthenticated requests return 401 ✓ (2) Bearer token authentication works ✓ (3) Cookie authentication works ✓ (4) CORS preflight returns correct headers (exact origin + credentials:true) ✓ (5) CORS actual requests return correct headers ✓ (6) Invalid session handling works ✓ (7) POST requests with Origin header return correct CORS headers ✓. The login redirect loop bug is FIXED. Note: Cloudflare layer adds its own CORS headers with '*' for external URL, but this doesn't affect functionality as browsers follow redirects to internal URL where FastAPI's correct CORS headers are applied."
+    - agent: "user"
+      message: "The login redirect loop is STILL happening. After Google sign-in, the app bounces back to /login instead of loading /dashboard. Need detailed browser-level diagnosis of the redirect mechanism."
+    - agent: "testing"
+      message: "❌ CRITICAL ISSUE FOUND - Previous testing was INCOMPLETE. Performed comprehensive browser-level diagnosis with real fetch() calls and cookie injection. ROOT CAUSE IDENTIFIED: The infrastructure 307-redirects all requests from *.preview.emergentagent.com to *.internal.preview.emergentagent.com. When the React app loads from the .internal origin but REACT_APP_BACKEND_URL points to the .preview origin, this creates a CROSS-ORIGIN scenario. The Cloudflare/proxy layer responds to OPTIONS preflight with 'Access-Control-Allow-Origin: *' BEFORE the request reaches FastAPI, causing browsers to reject credentialed requests. Evidence: (1) POST /api/auth/session from .internal origin to .preview URL fails with CORS error: 'The value of the Access-Control-Allow-Origin header in the response must not be the wildcard * when the request's credentials mode is include' (2) Same-origin requests (.internal → .internal) work perfectly with NO CORS errors (3) OPTIONS to .preview URL returns '*', OPTIONS to .internal URL returns correct reflected origin. THE FIX: Change REACT_APP_BACKEND_URL from https://github-clone-tool-6.preview.emergentagent.com to https://github-clone-tool-6.internal.preview.emergentagent.com to match the actual origin where the app loads. This eliminates the cross-origin issue entirely."
