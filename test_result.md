@@ -102,7 +102,20 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "After signing in with Google (Emergent Auth), the app keeps navigating back to the login screen instead of taking the user to the dashboard/CMS."
+user_problem_statement: "Test the NEW optional horizontal tab-switcher on the PUBLIC docs site of a KB app. Verify ACTUAL BEHAVIOR, not just DOM presence."
+
+frontend:
+  - task: "Horizontal tab-switcher feature on public docs site"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/kb/PublicDocs.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ ALL 4 CHECKS PASSED - TAB-SWITCHER FEATURE FULLY FUNCTIONAL. Tested the optional horizontal tab-switcher feature gated by MongoDB flag (db='test_database', collection='kb_settings', field='tabs_enabled'). RESULTS: (1) CHECK 1 - MOBILE DROPDOWN SWITCHES TABS ✅: At 390x840 viewport, mobile dropdown (data-testid='kb-tab-select') is visible and functional. Switched from 'The Beginner's Guide' (groups: ['Introduction', 'Understanding How Apps Work']) to 'Features' (groups: ['Core Features', 'Advanced Features']). Sidebar content ACTUALLY CHANGED, confirming real behavior not just DOM presence. (2) CHECK 2 - BREAKPOINT HANDOFF ✅: Tested widths 375px, 1023px, 1024px, 1025px, 1440px. At <1024px: mobile select visible, desktop bar hidden. At >=1024px: desktop bar visible, mobile select hidden. NO OVERLAP (both visible) or GAP (neither visible) detected. Screenshots captured at 1023px and 1025px showing correct responsive behavior. (3) CHECK 3 - OFF-STATE VISUAL ✅: With tabs_enabled=false, NO tab switcher elements present (no kb-tab-switcher, no kb-tab-select). All 6 nav groups stacked vertically in original layout: 'The Beginner's Guide', 'Features', 'Building Your App', 'Deploy and Manage', 'Troubleshooting', 'Affiliate Partner'. Screenshot captured showing stacked layout. (4) CHECK 4 - TAB-SWITCH WHILE VIEWING ARTICLE ✅: At 1440px desktop width, opened 'Welcome To Emergent' article, clicked different tab in desktop switcher. Article STAYED THE SAME (only sidebar nav changed to new tab's content). No crashes, no blank pages, no console errors. Behavior is consistent and functional. CLEANUP: tabs_enabled flag restored to false (default), confirmed via public-data endpoint. Feature is production-ready and working as designed."
 
 backend:
   - task: "Auth session cookie + CORS for credentialed requests"
@@ -135,17 +148,19 @@ backend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 5
+  test_sequence: 6
   run_ui: false
 
 test_plan:
   current_focus:
-    - "Auth session cookie + CORS for credentialed requests"
+    - "Horizontal tab-switcher feature on public docs site"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
+    - agent: "testing"
+      message: "✅ TAB-SWITCHER FEATURE TESTING COMPLETE - ALL 4 CHECKS PASSED. Tested the optional horizontal tab-switcher on public docs site (https://github-clone-tool-6.internal.preview.emergentagent.com/). Feature is gated by MongoDB flag 'tabs_enabled' in kb_settings collection. COMPREHENSIVE TEST RESULTS: (1) Mobile dropdown (390x840): Successfully switches tabs, sidebar content actually changes (verified groups changed from ['Introduction', 'Understanding How Apps Work'] to ['Core Features', 'Advanced Features']). (2) Breakpoint handoff: Clean transition at 1024px (lg breakpoint). Mobile select visible <1024px, desktop bar visible >=1024px. No overlap or gap detected across 375px, 1023px, 1024px, 1025px, 1440px. Screenshots captured at 1023px and 1025px. (3) Off-state (tabs_enabled=false): No switcher elements present, all 6 tabs stacked vertically in original layout. Screenshot captured. (4) Tab-switch during article view: Article stays the same, only sidebar changes. No errors, crashes, or blank pages. Feature is production-ready. Flag restored to false (default) and confirmed via public-data endpoint."
     - agent: "testing"
       message: "✅ COMPREHENSIVE RE-TEST COMPLETE - NO LOGIN LOOP DETECTED. Performed systematic testing per user's detailed review request (reproduce CMS login-loop). Created admin session in MongoDB (session_token=probe_admin_sess_9911, user_id=user_60da7151f020, email=kruthivas@emergent.sh, role=admin) and injected cookie (domain=.preview.emergentagent.com, secure=true, httpOnly=false, sameSite=None). TESTED ALL ROUTES: (1) /dashboard - loaded successfully (200, stayed on dashboard, user authenticated). (2) /dashboard/kb-editor - loaded successfully (200, redirects to /welcome). (3) /dashboard/kb-editor/welcome - loaded successfully (200). (4) /dashboard/review - loaded successfully (200). (5) /knowledge-base - loaded successfully (200). (6) /admin - loaded successfully (200). (7) Public docs (/) - loaded, found Edit/CMS buttons. VERDICT: NO LOGIN LOOP DETECTED. All CMS routes are accessible with valid admin session. Cookie is properly set and sent. /api/auth/me returns 200 with correct user data. The login redirect loop issue reported by user is NOT REPRODUCIBLE with current code. The previous fixes (same-origin REACT_APP_BACKEND_URL, COOKIE_DOMAIN=.preview.emergentagent.com, CORS allow_origin_regex) have successfully resolved the issue. Screenshots captured for all routes."
     - agent: "testing"
