@@ -9,9 +9,11 @@ from dependencies import get_current_user
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
+import os
 import uuid
 import logging
 import requests
+from xml.sax.saxutils import escape
 
 logger = logging.getLogger(__name__)
 
@@ -214,6 +216,42 @@ async def get_public_data():
     }
 
     return {"project": project, "config": config, "documents": documents}
+
+
+@router.get("/sitemap.xml")
+async def sitemap_xml():
+    """Dynamic sitemap of published KB articles. Public (no auth), always
+    current on request — no regeneration step. Lives under /api/kb because
+    that prefix is guaranteed reachable in every environment."""
+    # SITE_URL is the public base URL, e.g. "https://docs.example.com".
+    # Defaults to "" when unset — in that case <loc> values are emitted WITHOUT
+    # a scheme+host prefix (root-relative). SET SITE_URL IN PRODUCTION so
+    # crawlers receive absolute URLs.
+    site_url = os.environ.get("SITE_URL", "").rstrip("/")
+    articles = list(
+        kb_articles.find({"published": True}, {"_id": 0, "slug": 1, "updated_at": 1}).sort("order", 1)
+    )
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        f"  <url><loc>{escape(site_url + '/')}</loc></url>",  # docs homepage, no lastmod
+    ]
+    for a in articles:
+        loc = escape(f"{site_url}/docs/{a['slug']}")
+        entry = f"  <url><loc>{loc}</loc>"
+        upd = a.get("updated_at")
+        lastmod = None
+        if isinstance(upd, datetime):
+            lastmod = upd.date().isoformat()
+        elif upd:
+            s = str(upd)
+            lastmod = s[:10] if len(s) >= 10 else None
+        if lastmod:
+            entry += f"<lastmod>{lastmod}</lastmod>"
+        entry += "</url>"
+        lines.append(entry)
+    lines.append("</urlset>")
+    return Response(content="\n".join(lines), media_type="application/xml")
 
 
 @router.get("/articles")
