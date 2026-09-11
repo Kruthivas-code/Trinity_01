@@ -447,11 +447,14 @@ async def update_article(slug: str, body: ArticleUpdate, current_user: dict = De
             raise HTTPException(status_code=409, detail="Slug already in use")
     if updates:
         updates["updated_at"] = datetime.now(timezone.utc)
-        # Only snapshot when THIS update transitions published -> True (not on
-        # every save of an already-published page). Use post-update values:
-        # if this same PUT also changes content_markdown/title, snapshot the
-        # new value; otherwise fall back to the existing stored value.
-        if updates.get("published") is True:
+        # Only snapshot on an actual false->true transition of `published`, NOT
+        # on every save of an already-published page (the editor always resends
+        # the current published value). Use post-update values: if this same PUT
+        # also changes content_markdown/title, snapshot the new value; otherwise
+        # fall back to the existing stored value.
+        was_published = article.get("published", False)
+        becoming_published = updates.get("published") is True and not was_published
+        if becoming_published:
             updates["published_content_markdown"] = updates.get("content_markdown", article.get("content_markdown", ""))
             updates["published_title"] = updates.get("title", article.get("title"))
             updates["published_at"] = datetime.now(timezone.utc).isoformat()
