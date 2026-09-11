@@ -172,8 +172,15 @@ const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle, mobileMe
 };
 
 // ============= LEFT SIDEBAR =============
-const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect, theme, onSearchOpen, mobileOpen, onMobileClose, isDark }) => {
+const LeftSidebar = ({ activeTab, onTabChange, tabsEnabled, tabs, documents, selectedDocSlug, onDocSelect, theme, onSearchOpen, mobileOpen, onMobileClose, isDark }) => {
   const [collapsedGroups, setCollapsedGroups] = useState({});
+
+  // Optional horizontal tab switcher (CMS flag). Only meaningful with 2+ tabs;
+  // otherwise there's nothing to switch between. When off -> render every tab
+  // stacked exactly as before (unchanged behavior).
+  const showSwitcher = tabsEnabled === true && tabs.length > 1;
+  const currentTabId = tabs.some(t => t.id === activeTab) ? activeTab : tabs[0]?.id;
+  const visibleTabs = showSwitcher ? tabs.filter(t => t.id === currentTabId) : tabs;
 
   const toggleGroup = (key) => {
     setCollapsedGroups(prev => ({ ...prev, [key]: !prev[key] }));
@@ -224,12 +231,41 @@ const LeftSidebar = ({ activeTab, tabs, documents, selectedDocSlug, onDocSelect,
         </div>
 
         <nav className="flex-1 overflow-y-auto overscroll-contain px-4 pt-5 pb-6 kb-sidebar-scroll" data-testid="kb-nav-tree">
-          {tabs.map((tab) => {
+          {showSwitcher && (
+            <div className="mb-4" data-testid="kb-tab-switcher">
+              {/* Desktop: horizontal tab bar */}
+              <div className={`hidden lg:flex flex-wrap gap-x-4 gap-y-1 border-b ${theme.border} mb-3`} role="tablist" aria-label="Documentation sections">
+                {tabs.map((tab) => {
+                  const isActive = tab.id === currentTabId;
+                  return (
+                    <button key={tab.id} role="tab" aria-selected={isActive}
+                      onClick={() => onTabChange && onTabChange(tab.id)}
+                      className={`relative pb-2 -mb-px text-sm font-medium whitespace-nowrap transition-colors ${isActive ? `${theme.text} border-b-2 border-current` : `${theme.textMuted} ${theme.hoverText} border-b-2 border-transparent`}`}
+                      data-testid={`kb-tab-${tab.id}`}>
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Mobile: dropdown selector showing current tab */}
+              <select
+                className={`lg:hidden w-full px-3 py-2.5 ${theme.inputBg} border ${theme.border} rounded-lg text-sm ${theme.text} mb-1`}
+                value={currentTabId || ''}
+                onChange={(e) => onTabChange && onTabChange(e.target.value)}
+                aria-label="Select documentation section"
+                data-testid="kb-tab-select">
+                {tabs.map((tab) => (
+                  <option key={tab.id} value={tab.id}>{tab.label}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {visibleTabs.map((tab) => {
             const groups = tab.groups || [];
 
             return (
               <div key={tab.id} className="mb-4" data-testid={`sidebar-tab-${tab.id}`}>
-                {tabs.length > 1 && (
+                {!showSwitcher && tabs.length > 1 && (
                   <div className={`px-3 mb-3 font-bold ${theme.text}`} style={{ fontSize: '14px', lineHeight: '20px' }} data-testid={`sidebar-tab-label-${tab.id}`}>
                     {tab.label}
                   </div>
@@ -830,7 +866,7 @@ const PublicDocs = () => {
       <TopNavigation theme={theme} onThemeToggle={toggleKbTheme} isDark={isDark} onSearchOpen={() => setSearchOpen(true)} />
       <BreadcrumbBar breadcrumb={getBreadcrumb()} theme={theme} isDark={isDark} onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} mobileMenuOpen={mobileMenuOpen} />
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} documents={documents} onSelect={handleDocSelect} theme={theme} config={config} />
-      <LeftSidebar activeTab={activeTab} tabs={tabs} documents={documents} selectedDocSlug={selectedDoc?.slug} onDocSelect={handleDocSelect} theme={theme} onSearchOpen={() => setSearchOpen(true)} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} isDark={isDark} />
+      <LeftSidebar activeTab={activeTab} onTabChange={setActiveTab} tabsEnabled={config?.tabs_enabled === true} tabs={tabs} documents={documents} selectedDocSlug={selectedDoc?.slug} onDocSelect={handleDocSelect} theme={theme} onSearchOpen={() => setSearchOpen(true)} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} isDark={isDark} />
 
       <main id="main-content" role="main" className="lg:ml-64 xl:mr-64 min-h-screen pt-24 min-[810px]:pt-14 relative z-10">
         {selectedDoc ? (

@@ -75,6 +75,18 @@ const GlobalSection = ({ theme, isDark }) => {
           )}
         </div>
       ))}
+      <div className={`flex items-center justify-between gap-4 p-3 border ${theme.inputBorder} rounded-lg`} data-testid="settings-tabs-enabled-row">
+        <div>
+          <label className={`block text-sm font-medium ${theme.inputText}`}>Horizontal tab switcher</label>
+          <p className={`text-xs ${theme.textMuted} mt-0.5`}>Show nav groups as a horizontal tab bar (desktop) / dropdown (mobile) instead of stacking them. Needs 2+ nav groups.</p>
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer flex-shrink-0">
+          <input type="checkbox" checked={data.tabs_enabled === true}
+            onChange={e => setData(p => ({ ...p, tabs_enabled: e.target.checked }))}
+            className="w-4 h-4 accent-[#00A1B2]" data-testid="settings-tabs-enabled" />
+          <span className={`text-xs ${theme.textMuted}`}>{data.tabs_enabled === true ? 'On' : 'Off'}</span>
+        </label>
+      </div>
       <div className="flex justify-end pt-2">
         <button onClick={handleSave} disabled={saving}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#00A1B2] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity"

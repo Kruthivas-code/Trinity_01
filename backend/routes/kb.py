@@ -167,6 +167,11 @@ async def get_public_data():
 
     all_articles = list(kb_articles.find({"published": True}, {"_id": 0}).sort("order", 1))
 
+    # Public, unauthenticated flag for the optional horizontal tab switcher on
+    # the docs nav. Defaults to False (today's stacked behavior) when unset.
+    docs_settings_doc = kb_settings.find_one({"type": "docs_settings"}, {"_id": 0, "tabs_enabled": 1})
+    tabs_enabled = bool((docs_settings_doc or {}).get("tabs_enabled", False))
+
     # Build navigation tabs from nav_groups
     tabs = []
     for group in nav_groups:
@@ -213,6 +218,7 @@ async def get_public_data():
             "primary": {"label": "Try Emergent", "href": "https://app.emergent.sh"},
         },
         "navigation": {"tabs": tabs},
+        "tabs_enabled": tabs_enabled,
     }
 
     return {"project": project, "config": config, "documents": documents}
@@ -598,6 +604,7 @@ class DocsSettingsUpdate(BaseModel):
     logo_url: Optional[str] = None
     footer_text: Optional[str] = None
     custom_domain: Optional[str] = None
+    tabs_enabled: Optional[bool] = None
 
 
 @router.get("/admin/docs-settings")
@@ -613,6 +620,7 @@ async def get_docs_settings(current_user: dict = Depends(get_current_user)):
             "logo_url": "",
             "footer_text": "",
             "custom_domain": "",
+            "tabs_enabled": False,
         }
     settings = {k: v for k, v in doc.items() if k not in ("type", "updated_at")}
     return settings
