@@ -162,7 +162,16 @@ async def publish_article(slug: str, user: dict = Depends(get_current_user)):
     if missing_alt > 0:
         raise HTTPException(400, f"{missing_alt} image(s) on this page are missing alt text. Add alt text (or mark them decorative) before publishing.")
     now = _now()
-    kb_articles.update_one({"slug": slug}, {"$set": {"published": True, "review_status": "published", "updated_at": now}})
+    # Snapshot the current (live) content/title as the published copy at the
+    # moment we transition published -> True. Public reads prefer this snapshot.
+    kb_articles.update_one({"slug": slug}, {"$set": {
+        "published": True,
+        "review_status": "published",
+        "updated_at": now,
+        "published_content_markdown": article.get("content_markdown", ""),
+        "published_title": article.get("title"),
+        "published_at": now,
+    }})
     log_activity("published", user.get("email"), user.get("name"), doc_slug=slug, doc_title=article.get("title"))
     return {"status": "published", "published_at": now}
 

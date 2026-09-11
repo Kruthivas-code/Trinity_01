@@ -180,7 +180,7 @@ async def get_public_data():
                 a for a in all_articles
                 if a.get("nav_group_key") == group["key"] and a.get("section_key") == section["key"]
             ]
-            pages = [{"page": a["slug"], "title": a["title"], "icon": a.get("icon", "")} for a in section_articles]
+            pages = [{"page": a["slug"], "title": a.get("published_title") or a["title"], "icon": a.get("icon", "")} for a in section_articles]
             if pages:
                 tab_groups.append({"group": section.get("label", section["key"]), "pages": pages})
         tabs.append({
@@ -196,8 +196,8 @@ async def get_public_data():
         documents.append({
             "id": a["slug"],
             "slug": a["slug"],
-            "title": a["title"],
-            "content": a.get("content_markdown", ""),
+            "title": a.get("published_title") or a["title"],
+            "content": a.get("published_content_markdown") or a.get("content_markdown", ""),
             "order": a.get("order", 0),
             "icon": None,
         })
@@ -223,7 +223,9 @@ async def list_articles(nav_group: Optional[str] = None, section: Optional[str] 
         query["nav_group_key"] = nav_group
     if section:
         query["section_key"] = section
-    articles = list(kb_articles.find(query, {"_id": 0, "content_markdown": 0}).sort("order", 1))
+    articles = list(kb_articles.find(query, {"_id": 0, "content_markdown": 0, "published_content_markdown": 0}).sort("order", 1))
+    for a in articles:
+        a["title"] = a.get("published_title") or a.get("title")
     return {"articles": articles}
 
 
@@ -232,18 +234,28 @@ async def get_article(slug: str):
     article = kb_articles.find_one({"slug": slug, "published": True}, {"_id": 0})
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
+    # Prefer the published snapshot; fall back to live content when absent
+    # (keeps already-published articles rendering with zero backfill).
+    article["content_markdown"] = article.get("published_content_markdown") or article.get("content_markdown", "")
+    article["title"] = article.get("published_title") or article.get("title")
     # Get prev/next for navigation
     order = article.get("order", 0)
     prev_art = kb_articles.find_one(
         {"published": True, "order": {"$lt": order}},
-        {"_id": 0, "slug": 1, "title": 1},
+        {"_id": 0, "slug": 1, "title": 1, "published_title": 1},
         sort=[("order", -1)]
     )
     next_art = kb_articles.find_one(
         {"published": True, "order": {"$gt": order}},
-        {"_id": 0, "slug": 1, "title": 1},
+        {"_id": 0, "slug": 1, "title": 1, "published_title": 1},
         sort=[("order", 1)]
     )
+    if prev_art:
+        prev_art["title"] = prev_art.get("published_title") or prev_art.get("title")
+        prev_art.pop("published_title", None)
+    if next_art:
+        next_art["title"] = next_art.get("published_title") or next_art.get("title")
+        next_art.pop("published_title", None)
     return {
         "article": article,
         "prev": prev_art,
@@ -400,6 +412,11 @@ async def create_article(body: ArticleCreate, current_user: dict = Depends(get_c
             doc["order"] = (max_doc.get("order", 0) + 1) if max_doc else 0
     doc["created_at"] = datetime.now(timezone.utc)
     doc["updated_at"] = datetime.now(timezone.utc)
+    # If created already-published, snapshot the published copy immediately.
+    if doc.get("published") is True:
+        doc["published_content_markdown"] = doc.get("content_markdown", "")
+        doc["published_title"] = doc.get("title")
+        doc["published_at"] = datetime.now(timezone.utc).isoformat()
     kb_articles.insert_one(doc)
     # Auto-sync navigation: ensure nav group and section exist (skip if empty keys)
     if doc.get("nav_group_key"):
@@ -430,6 +447,14 @@ async def update_article(slug: str, body: ArticleUpdate, current_user: dict = De
             raise HTTPException(status_code=409, detail="Slug already in use")
     if updates:
         updates["updated_at"] = datetime.now(timezone.utc)
+        # Only snapshot when THIS update transitions published -> True (not on
+        # every save of an already-published page). Use post-update values:
+        # if this same PUT also changes content_markdown/title, snapshot the
+        # new value; otherwise fall back to the existing stored value.
+        if updates.get("published") is True:
+            updates["published_content_markdown"] = updates.get("content_markdown", article.get("content_markdown", ""))
+            updates["published_title"] = updates.get("title", article.get("title"))
+            updates["published_at"] = datetime.now(timezone.utc).isoformat()
         kb_articles.update_one({"slug": slug}, {"$set": updates})
     final_slug = updates.get("slug", slug)
     return kb_articles.find_one({"slug": final_slug}, {"_id": 0})
