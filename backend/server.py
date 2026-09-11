@@ -134,6 +134,7 @@ from routes.portal import router as portal_router, seed_default_categories
 from routes.kb import seed_kb_articles
 from routes.kb import router as kb_router
 from routes.atlas import router as atlas_router
+from routes.review import router as review_router
 
 app.include_router(filters_router)
 app.include_router(webhooks_router)
@@ -160,6 +161,7 @@ app.include_router(summaries_router)
 app.include_router(portal_router)
 app.include_router(kb_router)
 app.include_router(atlas_router)
+app.include_router(review_router)
 
 # ==================== Middleware ====================
 MAX_REQUEST_BODY_SIZE = 50 * 1024 * 1024  # 50MB
