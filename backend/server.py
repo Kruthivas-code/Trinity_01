@@ -200,13 +200,23 @@ if not ALLOWED_ORIGINS or ALLOWED_ORIGINS == [""]:
     ]
 ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS if o.strip()]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-API-Key", "X-Session-ID"],
-)
+# When a wildcard is configured we CANNOT use a literal "*" together with
+# allow_credentials=True — browsers reject a credentialed request whose
+# Access-Control-Allow-Origin is "*", which silently drops the auth cookie
+# and bounces the user back to /login. Instead, use allow_origin_regex so the
+# middleware reflects the exact request origin (a valid value for credentials).
+cors_kwargs = {
+    "allow_credentials": True,
+    "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    "allow_headers": ["Authorization", "Content-Type", "X-Request-ID", "X-API-Key", "X-Session-ID"],
+}
+if "*" in ALLOWED_ORIGINS:
+    cors_kwargs["allow_origin_regex"] = ".*"
+    cors_kwargs["allow_origins"] = []
+else:
+    cors_kwargs["allow_origins"] = ALLOWED_ORIGINS
+
+app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 # ==================== Health Check ====================
 @app.get("/health", tags=["health"])

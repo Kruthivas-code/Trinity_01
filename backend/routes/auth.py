@@ -10,7 +10,7 @@ import logging
 
 from database import (
     users_collection, sessions_collection, api_keys_collection,
-    EMERGENT_AUTH_URL, ALLOWED_DOMAIN,
+    EMERGENT_AUTH_URL, ALLOWED_DOMAIN, COOKIE_DOMAIN,
 )
 from dependencies import get_current_user, generate_api_key
 from models.schemas import SessionCreate, APIKeyCreate
@@ -162,7 +162,8 @@ async def create_session(request: Request, session_data: SessionCreate, response
             secure=True,
             samesite="none",
             max_age=7 * 24 * 60 * 60,
-            path="/"
+            path="/",
+            domain=COOKIE_DOMAIN
         )
 
         logger.info("[AUTH] Success! Returning user data")
@@ -186,7 +187,7 @@ async def logout(response: Response, session_token: Optional[str] = Cookie(None)
     """Logout user and clear session"""
     if session_token:
         sessions_collection.delete_one({"session_token": session_token})
-    response.delete_cookie(key="session_token", path="/")
+    response.delete_cookie(key="session_token", path="/", domain=COOKIE_DOMAIN)
     return {"message": "Logged out successfully"}
 
 

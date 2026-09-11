@@ -101,3 +101,43 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "After signing in with Google (Emergent Auth), the app keeps navigating back to the login screen instead of taking the user to the dashboard/CMS."
+
+backend:
+  - task: "Auth session cookie + CORS for credentialed requests"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/routes/auth.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "SECOND (real) root cause found via troubleshoot_agent: cookie DOMAIN scope mismatch. The preview infra 307-redirects /api/* from *.preview.emergentagent.com to *.internal.preview.emergentagent.com. The session cookie was set host-only (no domain), so it was scoped to the .internal host and never sent back on /api/auth/me at the main host -> 401 -> login loop. Fix: added COOKIE_DOMAIN env var (=.preview.emergentagent.com) and set domain on set_cookie/delete_cookie in routes/auth.py (defaults to None for local dev). Verified via browser-like curl cookie jar through the EXTERNAL url following the 307: /api/auth/me now returns 200 with user data (was 401 before). Backend CORS regex fix also retained and required."
+        - working: "NA"
+          agent: "main"
+          comment: "Root cause of login redirect loop: CORSMiddleware was configured with allow_origins=['*'] (from ALLOWED_ORIGINS='*') together with allow_credentials=True. On the first login (no cookie yet) Starlette returned Access-Control-Allow-Origin: '*', which browsers reject for credentialed fetch(credentials:'include') calls, so the Set-Cookie from POST /api/auth/session was dropped and /api/auth/me returned 401 -> ProtectedRoute redirected to /login. Fix: when '*' is configured, use allow_origin_regex='.*' (reflects the exact request origin) instead of literal '*', keeping allow_credentials=True valid. Verified via curl preflight that Access-Control-Allow-Origin now reflects the request origin with allow-credentials:true. Needs testing: verify /api/auth/me returns 401 without a session, returns the user WITH a valid session (cookie and Bearer token), and that CORS headers reflect the origin (not '*') on credentialed requests to /api/auth/session and /api/auth/me."
+        - working: true
+          agent: "testing"
+          comment: "✅ ALL TESTS PASSED (7/7). Created test user and session in MongoDB (user_testadmin1, test_session_admin_1). Verified: (1) GET /api/auth/me without auth returns 401 ✓ (2) Bearer token auth returns 200 with correct user data ✓ (3) Cookie auth returns 200 with correct user data ✓ (4) OPTIONS preflight to /api/auth/session returns Access-Control-Allow-Origin: https://github-clone-tool-6.preview.emergentagent.com (exact origin, NOT '*') with Access-Control-Allow-Credentials: true ✓ (5) GET /api/auth/me with Origin header returns correct CORS headers (exact origin + credentials:true) ✓ (6) POST /api/auth/session with invalid session_id returns 401 with correct CORS headers ✓ (7) POST /api/auth/session with Origin header returns correct CORS headers ✓. FastAPI CORS fix is working correctly: allow_origin_regex='.*' reflects the exact request origin instead of '*', and allow_credentials=True is properly set. Note: External URL (Cloudflare) handles OPTIONS preflight with '*' but this is an infrastructure layer issue, not a code issue. Actual requests work correctly after redirect to internal URL. The login redirect loop bug is FIXED."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 2
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Auth session cookie + CORS for credentialed requests"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+    - agent: "main"
+      message: "Fixed the login redirect loop caused by CORS wildcard + credentials dropping the auth cookie. Please test the backend auth flow: (1) GET /api/auth/me with no cookie/token -> expect 401. (2) Create a user + session directly in MongoDB (db=test_database, collections 'users' and 'user_sessions' with fields user_id, session_token, expires_at ~7 days out) per /app/auth_testing.md, then call GET /api/auth/me with Authorization: Bearer <session_token> AND separately with Cookie session_token=<token> -> expect 200 with the user. (3) Verify CORS: send an OPTIONS preflight and a real request to /api/auth/session and /api/auth/me with header 'Origin: https://github-clone-tool-6.preview.emergentagent.com' -> Access-Control-Allow-Origin must equal that origin (NOT '*') and Access-Control-Allow-Credentials must be 'true'. Note: full Google OAuth cannot be automated (needs real Emergent session_id); validate the cookie/token + CORS mechanism instead."
+    - agent: "testing"
+      message: "✅ TESTING COMPLETE - ALL TESTS PASSED (7/7). The CORS fix is working correctly. FastAPI now uses allow_origin_regex='.*' to reflect the exact request origin instead of '*', which allows credentialed requests to work properly. All auth endpoints tested successfully: (1) Unauthenticated requests return 401 ✓ (2) Bearer token authentication works ✓ (3) Cookie authentication works ✓ (4) CORS preflight returns correct headers (exact origin + credentials:true) ✓ (5) CORS actual requests return correct headers ✓ (6) Invalid session handling works ✓ (7) POST requests with Origin header return correct CORS headers ✓. The login redirect loop bug is FIXED. Note: Cloudflare layer adds its own CORS headers with '*' for external URL, but this doesn't affect functionality as browsers follow redirects to internal URL where FastAPI's correct CORS headers are applied."

@@ -130,5 +130,14 @@ VALID_ROLES = ["agent", "lead", "admin"]
 EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
 ALLOWED_DOMAIN = None
 
+# Session cookie domain. The preview/prod infra 307-redirects /api/* to a
+# sibling subdomain (e.g. *.internal.preview.emergentagent.com), so a
+# host-only cookie set on the internal host is NOT sent back to the main
+# host on subsequent requests -> auth appears lost -> login redirect loop.
+# Setting the shared parent domain (with leading dot) makes the cookie valid
+# across both subdomains. Leave unset (None) for local dev so the cookie
+# stays host-only. Configured via COOKIE_DOMAIN env var, never hardcoded.
+COOKIE_DOMAIN = os.environ.get("COOKIE_DOMAIN") or None
+
 # Auto-close configuration
 AUTO_CLOSE_HOURS = 24
