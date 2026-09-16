@@ -350,6 +350,18 @@ textarea:focus-visible {
   outline-offset: 2px;
   border-radius: 4px;
 }
+/* Text selection highlight: a clear blue that reads well in both dark & light themes */
+[data-testid="kb-docs"] ::selection,
+[data-testid="kb-docs"]::selection {
+  background-color: rgba(56, 132, 255, 0.45);
+  color: inherit;
+}
+[data-testid="kb-docs"] ::-moz-selection,
+[data-testid="kb-docs"]::-moz-selection {
+  background-color: rgba(56, 132, 255, 0.45);
+  color: inherit;
+}
+
 /* Search: remove focus border/outline, keep only the blinking text cursor */
 [data-testid="search-input"]:focus,
 [data-testid="search-input"]:focus-visible,
