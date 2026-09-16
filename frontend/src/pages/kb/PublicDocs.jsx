@@ -3,7 +3,7 @@
  * Ported from help.emergent.sh reference
  */
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Search, Menu, X, ChevronDown,
   ExternalLink, Copy, Check,
@@ -114,11 +114,14 @@ const TopNavigation = ({ theme, onThemeToggle, isDark, onSearchOpen }) => {
           >
             <Search className="w-[18px] h-[18px]" />
           </button>
-          <Link to="/portal"
+          <a href="https://emergent.sh/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="hidden sm:flex items-center gap-1.5 px-3 sm:px-4 py-2 bg-[#00A1B2] text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-            data-testid="need-help-button">
-            <span>Need Help</span>
-          </Link>
+            data-testid="try-emergent-button">
+            <span>Try Emergent</span>
+            <ArrowRight className="w-4 h-4" />
+          </a>
           <button
             onClick={onThemeToggle}
             className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`}
@@ -253,12 +256,10 @@ const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle, mobileMe
 const LeftSidebar = ({ activeTab, onTabChange, hasSecondaryNav, tabs, documents, selectedDocSlug, onDocSelect, theme, onSearchOpen, mobileOpen, onMobileClose, isDark }) => {
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
-  // When there are multiple top-level categories they are rendered as a
-  // secondary top navbar (tabs). The sidebar then only shows the groups that
-  // belong to the currently active category.
-  const hasTabs = tabs.length > 1;
+  // When the secondary tab nav is active the sidebar shows only the active
+  // category's groups; otherwise (default) it stacks all categories.
   const currentTabId = tabs.some(t => t.id === activeTab) ? activeTab : tabs[0]?.id;
-  const visibleTabs = hasTabs ? tabs.filter(t => t.id === currentTabId) : tabs;
+  const visibleTabs = hasSecondaryNav ? tabs.filter(t => t.id === currentTabId) : tabs;
 
   const toggleGroup = (key) => {
     setCollapsedGroups(prev => ({ ...prev, [key]: !prev[key] }));
@@ -320,7 +321,7 @@ const LeftSidebar = ({ activeTab, onTabChange, hasSecondaryNav, tabs, documents,
 
             return (
               <div key={tab.id} className="mb-4" data-testid={`sidebar-tab-${tab.id}`}>
-                {!hasTabs && tabs.length > 1 && (
+                {!hasSecondaryNav && tabs.length > 1 && (
                   <div className={`px-3 mb-3 font-bold ${theme.text}`} style={{ fontSize: '14px', lineHeight: '20px' }} data-testid={`sidebar-tab-label-${tab.id}`}>
                     {tab.label}
                   </div>
@@ -829,10 +830,11 @@ const PublicDocs = () => {
   const [activeTab, setActiveTab] = useState('');
   const [isNavigating, setIsNavigating] = useState(false);
   const [kbTheme, setKbTheme] = useState(() => {
+    // Respect an explicit user choice if (and only if) it's a valid value.
     const stored = localStorage.getItem('kb-theme');
-    if (stored) return stored;
-    // Follow system default
-    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+    if (stored === 'dark' || stored === 'light') return stored;
+    // Otherwise follow the OS/system preference (default is NOT forced to dark).
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       return 'dark';
     }
     return 'light';
@@ -847,6 +849,22 @@ const PublicDocs = () => {
       localStorage.setItem('kb-theme', next);
       return next;
     });
+  }, []);
+
+  // Live-follow the system preference while the user hasn't explicitly chosen a
+  // theme (no valid value saved in localStorage). This keeps the page in sync
+  // if the OS switches between light/dark.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e) => {
+      const stored = localStorage.getItem('kb-theme');
+      if (stored !== 'dark' && stored !== 'light') {
+        setKbTheme(e.matches ? 'dark' : 'light');
+      }
+    };
+    mq.addEventListener?.('change', handler);
+    return () => mq.removeEventListener?.('change', handler);
   }, []);
 
   useEffect(() => {
@@ -1011,8 +1029,10 @@ const PublicDocs = () => {
 
   const currentIndex = documents.findIndex(d => d.id === selectedDoc?.id);
 
-  // Multiple top-level categories are shown as a secondary top navbar (tabs).
-  const hasSecondaryNav = tabs.length > 1;
+  // Secondary tab navigation is opt-in via the CMS "tabs_enabled" setting.
+  // Default (off) -> left-side navigation only. When enabled (and there are
+  // 2+ categories) -> show the secondary tab bar on desktop and a dropdown on mobile.
+  const hasSecondaryNav = config?.tabs_enabled === true && tabs.length > 1;
   const currentTabId = tabs.some(t => t.id === activeTab) ? activeTab : tabs[0]?.id;
 
   // Global prev/next: flatten all tabs → groups → pages for seamless cross-category navigation
