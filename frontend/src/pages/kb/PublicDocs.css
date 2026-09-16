@@ -370,10 +370,12 @@ textarea:focus-visible {
 [data-testid="topnav-search"]:focus,
 [data-testid="topnav-search"]:focus-visible,
 [data-testid="sidebar-search"]:focus,
-[data-testid="sidebar-search"]:focus-visible {
+[data-testid="sidebar-search"]:focus-visible,
+[data-testid="feedback-comment"]:focus,
+[data-testid="feedback-comment"]:focus-visible {
   outline: none !important;
   box-shadow: none !important;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
 }
 /* Secondary nav tab bar: hide horizontal scrollbar */
 .kb-tabs-scroll { scrollbar-width: none; }

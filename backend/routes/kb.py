@@ -311,6 +311,8 @@ async def get_article(slug: str):
 
 class FeedbackBody(BaseModel):
     helpful: bool
+    reason: Optional[str] = None
+    comment: Optional[str] = None
 
 @router.post("/articles/{slug}/feedback")
 async def submit_feedback(slug: str, body: FeedbackBody):
@@ -320,6 +322,8 @@ async def submit_feedback(slug: str, body: FeedbackBody):
     kb_feedback.insert_one({
         "article_slug": slug,
         "helpful": body.helpful,
+        "reason": body.reason,
+        "comment": (body.comment or "").strip() or None,
         "created_at": datetime.now(timezone.utc).isoformat(),
     })
     return {"status": "ok"}

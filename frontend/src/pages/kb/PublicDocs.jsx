@@ -586,47 +586,158 @@ const CopyButton = ({ text, theme }) => {
   );
 };
 
+const FEEDBACK_OPTIONS = {
+  yes: {
+    heading: 'Great! What worked best for you?',
+    options: [
+      'The guide worked as expected',
+      'It was easy to find the information I needed',
+      'It was easy to understand the product and features',
+      'The documentation is up to date',
+      'Something else',
+    ],
+  },
+  no: {
+    heading: 'How can we improve our product?',
+    options: [
+      'Help me get started faster',
+      "Make it easier to find what I'm looking for",
+      'Make it easy to understand the product and features',
+      'Update this documentation',
+      'Something else',
+    ],
+  },
+};
+
 const FeedbackWidget = ({ slug, theme }) => {
-  const [submitted, setSubmitted] = useState(null);
+  const isDark = theme.id === 'dark';
+  const [choice, setChoice] = useState(null);   // null | 'yes' | 'no'
+  const [reason, setReason] = useState(null);
+  const [comment, setComment] = useState('');
   const [sending, setSending] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
-  useEffect(() => { setSubmitted(null); }, [slug]);
+  // Reset when navigating to a different article
+  useEffect(() => {
+    setChoice(null); setReason(null); setComment(''); setSubmitted(false); setSending(false);
+  }, [slug]);
 
-  const submit = async (helpful) => {
-    if (sending || submitted !== null) return;
+  const pick = (val) => { setChoice(val); setReason(null); };
+  const cancel = () => { setChoice(null); setReason(null); setComment(''); };
+
+  const submit = async () => {
+    if (sending || !reason) return;
     setSending(true);
     try {
       await fetch(`${API}/api/kb/articles/${slug}/feedback`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ helpful }),
+        body: JSON.stringify({ helpful: choice === 'yes', reason, comment }),
       });
-      setSubmitted(helpful);
+      setSubmitted(true);
     } catch { /* silent */ }
     setSending(false);
   };
 
+  const showPanel = choice !== null && !submitted;
+  const config = FEEDBACK_OPTIONS[choice || 'yes'];
+
+  const pill = (active) =>
+    `flex items-center gap-2 px-4 py-2 rounded-full border text-sm transition-all ${
+      active
+        ? `${theme.text} ${isDark ? 'border-white/40 bg-white/5' : 'border-gray-400 bg-gray-100'}`
+        : `${theme.textMuted} ${theme.border} ${theme.hoverText} hover:border-current/40`
+    }`;
+
   return (
-    <div className={`flex flex-col items-center gap-3 mt-14 pt-8 border-t ${theme.border}`} data-testid="kb-feedback-widget">
-      {submitted === null ? (
+    <div className={`mt-14 pt-8 border-t ${theme.border}`} data-testid="kb-feedback-widget">
+      {submitted ? (
+        <div className="flex items-center gap-2 text-sm text-[#00A1B2]" data-testid="feedback-thanks">
+          <Check className="w-4 h-4" /> Thanks for your feedback!
+        </div>
+      ) : (
         <>
-          <span className={`text-sm ${theme.textMuted}`}>Was this article helpful?</span>
-          <div className="flex items-center gap-3">
-            <button onClick={() => submit(true)} disabled={sending}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${theme.border} text-sm ${theme.textMuted} hover:text-[#00A1B2] hover:border-[#00A1B2]/40 transition-all`}
-              data-testid="feedback-helpful-btn">
-              <ThumbsUp className="w-4 h-4" />Yes
-            </button>
-            <button onClick={() => submit(false)} disabled={sending}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${theme.border} text-sm ${theme.textMuted} hover:text-red-400 hover:border-red-500/40 transition-all`}
-              data-testid="feedback-unhelpful-btn">
-              <ThumbsDown className="w-4 h-4" />No
-            </button>
+          {/* Header row: question left, Yes/No right */}
+          <div className="flex items-center justify-between gap-4">
+            <span className={`text-base ${theme.textMuted}`}>Was this page helpful?</span>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button onClick={() => pick('yes')} className={pill(choice === 'yes')} data-testid="feedback-helpful-btn">
+                <ThumbsUp className="w-4 h-4" /> Yes
+              </button>
+              <button onClick={() => pick('no')} className={pill(choice === 'no')} data-testid="feedback-unhelpful-btn">
+                <ThumbsDown className="w-4 h-4" /> No
+              </button>
+            </div>
+          </div>
+
+          {/* Follow-up survey (smoothly expands) */}
+          <div
+            className={`overflow-hidden transition-all duration-500 ease-out ${showPanel ? 'max-h-[760px] opacity-100' : 'max-h-0 opacity-0'}`}
+            aria-hidden={!showPanel}
+          >
+            <div className={`mt-6 pt-8 border-t ${theme.border}`} data-testid="feedback-survey">
+              <h3 className={`font-serif text-2xl mb-6 ${theme.text}`}>{config.heading}</h3>
+
+              <div role="radiogroup" className="space-y-1">
+                {config.options.map((opt) => {
+                  const active = reason === opt;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      tabIndex={showPanel ? 0 : -1}
+                      onClick={() => setReason(opt)}
+                      className="w-full flex items-center gap-3 py-2 text-left group"
+                      data-testid={`feedback-option-${opt}`}
+                    >
+                      <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${active ? 'border-[#00A1B2]' : `${isDark ? 'border-white/30 group-hover:border-white/50' : 'border-gray-300 group-hover:border-gray-400'}`}`}>
+                        {active && <span className="w-2.5 h-2.5 rounded-full bg-[#00A1B2]" />}
+                      </span>
+                      <span className={`text-[15px] ${active ? theme.text : theme.textMuted}`}>{opt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="(Optional) Could you share more about your experience?"
+                rows={3}
+                tabIndex={showPanel ? 0 : -1}
+                className={`w-full mt-5 px-4 py-3 rounded-xl ${theme.inputBg} text-sm ${isDark ? 'text-white placeholder:text-[#787878]' : 'text-gray-900 placeholder:text-gray-400'} resize-none focus:border-[#00A1B2]/50`}
+                data-testid="feedback-comment"
+              />
+
+              <div className="flex items-center gap-3 mt-6">
+                <button
+                  onClick={cancel}
+                  type="button"
+                  tabIndex={showPanel ? 0 : -1}
+                  className={`px-5 py-2.5 rounded-xl border ${theme.border} text-sm font-medium ${theme.text} ${theme.hover} transition-colors`}
+                  data-testid="feedback-cancel-btn"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submit}
+                  type="button"
+                  disabled={!reason || sending}
+                  tabIndex={showPanel ? 0 : -1}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    !reason || sending
+                      ? `${isDark ? 'bg-white/25 text-black/50' : 'bg-gray-300 text-gray-500'} cursor-not-allowed`
+                      : `${isDark ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-black'}`
+                  }`}
+                  data-testid="feedback-submit-btn"
+                >
+                  {sending ? 'Submitting…' : 'Submit feedback'}
+                </button>
+              </div>
+            </div>
           </div>
         </>
-      ) : (
-        <span className={`text-sm ${submitted ? 'text-[#00A1B2]' : 'text-[#999999]'}`} data-testid="feedback-thanks">
-          {submitted ? 'Glad this helped!' : 'Thanks for letting us know. We\'ll improve this article.'}
-        </span>
       )}
     </div>
   );
@@ -858,6 +969,21 @@ const PublicDocs = () => {
     }
   }, [documents, navigate, selectedDoc, isNavigating]);
 
+  // Switching a category tab loads the FIRST available page of that category
+  // (instead of keeping the current page and only swapping the sidebar).
+  const handleTabChange = useCallback((tabId) => {
+    setActiveTab(tabId);
+    const tab = tabs.find(t => t.id === tabId);
+    if (!tab) return;
+    for (const group of tab.groups || []) {
+      for (const page of group.pages || []) {
+        const slug = typeof page === 'string' ? page : page.page;
+        const doc = documents.find(d => d.slug?.toLowerCase() === slug?.toLowerCase());
+        if (doc) { handleDocSelect(doc.slug); return; }
+      }
+    }
+  }, [tabs, documents, handleDocSelect]);
+
   useEffect(() => {
     const handler = (e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setSearchOpen(prev => !prev); } };
     document.addEventListener('keydown', handler);
@@ -924,11 +1050,11 @@ const PublicDocs = () => {
 
       <TopNavigation theme={theme} onThemeToggle={toggleKbTheme} isDark={isDark} onSearchOpen={() => setSearchOpen(true)} />
       {hasSecondaryNav && (
-        <SecondaryNav tabs={tabs} currentTabId={currentTabId} onTabChange={setActiveTab} theme={theme} />
+        <SecondaryNav tabs={tabs} currentTabId={currentTabId} onTabChange={handleTabChange} theme={theme} />
       )}
       <BreadcrumbBar breadcrumb={getBreadcrumb()} theme={theme} isDark={isDark} onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} mobileMenuOpen={mobileMenuOpen} />
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} documents={documents} onSelect={handleDocSelect} theme={theme} config={config} />
-      <LeftSidebar activeTab={activeTab} onTabChange={setActiveTab} hasSecondaryNav={hasSecondaryNav} tabs={tabs} documents={documents} selectedDocSlug={selectedDoc?.slug} onDocSelect={handleDocSelect} theme={theme} onSearchOpen={() => setSearchOpen(true)} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} isDark={isDark} />
+      <LeftSidebar activeTab={activeTab} onTabChange={handleTabChange} hasSecondaryNav={hasSecondaryNav} tabs={tabs} documents={documents} selectedDocSlug={selectedDoc?.slug} onDocSelect={handleDocSelect} theme={theme} onSearchOpen={() => setSearchOpen(true)} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} isDark={isDark} />
 
       <main id="main-content" role="main" className={`lg:ml-64 xl:mr-64 min-h-screen relative z-10 ${hasSecondaryNav ? 'pt-24 min-[810px]:pt-28' : 'pt-24 min-[810px]:pt-14'}`}>
         {selectedDoc ? (

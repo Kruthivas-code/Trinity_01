@@ -105,6 +105,34 @@
 user_problem_statement: "Test the NEW optional horizontal tab-switcher on the PUBLIC docs site of a KB app. Verify ACTUAL BEHAVIOR, not just DOM presence."
 
 frontend:
+  - task: "Category tab switch loads first page of that category"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/kb/PublicDocs.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ BEHAVIOR FIX VERIFIED - ALL TESTS PASSED (DESKTOP 4/4, MOBILE 3/3). Tested the category tab-switch navigation behavior fix on public docs site (https://repo-builder-83.internal.preview.emergentagent.com/). DESKTOP TEST (1440x1080): (1) Initial load ✓ - Loaded 'Welcome To Emergent' article under 'The Beginner's Guide' category, secondary navbar visible with all 6 tabs. (2) Features tab click ✓ - Article CHANGED from 'Welcome To Emergent' to 'Voice Mode' (URL: /docs/voice-mode), Features tab became active with accent underline. (3) Building Your App tab click ✓ - Article CHANGED to 'Prompting - Basics' (URL: /docs/prompting-basics). (4) Deploy and Manage tab click ✓ - Article CHANGED to 'Pre-Deployment Health Check' (URL: /docs/pre-deployment-health-check). MOBILE TEST (390x844): (1) Hamburger menu ✓ - Sidebar opened successfully. (2) Category dropdown ✓ - Dropdown opened showing current category 'The Beginner's Guide'. (3) Select Features category ✓ - Navigation occurred, article CHANGED from 'Welcome To Emergent' to 'Voice Mode' (URL: /docs/voice-mode). CONSOLE ERRORS: Only minor warnings ('No available adapters') and one 404 resource error, no critical JavaScript errors. VERDICT: The behavior fix is working correctly. Clicking a category tab (desktop secondary navbar) or selecting from mobile dropdown now navigates to the FIRST page of that category (handleTabChange function finds first available published page under tab's groups and calls handleDocSelect), rather than staying on the same article and only changing the sidebar. Screenshots captured: desktop_final_state.png, mobile_final_state.png."
+        - working: "NA"
+          agent: "main"
+          comment: "BEHAVIOR FIX: Previously clicking a category tab (desktop secondary navbar) or selecting a category in the mobile dropdown only changed the active tab / sidebar groups but kept the SAME article open. Now onTabChange uses a new handleTabChange() that sets the active tab AND navigates to the FIRST available published page under that category (first doc found across that tab's groups->pages), via handleDocSelect -> URL /docs/<slug>. VERIFY (desktop, default dark theme, width>=1024): open https://repo-builder-83.internal.preview.emergentagent.com/ (loads 'Welcome To Emergent' under 'The Beginner's Guide'). Click the 'Features' tab in the top secondary navbar -> the main content must change to the FIRST page under Features (e.g. 'Voice Mode' / first article of that category) and the URL should become /docs/<that-first-slug>; the sidebar should show the Features groups. Then click 'Building Your App' and 'Deploy and Manage' tabs and confirm each loads its own first page (content changes, not staying on the previous article). Also VERIFY MOBILE (width 390): open the left sidebar via the hamburger, use the styled category dropdown to pick a different category -> it should navigate to that category's first page. Confirm no console errors and the active tab underline follows the loaded page."
+  - task: "Docs table header flush with rounded container (remove top gap)"
+    implemented: true
+    working: true
+    file: "frontend/src/components/docs/DocContent.jsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ CSS BUG FIX VERIFIED - ALL 3 PAGES PASSED. Tested the table header gap fix on three documentation pages. RESULTS: (1) /docs/voice-mode - Example Scenarios table (headers: Situation / What You Say / What Emergent Does): Gap measured at 1.00px between table wrapper top and thead top ✅ PASS. (2) /docs/first-app - First table found: Gap measured at 1.00px ✅ PASS. (3) /docs/plans-and-credits - First table found (Types of Credits table): Gap measured at 1.00px ✅ PASS. VERIFICATION METHOD: Used Playwright to get bounding boxes of the table wrapper div (with rounded-lg border) and the thead element, calculated gap = thead.top - wrapper.top. The 1px gap is just the border width, confirming the header row sits flush against the rounded top border with NO empty space above it. The old bug had 20-32px gap caused by Tailwind Typography's default margin-top on <table> elements. The fix (!mt-0 !mb-0 on table + overflow-y-hidden on wrapper) successfully eliminates this gap globally for all tables. Screenshots captured: voice_mode_table_fix.png, first_app_table_fix.png, plans_credits_table_fix.png. NO layout regressions observed. Fix is working as intended."
+        - working: "NA"
+          agent: "main"
+          comment: "BUG FIX: Tables in docs articles showed an empty gap between the rounded top border of the table container and the header row. Root cause: Tailwind Typography (prose) applies a default margin-top to the <table> element which sits inside the bordered/rounded wrapper div, pushing the header row down. Fix in the markdown 'table' component override: added '!mt-0 !mb-0' to the <table> and 'overflow-y-hidden' to the wrapper so the header bg stays flush within the rounded corners. This is at the renderer level so it applies to EVERY table (existing + future). VERIFY: open /docs/voice-mode (dark theme is default), scroll to the 'Example Scenarios' section table with headers Situation / What You Say / What Emergent Does — the header row must sit flush directly under the rounded top corners with NO empty gap above it. Also verify at least one more table article (e.g. /docs/first-app or /docs/plans-and-credits) shows the same flush header (confirming the global fix). No other layout regressions."
   - task: "Horizontal tab-switcher feature on public docs site"
     implemented: true
     working: true
@@ -118,6 +146,20 @@ frontend:
           comment: "✅ ALL 4 CHECKS PASSED - TAB-SWITCHER FEATURE FULLY FUNCTIONAL. Tested the optional horizontal tab-switcher feature gated by MongoDB flag (db='test_database', collection='kb_settings', field='tabs_enabled'). RESULTS: (1) CHECK 1 - MOBILE DROPDOWN SWITCHES TABS ✅: At 390x840 viewport, mobile dropdown (data-testid='kb-tab-select') is visible and functional. Switched from 'The Beginner's Guide' (groups: ['Introduction', 'Understanding How Apps Work']) to 'Features' (groups: ['Core Features', 'Advanced Features']). Sidebar content ACTUALLY CHANGED, confirming real behavior not just DOM presence. (2) CHECK 2 - BREAKPOINT HANDOFF ✅: Tested widths 375px, 1023px, 1024px, 1025px, 1440px. At <1024px: mobile select visible, desktop bar hidden. At >=1024px: desktop bar visible, mobile select hidden. NO OVERLAP (both visible) or GAP (neither visible) detected. Screenshots captured at 1023px and 1025px showing correct responsive behavior. (3) CHECK 3 - OFF-STATE VISUAL ✅: With tabs_enabled=false, NO tab switcher elements present (no kb-tab-switcher, no kb-tab-select). All 6 nav groups stacked vertically in original layout: 'The Beginner's Guide', 'Features', 'Building Your App', 'Deploy and Manage', 'Troubleshooting', 'Affiliate Partner'. Screenshot captured showing stacked layout. (4) CHECK 4 - TAB-SWITCH WHILE VIEWING ARTICLE ✅: At 1440px desktop width, opened 'Welcome To Emergent' article, clicked different tab in desktop switcher. Article STAYED THE SAME (only sidebar nav changed to new tab's content). No crashes, no blank pages, no console errors. Behavior is consistent and functional. CLEANUP: tabs_enabled flag restored to false (default), confirmed via public-data endpoint. Feature is production-ready and working as designed."
 
 backend:
+  - task: "KB article feedback endpoint accepts reason + comment"
+    implemented: true
+    working: true
+    file: "backend/routes/kb.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ ALL 6 TESTS PASSED - KB FEEDBACK ENDPOINT FULLY FUNCTIONAL. Tested the extended POST /api/kb/articles/{slug}/feedback endpoint that now accepts optional 'reason' and 'comment' fields. RESULTS: (1) GET /api/kb/public-data ✅: Successfully retrieved valid published article slug 'welcome'. (2) POST with helpful=true, reason='The guide worked as expected', comment='very helpful' ✅: Returned 200 {'status':'ok'}, data stored correctly in MongoDB with all fields. (3) POST with helpful=false, reason='Update this documentation', comment='' ✅: Returned 200 {'status':'ok'}, empty comment correctly trimmed to null in database. (4) POST with ONLY helpful=true (backward compatibility) ✅: Returned 200 {'status':'ok'}, reason and comment stored as null. (5) POST to non-existent slug 'this-slug-does-not-exist-xyz' ✅: Correctly returned 404. (6) GET /api/kb/articles/welcome/feedback ✅: Returned 200 with correct aggregates {'total': 3, 'helpful': 2, 'unhelpful': 1}. MongoDB verification confirmed all three feedback entries stored with correct field values (reason/comment populated or null as expected). Feature is production-ready and backward compatible."
+        - working: "NA"
+          agent: "main"
+          comment: "Extended FeedbackBody model on POST /api/kb/articles/{slug}/feedback to accept optional 'reason' (string) and 'comment' (string) in addition to required 'helpful' (bool). These are now stored in the kb_feedback collection (comment trimmed to None if empty). Backward compatible: old payload {helpful} still works. Needs testing: (1) POST with {helpful:true, reason:'The guide worked as expected', comment:'nice'} for a valid published slug -> 200 {status:ok} and a document stored with those fields. (2) POST with only {helpful:false} still returns 200. (3) POST for a non-existent/unpublished slug returns 404. (4) GET /api/kb/articles/{slug}/feedback still aggregates totals correctly. Use a valid published slug (e.g. 'welcome' or fetch one from /api/kb/public-data)."
   - task: "Auth session cookie + CORS for credentialed requests"
     implemented: true
     working: true
@@ -148,17 +190,24 @@ backend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 6
+  test_sequence: 8
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Horizontal tab-switcher feature on public docs site"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
+    - agent: "testing"
+      message: "✅ CATEGORY TAB-SWITCH NAVIGATION FIX VERIFIED - ALL TESTS PASSED. Tested the behavior fix per review request on public docs site. DESKTOP TEST (1440px, 4/4 PASS): (1) Initial load: 'Welcome To Emergent' article under 'The Beginner's Guide', secondary navbar visible with 6 tabs ✓ (2) Features tab click: Article CHANGED to 'Voice Mode' (/docs/voice-mode), Features tab active ✓ (3) Building Your App tab click: Article CHANGED to 'Prompting - Basics' (/docs/prompting-basics) ✓ (4) Deploy and Manage tab click: Article CHANGED to 'Pre-Deployment Health Check' (/docs/pre-deployment-health-check) ✓. MOBILE TEST (390px, 3/3 PASS): (1) Hamburger menu opened sidebar ✓ (2) Category dropdown opened ✓ (3) Select Features: Article CHANGED to 'Voice Mode' (/docs/voice-mode) ✓. CONSOLE: Only minor warnings, no critical errors. VERDICT: The fix is working correctly - clicking a category tab (desktop) or selecting from dropdown (mobile) now navigates to the FIRST page of that category (handleTabChange finds first published page under tab's groups and calls handleDocSelect), rather than staying on the same article and only changing the sidebar. This is the expected behavior per the review request."
+    - agent: "testing"
+      message: "✅ CSS BUG FIX VERIFIED - TABLE HEADER GAP ISSUE RESOLVED. Tested the table header gap fix per review request on three documentation pages. TEST RESULTS: (1) /docs/voice-mode - Example Scenarios table: Gap = 1.00px ✅ PASS (2) /docs/first-app - First table: Gap = 1.00px ✅ PASS (3) /docs/plans-and-credits - Types of Credits table: Gap = 1.00px ✅ PASS. VERIFICATION: Measured the gap between table wrapper top (rounded border container) and thead top using bounding box coordinates. All three tables show only 1px gap (the border width), confirming headers sit flush against the rounded top border with NO empty space. The old bug had 20-32px gap. The fix (!mt-0 !mb-0 on <table> + overflow-y-hidden on wrapper) successfully eliminates the unwanted margin globally. Screenshots captured for all three pages. NO layout regressions. Fix is production-ready."
+    - agent: "testing"
+      message: "✅ KB FEEDBACK ENDPOINT TESTING COMPLETE - ALL 6 TESTS PASSED. Tested the extended POST /api/kb/articles/{slug}/feedback endpoint per review request. Feature accepts optional 'reason' and 'comment' fields in addition to required 'helpful' field. TEST RESULTS: (1) GET /api/kb/public-data successfully retrieved valid slug 'welcome' ✅ (2) POST with helpful=true + reason + comment returned 200 {'status':'ok'} ✅ (3) POST with helpful=false + reason + empty comment returned 200 {'status':'ok'}, empty comment correctly trimmed to null ✅ (4) POST with ONLY helpful=true (backward compatibility) returned 200 {'status':'ok'} ✅ (5) POST to non-existent slug returned 404 ✅ (6) GET feedback aggregates returned correct counts ✅. MongoDB verification confirmed all feedback entries stored with correct field values. Feature is production-ready and backward compatible. NO ISSUES FOUND."
+    - agent: "main"
+      message: "Redesigned the end-of-article feedback widget (frontend) to match a reference: question on left, Yes/No pills on right; selecting Yes or No smoothly expands a radio survey (different options per choice) with an optional comment box, a disabled-until-selected 'Submit feedback' CTA, and a Cancel button. To persist the extra data, I extended the backend POST /api/kb/articles/{slug}/feedback to accept optional 'reason' and 'comment'. Please TEST BACKEND ONLY for the KB feedback endpoint (see task 'KB article feedback endpoint accepts reason + comment'). Do not test frontend yet."
     - agent: "testing"
       message: "✅ TAB-SWITCHER FEATURE TESTING COMPLETE - ALL 4 CHECKS PASSED. Tested the optional horizontal tab-switcher on public docs site (https://repo-builder-83.internal.preview.emergentagent.com/). Feature is gated by MongoDB flag 'tabs_enabled' in kb_settings collection. COMPREHENSIVE TEST RESULTS: (1) Mobile dropdown (390x840): Successfully switches tabs, sidebar content actually changes (verified groups changed from ['Introduction', 'Understanding How Apps Work'] to ['Core Features', 'Advanced Features']). (2) Breakpoint handoff: Clean transition at 1024px (lg breakpoint). Mobile select visible <1024px, desktop bar visible >=1024px. No overlap or gap detected across 375px, 1023px, 1024px, 1025px, 1440px. Screenshots captured at 1023px and 1025px. (3) Off-state (tabs_enabled=false): No switcher elements present, all 6 tabs stacked vertically in original layout. Screenshot captured. (4) Tab-switch during article view: Article stays the same, only sidebar changes. No errors, crashes, or blank pages. Feature is production-ready. Flag restored to false (default) and confirmed via public-data endpoint."
     - agent: "testing"
