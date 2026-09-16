@@ -350,6 +350,23 @@ textarea:focus-visible {
   outline-offset: 2px;
   border-radius: 4px;
 }
+/* Search: remove focus border/outline, keep only the blinking text cursor */
+[data-testid="search-input"]:focus,
+[data-testid="search-input"]:focus-visible,
+[data-testid="topnav-search-bar"]:focus,
+[data-testid="topnav-search-bar"]:focus-visible,
+[data-testid="topnav-search"]:focus,
+[data-testid="topnav-search"]:focus-visible,
+[data-testid="sidebar-search"]:focus,
+[data-testid="sidebar-search"]:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0.5rem;
+}
+/* Secondary nav tab bar: hide horizontal scrollbar */
+.kb-tabs-scroll { scrollbar-width: none; }
+.kb-tabs-scroll::-webkit-scrollbar { display: none; }
+
 /* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
   .animate-fadeIn { animation: none; }

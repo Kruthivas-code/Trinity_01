@@ -133,11 +133,86 @@ const TopNavigation = ({ theme, onThemeToggle, isDark, onSearchOpen }) => {
   );
 };
 
+// ============= SECONDARY NAV (category tabs) =============
+const SecondaryNav = ({ tabs, currentTabId, onTabChange, theme, isDark }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const currentTab = tabs.find(t => t.id === currentTabId) || tabs[0];
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className={`fixed top-14 left-0 right-0 z-40 ${theme.navBg} border-b ${theme.border}`} data-testid="kb-secondary-nav">
+      {/* Desktop: horizontal category tabs */}
+      <div className="hidden min-[810px]:flex h-14 px-4 sm:px-6 items-stretch gap-6 overflow-x-auto kb-tabs-scroll" role="tablist" aria-label="Documentation sections">
+        {tabs.map((tab) => {
+          const isActive = tab.id === currentTabId;
+          return (
+            <button
+              key={tab.id}
+              role="tab"
+              aria-selected={isActive}
+              onClick={() => onTabChange(tab.id)}
+              className={`relative flex items-center text-sm font-medium whitespace-nowrap transition-colors ${isActive ? theme.text : `${theme.textMuted} ${theme.hoverText}`}`}
+              data-testid={`kb-tab-${tab.id}`}
+            >
+              {tab.label}
+              {isActive && <span className="absolute -bottom-px left-0 right-0 h-0.5 bg-[#00A1B2] rounded-full" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Mobile: category dropdown */}
+      <div className="min-[810px]:hidden h-14 px-4 sm:px-6 flex items-center relative" ref={ref}>
+        <button
+          onClick={() => setOpen(o => !o)}
+          className={`w-full flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border ${theme.border} ${theme.navBg} text-sm font-medium ${theme.text}`}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          data-testid="kb-tab-dropdown-btn"
+        >
+          <span className="truncate">{currentTab?.label}</span>
+          <ChevronDown className={`w-4 h-4 flex-shrink-0 ${theme.textSecondary} transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        </button>
+        {open && (
+          <div
+            className={`absolute left-4 right-4 sm:left-6 sm:right-6 top-[calc(100%-0.25rem)] py-1.5 rounded-xl border ${theme.border} shadow-2xl z-50 ${isDark ? 'bg-[#1a1a1a]' : 'bg-white'}`}
+            role="listbox"
+            data-testid="kb-tab-dropdown-list"
+          >
+            {tabs.map((tab) => {
+              const isActive = tab.id === currentTabId;
+              return (
+                <button
+                  key={tab.id}
+                  role="option"
+                  aria-selected={isActive}
+                  onClick={() => { onTabChange(tab.id); setOpen(false); }}
+                  className={`w-full flex items-center justify-between gap-2 px-4 py-3 text-sm text-left transition-colors ${isActive ? 'text-[#00A1B2] font-medium' : `${theme.text} ${theme.hover}`}`}
+                  data-testid={`kb-tab-option-${tab.id}`}
+                >
+                  <span className="truncate">{tab.label}</span>
+                  {isActive && <Check className="w-4 h-4 flex-shrink-0 text-[#00A1B2]" />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ============= BREADCRUMB BAR =============
-const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle, mobileMenuOpen }) => {
+const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle, mobileMenuOpen, hasSecondaryNav }) => {
   return (
     <div
-      className={`fixed top-14 left-0 right-0 z-40 border-b ${theme.border} min-[810px]:hidden transition-opacity duration-200 ${mobileMenuOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+      className={`fixed ${hasSecondaryNav ? 'top-28' : 'top-14'} left-0 right-0 z-40 border-b ${theme.border} min-[810px]:hidden transition-opacity duration-200 ${mobileMenuOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
       style={{
         backgroundColor: isDark ? 'rgba(10,10,10,0.75)' : 'rgba(255,255,255,0.75)',
         backdropFilter: 'blur(12px)',
@@ -172,15 +247,15 @@ const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle, mobileMe
 };
 
 // ============= LEFT SIDEBAR =============
-const LeftSidebar = ({ activeTab, onTabChange, tabsEnabled, tabs, documents, selectedDocSlug, onDocSelect, theme, onSearchOpen, mobileOpen, onMobileClose, isDark }) => {
+const LeftSidebar = ({ activeTab, hasSecondaryNav, tabs, documents, selectedDocSlug, onDocSelect, theme, onSearchOpen, mobileOpen, onMobileClose, isDark }) => {
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
-  // Optional horizontal tab switcher (CMS flag). Only meaningful with 2+ tabs;
-  // otherwise there's nothing to switch between. When off -> render every tab
-  // stacked exactly as before (unchanged behavior).
-  const showSwitcher = tabsEnabled === true && tabs.length > 1;
+  // When there are multiple top-level categories they are rendered as a
+  // secondary top navbar (tabs). The sidebar then only shows the groups that
+  // belong to the currently active category.
+  const hasTabs = tabs.length > 1;
   const currentTabId = tabs.some(t => t.id === activeTab) ? activeTab : tabs[0]?.id;
-  const visibleTabs = showSwitcher ? tabs.filter(t => t.id === currentTabId) : tabs;
+  const visibleTabs = hasTabs ? tabs.filter(t => t.id === currentTabId) : tabs;
 
   const toggleGroup = (key) => {
     setCollapsedGroups(prev => ({ ...prev, [key]: !prev[key] }));
@@ -215,7 +290,7 @@ const LeftSidebar = ({ activeTab, onTabChange, tabsEnabled, tabs, documents, sel
       {/* Desktop: below both headers. Mobile: full screen overlay from top */}
       <aside
         className={`fixed z-[46] ${theme.sidebarBg} border-r ${theme.border} flex flex-col transition-transform duration-300 ease-out
-          lg:top-14 lg:bottom-0 lg:left-0 lg:w-64
+          ${hasSecondaryNav ? 'lg:top-28' : 'lg:top-14'} lg:bottom-0 lg:left-0 lg:w-64
           top-0 bottom-0 left-0 w-[80%] max-w-[320px]
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
         role="navigation"
@@ -231,41 +306,12 @@ const LeftSidebar = ({ activeTab, onTabChange, tabsEnabled, tabs, documents, sel
         </div>
 
         <nav className="flex-1 overflow-y-auto overscroll-contain px-4 pt-5 pb-6 kb-sidebar-scroll" data-testid="kb-nav-tree">
-          {showSwitcher && (
-            <div className="mb-4" data-testid="kb-tab-switcher">
-              {/* Desktop: horizontal tab bar */}
-              <div className={`hidden lg:flex flex-wrap gap-x-4 gap-y-1 border-b ${theme.border} mb-3`} role="tablist" aria-label="Documentation sections">
-                {tabs.map((tab) => {
-                  const isActive = tab.id === currentTabId;
-                  return (
-                    <button key={tab.id} role="tab" aria-selected={isActive}
-                      onClick={() => onTabChange && onTabChange(tab.id)}
-                      className={`relative pb-2 -mb-px text-sm font-medium whitespace-nowrap transition-colors ${isActive ? `${theme.text} border-b-2 border-current` : `${theme.textMuted} ${theme.hoverText} border-b-2 border-transparent`}`}
-                      data-testid={`kb-tab-${tab.id}`}>
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Mobile: dropdown selector showing current tab */}
-              <select
-                className={`lg:hidden w-full px-3 py-2.5 ${theme.inputBg} border ${theme.border} rounded-lg text-sm ${theme.text} mb-1`}
-                value={currentTabId || ''}
-                onChange={(e) => onTabChange && onTabChange(e.target.value)}
-                aria-label="Select documentation section"
-                data-testid="kb-tab-select">
-                {tabs.map((tab) => (
-                  <option key={tab.id} value={tab.id}>{tab.label}</option>
-                ))}
-              </select>
-            </div>
-          )}
           {visibleTabs.map((tab) => {
             const groups = tab.groups || [];
 
             return (
               <div key={tab.id} className="mb-4" data-testid={`sidebar-tab-${tab.id}`}>
-                {!showSwitcher && tabs.length > 1 && (
+                {!hasTabs && tabs.length > 1 && (
                   <div className={`px-3 mb-3 font-bold ${theme.text}`} style={{ fontSize: '14px', lineHeight: '20px' }} data-testid={`sidebar-tab-label-${tab.id}`}>
                     {tab.label}
                   </div>
@@ -321,7 +367,7 @@ const LeftSidebar = ({ activeTab, onTabChange, tabsEnabled, tabs, documents, sel
 };
 
 // ============= RIGHT SIDEBAR (TOC) =============
-const RightSidebar = ({ headings, theme }) => {
+const RightSidebar = ({ headings, theme, hasSecondaryNav }) => {
   const [activeId, setActiveId] = useState('');
   const [validHeadings, setValidHeadings] = useState([]);
 
@@ -352,7 +398,7 @@ const RightSidebar = ({ headings, theme }) => {
   if (validHeadings.length === 0) return null;
 
   return (
-    <aside className={`hidden xl:block fixed top-14 right-0 bottom-0 w-64 overflow-y-auto z-10`} role="complementary" aria-label="Table of contents" data-testid="kb-toc">
+    <aside className={`hidden xl:block fixed ${hasSecondaryNav ? 'top-28' : 'top-14'} right-0 bottom-0 w-64 overflow-y-auto z-10`} role="complementary" aria-label="Table of contents" data-testid="kb-toc">
       <div className="p-4 pt-6">
         <h4 className={`text-xs font-semibold ${theme.text} mb-4 flex items-center gap-2`}>
           <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="10" y2="8"/><line x1="2" y1="12" x2="12" y2="12"/></svg>
@@ -830,6 +876,10 @@ const PublicDocs = () => {
 
   const currentIndex = documents.findIndex(d => d.id === selectedDoc?.id);
 
+  // Multiple top-level categories are shown as a secondary top navbar (tabs).
+  const hasSecondaryNav = tabs.length > 1;
+  const currentTabId = tabs.some(t => t.id === activeTab) ? activeTab : tabs[0]?.id;
+
   // Global prev/next: flatten all tabs → groups → pages for seamless cross-category navigation
   const allNavSlugs = useMemo(() => {
     const slugs = [];
@@ -864,11 +914,14 @@ const PublicDocs = () => {
       </a>
 
       <TopNavigation theme={theme} onThemeToggle={toggleKbTheme} isDark={isDark} onSearchOpen={() => setSearchOpen(true)} />
-      <BreadcrumbBar breadcrumb={getBreadcrumb()} theme={theme} isDark={isDark} onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} mobileMenuOpen={mobileMenuOpen} />
+      {hasSecondaryNav && (
+        <SecondaryNav tabs={tabs} currentTabId={currentTabId} onTabChange={setActiveTab} theme={theme} isDark={isDark} />
+      )}
+      <BreadcrumbBar breadcrumb={getBreadcrumb()} theme={theme} isDark={isDark} onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} mobileMenuOpen={mobileMenuOpen} hasSecondaryNav={hasSecondaryNav} />
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} documents={documents} onSelect={handleDocSelect} theme={theme} config={config} />
-      <LeftSidebar activeTab={activeTab} onTabChange={setActiveTab} tabsEnabled={config?.tabs_enabled === true} tabs={tabs} documents={documents} selectedDocSlug={selectedDoc?.slug} onDocSelect={handleDocSelect} theme={theme} onSearchOpen={() => setSearchOpen(true)} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} isDark={isDark} />
+      <LeftSidebar activeTab={activeTab} hasSecondaryNav={hasSecondaryNav} tabs={tabs} documents={documents} selectedDocSlug={selectedDoc?.slug} onDocSelect={handleDocSelect} theme={theme} onSearchOpen={() => setSearchOpen(true)} mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} isDark={isDark} />
 
-      <main id="main-content" role="main" className="lg:ml-64 xl:mr-64 min-h-screen pt-24 min-[810px]:pt-14 relative z-10">
+      <main id="main-content" role="main" className={`lg:ml-64 xl:mr-64 min-h-screen relative z-10 ${hasSecondaryNav ? 'pt-[152px] min-[810px]:pt-28' : 'pt-24 min-[810px]:pt-14'}`}>
         {selectedDoc ? (
           <article key={selectedDoc.id} className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 pb-20 animate-fadeIn" itemScope itemType="https://schema.org/Article">
             {getBreadcrumb()?.section && (
@@ -903,7 +956,7 @@ const PublicDocs = () => {
         )}
       </main>
 
-      <RightSidebar headings={toc} theme={theme} />
+      <RightSidebar headings={toc} theme={theme} hasSecondaryNav={hasSecondaryNav} />
 
       {/* Made with Emergent badge */}
       <a

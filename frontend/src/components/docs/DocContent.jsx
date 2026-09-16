@@ -265,7 +265,7 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
     h3: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h3 id={id} className="scroll-mt-20 !text-gray-900 dark:!text-white text-xl font-semibold mt-8 mb-3" tabIndex={-1}>{children}</h3>; },
     h4: ({ children }) => { const id = String(children).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); return <h4 id={id} className="scroll-mt-20 !text-gray-900 dark:!text-white text-lg font-semibold mt-6 mb-2" tabIndex={-1}>{children}</h4>; },
     blockquote: ({ children }) => {
-      return <blockquote className="lead-quote my-6 pl-4 border-l-4 border-indigo-500 italic [&>*]:!text-gray-600 dark:[&>*]:!text-[#999999] [&_p]:!text-gray-600 dark:[&_p]:!text-[#999999]">{children}</blockquote>;
+      return <blockquote className="lead-quote my-6 pl-4 border-l-4 border-[#00A1B2] italic [&>*]:!text-gray-600 dark:[&>*]:!text-[#999999] [&_p]:!text-gray-600 dark:[&_p]:!text-[#999999]">{children}</blockquote>;
     },
     table: ({ children }) => <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-slate-800 max-w-full"><table className="w-full border-collapse min-w-[400px] [&_tr:last-child_td]:border-b-0">{children}</table></div>,
     thead: ({ children }) => <thead className="bg-gray-50 dark:bg-slate-900">{children}</thead>,
