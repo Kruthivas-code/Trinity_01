@@ -868,12 +868,23 @@ const PublicDocs = () => {
   }, []);
 
   useEffect(() => {
+    const bg = isDark ? '#0a0a0a' : '#ffffff';
     if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-    return () => { document.documentElement.classList.remove('dark'); };
+    // Also paint html/body so the overscroll/rubber-band area matches the theme
+    // (otherwise dragging past the content reveals the white body background).
+    const prevHtmlBg = document.documentElement.style.backgroundColor;
+    const prevBodyBg = document.body.style.backgroundColor;
+    document.documentElement.style.backgroundColor = bg;
+    document.body.style.backgroundColor = bg;
+    return () => {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.style.backgroundColor = prevHtmlBg;
+      document.body.style.backgroundColor = prevBodyBg;
+    };
   }, [isDark]);
 
   const tabs = useMemo(() => {
