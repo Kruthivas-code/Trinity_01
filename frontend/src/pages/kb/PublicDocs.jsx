@@ -880,10 +880,21 @@ const PublicDocs = () => {
     const prevBodyBg = document.body.style.backgroundColor;
     document.documentElement.style.backgroundColor = bg;
     document.body.style.backgroundColor = bg;
+    // Match the mobile browser chrome / status bar color to the active theme.
+    let meta = document.querySelector('meta[name="theme-color"]');
+    const prevMeta = meta ? meta.getAttribute('content') : null;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', bg);
     return () => {
       document.documentElement.classList.remove('dark');
       document.documentElement.style.backgroundColor = prevHtmlBg;
       document.body.style.backgroundColor = prevBodyBg;
+      const m = document.querySelector('meta[name="theme-color"]');
+      if (m && prevMeta !== null) m.setAttribute('content', prevMeta);
     };
   }, [isDark]);
 

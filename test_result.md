@@ -105,6 +105,20 @@
 user_problem_statement: "Test the NEW optional horizontal tab-switcher on the PUBLIC docs site of a KB app. Verify ACTUAL BEHAVIOR, not just DOM presence."
 
 frontend:
+  - task: "Meta theme-color matches active theme (mobile status bar)"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/kb/PublicDocs.jsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ ALL 3 TESTS PASSED - META THEME-COLOR FEATURE VERIFIED. Tested the <meta name=\"theme-color\"> tag behavior on public docs site (https://repo-builder-83.internal.preview.emergentagent.com/). The feature ensures the mobile browser status bar color matches the active theme. TEST 1 (Dark OS preference) ✅ PASS: Created browser context with colorScheme='dark', removed localStorage 'kb-theme', reloaded page, waited for page load. RESULT: Meta theme-color content = '#0a0a0a' (expected '#0a0a0a'). matchMedia('prefers-color-scheme: dark').matches = true. TEST 2 (Light OS preference) ✅ PASS: Created browser context with colorScheme='light', removed localStorage 'kb-theme', reloaded page, waited for page load. RESULT: Meta theme-color content = '#ffffff' (expected '#ffffff'). matchMedia('prefers-color-scheme: dark').matches = false. TEST 3 (Theme toggle) ✅ PASS: Loaded page (initial meta content '#ffffff'), clicked theme toggle button (data-testid='kb-theme-toggle'), meta content changed to '#0a0a0a'. Clicked toggle again, meta content returned to '#ffffff'. The meta tag correctly flips between '#0a0a0a' (dark) and '#ffffff' (light) in sync with the theme. IMPLEMENTATION VERIFIED: The useEffect (lines 870-899) correctly creates/updates the <meta name=\"theme-color\"> tag with the same background color value used for html/body ('#0a0a0a' for dark, '#ffffff' for light), creating the meta element if missing and restoring previous value on cleanup. NO ISSUES FOUND. Feature is working perfectly and ready for production."
+        - working: "NA"
+          agent: "main"
+          comment: "ENHANCEMENT: The docs page now updates <meta name=\"theme-color\"> to match the active theme so the mobile browser chrome / status bar blends in. Handled inside the same useEffect that toggles the dark class and paints html/body: sets meta content to '#0a0a0a' in dark and '#ffffff' in light (matches the top nav color), creating the meta tag if missing and restoring the previous value on cleanup. VERIFY (site root https://repo-builder-83.internal.preview.emergentagent.com/): (1) colorScheme='dark', remove localStorage 'kb-theme', reload -> document.querySelector('meta[name=\"theme-color\"]').getAttribute('content') === '#0a0a0a'. (2) colorScheme='light', remove stored value, reload -> content === '#ffffff'. (3) Click theme toggle (data-testid='kb-theme-toggle') and confirm the meta content flips between '#0a0a0a' and '#ffffff' accordingly. Report the exact meta content values."
   - task: "Dark theme overscroll shows dark bg (no white flash)"
     implemented: true
     working: true
@@ -218,7 +232,7 @@ backend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 9
+  test_sequence: 10
   run_ui: false
 
 test_plan:
@@ -228,6 +242,8 @@ test_plan:
   test_priority: "high_first"
 
 agent_communication:
+    - agent: "testing"
+      message: "✅ META THEME-COLOR TESTING COMPLETE - ALL 3 TESTS PASSED. Verified the <meta name=\"theme-color\"> tag behavior on public docs site per review request. The feature ensures the mobile browser status bar color matches the active theme. COMPREHENSIVE TEST RESULTS: TEST 1 (Dark OS preference) ✅ PASS: Browser context with colorScheme='dark', removed localStorage 'kb-theme', reloaded page. Meta theme-color content = '#0a0a0a' (expected '#0a0a0a'). matchMedia reports dark preference = true. TEST 2 (Light OS preference) ✅ PASS: Browser context with colorScheme='light', removed localStorage 'kb-theme', reloaded page. Meta theme-color content = '#ffffff' (expected '#ffffff'). matchMedia reports dark preference = false. TEST 3 (Theme toggle) ✅ PASS: Loaded page (initial meta '#ffffff'), clicked theme toggle button (data-testid='kb-theme-toggle'), meta changed to '#0a0a0a'. Clicked toggle again, meta returned to '#ffffff'. The meta tag correctly flips between '#0a0a0a' (dark) and '#ffffff' (light) in perfect sync with the theme. IMPLEMENTATION: The useEffect (lines 870-899 in PublicDocs.jsx) correctly creates/updates the <meta name=\"theme-color\"> tag with the same background color value ('#0a0a0a' for dark, '#ffffff' for light), creating the element if missing and restoring previous value on cleanup. NO ISSUES FOUND. Feature is production-ready and working perfectly."
     - agent: "testing"
       message: "✅ THEME SYSTEM PREFERENCE TESTING COMPLETE - ALL 3 TESTS PASSED. Verified the public docs site theme correctly follows OS/system color-scheme preference and is NOT forced to dark. Used Playwright browser contexts with explicit colorScheme settings to test all three scenarios. TEST 1 (Light OS → Light theme): With colorScheme='light' and no stored 'kb-theme', page renders with white background rgb(255, 255, 255), no 'dark' class on document root, matchMedia reports false. ✅ PASS. TEST 2 (Dark OS → Dark theme): With colorScheme='dark' and no stored 'kb-theme', page renders with dark background rgb(10, 10, 10), 'dark' class present on document root, matchMedia reports true. ✅ PASS. TEST 3 (Explicit choice persists): Started with dark OS preference (page dark), clicked theme toggle to switch to light, reloaded page while still in dark colorScheme context. Page stayed LIGHT with white background, no 'dark' class, localStorage 'kb-theme' = 'light'. Explicit user choice correctly wins over OS preference. ✅ PASS. The implementation correctly: (1) Reads localStorage 'kb-theme' only if it's exactly 'dark' or 'light', (2) Falls back to window.matchMedia('(prefers-color-scheme: dark)') when no valid stored value, (3) Includes matchMedia 'change' listener to live-update theme when no explicit choice is stored, (4) Persists explicit choice via theme toggle button. Screenshots captured for all test states. NO ISSUES FOUND. Feature is production-ready and meets all requirements."
     - agent: "testing"
