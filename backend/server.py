@@ -51,6 +51,7 @@ tags_metadata = [
     {"name": "auth", "description": "Authentication, sessions, and API key management"},
     {"name": "knowledge_base_public", "description": "Public documentation content, navigation, search, and feedback"},
     {"name": "kb_review", "description": "Review-mode workflow: assignments, comments, verdicts, activity, and publish gating"},
+    {"name": "ai_assistant", "description": "AI Writing Assistant: tweak, generate, and chat about KB article content"},
     {"name": "health", "description": "System health checks"},
 ]
 
@@ -73,10 +74,12 @@ app.add_middleware(SlowAPIMiddleware)
 from routes.auth import router as auth_router
 from routes.kb import router as kb_router, seed_kb_articles, migrate_flat_nav_to_tree
 from routes.review import router as review_router
+from routes.assistant import router as assistant_router
 
 app.include_router(auth_router)
 app.include_router(kb_router)
 app.include_router(review_router)
+app.include_router(assistant_router)
 
 # ==================== Middleware ====================
 MAX_REQUEST_BODY_SIZE = 50 * 1024 * 1024  # 50MB

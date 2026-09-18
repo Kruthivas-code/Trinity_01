@@ -30,6 +30,13 @@ VALID_ROLES = ["agent", "lead", "admin"]
 EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
 ALLOWED_DOMAIN = None
 
+# AI Writing Assistant (Phase 3): Universal LLM key for emergentintegrations'
+# LlmChat, same "read once here, import the constant everywhere else" pattern
+# as COOKIE_DOMAIN below. Empty string (not None) when unset, matching how
+# help-doc-v3's server.py reads it -- routes/assistant.py treats "" as "not
+# configured" and 503s rather than crashing on every request.
+EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
+
 # Session cookie domain. The preview/prod infra 307-redirects /api/* to a
 # sibling subdomain (e.g. *.internal.preview.emergentagent.com), so a
 # host-only cookie set on the internal host is NOT sent back to the main

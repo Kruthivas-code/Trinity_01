@@ -18,6 +18,7 @@ import { ArticlePreview } from './kb-editor/ArticlePreview';
 import { UnifiedSettings } from './kb-editor/UnifiedSettings';
 import { PageSettingsSlider } from './kb-editor/PageSettingsSlider';
 import { VersionHistoryPanel } from './kb-editor/VersionHistoryPanel';
+import { WritingAssistant, WritingAssistantTrigger } from './kb-editor/WritingAssistant';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -40,6 +41,13 @@ const KBEditor = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [showPageSettings, setShowPageSettings] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showAssistant, setShowAssistant] = useState(false);
+  // Tracks the markdown textarea's current text selection so Tweak mode can
+  // offer "rewrite just this" instead of always targeting the whole
+  // document. Only meaningful in Markdown edit mode -- the visual (TipTap)
+  // editor doesn't expose a plain-text offset selection, so Tweak always
+  // targets the whole document there.
+  const [mdSelection, setMdSelection] = useState(null);
   const pendingNewForm = useRef(null);
 
   // Owner-gating (Phase 1): structural controls (delete a page, edit the nav
@@ -258,6 +266,42 @@ const KBEditor = () => {
     setShowSettings(true);
   }, []);
 
+  // Writing Assistant — Tweak mode applies its proposal straight onto the
+  // in-memory form; nothing is saved until the existing Save button is
+  // pressed, same as any other content edit.
+  const applyAssistantContent = useCallback((markdown) => {
+    setForm((f) => (f ? { ...f, content_markdown: markdown } : f));
+  }, []);
+  const applyAssistantSelection = useCallback((replacement, start, end) => {
+    setForm((f) => {
+      if (!f) return f;
+      const cm = f.content_markdown || '';
+      return { ...f, content_markdown: cm.slice(0, start) + replacement + cm.slice(end) };
+    });
+    setMdSelection(null);
+  }, []);
+
+  // Writing Assistant — New Page mode never creates a page itself (see
+  // WritingAssistant.jsx's header comment). It hands back a fully-formed
+  // draft, and this does exactly what handleCreatePage above does for the
+  // sidebar's own "+" button: pre-fill the new-page form and route to
+  // /dashboard/kb-editor/new. Saving from there is the same, unmodified,
+  // owner-gated POST /api/kb/admin/articles.
+  const handleAssistantNewPage = useCallback((draft) => {
+    setIsNew(true);
+    setOriginalSlug(null);
+    const newForm = {
+      title: draft.title, slug: draft.slug, description: '', content_markdown: draft.content_markdown,
+      nav_group_key: draft.nav_group_key, nav_group_label: draft.nav_group_label,
+      section_key: draft.section_key, section_label: draft.section_label,
+      published: false, order: articles.length,
+      sidebar_title: '', keywords: [], tags: []
+    };
+    pendingNewForm.current = newForm;
+    setForm(newForm);
+    navigate('/dashboard/kb-editor/new', { replace: true });
+  }, [articles, navigate]);
+
   if (loading) {
     return <div className={`h-screen flex items-center justify-center ${theme.bg}`}><Loader2 className="w-6 h-6 animate-spin text-[#00A1B2]" /></div>;
   }
@@ -313,6 +357,12 @@ const KBEditor = () => {
               <Eye className="w-4 h-4" />
               <span className="hidden sm:inline">Preview</span>
             </button>
+          )}
+          {/* AI Writing Assistant (Phase 3) — content-level AI help stays
+              open to any signed-in user, same as content edits themselves
+              (Phase 1 philosophy). Not owner-gated. */}
+          {form && (
+            <WritingAssistantTrigger onOpen={() => setShowAssistant(true)} isDark={isDark} />
           )}
           {/* Version History — owner-only (Phase 2), matches the backend's
               owner-gated GET/POST/DELETE /api/kb/admin/articles/{slug}/versions... */}
@@ -389,6 +439,17 @@ const KBEditor = () => {
                   <textarea
                     value={form.content_markdown || ''}
                     onChange={(e) => setForm(f => ({ ...f, content_markdown: e.target.value }))}
+                    onSelect={(e) => {
+                      const { selectionStart, selectionEnd } = e.target;
+                      if (selectionEnd > selectionStart) {
+                        setMdSelection({
+                          text: (form.content_markdown || '').slice(selectionStart, selectionEnd),
+                          start: selectionStart, end: selectionEnd,
+                        });
+                      } else {
+                        setMdSelection(null);
+                      }
+                    }}
                     className={`w-full flex-1 px-4 py-3 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm font-mono ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors resize-none leading-relaxed`}
                     style={theme.inputBgStyle}
                     placeholder="Write your article content in Markdown..."
@@ -444,6 +505,22 @@ const KBEditor = () => {
             }
             fetchAll();
           }}
+        />
+      )}
+
+      {/* AI Writing Assistant (Phase 3) */}
+      {showAssistant && form && (
+        <WritingAssistant
+          open={showAssistant}
+          onClose={() => setShowAssistant(false)}
+          isDark={isDark}
+          content={form.content_markdown || ''}
+          selection={editMode === 'markdown' ? mdSelection : null}
+          onApplyContent={applyAssistantContent}
+          onApplySelection={applyAssistantSelection}
+          navGroups={navGroups}
+          articlesCount={articles.length}
+          onDraftNewPage={handleAssistantNewPage}
         />
       )}
 
