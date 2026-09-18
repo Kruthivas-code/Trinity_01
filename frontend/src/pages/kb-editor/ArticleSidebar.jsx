@@ -50,7 +50,7 @@ const ArticleItem = ({ article, depth, selectedSlug, onSelect, onOpenSettings, t
 };
 
 /* ---------- One tree node, rendered recursively (group or page) ---------- */
-const NavTreeNode = ({ node, topGroupKey, depth, selectedSlug, onSelect, onOpenSettings, onCreatePage, expanded, setExpanded, theme }) => {
+const NavTreeNode = ({ node, topGroupKey, depth, selectedSlug, onSelect, onOpenSettings, onCreatePage, expanded, setExpanded, theme, isOwner }) => {
   if (node.type === 'page') {
     // A page whose article couldn't be resolved (e.g. deleted out from under
     // the tree) is simply skipped here — structural cleanup is NavManager's job.
@@ -90,16 +90,20 @@ const NavTreeNode = ({ node, topGroupKey, depth, selectedSlug, onSelect, onOpenS
           </span>
         )}
 
-        <div className="flex items-center gap-0.5 opacity-0 group-hover/grp:opacity-100 transition-all">
-          <button
-            onClick={(e) => { e.stopPropagation(); onCreatePage(topGroupKey, node); }}
-            className={`p-0.5 rounded transition-colors ${theme.textSecondary} hover:text-[#00A1B2]`}
-            title={`New page in ${node.label}`}
-            data-testid={`add-page-in-group-${node.key}`}
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        {/* Creating a page is owner-only (Phase 1) — hide the control
+            rather than let a non-owner hit a 403 on click. */}
+        {isOwner && (
+          <div className="flex items-center gap-0.5 opacity-0 group-hover/grp:opacity-100 transition-all">
+            <button
+              onClick={(e) => { e.stopPropagation(); onCreatePage(topGroupKey, node); }}
+              className={`p-0.5 rounded transition-colors ${theme.textSecondary} hover:text-[#00A1B2]`}
+              title={`New page in ${node.label}`}
+              data-testid={`add-page-in-group-${node.key}`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {isExpanded && children.length > 0 && (
@@ -117,6 +121,7 @@ const NavTreeNode = ({ node, topGroupKey, depth, selectedSlug, onSelect, onOpenS
               expanded={expanded}
               setExpanded={setExpanded}
               theme={theme}
+              isOwner={isOwner}
             />
           ))}
         </div>
@@ -135,7 +140,8 @@ export const ArticleSidebar = ({
   onNewCategory,
   onOpenSettings,
   onCreatePage,
-  theme
+  theme,
+  isOwner
 }) => (
   <aside
     className={`w-64 flex-shrink-0 border-r ${theme.border} ${theme.panelBg} flex flex-col overflow-hidden relative z-30`}
@@ -144,14 +150,17 @@ export const ArticleSidebar = ({
   >
     <div className={`px-3 py-3 flex items-center justify-between border-b ${theme.border}`}>
       <span className={`text-xs font-semibold ${theme.textSecondary} uppercase tracking-wider`}>Navigation</span>
-      <button
-        onClick={onNewCategory}
-        className={`p-1 ${theme.textSecondary} hover:text-[#00A1B2] rounded transition-colors`}
-        title="New category"
-        data-testid="new-category-btn"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
+      {/* Adding a top-level category means editing the nav tree — owner-only (Phase 1). */}
+      {isOwner && (
+        <button
+          onClick={onNewCategory}
+          className={`p-1 ${theme.textSecondary} hover:text-[#00A1B2] rounded transition-colors`}
+          title="New category"
+          data-testid="new-category-btn"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      )}
     </div>
     <div className="flex-1 overflow-y-auto scrollbar-on-hover px-2 py-2">
       {tree.map(group => (
@@ -167,6 +176,7 @@ export const ArticleSidebar = ({
           expanded={expanded}
           setExpanded={setExpanded}
           theme={theme}
+          isOwner={isOwner}
         />
       ))}
     </div>

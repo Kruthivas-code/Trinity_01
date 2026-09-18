@@ -33,7 +33,7 @@ const DeleteConfirmation = ({ articleTitle, onConfirm, onCancel, isDark }) => (
   </div>
 );
 
-export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, isDark }) => {
+export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, isDark, isOwner }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newKeyword, setNewKeyword] = useState('');
   const [newTag, setNewTag] = useState('');
@@ -131,14 +131,18 @@ export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, i
             Page Settings
           </h3>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
-              title="Delete page"
-              data-testid="slider-delete-btn"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {/* Deleting a page is owner-only (Phase 1) — hide the control for
+                a non-owner rather than let them hit a 403 on click. */}
+            {isOwner && (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-red-400 hover:bg-red-500/10' : 'text-gray-400 hover:text-red-500 hover:bg-red-50'}`}
+                title="Delete page"
+                data-testid="slider-delete-btn"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={handleClose}
               className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-slate-500 hover:text-white hover:bg-slate-800' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'}`}

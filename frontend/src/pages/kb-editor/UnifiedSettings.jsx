@@ -29,7 +29,13 @@ const GLOBAL_FIELDS = [
   { key: 'custom_domain', label: 'Custom Domain', placeholder: 'docs.yourcompany.com', type: 'text' },
 ];
 
-const GlobalSection = ({ theme, isDark }) => {
+const OwnerOnlyNote = ({ theme }) => (
+  <p className={`text-xs ${theme.textMuted} mb-4 px-3 py-2 rounded-lg border ${theme.border} bg-amber-500/5`} data-testid="owner-only-note">
+    Only an owner (admin) can change this. You can look, but Save is disabled.
+  </p>
+);
+
+const GlobalSection = ({ theme, isDark, isOwner }) => {
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,6 +65,7 @@ const GlobalSection = ({ theme, isDark }) => {
 
   return (
     <div className="space-y-5" data-testid="settings-global">
+      {!isOwner && <OwnerOnlyNote theme={theme} />}
       {GLOBAL_FIELDS.map(({ key, label, placeholder, type }) => (
         <div key={key}>
           <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>{label}</label>
@@ -88,7 +95,7 @@ const GlobalSection = ({ theme, isDark }) => {
         </label>
       </div>
       <div className="flex justify-end pt-2">
-        <button onClick={handleSave} disabled={saving}
+        <button onClick={handleSave} disabled={saving || !isOwner}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#00A1B2] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity"
           data-testid="save-global-settings">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -103,9 +110,20 @@ const GlobalSection = ({ theme, isDark }) => {
 // The recursive drag-and-drop tree editor lives in NavManager — this section
 // just supplies the tree, the article list (for page titles) and the save
 // callback used by the whole nav-editing surface of the KB editor.
-const NavigationSection = ({ navGroups, articles, onSaveNav, theme }) => (
+// Editing the nav tree is owner-only (Phase 1): a non-owner gets a read-only
+// view (browse the structure) instead of the interactive editor, since
+// NavManager's every action (rename/reorder/move/delete) ends in the same
+// owner-gated PUT /api/kb/admin/navigation.
+const NavigationSection = ({ navGroups, articles, onSaveNav, theme, isOwner }) => (
   <div data-testid="settings-navigation">
-    <NavManager groups={navGroups} articles={articles} onSave={onSaveNav} theme={theme} />
+    {!isOwner && <OwnerOnlyNote theme={theme} />}
+    {isOwner ? (
+      <NavManager groups={navGroups} articles={articles} onSave={onSaveNav} theme={theme} />
+    ) : (
+      <div className={`text-sm ${theme.textSecondary}`} data-testid="navigation-readonly">
+        Navigation editing is owner-only.
+      </div>
+    )}
   </div>
 );
 
@@ -142,7 +160,7 @@ const CODE_THEMES = [
   { key: 'nord', label: 'Nord' },
 ];
 
-const DesignSection = ({ theme, isDark }) => {
+const DesignSection = ({ theme, isDark, isOwner }) => {
   const [config, setConfig] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -172,6 +190,7 @@ const DesignSection = ({ theme, isDark }) => {
 
   return (
     <div className="space-y-6" data-testid="settings-design">
+      {!isOwner && <OwnerOnlyNote theme={theme} />}
       {/* Accent Color */}
       <div>
         <label className={`block text-xs font-medium ${theme.textMuted} mb-2`}>Accent Color</label>
@@ -263,7 +282,7 @@ const DesignSection = ({ theme, isDark }) => {
       </div>
 
       <div className="flex justify-end pt-2">
-        <button onClick={handleSave} disabled={saving}
+        <button onClick={handleSave} disabled={saving || !isOwner}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#00A1B2] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity"
           data-testid="save-design-settings">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -343,14 +362,16 @@ const SocialSection = ({ theme, isDark }) => {
 };
 
 // ── Main Settings Component ──────────────────────────────
-export const UnifiedSettings = ({ navGroups, articles, onSaveNav, onClose, theme, isDark }) => {
+export const UnifiedSettings = ({ navGroups, articles, onSaveNav, onClose, theme, isDark, isOwner }) => {
   const [activeTab, setActiveTab] = useState('global');
 
   const renderSection = () => {
     switch (activeTab) {
-      case 'global': return <GlobalSection theme={theme} isDark={isDark} />;
-      case 'navigation': return <NavigationSection navGroups={navGroups} articles={articles} onSaveNav={onSaveNav} theme={theme} isDark={isDark} />;
-      case 'design': return <DesignSection theme={theme} isDark={isDark} />;
+      case 'global': return <GlobalSection theme={theme} isDark={isDark} isOwner={isOwner} />;
+      case 'navigation': return <NavigationSection navGroups={navGroups} articles={articles} onSaveNav={onSaveNav} theme={theme} isDark={isDark} isOwner={isOwner} />;
+      case 'design': return <DesignSection theme={theme} isDark={isDark} isOwner={isOwner} />;
+      // Social links aren't owner-gated server side (open to any signed-in
+      // user, like content edits) — no restriction here either.
       case 'social': return <SocialSection theme={theme} isDark={isDark} />;
       default: return null;
     }

@@ -16,16 +16,31 @@ from datetime import datetime, timezone, timedelta
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Generate a session token for testing
+#
+# Phase 1 (review hardening): create_article / delete_article /
+# update_navigation are now owner-gated (owner == role == "admin", see
+# routes/review.py's is_owner()). This suite exercises exactly those
+# endpoints, so the session it builds must genuinely belong to an admin-role
+# user, not just "whichever user happens to exist first" as before. Prefer
+# an existing admin; if none exists, temporarily promote one user to admin
+# for the duration of the module and restore their original role on
+# teardown so this suite doesn't leave a permanent side effect on a shared
+# database.
 def get_admin_session():
-    """Create admin session for testing"""
+    """Create admin session for testing. Returns (token, user_id, original_role)."""
     import sys
     sys.path.insert(0, '/app/backend')
     from database import users_collection, sessions_collection
-    
-    user = users_collection.find_one({}, {'_id': 0, 'user_id': 1})
+
+    user = users_collection.find_one({'role': 'admin'}, {'_id': 0, 'user_id': 1})
+    original_role = None
     if not user:
-        pytest.skip("No user found in database")
-    
+        user = users_collection.find_one({}, {'_id': 0, 'user_id': 1, 'role': 1})
+        if not user:
+            pytest.skip("No user found in database")
+        original_role = user.get('role', 'agent')
+        users_collection.update_one({'user_id': user['user_id']}, {'$set': {'role': 'admin'}})
+
     token = secrets.token_urlsafe(32)
     sessions_collection.insert_one({
         'session_token': token,
@@ -33,18 +48,21 @@ def get_admin_session():
         'created_at': datetime.now(timezone.utc),
         'expires_at': datetime.now(timezone.utc) + timedelta(days=1)
     })
-    return token
+    return token, user['user_id'], original_role
 
 @pytest.fixture(scope="module")
 def admin_session():
-    """Session token fixture"""
-    token = get_admin_session()
+    """Session token fixture. Restores the promoted user's original role (if
+    this suite promoted one) so the DB is left as it found it."""
+    token, user_id, original_role = get_admin_session()
     yield token
     # Cleanup session after tests
     import sys
     sys.path.insert(0, '/app/backend')
-    from database import sessions_collection
+    from database import sessions_collection, users_collection
     sessions_collection.delete_one({'session_token': token})
+    if original_role is not None:
+        users_collection.update_one({'user_id': user_id}, {'$set': {'role': original_role}})
 
 @pytest.fixture
 def api_client(admin_session):

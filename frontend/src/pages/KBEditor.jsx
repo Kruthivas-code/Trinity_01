@@ -40,6 +40,20 @@ const KBEditor = () => {
   const [showPageSettings, setShowPageSettings] = useState(false);
   const pendingNewForm = useRef(null);
 
+  // Owner-gating (Phase 1): structural controls (delete a page, edit the nav
+  // tree, edit global docs settings/design config) are owner-only server
+  // side now — mirror that here so the UI doesn't show controls that would
+  // just 403. Same endpoint ReviewConsole.jsx already uses for this.
+  // Defaults to false (hide owner-only controls) until the check resolves,
+  // so a non-owner never sees a flash of controls they can't use.
+  const [isOwner, setIsOwner] = useState(false);
+  useEffect(() => {
+    fetch(`${API}/api/review/roles/me`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setIsOwner(!!d.is_owner); })
+      .catch(() => {});
+  }, []);
+
   // Theme — follow system preference if no stored preference
   const [editorTheme, setEditorTheme] = useState(() => {
     const stored = localStorage.getItem('kb-editor-theme');
@@ -321,6 +335,7 @@ const KBEditor = () => {
           onOpenSettings={handleOpenSettings}
           onCreatePage={handleCreatePage}
           theme={theme}
+          isOwner={isOwner}
         />
 
         {/* Main Content — Editor Only */}
@@ -396,6 +411,7 @@ const KBEditor = () => {
           onClose={() => setShowSettings(false)}
           theme={theme}
           isDark={isDark}
+          isOwner={isOwner}
         />
       )}
 
@@ -408,6 +424,7 @@ const KBEditor = () => {
           onDelete={handleDelete}
           onClose={() => setShowPageSettings(false)}
           isDark={isDark}
+          isOwner={isOwner}
         />
       )}
     </div>

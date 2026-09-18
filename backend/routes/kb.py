@@ -16,6 +16,13 @@ import logging
 import requests
 from xml.sax.saxutils import escape
 
+# Owner-gating (Phase 1): reuse review.py's is_owner()/_owner_only() rather
+# than a second, parallel privilege check — "owner" here means the exact
+# same thing it means in review mode (Trinity's "admin" role; see review.py's
+# docstring for why). _owner_only() also carries the dynamic owner-contact
+# 403 message, so importing it keeps that behavior in one place.
+from routes.review import is_owner, _owner_only
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/kb", tags=["knowledge_base_public"])
@@ -616,11 +623,32 @@ async def admin_get_article(slug: str, current_user: dict = Depends(get_current_
     return article
 
 
+@router.get("/admin/can-edit/{slug}")
+async def can_edit_article(slug: str, current_user: dict = Depends(get_current_user)):
+    """Tells the KB editor frontend which controls to show for the signed-in
+    user on a given article: content edits (title/body) are open to anyone
+    signed in, but structural controls — delete this page, edit the nav
+    tree, edit global docs settings/design config — are owner-only (Phase 1).
+    `slug` isn't actually used to vary the answer today (owner-ness isn't
+    per-article), but the endpoint is shaped per-slug so a future per-page
+    permission model doesn't need a new route."""
+    return {
+        "slug": slug,
+        "is_owner": is_owner(current_user),
+        "can_edit_content": True,
+        "can_delete": is_owner(current_user),
+        "can_edit_navigation": is_owner(current_user),
+        "can_edit_site_settings": is_owner(current_user),
+    }
+
+
 @router.put("/admin/navigation")
 async def update_navigation(body: dict, current_user: dict = Depends(get_current_user)):
     """Replace the whole nav tree in one shot (the editor always sends the
     full, edited tree back). Denormalized nav_group_key/section_key/order
-    fields on every referenced article are recomputed to match afterwards."""
+    fields on every referenced article are recomputed to match afterwards.
+    Owner-only (Phase 1): editing the nav tree is a structural mutation."""
+    _owner_only(current_user)
     groups = body.get("groups", [])
     kb_navigation.update_one(
         {}, {"$set": {"groups": groups, "schema_version": 2, "updated_at": datetime.now(timezone.utc)}}, upsert=True
@@ -665,6 +693,9 @@ class ArticleCreate(BaseModel):
 
 @router.post("/admin/articles")
 async def create_article(body: ArticleCreate, current_user: dict = Depends(get_current_user)):
+    """Owner-only (Phase 1): creating a page is a structural mutation, not a
+    content edit — it changes what exists, not what an existing page says."""
+    _owner_only(current_user)
     existing = kb_articles.find_one({"slug": body.slug})
     if existing:
         raise HTTPException(status_code=409, detail="Slug already exists")
@@ -721,6 +752,12 @@ async def create_article(body: ArticleCreate, current_user: dict = Depends(get_c
 
 @router.put("/admin/articles/{slug}")
 async def update_article(slug: str, body: ArticleUpdate, current_user: dict = Depends(get_current_user)):
+    """Content edits (title/description/body of an EXISTING article) stay
+    open to any signed-in user (Phase 1) — this endpoint does not create,
+    delete or move a page, so it isn't owner-gated. Every edit stamps
+    reviewer_edited_by/reviewer_edited_at so there's an audit trail of who
+    touched content that isn't the owner (kept regardless of role, so an
+    owner's own edits are tracked the same way)."""
     article = kb_articles.find_one({"slug": slug})
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
@@ -731,6 +768,8 @@ async def update_article(slug: str, body: ArticleUpdate, current_user: dict = De
             raise HTTPException(status_code=409, detail="Slug already in use")
     if updates:
         updates["updated_at"] = datetime.now(timezone.utc)
+        updates["reviewer_edited_by"] = current_user.get("email")
+        updates["reviewer_edited_at"] = updates["updated_at"].isoformat()
         # Only snapshot on an actual false->true transition of `published`, NOT
         # on every save of an already-published page (the editor always resends
         # the current published value). Use post-update values: if this same PUT
@@ -760,6 +799,8 @@ async def update_article(slug: str, body: ArticleUpdate, current_user: dict = De
 
 @router.delete("/admin/articles/{slug}")
 async def delete_article(slug: str, current_user: dict = Depends(get_current_user)):
+    """Owner-only (Phase 1): deleting a page is a structural mutation."""
+    _owner_only(current_user)
     result = kb_articles.delete_one({"slug": slug})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Article not found")
@@ -886,7 +927,10 @@ async def get_docs_settings(current_user: dict = Depends(get_current_user)):
 
 @router.put("/admin/docs-settings")
 async def update_docs_settings(body: DocsSettingsUpdate, current_user: dict = Depends(get_current_user)):
-    """Admin endpoint: update global docs site settings."""
+    """Admin endpoint: update global docs site settings.
+    Owner-only (Phase 1): global site settings are structural, not per-page
+    content."""
+    _owner_only(current_user)
     updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
     updates["type"] = "docs_settings"
     updates["updated_at"] = datetime.now(timezone.utc)
@@ -913,7 +957,10 @@ async def bulk_move_articles(body: BulkMoveRequest, current_user: dict = Depends
     group, wherever either lives in the tree. Nested subgroups of the source
     are left in place — only its own direct pages move (matches the editor's
     "move all articles in this group" action). Keys, not labels: the tree
-    already carries labels, so callers only need to say which groups."""
+    already carries labels, so callers only need to say which groups.
+    Owner-only (Phase 1): this mutates the nav tree, same as
+    PUT /admin/navigation."""
+    _owner_only(current_user)
     nav_doc = kb_navigation.find_one({})
     if not nav_doc:
         raise HTTPException(status_code=404, detail="Navigation not found")
@@ -959,7 +1006,10 @@ async def get_design_config(current_user: dict = Depends(get_current_user)):
 
 @router.put("/admin/design-config")
 async def update_design_config(body: DesignConfigUpdate, current_user: dict = Depends(get_current_user)):
-    """Admin endpoint: update design configuration."""
+    """Admin endpoint: update design configuration.
+    Owner-only (Phase 1): site-wide design config is structural, not
+    per-page content."""
+    _owner_only(current_user)
     updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
     updates["type"] = "design_config"
     updates["updated_at"] = datetime.now(timezone.utc)
