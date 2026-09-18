@@ -9,6 +9,7 @@ from dependencies import get_current_user
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone
+from pymongo import UpdateOne
 import os
 import uuid
 import logging
@@ -27,10 +28,189 @@ kb_settings = db["kb_settings"]
 
 KB_SOURCE_API = "https://help.emergent.sh/api/public/default-project"
 
+# ── Navigation tree helpers ───────────────────────────────────
+#
+# kb_navigation now stores a single document shaped:
+#   {"groups": [NavNode, ...], "schema_version": 2, "updated_at": <datetime>}
+#
+# A NavNode is either:
+#   {"type": "group", "key": str, "label": str, "icon": str, "published": bool,
+#    "children": [NavNode, ...]}
+#   {"type": "page", "slug": str}
+#
+# Groups nest arbitrarily deep (group.children can hold more groups and/or
+# pages, in display order). Top-level groups double as the public site's
+# "tabs" (see get_public_data()) — there is no separate tabs layer.
+#
+# Each kb_articles document keeps denormalized nav_group_key/nav_group_label
+# (top-level ancestor group) and section_key/section_label (immediate parent
+# group) fields for fast lookups (admin list filters, search, and
+# review.py's flatten_scope_slugs). The tree itself is the source of truth
+# for structure and ordering — these fields are recomputed from the tree by
+# _sync_articles_from_tree() every time the tree changes, never edited by
+# hand. Intermediate ancestors (above the immediate parent) are NOT captured
+# in these flat fields — recursive "everything under this middle group"
+# scoping has to walk the tree itself (a job for Phase 1).
+
+
+def _walk_pages(nodes, trail=None):
+    """Depth-first walk of a nav subtree yielding (page_node, ancestor_group_nodes)
+    for every page leaf. ancestor_group_nodes runs top-level -> immediate parent."""
+    trail = trail or []
+    for node in nodes or []:
+        if node.get("type") == "page":
+            yield node, trail
+        elif node.get("type") == "group":
+            yield from _walk_pages(node.get("children", []), trail + [node])
+
+
+def _find_group(nodes, key):
+    """Recursively find a group node by its key anywhere in the tree."""
+    for node in nodes or []:
+        if node.get("type") == "group":
+            if node.get("key") == key:
+                return node
+            found = _find_group(node.get("children", []), key)
+            if found is not None:
+                return found
+    return None
+
+
+def _prune_slug(nodes, slug):
+    """Return (new_nodes, changed) with any page node for this slug removed,
+    anywhere in the (sub)tree. Does not mutate the input list in place."""
+    changed = False
+    new_nodes = []
+    for node in nodes or []:
+        if node.get("type") == "page" and node.get("slug") == slug:
+            changed = True
+            continue
+        if node.get("type") == "group":
+            new_children, sub_changed = _prune_slug(node.get("children", []), slug)
+            node = {**node, "children": new_children}
+            changed = changed or sub_changed
+        new_nodes.append(node)
+    return new_nodes, changed
+
+
+def _sync_articles_from_tree(nav_groups):
+    """Walk the nav tree depth-first and recompute every referenced article's
+    nav_group_key/nav_group_label/section_key/section_label/order to match its
+    current position in the tree. Called after every navigation write so the
+    denormalized fields never drift from the structure the tree defines."""
+    ops = []
+    order = 0
+    for page_node, ancestors in _walk_pages(nav_groups):
+        slug = page_node.get("slug")
+        if not slug:
+            continue
+        top = ancestors[0] if ancestors else None
+        immediate = ancestors[-1] if ancestors else None
+        update = {
+            "nav_group_key": top.get("key") if top else "",
+            "nav_group_label": top.get("label", "") if top else "",
+            "section_key": immediate.get("key") if immediate else "",
+            "section_label": immediate.get("label", "") if immediate else "",
+            "order": order,
+        }
+        ops.append(UpdateOne({"slug": slug}, {"$set": update}))
+        order += 1
+    if ops:
+        kb_articles.bulk_write(ops, ordered=False)
+
+
+def migrate_flat_nav_to_tree():
+    """One-time, idempotent upgrade: convert trinity's original flat
+    {nav_groups: [{key, label, icon, sections: [{key, label, articles?}]}]}
+    kb_navigation document into the new recursive {groups, schema_version: 2}
+    tree. Safe to call on every startup:
+      - a fresh DB has no kb_navigation doc (or seed_kb_articles() has already
+        written the new shape directly) -> no-op.
+      - a DB already on the new shape (schema_version == 2) -> no-op.
+    Every existing nav_group_key/section_key on kb_articles is preserved at
+    the same conceptual location: each old top-level group becomes a
+    top-level tree group, each old section becomes a nested group under it,
+    and its articles become page entries inside that group, in their
+    existing `order`. Articles aren't read back from the old (and possibly
+    stale) sections[].articles cache — they're pulled straight from
+    kb_articles by (nav_group_key, section_key), which is always current.
+    Any article whose nav_group_key/section_key doesn't match a group the
+    flat doc knew about (e.g. a hand-edited or bulk-moved record) is still
+    filed in — under an auto-created group of the same key — so nothing is
+    ever dropped or silently left off the tree."""
+    nav_doc = kb_navigation.find_one({})
+    if nav_doc and nav_doc.get("schema_version") == 2:
+        return  # already migrated
+    if not nav_doc or "nav_groups" not in nav_doc:
+        return  # fresh DB — seed_kb_articles() writes the new shape directly
+
+    old_groups = nav_doc.get("nav_groups", [])
+    new_groups = []
+    group_index = {}       # key -> new top-level group node
+    section_index = {}     # (group_key, section_key) -> new nested group node
+
+    for g in old_groups:
+        key = g.get("key")
+        if not key or key in group_index:
+            continue
+        node = {"type": "group", "key": key, "label": g.get("label", key),
+                "icon": g.get("icon", ""), "published": g.get("published", True), "children": []}
+        for s in g.get("sections", []):
+            skey = s.get("key")
+            if not skey:
+                continue
+            sec_node = {"type": "group", "key": skey, "label": s.get("label", skey),
+                        "icon": "", "published": s.get("published", True), "children": []}
+            arts = list(kb_articles.find(
+                {"nav_group_key": key, "section_key": skey},
+                {"_id": 0, "slug": 1}
+            ).sort("order", 1))
+            sec_node["children"] = [{"type": "page", "slug": a["slug"]} for a in arts if a.get("slug")]
+            section_index[(key, skey)] = sec_node
+            node["children"].append(sec_node)
+        group_index[key] = node
+        new_groups.append(node)
+
+    # Safety net: file in any article the flat doc didn't already account for.
+    seen_slugs = {p["slug"] for sec in section_index.values() for p in sec["children"]}
+    unmatched = 0
+    for a in kb_articles.find({}, {"_id": 0, "slug": 1, "nav_group_key": 1, "nav_group_label": 1,
+                                    "section_key": 1, "section_label": 1}).sort("order", 1):
+        slug = a.get("slug")
+        if not slug or slug in seen_slugs:
+            continue
+        gkey = a.get("nav_group_key") or "unassigned"
+        skey = a.get("section_key") or "unassigned"
+        if gkey not in group_index:
+            gnode = {"type": "group", "key": gkey, "label": a.get("nav_group_label") or gkey,
+                     "icon": "", "published": True, "children": []}
+            group_index[gkey] = gnode
+            new_groups.append(gnode)
+        if (gkey, skey) not in section_index:
+            snode = {"type": "group", "key": skey, "label": a.get("section_label") or skey,
+                     "icon": "", "published": True, "children": []}
+            section_index[(gkey, skey)] = snode
+            group_index[gkey]["children"].append(snode)
+        section_index[(gkey, skey)]["children"].append({"type": "page", "slug": slug})
+        seen_slugs.add(slug)
+        unmatched += 1
+
+    kb_navigation.update_one({}, {
+        "$set": {"groups": new_groups, "schema_version": 2, "updated_at": datetime.now(timezone.utc)},
+        "$unset": {"nav_groups": ""},
+    })
+    _sync_articles_from_tree(new_groups)
+    logger.info(
+        f"[KB] Migrated flat navigation ({len(old_groups)} groups) to recursive tree "
+        f"({len(new_groups)} top-level groups, {len(seen_slugs)} pages, {unmatched} auto-filed)."
+    )
+
 
 def seed_kb_articles():
     """Seed KB articles from help.emergent.sh if the collection is empty.
-    Called on server startup — idempotent, only runs on fresh databases."""
+    Called on server startup — idempotent, only runs on fresh databases.
+    Writes kb_navigation directly in the new recursive-tree shape (see the
+    navigation tree helpers above) — a fresh DB never sees the old flat shape."""
     if kb_articles.count_documents({}) > 0:
         return
 
@@ -49,20 +229,25 @@ def seed_kb_articles():
 
     doc_map = {doc["slug"]: doc for doc in documents if doc.get("slug")}
 
-    # Build nav_groups for kb_navigation
+    # Build the nav tree: each tab -> top-level group, each of its groups ->
+    # a nested group, each page -> a page node (in original document order).
     nav_groups = []
     for tab in tabs:
-        sections = []
+        tab_children = []
         for group in tab.get("groups", []):
             section_key = group["group"].lower().replace(" ", "-").replace("'", "")
-            pages = group.get("pages", [])
-            page_slugs = [p.get("page") if isinstance(p, dict) else p for p in pages]
-            sections.append({"key": section_key, "label": group["group"], "articles": page_slugs})
+            page_children = [
+                {"type": "page", "slug": (p.get("page") if isinstance(p, dict) else p)}
+                for p in group.get("pages", [])
+                if (p.get("page") if isinstance(p, dict) else p) in doc_map
+            ]
+            tab_children.append({
+                "type": "group", "key": section_key, "label": group["group"],
+                "icon": "", "published": True, "children": page_children,
+            })
         nav_groups.append({
-            "key": tab["id"],
-            "label": tab.get("label", tab["id"]),
-            "icon": tab.get("icon", "file-text"),
-            "sections": sections,
+            "type": "group", "key": tab["id"], "label": tab.get("label", tab["id"]),
+            "icon": tab.get("icon", "file-text"), "published": True, "children": tab_children,
         })
 
     # Insert articles with full metadata
@@ -106,9 +291,9 @@ def seed_kb_articles():
                 inserted += 1
                 order += 1
 
-    # Update navigation
+    # Update navigation (new recursive-tree shape from the start)
     kb_navigation.delete_many({})
-    kb_navigation.insert_one({"nav_groups": nav_groups})
+    kb_navigation.insert_one({"groups": nav_groups, "schema_version": 2, "updated_at": datetime.now(timezone.utc)})
 
     logger.info(f"[KB] Seeded {inserted} articles and {len(nav_groups)} nav groups from help.emergent.sh")
 
@@ -145,8 +330,8 @@ async def get_kb_image(filename: str):
 async def get_navigation():
     nav = kb_navigation.find_one({}, {"_id": 0})
     if not nav:
-        return {"nav_groups": []}
-    return {"nav_groups": nav.get("nav_groups", [])}
+        return {"groups": []}
+    return {"groups": nav.get("groups", [])}
 
 
 # Icon mapping for nav groups
@@ -159,41 +344,73 @@ NAV_GROUP_ICONS = {
 }
 
 
+def _tree_node_to_public(node, articles_by_slug):
+    """Convert one nav-tree node (group or page) into the public
+    {group, pages, groups} shape PublicDocs.jsx renders, recursing into
+    nested groups to any depth. Returns None for an unpublished node, a page
+    whose article is missing/unpublished, or a group that ends up empty —
+    callers filter those out."""
+    if node.get("type") == "page":
+        a = articles_by_slug.get(node.get("slug"))
+        if not a:
+            return None
+        return {"page": a["slug"], "title": a.get("published_title") or a["title"], "icon": a.get("icon", "")}
+    if node.get("published") is False:
+        return None
+    pages, groups = [], []
+    for child in node.get("children", []):
+        converted = _tree_node_to_public(child, articles_by_slug)
+        if converted is None:
+            continue
+        (pages if child.get("type") == "page" else groups).append(converted)
+    if not pages and not groups:
+        return None
+    result = {"group": node.get("label", node.get("key"))}
+    if pages:
+        result["pages"] = pages
+    if groups:
+        result["groups"] = groups
+    return result
+
+
 @router.get("/public-data")
 async def get_public_data():
     """Serve KB data in the format expected by the PublicDocs frontend (mirrors help.emergent.sh API)."""
     nav_doc = kb_navigation.find_one({}, {"_id": 0})
-    nav_groups = (nav_doc or {}).get("nav_groups", [])
+    nav_groups = (nav_doc or {}).get("groups", [])
 
     all_articles = list(kb_articles.find({"published": True}, {"_id": 0}).sort("order", 1))
+    articles_by_slug = {a["slug"]: a for a in all_articles}
 
     # Public, unauthenticated flag for the optional horizontal tab switcher on
     # the docs nav. Defaults to False (today's stacked behavior) when unset.
     docs_settings_doc = kb_settings.find_one({"type": "docs_settings"}, {"_id": 0, "tabs_enabled": 1})
     tabs_enabled = bool((docs_settings_doc or {}).get("tabs_enabled", False))
 
-    # Build navigation tabs from nav_groups
+    # Build navigation tabs from the nav tree — each top-level group is a
+    # "tab"; everything beneath it (arbitrarily nested groups and pages)
+    # becomes that tab's recursive `groups`/`pages` structure.
     tabs = []
-    for group in nav_groups:
-        # Skip hidden categories
-        if group.get("published") is False:
+    for top in nav_groups:
+        if top.get("published") is False:
             continue
         tab_groups = []
-        for section in group.get("sections", []):
-            # Skip hidden subcategories
-            if section.get("published") is False:
+        for child in top.get("children", []):
+            if child.get("type") == "page":
+                # A page filed directly under the tab (no intermediate
+                # group) — wrap it as its own single-page group so
+                # consumers only ever have to walk tabs[].groups[].
+                converted = _tree_node_to_public(child, articles_by_slug)
+                if converted:
+                    tab_groups.append({"group": converted["title"], "pages": [converted]})
                 continue
-            section_articles = [
-                a for a in all_articles
-                if a.get("nav_group_key") == group["key"] and a.get("section_key") == section["key"]
-            ]
-            pages = [{"page": a["slug"], "title": a.get("published_title") or a["title"], "icon": a.get("icon", "")} for a in section_articles]
-            if pages:
-                tab_groups.append({"group": section.get("label", section["key"]), "pages": pages})
+            converted = _tree_node_to_public(child, articles_by_slug)
+            if converted:
+                tab_groups.append(converted)
         tabs.append({
-            "id": group["key"],
-            "label": group.get("label", group["key"]),
-            "icon": group.get("icon") or NAV_GROUP_ICONS.get(group["key"], "file-text"),
+            "id": top["key"],
+            "label": top.get("label", top["key"]),
+            "icon": top.get("icon") or NAV_GROUP_ICONS.get(top["key"], "file-text"),
             "groups": tab_groups,
         })
 
@@ -387,7 +604,7 @@ async def admin_list_articles(current_user: dict = Depends(get_current_user)):
         s = stats.get(a["slug"], {"total": 0, "helpful": 0})
         a["feedback_total"] = s["total"]
         a["feedback_helpful"] = s["helpful"]
-    return {"articles": articles, "nav_groups": (nav or {}).get("nav_groups", [])}
+    return {"articles": articles, "groups": (nav or {}).get("groups", [])}
 
 
 @router.get("/admin/articles/{slug}")
@@ -401,9 +618,15 @@ async def admin_get_article(slug: str, current_user: dict = Depends(get_current_
 
 @router.put("/admin/navigation")
 async def update_navigation(body: dict, current_user: dict = Depends(get_current_user)):
-    nav_groups = body.get("nav_groups", [])
-    kb_navigation.update_one({}, {"$set": {"nav_groups": nav_groups, "updated_at": datetime.now(timezone.utc)}}, upsert=True)
-    return {"nav_groups": nav_groups}
+    """Replace the whole nav tree in one shot (the editor always sends the
+    full, edited tree back). Denormalized nav_group_key/section_key/order
+    fields on every referenced article are recomputed to match afterwards."""
+    groups = body.get("groups", [])
+    kb_navigation.update_one(
+        {}, {"$set": {"groups": groups, "schema_version": 2, "updated_at": datetime.now(timezone.utc)}}, upsert=True
+    )
+    _sync_articles_from_tree(groups)
+    return {"groups": groups}
 
 
 class ArticleUpdate(BaseModel):
@@ -466,20 +689,33 @@ async def create_article(body: ArticleCreate, current_user: dict = Depends(get_c
         doc["published_title"] = doc.get("title")
         doc["published_at"] = datetime.now(timezone.utc).isoformat()
     kb_articles.insert_one(doc)
-    # Auto-sync navigation: ensure nav group and section exist (skip if empty keys)
+    # Auto-sync navigation: file the new page into the tree, creating the
+    # target group (and its parent top-level group) if they don't exist yet.
+    # nav_group_key = top-level group key, section_key = the immediate
+    # (possibly nested) group the page actually lands in.
     if doc.get("nav_group_key"):
         nav_doc = kb_navigation.find_one({})
         if nav_doc:
-            nav_groups = nav_doc.get("nav_groups", [])
-            group = next((g for g in nav_groups if g["key"] == doc["nav_group_key"]), None)
-            if not group:
-                nav_groups.append({"key": doc["nav_group_key"], "label": doc["nav_group_label"], "sections": [{"key": doc["section_key"], "label": doc["section_label"]}] if doc.get("section_key") else []})
-                kb_navigation.update_one({}, {"$set": {"nav_groups": nav_groups}})
-            elif doc.get("section_key"):
-                sec = next((s for s in group.get("sections", []) if s["key"] == doc["section_key"]), None)
-                if not sec:
-                    group.setdefault("sections", []).append({"key": doc["section_key"], "label": doc["section_label"]})
-                    kb_navigation.update_one({}, {"$set": {"nav_groups": nav_groups}})
+            groups = nav_doc.get("groups", [])
+            target_key = doc.get("section_key") or doc["nav_group_key"]
+            target = _find_group(groups, target_key)
+            if target is None:
+                top = _find_group(groups, doc["nav_group_key"])
+                if top is None:
+                    top = {"type": "group", "key": doc["nav_group_key"],
+                           "label": doc.get("nav_group_label") or doc["nav_group_key"],
+                           "icon": "", "published": True, "children": []}
+                    groups.append(top)
+                if doc.get("section_key") and doc["section_key"] != doc["nav_group_key"]:
+                    target = {"type": "group", "key": doc["section_key"],
+                              "label": doc.get("section_label") or doc["section_key"],
+                              "icon": "", "published": True, "children": []}
+                    top.setdefault("children", []).append(target)
+                else:
+                    target = top
+            target.setdefault("children", []).append({"type": "page", "slug": doc["slug"]})
+            kb_navigation.update_one({}, {"$set": {"groups": groups}})
+            _sync_articles_from_tree(groups)
     return kb_articles.find_one({"slug": body.slug}, {"_id": 0})
 
 
@@ -508,6 +744,17 @@ async def update_article(slug: str, body: ArticleUpdate, current_user: dict = De
             updates["published_at"] = datetime.now(timezone.utc).isoformat()
         kb_articles.update_one({"slug": slug}, {"$set": updates})
     final_slug = updates.get("slug", slug)
+    # A slug change needs the matching page node in the nav tree repointed too
+    # (page nodes reference articles by slug), otherwise the page becomes
+    # unreachable from the sidebar even though the article itself still exists.
+    if "slug" in updates and updates["slug"] != slug:
+        nav_doc = kb_navigation.find_one({})
+        if nav_doc:
+            groups = nav_doc.get("groups", [])
+            for page_node, _ in _walk_pages(groups):
+                if page_node.get("slug") == slug:
+                    page_node["slug"] = final_slug
+            kb_navigation.update_one({}, {"$set": {"groups": groups}})
     return kb_articles.find_one({"slug": final_slug}, {"_id": 0})
 
 
@@ -516,6 +763,13 @@ async def delete_article(slug: str, current_user: dict = Depends(get_current_use
     result = kb_articles.delete_one({"slug": slug})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Article not found")
+    # Prune the now-dangling page node from the nav tree, if present.
+    nav_doc = kb_navigation.find_one({})
+    if nav_doc:
+        groups, changed = _prune_slug(nav_doc.get("groups", []), slug)
+        if changed:
+            kb_navigation.update_one({}, {"$set": {"groups": groups}})
+            _sync_articles_from_tree(groups)
     return {"message": "Deleted"}
 
 
@@ -646,31 +900,34 @@ async def update_docs_settings(body: DocsSettingsUpdate, current_user: dict = De
     return settings
 
 
-# ── Bulk move articles between nav groups/sections ────────────
+# ── Bulk move articles between nav groups ──────────────────────
 
 class BulkMoveRequest(BaseModel):
-    source_group_key: str
-    source_section_key: str
-    target_group_key: str
-    target_group_label: str
-    target_section_key: str
-    target_section_label: str
+    source_key: str
+    target_key: str
 
 
 @router.post("/admin/articles/bulk-move")
 async def bulk_move_articles(body: BulkMoveRequest, current_user: dict = Depends(get_current_user)):
-    """Move all articles from one section to another group/section."""
-    result = kb_articles.update_many(
-        {"nav_group_key": body.source_group_key, "section_key": body.source_section_key},
-        {"$set": {
-            "nav_group_key": body.target_group_key,
-            "nav_group_label": body.target_group_label,
-            "section_key": body.target_section_key,
-            "section_label": body.target_section_label,
-            "updated_at": datetime.now(timezone.utc),
-        }}
-    )
-    return {"moved": result.modified_count}
+    """Move every page filed directly under one nav-tree group over to another
+    group, wherever either lives in the tree. Nested subgroups of the source
+    are left in place — only its own direct pages move (matches the editor's
+    "move all articles in this group" action). Keys, not labels: the tree
+    already carries labels, so callers only need to say which groups."""
+    nav_doc = kb_navigation.find_one({})
+    if not nav_doc:
+        raise HTTPException(status_code=404, detail="Navigation not found")
+    groups = nav_doc.get("groups", [])
+    source = _find_group(groups, body.source_key)
+    target = _find_group(groups, body.target_key)
+    if source is None or target is None:
+        raise HTTPException(status_code=404, detail="Source or target group not found")
+    moving = [c for c in source.get("children", []) if c.get("type") == "page"]
+    source["children"] = [c for c in source.get("children", []) if c.get("type") != "page"]
+    target.setdefault("children", []).extend(moving)
+    kb_navigation.update_one({}, {"$set": {"groups": groups, "updated_at": datetime.now(timezone.utc)}})
+    _sync_articles_from_tree(groups)
+    return {"moved": len(moving)}
 
 
 # ── Design Configuration ──────────────────────────────────────

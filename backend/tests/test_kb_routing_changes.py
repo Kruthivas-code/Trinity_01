@@ -126,11 +126,11 @@ class TestKBPublicAPI:
         print("PASS: 1-character search returns no results")
     
     def test_kb_navigation(self):
-        """GET /api/kb/navigation returns nav_groups"""
+        """GET /api/kb/navigation returns the recursive nav tree under 'groups'"""
         response = requests.get(f"{BASE_URL}/api/kb/navigation")
         assert response.status_code == 200
         data = response.json()
-        assert "nav_groups" in data
+        assert "groups" in data
         print("PASS: /api/kb/navigation works")
 
 

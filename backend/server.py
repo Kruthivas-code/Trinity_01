@@ -71,7 +71,7 @@ app.add_middleware(SlowAPIMiddleware)
 
 # ==================== Include All Route Modules ====================
 from routes.auth import router as auth_router
-from routes.kb import router as kb_router, seed_kb_articles
+from routes.kb import router as kb_router, seed_kb_articles, migrate_flat_nav_to_tree
 from routes.review import router as review_router
 
 app.include_router(auth_router)
@@ -167,6 +167,7 @@ async def health():
 @app.on_event("startup")
 async def startup_event():
     seed_kb_articles()
+    migrate_flat_nav_to_tree()
     logger.info("[STARTUP] Trinity Docs Platform started")
 
 

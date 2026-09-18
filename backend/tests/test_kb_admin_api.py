@@ -71,7 +71,7 @@ class TestAdminArticlesEndpoint:
         
         data = response.json()
         assert 'articles' in data, "Response should contain 'articles'"
-        assert 'nav_groups' in data, "Response should contain 'nav_groups'"
+        assert 'groups' in data, "Response should contain 'groups' (the nav tree)"
         
         articles = data['articles']
         assert len(articles) >= 21, f"Expected at least 21 articles, got {len(articles)}"
@@ -87,21 +87,22 @@ class TestAdminArticlesEndpoint:
         print(f"✓ Admin articles returns {len(articles)} articles with content")
     
     def test_admin_articles_includes_nav_groups(self, api_client):
-        """Admin articles includes navigation groups"""
+        """Admin articles includes the top-level nav tree groups"""
         response = api_client.get(f"{BASE_URL}/api/kb/admin/articles")
         assert response.status_code == 200
-        
+
         data = response.json()
-        nav_groups = data.get('nav_groups', [])
-        assert len(nav_groups) >= 5, f"Expected at least 5 nav groups, got {len(nav_groups)}"
-        
-        # Verify nav group structure
+        nav_groups = data.get('groups', [])
+        assert len(nav_groups) >= 5, f"Expected at least 5 top-level nav groups, got {len(nav_groups)}"
+
+        # Verify nav tree node structure (recursive: type/key/label/children)
         for group in nav_groups:
+            assert group.get('type') == 'group'
             assert 'key' in group
             assert 'label' in group
-            assert 'sections' in group
-        
-        print(f"✓ Admin articles includes {len(nav_groups)} nav groups")
+            assert 'children' in group
+
+        print(f"✓ Admin articles includes {len(nav_groups)} top-level nav groups")
 
 
 class TestArticleCRUD:
@@ -249,25 +250,25 @@ class TestArticleCRUD:
 
 class TestNavigationUpdate:
     """Test PUT /api/kb/admin/navigation"""
-    
+
     def test_update_navigation_structure(self, api_client):
-        """Update navigation structure"""
+        """Update navigation structure (recursive tree, under 'groups')"""
         # Get current navigation
         current_response = api_client.get(f"{BASE_URL}/api/kb/admin/articles")
-        current_nav = current_response.json().get('nav_groups', [])
-        
-        # Update with modified structure (add test group)
+        current_nav = current_response.json().get('groups', [])
+
+        # Round-trip the current tree unchanged
         modified_nav = current_nav.copy()
-        
+
         response = api_client.put(
             f"{BASE_URL}/api/kb/admin/navigation",
-            json={"nav_groups": modified_nav}
+            json={"groups": modified_nav}
         )
         assert response.status_code == 200, f"Expected 200, got {response.status_code}"
-        
+
         data = response.json()
-        assert 'nav_groups' in data
-        
+        assert 'groups' in data
+
         print("✓ Navigation structure updated")
 
 
@@ -305,11 +306,11 @@ class TestPublicAPIRegression:
         """Public navigation endpoint works"""
         response = requests.get(f"{BASE_URL}/api/kb/navigation")
         assert response.status_code == 200
-        
+
         data = response.json()
-        nav_groups = data.get('nav_groups', [])
-        assert len(nav_groups) >= 1, "Should have at least 1 nav group"
-        
+        nav_groups = data.get('groups', [])
+        assert len(nav_groups) >= 1, "Should have at least 1 top-level nav group"
+
         print(f"✓ Public navigation returns {len(nav_groups)} groups")
     
     def test_public_article_detail_with_prev_next(self):

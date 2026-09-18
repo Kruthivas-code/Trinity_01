@@ -88,7 +88,7 @@ export default function ReviewConsole({ user }) {
         api('/assignments'),
       ]);
       setArticles(kb.articles || []);
-      setNavGroups(kb.nav_groups || []);
+      setNavGroups(kb.groups || []);
       setAssignments(asg.assignments || []);
       api('/known-emails').then((r) => setKnownEmails(r.emails || [])).catch(() => {});
       if (isOwner) {
@@ -182,8 +182,16 @@ export default function ReviewConsole({ user }) {
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-background text-muted-foreground">Loading review console…</div>;
 
   const myAssignments = assignments.filter((a) => (a.assignee_email || '').toLowerCase() === myEmail);
+  // "group" scope assignment is tab::section (nav_group_key::section_key) —
+  // matches review.py's flatten_scope_slugs, which reads those two flat
+  // fields (immediate parent group) off kb_articles. The nav tree can nest
+  // deeper than this now, but assigning review to an arbitrary middle-depth
+  // subtree is Phase 1 work; this still covers every group exactly one level
+  // under a top-level group, same as before the nav tree became recursive.
   const groupOptions = [];
-  navGroups.forEach((g) => (g.sections || []).forEach((s) => groupOptions.push({ value: `${g.key}::${s.key}`, label: `${g.label} / ${s.label}` })));
+  navGroups.forEach((g) => (g.children || [])
+    .filter((c) => c.type === 'group')
+    .forEach((s) => groupOptions.push({ value: `${g.key}::${s.key}`, label: `${g.label} / ${s.label}` })));
 
   return (
     <div className="min-h-screen bg-background text-foreground">

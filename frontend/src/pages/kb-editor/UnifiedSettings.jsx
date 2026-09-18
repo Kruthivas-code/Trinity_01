@@ -5,9 +5,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, Save, Loader2, Globe, Map, Palette, Share2,
-  Plus, Trash2, FolderOpen, ArrowRight, FileText, Image as ImageIcon,
-  ExternalLink
+  Image as ImageIcon, ExternalLink
 } from 'lucide-react';
+import { NavManager } from './NavManager';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -100,130 +100,14 @@ const GlobalSection = ({ theme, isDark }) => {
 };
 
 // ── Navigation Section ───────────────────────────────────
-const NavigationSection = ({ navGroups, onSaveNav, onBulkMove, theme, isDark }) => {
-  const [groups, setGroups] = useState(JSON.parse(JSON.stringify(navGroups)));
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [moveTarget, setMoveTarget] = useState(null);
-
-  const addGroup = () => {
-    setGroups([...groups, { key: `group-${Date.now()}`, label: 'New Group', icon: 'file-text', sections: [{ key: 'default', label: 'Default' }] }]);
-  };
-  const removeGroup = (idx) => { if (window.confirm('Delete this nav group?')) setGroups(groups.filter((_, i) => i !== idx)); };
-  const updateGroup = (idx, field, val) => { const g = [...groups]; g[idx] = { ...g[idx], [field]: val }; setGroups(g); };
-  const addSection = (gIdx) => { const g = [...groups]; g[gIdx].sections = [...(g[gIdx].sections || []), { key: `section-${Date.now()}`, label: 'New Section' }]; setGroups(g); };
-  const removeSection = (gIdx, sIdx) => { const g = [...groups]; g[gIdx].sections = g[gIdx].sections.filter((_, i) => i !== sIdx); setGroups(g); };
-  const updateSection = (gIdx, sIdx, field, val) => { const g = [...groups]; g[gIdx].sections[sIdx] = { ...g[gIdx].sections[sIdx], [field]: val }; setGroups(g); };
-  const moveGroup = (idx, dir) => { const g = [...groups]; [g[idx], g[idx + dir]] = [g[idx + dir], g[idx]]; setGroups(g); };
-  const moveSection = (gIdx, sIdx, dir) => { const g = [...groups]; const s = [...g[gIdx].sections]; [s[sIdx], s[sIdx + dir]] = [s[sIdx + dir], s[sIdx]]; g[gIdx].sections = s; setGroups(g); };
-
-  const getMoveTargets = (gIdx, sIdx) => {
-    const targets = [];
-    groups.forEach((g, gi) => {
-      (g.sections || []).forEach((s, si) => {
-        if (gi !== gIdx || si !== sIdx) targets.push({ gIdx: gi, sIdx: si, groupKey: g.key, groupLabel: g.label, sectionKey: s.key, sectionLabel: s.label });
-      });
-    });
-    return targets;
-  };
-
-  const handleBulkMove = async (sourceGIdx, sourceSIdx, target) => {
-    const srcGroup = navGroups[sourceGIdx] || groups[sourceGIdx];
-    const srcSection = (srcGroup?.sections || [])[sourceSIdx] || groups[sourceGIdx]?.sections?.[sourceSIdx];
-    if (!srcGroup || !srcSection) return;
-    const count = await onBulkMove(srcGroup.key, srcSection.key, target.groupKey, target.groupLabel, target.sectionKey, target.sectionLabel);
-    setMoveTarget(null);
-    if (count > 0) alert(`Moved ${count} article(s) successfully.`);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    await onSaveNav(groups);
-    setSaving(false);
-    setSaved(true); setTimeout(() => setSaved(false), 2000);
-  };
-
-  return (
-    <div className="space-y-4" data-testid="settings-navigation">
-      <div className="flex items-center justify-between">
-        <p className={`text-xs ${theme.textSecondary}`}>Manage navigation tabs and sections for your documentation site.</p>
-        <button onClick={addGroup} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#00A1B2] hover:opacity-90 text-white rounded-lg transition-opacity" data-testid="add-group-btn">
-          <Plus className="w-3 h-3" /> Add Tab
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        {groups.map((group, gIdx) => (
-          <div key={group.key} className={`border ${theme.border} rounded-xl overflow-hidden`} data-testid={`nav-group-${gIdx}`}>
-            <div className={`flex items-center gap-2 p-3 ${isDark ? 'bg-white/[0.02]' : 'bg-gray-50/80'}`}>
-              <div className="flex flex-col gap-0.5">
-                <button disabled={gIdx === 0} onClick={() => moveGroup(gIdx, -1)} className={`${theme.textTertiary} ${theme.hoverText} disabled:opacity-20 text-[10px] leading-none`}>&#9650;</button>
-                <button disabled={gIdx === groups.length - 1} onClick={() => moveGroup(gIdx, 1)} className={`${theme.textTertiary} ${theme.hoverText} disabled:opacity-20 text-[10px] leading-none`}>&#9660;</button>
-              </div>
-              <input value={group.label} onChange={e => updateGroup(gIdx, 'label', e.target.value)} placeholder="Tab name"
-                className={`flex-1 bg-transparent text-sm font-medium ${theme.text} ${theme.placeholder} outline-none border-b border-transparent focus:border-[#00A1B2] px-1 py-0.5`} />
-              <input value={group.key} onChange={e => updateGroup(gIdx, 'key', e.target.value)} placeholder="key"
-                className={`w-36 ${theme.inputBg} text-xs font-mono ${theme.textMuted} rounded px-2 py-1 border ${theme.inputBorder}`} style={theme.inputBgStyle} />
-              <button onClick={() => removeGroup(gIdx)} className={`p-1 ${theme.textTertiary} hover:text-red-400 rounded`}><Trash2 className="w-3.5 h-3.5" /></button>
-            </div>
-            <div className="p-3 space-y-2">
-              {(group.sections || []).map((sec, sIdx) => (
-                <div key={sec.key} data-testid={`nav-section-${gIdx}-${sIdx}`}>
-                  <div className="flex items-center gap-2 pl-4">
-                    <div className="flex flex-col gap-0.5">
-                      <button disabled={sIdx === 0} onClick={() => moveSection(gIdx, sIdx, -1)} className={`${theme.textTertiary} ${theme.hoverText} disabled:opacity-20 text-[10px] leading-none`}>&#9650;</button>
-                      <button disabled={sIdx === (group.sections || []).length - 1} onClick={() => moveSection(gIdx, sIdx, 1)} className={`${theme.textTertiary} ${theme.hoverText} disabled:opacity-20 text-[10px] leading-none`}>&#9660;</button>
-                    </div>
-                    <FolderOpen className={`w-3.5 h-3.5 ${theme.textTertiary} flex-shrink-0`} />
-                    <input value={sec.label} onChange={e => updateSection(gIdx, sIdx, 'label', e.target.value)} placeholder="Section name"
-                      className={`flex-1 bg-transparent text-sm ${theme.textMuted} ${theme.placeholder} outline-none border-b border-transparent focus:border-[#00A1B2] px-1 py-0.5`} />
-                    <input value={sec.key} onChange={e => updateSection(gIdx, sIdx, 'key', e.target.value)} placeholder="key"
-                      className={`w-28 ${theme.inputBg} text-xs font-mono ${theme.textMuted} rounded px-2 py-1 border ${theme.inputBorder}`} style={theme.inputBgStyle} />
-                    <button onClick={() => setMoveTarget(moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx ? null : { gIdx, sIdx })}
-                      className={`p-1 rounded transition-colors ${moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx ? 'text-[#00A1B2] bg-[#00A1B2]/10' : `${theme.textTertiary} hover:text-[#00A1B2]`}`}
-                      title="Move articles to another section" data-testid={`move-section-${gIdx}-${sIdx}`}>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => removeSection(gIdx, sIdx)} className={`p-1 ${theme.textTertiary} hover:text-red-400 rounded`}><Trash2 className="w-3 h-3" /></button>
-                  </div>
-                  {moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx && (
-                    <div className={`ml-10 mt-2 p-2.5 border ${theme.border} rounded-lg ${isDark ? 'bg-white/[0.02]' : 'bg-gray-50'}`} data-testid="move-target-picker">
-                      <p className={`text-xs ${theme.textMuted} mb-2`}>Move all articles in <strong className={theme.text}>{sec.label}</strong> to:</p>
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
-                        {getMoveTargets(gIdx, sIdx).map((t, i) => (
-                          <button key={i} onClick={() => handleBulkMove(gIdx, sIdx, t)}
-                            className={`w-full text-left px-2.5 py-1.5 text-xs rounded ${theme.hover} ${theme.textMuted} ${theme.hoverText} transition-colors flex items-center gap-2`}
-                            data-testid={`move-target-${i}`}>
-                            <ArrowRight className="w-3 h-3 text-[#00A1B2]" />
-                            <span className={theme.textSecondary}>{t.groupLabel}</span>
-                            <span className={theme.textTertiary}>/</span>
-                            <span>{t.sectionLabel}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              <button onClick={() => addSection(gIdx)} className={`flex items-center gap-1.5 ml-4 px-2 py-1 text-xs ${theme.textSecondary} hover:text-[#00A1B2] rounded ${theme.hover} transition-colors`} data-testid={`add-section-${gIdx}`}>
-                <Plus className="w-3 h-3" /> Add Section
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex justify-end pt-2">
-        <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#00A1B2] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity"
-          data-testid="save-nav-settings">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saved ? 'Saved!' : 'Save Navigation'}
-        </button>
-      </div>
-    </div>
-  );
-};
+// The recursive drag-and-drop tree editor lives in NavManager — this section
+// just supplies the tree, the article list (for page titles) and the save
+// callback used by the whole nav-editing surface of the KB editor.
+const NavigationSection = ({ navGroups, articles, onSaveNav, theme }) => (
+  <div data-testid="settings-navigation">
+    <NavManager groups={navGroups} articles={articles} onSave={onSaveNav} theme={theme} />
+  </div>
+);
 
 // ── Design Configuration Section ─────────────────────────
 const ACCENT_PRESETS = [
@@ -459,13 +343,13 @@ const SocialSection = ({ theme, isDark }) => {
 };
 
 // ── Main Settings Component ──────────────────────────────
-export const UnifiedSettings = ({ navGroups, onSaveNav, onBulkMove, onClose, theme, isDark }) => {
+export const UnifiedSettings = ({ navGroups, articles, onSaveNav, onClose, theme, isDark }) => {
   const [activeTab, setActiveTab] = useState('global');
 
   const renderSection = () => {
     switch (activeTab) {
       case 'global': return <GlobalSection theme={theme} isDark={isDark} />;
-      case 'navigation': return <NavigationSection navGroups={navGroups} onSaveNav={onSaveNav} onBulkMove={onBulkMove} theme={theme} isDark={isDark} />;
+      case 'navigation': return <NavigationSection navGroups={navGroups} articles={articles} onSaveNav={onSaveNav} theme={theme} isDark={isDark} />;
       case 'design': return <DesignSection theme={theme} isDark={isDark} />;
       case 'social': return <SocialSection theme={theme} isDark={isDark} />;
       default: return null;

@@ -14,26 +14,28 @@ class TestKBNavigation:
     """KB navigation structure API tests"""
     
     def test_get_navigation_returns_5_groups(self):
-        """GET /api/kb/navigation - returns nav structure with 5 groups"""
+        """GET /api/kb/navigation - returns the recursive nav tree with 5 top-level groups"""
         response = requests.get(f"{BASE_URL}/api/kb/navigation")
         assert response.status_code == 200
-        
+
         data = response.json()
-        assert "nav_groups" in data
-        nav_groups = data["nav_groups"]
+        assert "groups" in data
+        nav_groups = data["groups"]
         assert len(nav_groups) == 5
-        
+
         # Verify expected nav group keys
         group_keys = [g["key"] for g in nav_groups]
         expected_keys = ["beginners-guide", "features", "building-your-app", "deploy-and-manage", "troubleshooting"]
         assert sorted(group_keys) == sorted(expected_keys)
-        
-        # Verify each group has sections
+
+        # Verify each top-level group is a tree node with nested groups ("sections")
         for group in nav_groups:
+            assert group.get("type") == "group"
             assert "key" in group
             assert "label" in group
-            assert "sections" in group
-            assert len(group["sections"]) > 0
+            assert "children" in group
+            nested_groups = [c for c in group["children"] if c.get("type") == "group"]
+            assert len(nested_groups) > 0
 
 
 class TestKBArticlesList:

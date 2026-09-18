@@ -17,7 +17,6 @@ import { EditorThemeProvider } from './kb-editor/EditorThemeContext';
 import { ArticlePreview } from './kb-editor/ArticlePreview';
 import { UnifiedSettings } from './kb-editor/UnifiedSettings';
 import { PageSettingsSlider } from './kb-editor/PageSettingsSlider';
-import { CategorySettingsSlider } from './kb-editor/CategorySettingsSlider';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -39,7 +38,6 @@ const KBEditor = () => {
   const [editMode, setEditMode] = useState('visual');
   const [showPreview, setShowPreview] = useState(false);
   const [showPageSettings, setShowPageSettings] = useState(false);
-  const [categorySettingsTarget, setCategorySettingsTarget] = useState(null); // { item, type, groupKey? }
   const pendingNewForm = useRef(null);
 
   // Theme — follow system preference if no stored preference
@@ -81,13 +79,7 @@ const KBEditor = () => {
       if (res.ok) {
         const data = await res.json();
         setArticles(data.articles || []);
-        setNavGroups(data.nav_groups || []);
-        const exp = {};
-        (data.nav_groups || []).forEach(g => {
-          exp[`group-${g.key}`] = true;
-          g.sections?.forEach(s => { exp[`${g.key}-${s.key}`] = true; });
-        });
-        setExpanded(prev => ({ ...exp, ...prev }));
+        setNavGroups(data.groups || []);
         return data;
       }
     } catch (e) { console.error(e); }
@@ -200,33 +192,21 @@ const KBEditor = () => {
 
   const saveNavigation = async (newGroups) => {
     try {
-      const res = await fetch(`${API}/api/kb/admin/navigation`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nav_groups: newGroups }) });
+      const res = await fetch(`${API}/api/kb/admin/navigation`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ groups: newGroups }) });
       if (!res.ok) throw new Error('Failed to save');
       await fetchAll();
     } catch (e) { alert('Failed to save navigation: ' + e.message); }
   };
 
-  const bulkMoveArticles = async (srcGroupKey, srcSectionKey, tgtGroupKey, tgtGroupLabel, tgtSectionKey, tgtSectionLabel) => {
-    try {
-      const res = await fetch(`${API}/api/kb/admin/articles/bulk-move`, {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source_group_key: srcGroupKey, source_section_key: srcSectionKey, target_group_key: tgtGroupKey, target_group_label: tgtGroupLabel, target_section_key: tgtSectionKey, target_section_label: tgtSectionLabel })
-      });
-      if (!res.ok) throw new Error('Failed to move');
-      const data = await res.json();
-      await fetchAll();
-      return data.moved;
-    } catch (e) { alert('Failed to move articles: ' + e.message); return 0; }
-  };
-
-  // Build sidebar tree
-  const tree = useMemo(() => navGroups.map(group => ({
-    ...group,
-    sections: (group.sections || []).map(sec => ({
-      ...sec,
-      articles: articles.filter(a => a.section_key === sec.key && a.nav_group_key === group.key),
-    })),
-  })), [navGroups, articles]);
+  // Build the sidebar's display tree: the raw nav tree (groups referencing
+  // pages by slug) annotated with each page's resolved article, recursively.
+  const articlesBySlug = useMemo(() => new Map(articles.map(a => [a.slug, a])), [articles]);
+  const buildDisplayTree = useCallback((nodes) => (nodes || []).map(node => (
+    node.type === 'page'
+      ? { type: 'page', slug: node.slug, article: articlesBySlug.get(node.slug) || null }
+      : { type: 'group', key: node.key, label: node.label, icon: node.icon, published: node.published, children: buildDisplayTree(node.children || []) }
+  )), [articlesBySlug]);
+  const tree = useMemo(() => buildDisplayTree(navGroups), [navGroups, buildDisplayTree]);
 
   // Open settings slider for a specific article
   const handleOpenSettings = useCallback((article) => {
@@ -237,32 +217,18 @@ const KBEditor = () => {
     setTimeout(() => setShowPageSettings(true), article.slug !== paramSlug ? 200 : 0);
   }, [paramSlug, navigate]);
 
-  // Create page under a specific group (first section)
-  const handleCreateInGroup = useCallback((group) => {
-    const firstSection = group.sections?.[0];
+  // Create a page directly inside a specific nav-tree group, wherever it
+  // lives in the tree. `topGroupKey` is the top-level ancestor group's key
+  // (nav_group_key); `group` is the exact group node the "+" was clicked on
+  // (section_key) — which may be that same top-level group itself.
+  const handleCreatePage = useCallback((topGroupKey, group) => {
+    const topGroup = navGroups.find(g => g.key === topGroupKey);
     setIsNew(true);
     setOriginalSlug(null);
     const newForm = {
       title: '', slug: '', description: '', content_markdown: '',
-      nav_group_key: group.key, nav_group_label: group.label,
-      section_key: firstSection?.key || '', section_label: firstSection?.label || '',
-      published: false, order: articles.length,
-      sidebar_title: '', keywords: [], tags: []
-    };
-    pendingNewForm.current = newForm;
-    setForm(newForm);
-    navigate('/dashboard/kb-editor/new', { replace: true });
-  }, [articles, navigate]);
-
-  // Create page under a specific section
-  const handleCreateInSection = useCallback((groupKey, section) => {
-    const group = navGroups.find(g => g.key === groupKey);
-    setIsNew(true);
-    setOriginalSlug(null);
-    const newForm = {
-      title: '', slug: '', description: '', content_markdown: '',
-      nav_group_key: groupKey, nav_group_label: group?.label || '',
-      section_key: section.key, section_label: section.label,
+      nav_group_key: topGroupKey, nav_group_label: topGroup?.label || '',
+      section_key: group.key, section_label: group.label,
       published: false, order: articles.length,
       sidebar_title: '', keywords: [], tags: []
     };
@@ -271,55 +237,10 @@ const KBEditor = () => {
     navigate('/dashboard/kb-editor/new', { replace: true });
   }, [articles, navGroups, navigate]);
 
-  // Create new category (tab) via NavManager/UnifiedSettings
+  // Create new top-level group — done from Settings > Navigation (NavManager)
   const handleNewCategory = useCallback(() => {
     setShowSettings(true);
   }, []);
-
-  // Open settings slider for a category or subcategory
-  const handleOpenCategorySettings = useCallback((item, type, groupKey) => {
-    setCategorySettingsTarget({ item, type, groupKey });
-  }, []);
-
-  // Save category/subcategory settings (rename, visibility)
-  const handleSaveCategorySettings = useCallback(async (updatedItem) => {
-    const nav = [...navGroups];
-    const { type, groupKey } = categorySettingsTarget || {};
-
-    if (type === 'category') {
-      const idx = nav.findIndex(g => g.key === updatedItem.key);
-      if (idx !== -1) {
-        nav[idx] = { ...nav[idx], label: updatedItem.label, published: updatedItem.published };
-      }
-    } else if (type === 'subcategory' && groupKey) {
-      const group = nav.find(g => g.key === groupKey);
-      if (group) {
-        const secIdx = (group.sections || []).findIndex(s => s.key === updatedItem.key);
-        if (secIdx !== -1) {
-          group.sections[secIdx] = { ...group.sections[secIdx], label: updatedItem.label, published: updatedItem.published };
-        }
-      }
-    }
-    await saveNavigation(nav);
-  }, [navGroups, categorySettingsTarget, saveNavigation]);
-
-  // Delete a category or subcategory
-  const handleDeleteCategory = useCallback(async (item, type) => {
-    const nav = [...navGroups];
-
-    if (type === 'category') {
-      const idx = nav.findIndex(g => g.key === item.key);
-      if (idx !== -1) nav.splice(idx, 1);
-    } else if (type === 'subcategory') {
-      const { groupKey } = categorySettingsTarget || {};
-      const group = nav.find(g => g.key === groupKey);
-      if (group) {
-        group.sections = (group.sections || []).filter(s => s.key !== item.key);
-      }
-    }
-    await saveNavigation(nav);
-    setCategorySettingsTarget(null);
-  }, [navGroups, categorySettingsTarget, saveNavigation]);
 
   if (loading) {
     return <div className={`h-screen flex items-center justify-center ${theme.bg}`}><Loader2 className="w-6 h-6 animate-spin text-[#00A1B2]" /></div>;
@@ -398,9 +319,7 @@ const KBEditor = () => {
           setExpanded={setExpanded}
           onNewCategory={handleNewCategory}
           onOpenSettings={handleOpenSettings}
-          onCreateInSection={handleCreateInSection}
-          onCreateInGroup={handleCreateInGroup}
-          onOpenCategorySettings={handleOpenCategorySettings}
+          onCreatePage={handleCreatePage}
           theme={theme}
         />
 
@@ -472,8 +391,8 @@ const KBEditor = () => {
       {showSettings && (
         <UnifiedSettings
           navGroups={navGroups}
+          articles={articles}
           onSaveNav={saveNavigation}
-          onBulkMove={bulkMoveArticles}
           onClose={() => setShowSettings(false)}
           theme={theme}
           isDark={isDark}
@@ -488,18 +407,6 @@ const KBEditor = () => {
           onSave={handleSave}
           onDelete={handleDelete}
           onClose={() => setShowPageSettings(false)}
-          isDark={isDark}
-        />
-      )}
-
-      {/* Category/Subcategory Settings Slider */}
-      {categorySettingsTarget && (
-        <CategorySettingsSlider
-          item={categorySettingsTarget.item}
-          type={categorySettingsTarget.type}
-          onSave={handleSaveCategorySettings}
-          onDelete={handleDeleteCategory}
-          onClose={() => setCategorySettingsTarget(null)}
           isDark={isDark}
         />
       )}

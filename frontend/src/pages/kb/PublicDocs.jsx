@@ -15,6 +15,33 @@ import './PublicDocs.css';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
+// ============= NAV TREE HELPERS =============
+// A nav "group" node (from config.navigation.tabs[].groups[]) is
+// { group: label, pages?: [...], groups?: [...nested groups...] } and nests
+// to any depth. These walk it recursively so the sidebar, search breadcrumbs
+// and prev/next are all depth-agnostic instead of hardcoded to one level.
+
+// Depth-first list of every page entry under a group, its own pages first
+// then each nested group's (matches display order).
+function flattenGroupPages(group) {
+  const pages = [...(group?.pages || [])];
+  for (const sub of group?.groups || []) {
+    pages.push(...flattenGroupPages(sub));
+  }
+  return pages;
+}
+
+// Find the innermost group directly holding a page (however deep), or null.
+function findPageGroup(groups, slug) {
+  for (const group of groups || []) {
+    const page = (group.pages || []).find(p => (typeof p === 'string' ? p : p.page)?.toLowerCase() === slug?.toLowerCase());
+    if (page) return group;
+    const found = findPageGroup(group.groups || [], slug);
+    if (found) return found;
+  }
+  return null;
+}
+
 const THEMES = {
   dark: {
     id: 'dark',
@@ -253,6 +280,68 @@ const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle, mobileMe
 };
 
 // ============= LEFT SIDEBAR =============
+// One nav group node, rendered recursively — a group can hold pages, nested
+// groups, or both, at any depth. Each depth gets its own collapse state and
+// extra indentation.
+const NavGroupNode = ({ group, depth, groupKey, documents, selectedDocSlug, onDocSelect, onMobileClose, collapsedGroups, toggleGroup, theme }) => {
+  const isCollapsed = collapsedGroups[groupKey] === true;
+  const pages = group.pages || [];
+  const subgroups = group.groups || [];
+  if (pages.length === 0 && subgroups.length === 0) return null;
+
+  return (
+    <div className="mb-1">
+      <button
+        onClick={() => toggleGroup(groupKey)}
+        className={`w-full flex items-center justify-between py-2 pr-3 rounded-lg font-medium transition-colors ${theme.textMuted} ${theme.hoverText} ${theme.hover}`}
+        style={{ fontSize: '14px', lineHeight: '20px', paddingLeft: `${0.75 + depth * 0.75}rem` }}
+        aria-expanded={!isCollapsed}
+        data-testid={`sidebar-group-toggle-${groupKey}`}
+      >
+        <span className="truncate">{group.group}</span>
+        <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 ${theme.textSecondary} transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
+      </button>
+
+      {!isCollapsed && (
+        <div className="mt-0.5 space-y-px">
+          {pages.map((page, pi) => {
+            const pageSlug = typeof page === 'string' ? page : page.page;
+            const doc = documents.find(d => d.slug?.toLowerCase() === pageSlug?.toLowerCase());
+            const title = typeof page === 'string' ? doc?.title || page : page.title || page.page;
+            const isActive = pageSlug?.toLowerCase() === selectedDocSlug?.toLowerCase();
+            const isMissing = !doc;
+
+            return (
+              <button key={pi} onClick={() => { if (!isMissing) { onDocSelect(pageSlug); onMobileClose(); } }} disabled={isMissing}
+                className={`w-full text-left pr-3 py-2 rounded-lg text-[13.5px] leading-snug transition-colors ${isActive ? `${theme.activeBg} ${theme.activeText} font-medium` : isMissing ? 'text-gray-400 cursor-not-allowed' : `${theme.textMuted} ${theme.hover} ${theme.hoverText}`}`}
+                style={{ paddingLeft: `${1.5 + depth * 0.75}rem` }}
+                aria-current={isActive ? 'page' : undefined}
+                data-testid={`sidebar-page-${pageSlug}`}>
+                <span className={isMissing ? 'italic opacity-50' : ''}>{title}</span>
+              </button>
+            );
+          })}
+          {subgroups.map((sub, si) => (
+            <NavGroupNode
+              key={si}
+              group={sub}
+              depth={depth + 1}
+              groupKey={`${groupKey}-${si}`}
+              documents={documents}
+              selectedDocSlug={selectedDocSlug}
+              onDocSelect={onDocSelect}
+              onMobileClose={onMobileClose}
+              collapsedGroups={collapsedGroups}
+              toggleGroup={toggleGroup}
+              theme={theme}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const LeftSidebar = ({ activeTab, onTabChange, hasSecondaryNav, tabs, documents, selectedDocSlug, onDocSelect, theme, onSearchOpen, mobileOpen, onMobileClose, isDark }) => {
   const [collapsedGroups, setCollapsedGroups] = useState({});
 
@@ -327,46 +416,21 @@ const LeftSidebar = ({ activeTab, onTabChange, hasSecondaryNav, tabs, documents,
                   </div>
                 )}
 
-                {groups.map((group, gi) => {
-                  const groupKey = `${tab.id}-${gi}`;
-                  const isCollapsed = collapsedGroups[groupKey] === true;
-
-                  return (
-                    <div key={gi} className="mb-1">
-                      <button
-                        onClick={() => toggleGroup(groupKey)}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg font-medium transition-colors ${theme.textMuted} ${theme.hoverText} ${theme.hover}`}
-                        style={{ fontSize: '14px', lineHeight: '20px' }}
-                        aria-expanded={!isCollapsed}
-                        data-testid={`sidebar-group-toggle-${gi}`}
-                      >
-                        <span className="truncate">{group.group}</span>
-                        <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 ${theme.textSecondary} transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
-                      </button>
-
-                      {!isCollapsed && (
-                        <div className="mt-0.5 space-y-px">
-                          {group.pages?.map((page, pi) => {
-                            const pageSlug = typeof page === 'string' ? page : page.page;
-                            const doc = documents.find(d => d.slug?.toLowerCase() === pageSlug?.toLowerCase());
-                            const title = typeof page === 'string' ? doc?.title || page : page.title || page.page;
-                            const isActive = pageSlug?.toLowerCase() === selectedDocSlug?.toLowerCase();
-                            const isMissing = !doc;
-
-                            return (
-                              <button key={pi} onClick={() => { if (!isMissing) { onDocSelect(pageSlug); onMobileClose(); } }} disabled={isMissing}
-                                className={`w-full text-left pl-6 pr-3 py-2 rounded-lg text-[13.5px] leading-snug transition-colors ${isActive ? `${theme.activeBg} ${theme.activeText} font-medium` : isMissing ? 'text-gray-400 cursor-not-allowed' : `${theme.textMuted} ${theme.hover} ${theme.hoverText}`}`}
-                                aria-current={isActive ? 'page' : undefined}
-                                data-testid={`sidebar-page-${pageSlug}`}>
-                                <span className={isMissing ? 'italic opacity-50' : ''}>{title}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {groups.map((group, gi) => (
+                  <NavGroupNode
+                    key={gi}
+                    group={group}
+                    depth={0}
+                    groupKey={`${tab.id}-${gi}`}
+                    documents={documents}
+                    selectedDocSlug={selectedDocSlug}
+                    onDocSelect={onDocSelect}
+                    onMobileClose={onMobileClose}
+                    collapsedGroups={collapsedGroups}
+                    toggleGroup={toggleGroup}
+                    theme={theme}
+                  />
+                ))}
               </div>
             );
           })}
@@ -462,19 +526,15 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
 
   const getBreadcrumb = (slug) => {
     for (const tab of tabs) {
-      for (const group of (tab.groups || [])) {
-        for (const page of (group.pages || [])) {
-          const ps = typeof page === 'string' ? page : page.page;
-          if (ps?.toLowerCase() === slug?.toLowerCase()) return { tab: tab.label, group: group.group };
-        }
-      }
+      const group = findPageGroup(tab.groups || [], slug);
+      if (group) return { tab: tab.label, group: group.group };
     }
     return null;
   };
 
   const getTabLabel = (slug) => {
     for (const tab of tabs) {
-      const found = tab.groups?.some(g => g.pages?.some(p => (typeof p === 'string' ? p : p.page)?.toLowerCase() === slug?.toLowerCase()));
+      const found = findPageGroup(tab.groups || [], slug);
       if (found) return tab.label;
     }
     return null;
@@ -925,7 +985,7 @@ const PublicDocs = () => {
   const getFirstNavDocument = useCallback(() => {
     for (const tab of tabs) {
       for (const group of (tab.groups || [])) {
-        for (const page of (group.pages || [])) {
+        for (const page of flattenGroupPages(group)) {
           const slug = typeof page === 'string' ? page : page.page;
           const doc = documents.find(d => d.slug?.toLowerCase() === slug?.toLowerCase());
           if (doc) return doc;
@@ -1016,7 +1076,7 @@ const PublicDocs = () => {
     const tab = tabs.find(t => t.id === tabId);
     if (!tab) return;
     for (const group of tab.groups || []) {
-      for (const page of group.pages || []) {
+      for (const page of flattenGroupPages(group)) {
         const slug = typeof page === 'string' ? page : page.page;
         const doc = documents.find(d => d.slug?.toLowerCase() === slug?.toLowerCase());
         if (doc) { handleDocSelect(doc.slug); return; }
@@ -1033,7 +1093,7 @@ const PublicDocs = () => {
   useEffect(() => {
     if (selectedDoc && tabs.length > 0) {
       for (const tab of tabs) {
-        const found = tab.groups?.some(g => g.pages?.some(p => (typeof p === 'string' ? p : p.page)?.toLowerCase() === selectedDoc.slug?.toLowerCase()));
+        const found = findPageGroup(tab.groups || [], selectedDoc.slug);
         if (found) { setActiveTab(tab.id); break; }
       }
     }
@@ -1042,10 +1102,8 @@ const PublicDocs = () => {
   const getBreadcrumb = () => {
     const currentTab = tabs.find(t => t.id === activeTab);
     if (!currentTab || !selectedDoc) return null;
-    for (const group of currentTab.groups || []) {
-      const page = group.pages?.find(p => (typeof p === 'string' ? p : p.page)?.toLowerCase() === selectedDoc?.slug?.toLowerCase());
-      if (page) return { section: group.group, title: selectedDoc.title };
-    }
+    const group = findPageGroup(currentTab.groups || [], selectedDoc.slug);
+    if (group) return { section: group.group, title: selectedDoc.title };
     return { section: currentTab.label, title: selectedDoc?.title };
   };
 
@@ -1062,7 +1120,7 @@ const PublicDocs = () => {
     const slugs = [];
     for (const tab of tabs) {
       for (const group of tab.groups || []) {
-        for (const page of group.pages || []) {
+        for (const page of flattenGroupPages(group)) {
           slugs.push((typeof page === 'string' ? page : page.page)?.toLowerCase());
         }
       }

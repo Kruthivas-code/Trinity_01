@@ -187,8 +187,8 @@ class TestKBSearchIntegration:
             assert nav_response.status_code == 200
             nav_data = nav_response.json()
             
-            # Find the nav group
-            nav_groups = nav_data.get("nav_groups", [])
+            # Find the nav group (top-level tree groups)
+            nav_groups = nav_data.get("groups", [])
             group_keys = [g.get("key") for g in nav_groups]
             
             if nav_group_key:

@@ -209,12 +209,12 @@ class TestKBOtherEndpoints:
     """Test other KB public endpoints for regression"""
 
     def test_navigation_endpoint(self):
-        """GET /api/kb/navigation returns nav_groups"""
+        """GET /api/kb/navigation returns the nav tree under 'groups'"""
         response = requests.get(f"{BASE_URL}/api/kb/navigation")
         assert response.status_code == 200
         data = response.json()
-        assert "nav_groups" in data
-        print(f"PASS: /api/kb/navigation returns {len(data['nav_groups'])} groups")
+        assert "groups" in data
+        print(f"PASS: /api/kb/navigation returns {len(data['groups'])} groups")
 
     def test_articles_list(self):
         """GET /api/kb/articles returns published articles"""
