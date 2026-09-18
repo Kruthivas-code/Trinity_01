@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Save, Loader2, Settings,
-  Sun, Moon, Eye
+  Sun, Moon, Eye, History
 } from 'lucide-react';
 import { ArticleSidebar } from './kb-editor/ArticleSidebar';
 import { RichTextEditor } from './kb-editor/RichTextEditor';
@@ -17,6 +17,7 @@ import { EditorThemeProvider } from './kb-editor/EditorThemeContext';
 import { ArticlePreview } from './kb-editor/ArticlePreview';
 import { UnifiedSettings } from './kb-editor/UnifiedSettings';
 import { PageSettingsSlider } from './kb-editor/PageSettingsSlider';
+import { VersionHistoryPanel } from './kb-editor/VersionHistoryPanel';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -38,6 +39,7 @@ const KBEditor = () => {
   const [editMode, setEditMode] = useState('visual');
   const [showPreview, setShowPreview] = useState(false);
   const [showPageSettings, setShowPageSettings] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const pendingNewForm = useRef(null);
 
   // Owner-gating (Phase 1): structural controls (delete a page, edit the nav
@@ -312,6 +314,19 @@ const KBEditor = () => {
               <span className="hidden sm:inline">Preview</span>
             </button>
           )}
+          {/* Version History — owner-only (Phase 2), matches the backend's
+              owner-gated GET/POST/DELETE /api/kb/admin/articles/{slug}/versions... */}
+          {form && !isNew && isOwner && (
+            <button
+              onClick={() => setShowVersionHistory(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200'}`}
+              title="Version history"
+              data-testid="version-history-btn"
+            >
+              <History className="w-4 h-4" />
+              <span className="hidden sm:inline">History</span>
+            </button>
+          )}
           <div className={`w-px h-6 ${theme.divider}`} />
           {lastSaved && <span className={`text-xs ${theme.textSecondary} hidden sm:block`}>Saved {lastSaved.toLocaleTimeString()}</span>}
           <button onClick={handleSave} disabled={saving || !canSave}
@@ -412,6 +427,23 @@ const KBEditor = () => {
           theme={theme}
           isDark={isDark}
           isOwner={isOwner}
+          onRefresh={fetchAll}
+        />
+      )}
+
+      {/* Version History Panel */}
+      {showVersionHistory && form && !isNew && (
+        <VersionHistoryPanel
+          slug={originalSlug || form.slug}
+          articleTitle={form.title}
+          isDark={isDark}
+          onClose={() => setShowVersionHistory(false)}
+          onRestore={(restoredArticle) => {
+            if (restoredArticle) {
+              setForm(f => ({ ...f, ...restoredArticle, keywords: restoredArticle.keywords || [], tags: restoredArticle.tags || [] }));
+            }
+            fetchAll();
+          }}
         />
       )}
 

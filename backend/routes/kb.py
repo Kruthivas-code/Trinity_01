@@ -8,7 +8,7 @@ from database import db
 from dependencies import get_current_user
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pymongo import UpdateOne
 import os
 import uuid
@@ -21,7 +21,11 @@ from xml.sax.saxutils import escape
 # same thing it means in review mode (Trinity's "admin" role; see review.py's
 # docstring for why). _owner_only() also carries the dynamic owner-contact
 # 403 message, so importing it keeps that behavior in one place.
-from routes.review import is_owner, _owner_only
+# _unassign_slugs (Phase 2): review.py's existing one-assignee-per-page
+# cascade helper, reused here so soft-deleting a page also drops it out of
+# any active review assignment — same cross-module import pattern as above,
+# not a new one.
+from routes.review import is_owner, _owner_only, _unassign_slugs
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +36,20 @@ kb_navigation = db["kb_navigation"]
 kb_image_files = db["kb_image_files"]
 kb_feedback = db["kb_feedback"]
 kb_settings = db["kb_settings"]
+# Phase 2:
+kb_article_versions = db["kb_article_versions"]
+
+# Trash retention window (help-doc-v3 parity): a soft-deleted article is kept
+# for 90 days, then lazily purged the next time GET /admin/trash is called.
+TRASH_RETENTION_DAYS = 90
+
+# Every kb_articles query that serves anything other than the trash/restore
+# endpoints themselves must exclude soft-deleted articles. Mongo (and
+# mongomock) treat {"deleted_at": None} as matching BOTH "field absent" (an
+# article that has never been trashed) and "field explicitly set to None"
+# (an article that was trashed and then restored) — so this one filter
+# covers every live article without needing a migration for pre-Phase-2 docs.
+NOT_DELETED = {"deleted_at": None}
 
 KB_SOURCE_API = "https://help.emergent.sh/api/public/default-project"
 
@@ -98,6 +116,22 @@ def _prune_slug(nodes, slug):
             changed = changed or sub_changed
         new_nodes.append(node)
     return new_nodes, changed
+
+
+def _find_page_location(nodes, slug, parent_key=None):
+    """Locate a page node's exact spot in the nav tree: which group `key` it
+    is a direct child of (None if it sits at the top level of the tree,
+    outside any group), and its index within that parent's `children` list.
+    Used by delete_article to record trash_nav so restore_article can put
+    the page back exactly where it was."""
+    for i, node in enumerate(nodes or []):
+        if node.get("type") == "page" and node.get("slug") == slug:
+            return {"parent_key": parent_key, "index": i}
+        if node.get("type") == "group":
+            found = _find_page_location(node.get("children", []), slug, node.get("key"))
+            if found is not None:
+                return found
+    return None
 
 
 def _sync_articles_from_tree(nav_groups):
@@ -386,7 +420,7 @@ async def get_public_data():
     nav_doc = kb_navigation.find_one({}, {"_id": 0})
     nav_groups = (nav_doc or {}).get("groups", [])
 
-    all_articles = list(kb_articles.find({"published": True}, {"_id": 0}).sort("order", 1))
+    all_articles = list(kb_articles.find({"published": True, **NOT_DELETED}, {"_id": 0}).sort("order", 1))
     articles_by_slug = {a["slug"]: a for a in all_articles}
 
     # Public, unauthenticated flag for the optional horizontal tab switcher on
@@ -399,6 +433,18 @@ async def get_public_data():
     # becomes that tab's recursive `groups`/`pages` structure.
     tabs = []
     for top in nav_groups:
+        if top.get("type") == "page":
+            # Edge case (Phase 2 trash restore fallback): a page whose
+            # original parent group no longer exists gets appended directly
+            # to the root of the tree, outside any group. Wrap it as its own
+            # single-page tab so it doesn't crash the top["key"]/children
+            # lookups below, which assume every top-level node is a group.
+            converted = _tree_node_to_public(top, articles_by_slug)
+            if converted:
+                tabs.append({"id": converted["page"], "label": converted["title"],
+                             "icon": converted.get("icon") or "file-text",
+                             "groups": [{"group": converted["title"], "pages": [converted]}]})
+            continue
         if top.get("published") is False:
             continue
         tab_groups = []
@@ -459,7 +505,7 @@ async def sitemap_xml():
     # crawlers receive absolute URLs.
     site_url = os.environ.get("SITE_URL", "").rstrip("/")
     articles = list(
-        kb_articles.find({"published": True}, {"_id": 0, "slug": 1, "updated_at": 1}).sort("order", 1)
+        kb_articles.find({"published": True, **NOT_DELETED}, {"_id": 0, "slug": 1, "updated_at": 1}).sort("order", 1)
     )
     lines = [
         '<?xml version="1.0" encoding="UTF-8"?>',
@@ -486,7 +532,7 @@ async def sitemap_xml():
 
 @router.get("/articles")
 async def list_articles(nav_group: Optional[str] = None, section: Optional[str] = None):
-    query = {"published": True}
+    query = {"published": True, **NOT_DELETED}
     if nav_group:
         query["nav_group_key"] = nav_group
     if section:
@@ -499,7 +545,7 @@ async def list_articles(nav_group: Optional[str] = None, section: Optional[str] 
 
 @router.get("/articles/{slug}")
 async def get_article(slug: str):
-    article = kb_articles.find_one({"slug": slug, "published": True}, {"_id": 0})
+    article = kb_articles.find_one({"slug": slug, "published": True, **NOT_DELETED}, {"_id": 0})
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     # Prefer the published snapshot; fall back to live content when absent
@@ -509,12 +555,12 @@ async def get_article(slug: str):
     # Get prev/next for navigation
     order = article.get("order", 0)
     prev_art = kb_articles.find_one(
-        {"published": True, "order": {"$lt": order}},
+        {"published": True, "order": {"$lt": order}, **NOT_DELETED},
         {"_id": 0, "slug": 1, "title": 1, "published_title": 1},
         sort=[("order", -1)]
     )
     next_art = kb_articles.find_one(
-        {"published": True, "order": {"$gt": order}},
+        {"published": True, "order": {"$gt": order}, **NOT_DELETED},
         {"_id": 0, "slug": 1, "title": 1, "published_title": 1},
         sort=[("order", 1)]
     )
@@ -540,7 +586,7 @@ class FeedbackBody(BaseModel):
 
 @router.post("/articles/{slug}/feedback")
 async def submit_feedback(slug: str, body: FeedbackBody):
-    article = kb_articles.find_one({"slug": slug, "published": True})
+    article = kb_articles.find_one({"slug": slug, "published": True, **NOT_DELETED})
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     kb_feedback.insert_one({
@@ -571,7 +617,7 @@ async def search_articles(q: str = ""):
         return {"results": []}
     regex = {"$regex": q, "$options": "i"}
     results = list(kb_articles.find(
-        {"published": True, "$or": [{"title": regex}, {"content_markdown": regex}]},
+        {"published": True, **NOT_DELETED, "$or": [{"title": regex}, {"content_markdown": regex}]},
         {"_id": 0, "slug": 1, "title": 1, "section_key": 1, "nav_group_key": 1,
          "nav_group_label": 1, "section_label": 1, "content_markdown": 1}
     ).sort("order", 1).limit(20))
@@ -599,8 +645,10 @@ async def search_articles(q: str = ""):
 
 @router.get("/admin/articles")
 async def admin_list_articles(current_user: dict = Depends(get_current_user)):
-    # Exclude content_markdown from listing for performance (loaded on demand per-article)
-    articles = list(kb_articles.find({}, {"_id": 0, "content_markdown": 0}).sort("order", 1))
+    # Exclude content_markdown from listing for performance (loaded on demand per-article).
+    # Soft-deleted articles have their own dedicated GET /admin/trash listing —
+    # excluded here (NOT_DELETED) so the regular editor list doesn't show them.
+    articles = list(kb_articles.find(NOT_DELETED, {"_id": 0, "content_markdown": 0}).sort("order", 1))
     nav = kb_navigation.find_one({}, {"_id": 0})
     # Attach feedback stats per article
     feedback_pipeline = [
@@ -616,8 +664,10 @@ async def admin_list_articles(current_user: dict = Depends(get_current_user)):
 
 @router.get("/admin/articles/{slug}")
 async def admin_get_article(slug: str, current_user: dict = Depends(get_current_user)):
-    """Fetch a single article with full content for editing."""
-    article = kb_articles.find_one({"slug": slug}, {"_id": 0})
+    """Fetch a single article with full content for editing. A soft-deleted
+    article isn't editable through this path — it lives in Trash until
+    restored (GET/POST /admin/trash...)."""
+    article = kb_articles.find_one({"slug": slug, **NOT_DELETED}, {"_id": 0})
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     return article
@@ -757,8 +807,9 @@ async def update_article(slug: str, body: ArticleUpdate, current_user: dict = De
     delete or move a page, so it isn't owner-gated. Every edit stamps
     reviewer_edited_by/reviewer_edited_at so there's an audit trail of who
     touched content that isn't the owner (kept regardless of role, so an
-    owner's own edits are tracked the same way)."""
-    article = kb_articles.find_one({"slug": slug})
+    owner's own edits are tracked the same way). A trashed article can't be
+    edited through this path — restore it first."""
+    article = kb_articles.find_one({"slug": slug, **NOT_DELETED})
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
@@ -799,19 +850,273 @@ async def update_article(slug: str, body: ArticleUpdate, current_user: dict = De
 
 @router.delete("/admin/articles/{slug}")
 async def delete_article(slug: str, current_user: dict = Depends(get_current_user)):
-    """Owner-only (Phase 1): deleting a page is a structural mutation."""
+    """Owner-only (Phase 1): deleting a page is a structural mutation.
+    Phase 2: this is now a SOFT delete (help-doc-v3 parity) — the page moves
+    to Trash for 90 days rather than being destroyed outright. The
+    kb_articles document is kept (just flagged), only its nav-tree entry is
+    removed so it disappears from the live sidebar/public site immediately.
+    See GET/POST/DELETE /admin/trash... for list/restore/permanent-delete."""
     _owner_only(current_user)
-    result = kb_articles.delete_one({"slug": slug})
-    if result.deleted_count == 0:
+    article = kb_articles.find_one({"slug": slug, **NOT_DELETED}, {"_id": 0, "slug": 1})
+    if not article:
         raise HTTPException(status_code=404, detail="Article not found")
-    # Prune the now-dangling page node from the nav tree, if present.
+
+    # Remember exactly where this page lived in the nav tree (which group
+    # `key` it was a direct child of, and its index in that group's
+    # children) before pruning it out, so restore can put it back exactly
+    # where it was.
+    trash_nav = None
     nav_doc = kb_navigation.find_one({})
     if nav_doc:
-        groups, changed = _prune_slug(nav_doc.get("groups", []), slug)
+        groups = nav_doc.get("groups", [])
+        trash_nav = _find_page_location(groups, slug)
+        new_groups, changed = _prune_slug(groups, slug)
         if changed:
-            kb_navigation.update_one({}, {"$set": {"groups": groups}})
-            _sync_articles_from_tree(groups)
+            kb_navigation.update_one({}, {"$set": {"groups": new_groups}})
+            _sync_articles_from_tree(new_groups)
+
+    now = datetime.now(timezone.utc)
+    kb_articles.update_one({"slug": slug}, {"$set": {
+        "deleted_at": now,
+        "deleted_by": current_user.get("email"),
+        "deleted_by_name": current_user.get("name"),
+        "trash_nav": trash_nav,
+        "updated_at": now,
+    }})
+    # Cascade: this page is no longer live, so pull it out of any active
+    # review assignment too (review.py's existing one-assignee-per-page
+    # cascade helper — deletes the assignment doc if it becomes empty).
+    _unassign_slugs([slug])
+    return {"message": "Article moved to Trash"}
+
+
+# ── Trash (soft-delete) ────────────────────────────────────────
+
+@router.get("/admin/trash")
+async def list_trash(current_user: dict = Depends(get_current_user)):
+    """Owner-only: list soft-deleted articles, newest-deleted-first. Anything
+    past the 90-day retention window is lazily hard-deleted right here on
+    read (help-doc-v3 parity) — no further cascade is needed for a purge
+    that happens this way, since review assignments were already cleared at
+    soft-delete time."""
+    _owner_only(current_user)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=TRASH_RETENTION_DAYS)
+    kb_articles.delete_many({"deleted_at": {"$ne": None, "$lt": cutoff}})
+    items = list(kb_articles.find(
+        {"deleted_at": {"$ne": None}},
+        {"_id": 0, "slug": 1, "title": 1, "published": 1,
+         "deleted_at": 1, "deleted_by": 1, "deleted_by_name": 1},
+    ).sort("deleted_at", -1).limit(500))
+    now = datetime.now(timezone.utc)
+    for it in items:
+        deleted_at = it.get("deleted_at")
+        try:
+            # PyMongo/mongomock hand back naive datetimes on read even though
+            # we always write timezone-aware UTC ones on insert (the BSON
+            # wire encoding is UTC-epoch based regardless of the python
+            # tzinfo on the way in) — normalize before subtracting so this
+            # doesn't raise on a real MongoDB instance either.
+            da = deleted_at if deleted_at.tzinfo else deleted_at.replace(tzinfo=timezone.utc)
+            elapsed_days = (now - da).days if isinstance(deleted_at, datetime) else 0
+            it["days_left"] = max(0, TRASH_RETENTION_DAYS - elapsed_days)
+        except Exception:
+            it["days_left"] = TRASH_RETENTION_DAYS
+    return {"trash": items}
+
+
+@router.post("/admin/trash/{slug}/restore")
+async def restore_article(slug: str, current_user: dict = Depends(get_current_user)):
+    """Owner-only: restore a trashed article and re-insert its page node back
+    into kb_navigation at the exact (parent group key, index) recorded at
+    delete time. If that parent group no longer exists (e.g. it was itself
+    deleted/renamed while this page sat in Trash), fall back to appending
+    the page at the top level of the tree, and say so in the response."""
+    _owner_only(current_user)
+    article = kb_articles.find_one({"slug": slug, "deleted_at": {"$ne": None}}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="Trashed article not found")
+
+    now = datetime.now(timezone.utc)
+    kb_articles.update_one({"slug": slug}, {"$set": {
+        "deleted_at": None, "deleted_by": None, "deleted_by_name": None,
+        "trash_nav": None, "updated_at": now,
+    }})
+
+    trash_nav = article.get("trash_nav") or {}
+    parent_key = trash_nav.get("parent_key")
+    index = trash_nav.get("index", 0)
+    fell_back = False
+
+    nav_doc = kb_navigation.find_one({})
+    groups = (nav_doc or {}).get("groups", [])
+    page_node = {"type": "page", "slug": slug}
+    target = _find_group(groups, parent_key) if parent_key else None
+    if target is not None:
+        children = target.setdefault("children", [])
+        idx = min(max(index, 0), len(children))
+        children.insert(idx, page_node)
+    else:
+        groups.append(page_node)
+        fell_back = True
+
+    if nav_doc:
+        kb_navigation.update_one({}, {"$set": {"groups": groups}})
+    else:
+        kb_navigation.insert_one({"groups": groups, "schema_version": 2, "updated_at": now})
+    _sync_articles_from_tree(groups)
+
+    result = {"message": "Article restored", "fell_back_to_top_level": fell_back}
+    if fell_back:
+        result["note"] = ("Original group no longer exists — the page was appended at the "
+                           "top level of the navigation tree. Move it into place from Settings > Navigation.")
+    return result
+
+
+@router.delete("/admin/trash/{slug}")
+async def purge_article(slug: str, current_user: dict = Depends(get_current_user)):
+    """Owner-only: permanently delete a trashed article. Irreversible. No
+    further cascade needed — review assignments were already cleared when
+    the article was soft-deleted."""
+    _owner_only(current_user)
+    article = kb_articles.find_one({"slug": slug, "deleted_at": {"$ne": None}}, {"_id": 0, "slug": 1})
+    if not article:
+        raise HTTPException(status_code=404, detail="Trashed article not found")
+    kb_articles.delete_one({"slug": slug})
+    return {"message": "Permanently deleted"}
+
+
+# ── Version history ─────────────────────────────────────────────
+#
+# Ported from help-doc-v3's version-control endpoints. Confirmed against
+# help-doc-v3/backend/server.py (DocumentVersion model + the
+# /versions.../restore routes, ~lines 224-1520): a version snapshot there is
+# NOT taken automatically on every save of the document-update endpoint —
+# it's an explicit, user-named action ("Create Version Snapshot" in
+# VersionHistoryPanel.jsx, POST .../versions with a version_name). Restore
+# auto-creates one backup snapshot labeled "Auto-backup before restore to
+# '<name>'" immediately before overwriting, then copies only content+title
+# from the old version onto the live document — it does not touch the
+# document's id/slug or its position anywhere.
+#
+# Trinity mirrors that exactly here: kb_article_versions holds explicit,
+# unlimited-count snapshots (no auto-snapshot hook inside update_article —
+# that would just be noise on every keystroke-triggered save and doesn't
+# match what help-doc-v3 actually does). A snapshot captures every field
+# ArticleUpdate accepts (not just content_markdown/title) since that's a
+# strictly more useful historical record, but restore only ever writes back
+# the CONTENT fields (title/description/content_markdown/icon/sidebar_title/
+# keywords/tags) — never slug/nav_group_key/section_key/order/published —
+# matching help-doc-v3's restore, which never touches structure either.
+
+VERSION_SNAPSHOT_FIELDS = [
+    "title", "slug", "description", "section_key", "section_label",
+    "nav_group_key", "nav_group_label", "content_markdown", "published",
+    "order", "icon", "sidebar_title", "keywords", "tags",
+]
+RESTORE_CONTENT_FIELDS = [
+    "title", "description", "content_markdown", "icon", "sidebar_title", "keywords", "tags",
+]
+
+
+class CreateVersionRequest(BaseModel):
+    label: Optional[str] = None
+
+
+def _snapshot_article_fields(article: dict) -> dict:
+    return {k: article.get(k) for k in VERSION_SNAPSHOT_FIELDS}
+
+
+def _save_article_version(slug: str, article: dict, label: str, current_user: dict) -> dict:
+    doc = {
+        "id": str(uuid.uuid4()),
+        "article_slug": slug,
+        "label": label,
+        "snapshot": _snapshot_article_fields(article),
+        "created_by": current_user.get("email"),
+        "created_by_name": current_user.get("name"),
+        "created_at": datetime.now(timezone.utc),
+    }
+    kb_article_versions.insert_one(dict(doc))
+    doc.pop("_id", None)
+    return doc
+
+
+@router.get("/admin/articles/{slug}/versions")
+async def list_article_versions(slug: str, current_user: dict = Depends(get_current_user)):
+    """Owner-only: list an article's saved versions, newest first. Snapshot
+    content is omitted from the list (fetch a single version for that)."""
+    _owner_only(current_user)
+    versions = list(kb_article_versions.find(
+        {"article_slug": slug}, {"_id": 0, "snapshot": 0}
+    ).sort("created_at", -1).limit(200))
+    return {"versions": versions}
+
+
+@router.post("/admin/articles/{slug}/versions")
+async def create_article_version(slug: str, body: CreateVersionRequest, current_user: dict = Depends(get_current_user)):
+    """Owner-only: explicitly save a named snapshot of the article's current
+    state (help-doc-v3 parity — versions are user-triggered, not automatic
+    on every save)."""
+    _owner_only(current_user)
+    article = kb_articles.find_one({"slug": slug, **NOT_DELETED}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    label = body.label.strip() if body.label and body.label.strip() else \
+        f"Saved on {datetime.now(timezone.utc).strftime('%b %d, %Y %H:%M UTC')}"
+    version = _save_article_version(slug, article, label, current_user)
+    return {"message": "Version created", "version": version}
+
+
+@router.get("/admin/articles/{slug}/versions/{version_id}")
+async def get_article_version(slug: str, version_id: str, current_user: dict = Depends(get_current_user)):
+    """Owner-only: fetch one version's full snapshot."""
+    _owner_only(current_user)
+    version = kb_article_versions.find_one({"id": version_id, "article_slug": slug}, {"_id": 0})
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+    return version
+
+
+@router.delete("/admin/articles/{slug}/versions/{version_id}")
+async def delete_article_version(slug: str, version_id: str, current_user: dict = Depends(get_current_user)):
+    """Owner-only: delete a single saved version."""
+    _owner_only(current_user)
+    result = kb_article_versions.delete_one({"id": version_id, "article_slug": slug})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Version not found")
     return {"message": "Deleted"}
+
+
+@router.post("/admin/articles/{slug}/versions/{version_id}/restore")
+async def restore_article_version(slug: str, version_id: str, current_user: dict = Depends(get_current_user)):
+    """Owner-only: restore the article's content to a previous version.
+    Auto-snapshots the CURRENT state first (labeled "Auto-backup before
+    restore to '<version label>'"), then overwrites only content fields —
+    slug/nav position/order/published are left untouched, matching
+    help-doc-v3's restore_document_version exactly."""
+    _owner_only(current_user)
+    version = kb_article_versions.find_one({"id": version_id, "article_slug": slug}, {"_id": 0})
+    if not version:
+        raise HTTPException(status_code=404, detail="Version not found")
+    article = kb_articles.find_one({"slug": slug, **NOT_DELETED}, {"_id": 0})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+
+    backup_label = f"Auto-backup before restore to '{version.get('label', 'unknown')}'"
+    _save_article_version(slug, article, backup_label, current_user)
+
+    now = datetime.now(timezone.utc)
+    snap = version.get("snapshot") or {}
+    restore_updates = {k: snap.get(k) for k in RESTORE_CONTENT_FIELDS if snap.get(k) is not None}
+    restore_updates["updated_at"] = now
+    restore_updates["reviewer_edited_by"] = current_user.get("email")
+    restore_updates["reviewer_edited_at"] = now.isoformat()
+    kb_articles.update_one({"slug": slug}, {"$set": restore_updates})
+
+    return {
+        "message": f"Article restored to version '{version.get('label')}'",
+        "article": kb_articles.find_one({"slug": slug}, {"_id": 0}),
+    }
 
 
 # ── Admin image upload ────────────────────────────────────────

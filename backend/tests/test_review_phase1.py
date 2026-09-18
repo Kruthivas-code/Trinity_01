@@ -104,11 +104,17 @@ class TestOwnerGatedCRUD:
         assert kb_articles.find_one({"slug": "to-delete"}) is not None
 
     def test_delete_article_200_for_owner(self):
+        # Phase 2: delete_article is now a SOFT delete (moves to Trash rather
+        # than destroying the row) — see test_kb_phase2_trash_versions.py for
+        # full soft-delete/restore/purge coverage. This just confirms the
+        # owner-gating on the endpoint itself still holds.
         _seed_article("to-delete")
         _as(OWNER)
         resp = client.delete("/api/kb/admin/articles/to-delete")
         assert resp.status_code == 200
-        assert kb_articles.find_one({"slug": "to-delete"}) is None
+        doc = kb_articles.find_one({"slug": "to-delete"})
+        assert doc is not None
+        assert doc.get("deleted_at") is not None
 
     def test_update_navigation_403_for_non_owner(self):
         _as(AGENT)

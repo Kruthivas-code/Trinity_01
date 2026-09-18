@@ -5,15 +5,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   ArrowLeft, Save, Loader2, Globe, Map, Palette, Share2,
-  Image as ImageIcon, ExternalLink
+  Image as ImageIcon, ExternalLink, Trash2
 } from 'lucide-react';
 import { NavManager } from './NavManager';
+import { TrashPanel } from './TrashPanel';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
 const TABS = [
   { key: 'global', label: 'Global', icon: Globe },
   { key: 'navigation', label: 'Navigation', icon: Map },
+  { key: 'trash', label: 'Trash', icon: Trash2 },
   { key: 'design', label: 'Design Configuration', icon: Palette },
   { key: 'social', label: 'Social Links', icon: Share2 },
 ];
@@ -122,6 +124,23 @@ const NavigationSection = ({ navGroups, articles, onSaveNav, theme, isOwner }) =
     ) : (
       <div className={`text-sm ${theme.textSecondary}`} data-testid="navigation-readonly">
         Navigation editing is owner-only.
+      </div>
+    )}
+  </div>
+);
+
+// ── Trash Section ─────────────────────────────────────────
+// Phase 2 (help-doc-v3 port): soft-deleted pages. Owner-only server side
+// (GET/POST/DELETE /api/kb/admin/trash...), same as Navigation — a non-owner
+// gets the same read-only notice used there instead of the panel.
+const TrashSection = ({ theme, isOwner, onRefresh }) => (
+  <div data-testid="settings-trash">
+    {!isOwner && <OwnerOnlyNote theme={theme} />}
+    {isOwner ? (
+      <TrashPanel theme={theme} onRestored={onRefresh} />
+    ) : (
+      <div className={`text-sm ${theme.textSecondary}`} data-testid="trash-readonly">
+        Trash is owner-only.
       </div>
     )}
   </div>
@@ -362,13 +381,14 @@ const SocialSection = ({ theme, isDark }) => {
 };
 
 // ── Main Settings Component ──────────────────────────────
-export const UnifiedSettings = ({ navGroups, articles, onSaveNav, onClose, theme, isDark, isOwner }) => {
+export const UnifiedSettings = ({ navGroups, articles, onSaveNav, onClose, theme, isDark, isOwner, onRefresh }) => {
   const [activeTab, setActiveTab] = useState('global');
 
   const renderSection = () => {
     switch (activeTab) {
       case 'global': return <GlobalSection theme={theme} isDark={isDark} isOwner={isOwner} />;
       case 'navigation': return <NavigationSection navGroups={navGroups} articles={articles} onSaveNav={onSaveNav} theme={theme} isDark={isDark} isOwner={isOwner} />;
+      case 'trash': return <TrashSection theme={theme} isOwner={isOwner} onRefresh={onRefresh} />;
       case 'design': return <DesignSection theme={theme} isDark={isDark} isOwner={isOwner} />;
       // Social links aren't owner-gated server side (open to any signed-in
       // user, like content edits) — no restriction here either.
@@ -423,6 +443,7 @@ export const UnifiedSettings = ({ navGroups, articles, onSaveNav, onClose, theme
             <p className={`text-xs mb-6 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
               {activeTab === 'global' && 'Configure site-wide metadata for your documentation site.'}
               {activeTab === 'navigation' && 'Organize the sidebar navigation structure.'}
+              {activeTab === 'trash' && 'Restore a deleted page or remove it permanently.'}
               {activeTab === 'design' && 'Customize the visual appearance of your docs.'}
               {activeTab === 'social' && 'Add social media links shown across your docs.'}
             </p>
