@@ -5,7 +5,7 @@
  * Auto-saves on close.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Trash2, Plus, Globe, Tag, Search, FileText, AlignLeft, Type, ToggleLeft } from 'lucide-react';
+import { X, Trash2, Plus, Tag, Search, FileText, AlignLeft, ToggleLeft, Settings2 } from 'lucide-react';
 
 const DeleteConfirmation = ({ articleTitle, onConfirm, onCancel, isDark }) => (
   <div className="fixed inset-0 z-[60] flex items-center justify-center" data-testid="delete-confirmation-overlay">
@@ -33,7 +33,7 @@ const DeleteConfirmation = ({ articleTitle, onConfirm, onCancel, isDark }) => (
   </div>
 );
 
-export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, isDark, isOwner }) => {
+export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, isDark, isOwner, onOpenMeta }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [newKeyword, setNewKeyword] = useState('');
   const [newTag, setNewTag] = useState('');
@@ -155,33 +155,27 @@ export const PageSettingsSlider = ({ form, setForm, onSave, onDelete, onClose, i
 
         {/* Body — scrollable */}
         <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
-          {/* Meta Title */}
-          <div>
-            <label className={labelClass}>
-              <Type className="w-3.5 h-3.5" /> Title
-            </label>
-            <input
-              value={form.title || ''}
-              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-              placeholder="Page title"
-              className={inputClass}
-              data-testid="slider-title-input"
-            />
-          </div>
-
-          {/* Slug */}
-          <div>
-            <label className={labelClass}>
-              <Globe className="w-3.5 h-3.5" /> Slug
-            </label>
-            <input
-              value={form.slug || ''}
-              onChange={e => setForm(f => ({ ...f, slug: e.target.value }))}
-              placeholder="page-slug"
-              className={`${inputClass} font-mono`}
-              data-testid="slider-slug-input"
-            />
-          </div>
+          {/* Page meta (Phase 4): title/slug/icon/description now live in the
+              guarded PageMetaDialog rather than as free-form fields here —
+              a slug edit specifically needs the redirect + internal-link-
+              rewrite confirmation flow that dialog owns, and duplicating
+              title/slug inputs here (auto-saved on close, no confirmation)
+              would let a slug change slip through without it. */}
+          {onOpenMeta && (
+            <button
+              onClick={onOpenMeta}
+              className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+                isDark ? 'border-slate-700 bg-slate-800/50 text-white hover:bg-slate-800' : 'border-gray-300 bg-gray-50 text-gray-900 hover:bg-gray-100'
+              }`}
+              data-testid="slider-open-meta-btn"
+            >
+              <span className="flex items-center gap-2">
+                <Settings2 className="w-3.5 h-3.5" />
+                Title, slug &amp; icon
+              </span>
+              <span className={`text-xs font-mono truncate max-w-[160px] ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>/{form.slug}</span>
+            </button>
+          )}
 
           {/* Meta Description */}
           <div>

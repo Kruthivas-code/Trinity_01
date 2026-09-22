@@ -37,6 +37,12 @@ ALLOWED_DOMAIN = None
 # configured" and 503s rather than crashing on every request.
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
 
+# Image Picker (Phase 4): Unsplash stock-photo search proxy. Defaults to the
+# literal string "demo" (Unsplash's own public demo Client-ID, rate-limited
+# but functional) when unset -- matching help-doc-v3's server.py exactly, so
+# the stock tab works out of the box in dev without any env var configured.
+UNSPLASH_ACCESS_KEY = os.environ.get("UNSPLASH_ACCESS_KEY", "demo")
+
 # Session cookie domain. The preview/prod infra 307-redirects /api/* to a
 # sibling subdomain (e.g. *.internal.preview.emergentagent.com), so a
 # host-only cookie set on the internal host is NOT sent back to the main

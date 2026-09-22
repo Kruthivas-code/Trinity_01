@@ -882,6 +882,7 @@ const PublicDocs = () => {
 
   const [config, setConfig] = useState(null);
   const [documents, setDocuments] = useState([]);
+  const [redirects, setRedirects] = useState([]); // Phase 4: old-slug -> new-slug
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -971,6 +972,7 @@ const PublicDocs = () => {
       const data = await res.json();
       setConfig(data.config);
       setDocuments(data.documents);
+      setRedirects(data.redirects || []);
       const navTabs = data.config?.navigation?.tabs;
       if (navTabs?.length > 0) setActiveTab(navTabs[0].id);
       if (data.documents.length > 0) {
@@ -1009,6 +1011,21 @@ const PublicDocs = () => {
       if (doc) setSelectedDoc(doc);
     }
   }, [documents, docSlug, selectedDoc, getFirstNavDocument, isNavigating]);
+
+  // Phase 4: honor slug redirects. If the URL slug matches no live document
+  // but a redirect chain (from a guarded slug change in the KB editor)
+  // resolves it to one, follow it instead of silently falling back to the
+  // first nav document. Mirrors help-doc-v3's PublicDocs.jsx redirect
+  // handling, adapted to this component's own documents/docSlug state.
+  useEffect(() => {
+    if (!docSlug || documents.length === 0 || redirects.length === 0) return;
+    const hasLiveDoc = documents.some(d => d.slug?.toLowerCase() === docSlug.toLowerCase());
+    if (hasLiveDoc) return;
+    const map = {};
+    redirects.forEach(r => { if (r.from_slug) map[r.from_slug.toLowerCase()] = r.to_slug; });
+    const target = map[docSlug.toLowerCase()];
+    if (target) navigate(`/docs/${target}`, { replace: true });
+  }, [docSlug, documents, redirects, navigate]);
 
   // SEO: Update document title when selected doc changes
   useEffect(() => {

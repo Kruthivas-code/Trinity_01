@@ -17,8 +17,10 @@ import { EditorThemeProvider } from './kb-editor/EditorThemeContext';
 import { ArticlePreview } from './kb-editor/ArticlePreview';
 import { UnifiedSettings } from './kb-editor/UnifiedSettings';
 import { PageSettingsSlider } from './kb-editor/PageSettingsSlider';
+import { PageMetaDialog } from './kb-editor/PageMetaDialog';
 import { VersionHistoryPanel } from './kb-editor/VersionHistoryPanel';
 import { WritingAssistant, WritingAssistantTrigger } from './kb-editor/WritingAssistant';
+import { AnchorsMenu } from './kb-editor/AnchorsMenu';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -40,6 +42,7 @@ const KBEditor = () => {
   const [editMode, setEditMode] = useState('visual');
   const [showPreview, setShowPreview] = useState(false);
   const [showPageSettings, setShowPageSettings] = useState(false);
+  const [showPageMeta, setShowPageMeta] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showAssistant, setShowAssistant] = useState(false);
   // Tracks the markdown textarea's current text selection so Tweak mode can
@@ -166,12 +169,23 @@ const KBEditor = () => {
       const payload = { ...form, slug };
       delete payload.created_at; delete payload.updated_at; delete payload.source_url;
       delete payload.feedback_total; delete payload.feedback_helpful;
+      // Phase 4: for an EXISTING article, a slug change goes exclusively
+      // through the guarded PageMetaDialog flow (redirect + internal-link
+      // rewrite + owner gate + explicit confirmation) — never as a silent
+      // side effect of the regular Save button. Strip slug from this
+      // payload entirely so a stray local form.slug (there shouldn't be
+      // one now that PageSettingsSlider no longer edits it directly, but
+      // better to guard the payload itself than rely on that) can never
+      // trigger update_article's slug-change path from here. New articles
+      // are unaffected — slug is part of the initial POST, no redirect
+      // needed for a page that doesn't exist yet.
+      if (!isNew) delete payload.slug;
       const url = isNew ? `${API}/api/kb/admin/articles` : `${API}/api/kb/admin/articles/${originalSlug}`;
       const method = isNew ? 'POST' : 'PUT';
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload) });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `Save failed (${res.status})`); }
       setLastSaved(new Date());
-      if (isNew || slug !== originalSlug) {
+      if (isNew) {
         setIsNew(false);
         setOriginalSlug(slug);
         navigate(`/dashboard/kb-editor/${slug}`, { replace: true });
@@ -180,6 +194,25 @@ const KBEditor = () => {
     } catch (e) { console.error(e); alert(e.message); }
     finally { setSaving(false); }
   }, [form, isNew, originalSlug, navigate, fetchAll, canSave]);
+
+  // Page Meta Dialog (Phase 4) — the ONLY path that can change an existing
+  // article's slug. Merges the server's response (which may include title/
+  // icon/description AND, on a slug change, the new slug + a slug_change
+  // summary) back into local form state and, if the slug moved, updates
+  // originalSlug and the URL to match.
+  const handleMetaSaved = useCallback((updated) => {
+    setForm(f => (f ? { ...f, ...updated } : f));
+    if (updated.slug_change) {
+      const { new_slug, pages_touched, links_updated } = updated.slug_change;
+      setOriginalSlug(new_slug);
+      navigate(`/dashboard/kb-editor/${new_slug}`, { replace: true });
+      if (links_updated > 0) {
+        alert(`Slug changed. ${links_updated} internal link${links_updated === 1 ? '' : 's'} updated across ${pages_touched} page${pages_touched === 1 ? '' : 's'}, and a redirect from the old URL was created.`);
+      }
+    }
+    setLastSaved(new Date());
+    fetchAll();
+  }, [fetchAll, navigate]);
 
   // Cmd+S
   useEffect(() => {
@@ -358,6 +391,16 @@ const KBEditor = () => {
               <span className="hidden sm:inline">Preview</span>
             </button>
           )}
+          {/* Anchors Menu (Phase 4) — deep-link headings/anchors, content-level
+              like the writing assistant, not owner-gated. */}
+          {form && !isNew && (
+            <AnchorsMenu
+              content={form.content_markdown || ''}
+              onContentChange={(md) => setForm(f => ({ ...f, content_markdown: md }))}
+              slug={originalSlug || form.slug}
+              theme={theme}
+            />
+          )}
           {/* AI Writing Assistant (Phase 3) — content-level AI help stays
               open to any signed-in user, same as content edits themselves
               (Phase 1 philosophy). Not owner-gated. */}
@@ -415,7 +458,14 @@ const KBEditor = () => {
                     const title = e.target.value;
                     setForm(f => ({
                       ...f, title,
-                      slug: isNew || f.slug === slugify(f.title || '') ? slugify(title) : f.slug
+                      // Phase 4: only auto-derive the slug from the title for
+                      // a brand-new, unsaved page. For an EXISTING article,
+                      // form.slug must stay pinned to originalSlug between
+                      // saves — the guarded PageMetaDialog flow (redirect +
+                      // link rewrite + confirmation) is the only way its
+                      // slug is allowed to change, and handleSave() also
+                      // strips slug from the save payload as a second guard.
+                      slug: isNew ? slugify(title) : f.slug
                     }));
                   }}
                   placeholder="Untitled page"
@@ -534,6 +584,20 @@ const KBEditor = () => {
           onClose={() => setShowPageSettings(false)}
           isDark={isDark}
           isOwner={isOwner}
+          onOpenMeta={!isNew ? () => setShowPageMeta(true) : undefined}
+        />
+      )}
+
+      {/* Page Meta Dialog (Phase 4) — title/slug/icon/description, guarded
+          slug change. Only meaningful for an already-saved article. */}
+      {showPageMeta && form && !isNew && (
+        <PageMetaDialog
+          open={showPageMeta}
+          article={{ slug: originalSlug, title: form.title, icon: form.icon, description: form.description }}
+          isOwner={isOwner}
+          isDark={isDark}
+          onClose={() => setShowPageMeta(false)}
+          onSaved={handleMetaSaved}
         />
       )}
     </div>

@@ -2,10 +2,10 @@
  * UnifiedSettings — Full-page settings panel with sidebar categories
  * Categories: Global, Navigation, Design Configuration, Social Links
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ArrowLeft, Save, Loader2, Globe, Map, Palette, Share2,
-  Image as ImageIcon, ExternalLink, Trash2
+  Image as ImageIcon, ExternalLink, Trash2, Upload
 } from 'lucide-react';
 import { NavManager } from './NavManager';
 import { TrashPanel } from './TrashPanel';
@@ -31,11 +31,68 @@ const GLOBAL_FIELDS = [
   { key: 'custom_domain', label: 'Custom Domain', placeholder: 'docs.yourcompany.com', type: 'text' },
 ];
 
+// Phase 4 (help-doc-v3 port, Configurations Panel gap): the three branding
+// fields that are image URLs. help-doc-v3's ConfigurationsPanel lets you
+// upload a logo/favicon/OG-image straight into these fields instead of only
+// pasting a URL — Trinity's docs-settings endpoints already HAD these
+// fields (meta_title/meta_description/favicon_url/og_image_url/logo_url/
+// footer_text/custom_domain, confirmed by reading get_docs_settings), the
+// genuine gap was only the upload affordance. Reuses the existing
+// POST /api/kb/admin/images endpoint (same one RichTextEditor's toolbar and
+// the Image Picker's Upload tab use) rather than adding a second upload path.
+const IMAGE_URL_FIELDS = new Set(['favicon_url', 'og_image_url', 'logo_url']);
+
 const OwnerOnlyNote = ({ theme }) => (
   <p className={`text-xs ${theme.textMuted} mb-4 px-3 py-2 rounded-lg border ${theme.border} bg-amber-500/5`} data-testid="owner-only-note">
     Only an owner (admin) can change this. You can look, but Save is disabled.
   </p>
 );
+
+const UploadableUrlField = ({ value, onChange, placeholder, theme, disabled, testId }) => {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/api/kb/admin/images`, { method: 'POST', credentials: 'include', body: formData });
+      if (!res.ok) throw new Error('Upload failed');
+      const { url } = await res.json();
+      onChange(url);
+    } catch (err) {
+      alert('Upload failed: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      {value && (
+        <img src={value} alt="" className={`w-9 h-9 object-contain rounded border flex-shrink-0 ${theme.inputBg} ${theme.inputBorder}`} style={theme.inputBgStyle} />
+      )}
+      <input
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={`flex-1 px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors disabled:opacity-50`}
+        style={theme.inputBgStyle} data-testid={testId} />
+      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={disabled || uploading}
+        title="Upload image"
+        className={`p-2.5 rounded-lg border transition-colors flex-shrink-0 disabled:opacity-50 ${theme.inputBg} ${theme.inputBorder} ${theme.textMuted} ${theme.hoverText}`}
+        data-testid={`${testId}-upload-btn`}>
+        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+      </button>
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+    </div>
+  );
+};
 
 const GlobalSection = ({ theme, isDark, isOwner }) => {
   const [data, setData] = useState({});
@@ -76,6 +133,10 @@ const GlobalSection = ({ theme, isDark, isOwner }) => {
               placeholder={placeholder} rows={3}
               className={`w-full px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors resize-none`}
               style={theme.inputBgStyle} data-testid={`settings-${key}`} />
+          ) : IMAGE_URL_FIELDS.has(key) ? (
+            <UploadableUrlField
+              value={data[key]} onChange={v => setData(p => ({ ...p, [key]: v }))}
+              placeholder={placeholder} theme={theme} disabled={!isOwner} testId={`settings-${key}`} />
           ) : (
             <input value={data[key] || ''} onChange={e => setData(p => ({ ...p, [key]: e.target.value }))}
               placeholder={placeholder}

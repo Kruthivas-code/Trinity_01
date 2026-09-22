@@ -4,13 +4,14 @@ Serves articles for the help.emergent.sh-style KB frontend.
 """
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import Response
-from database import db
+from database import db, UNSPLASH_ACCESS_KEY
 from dependencies import get_current_user
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 from pymongo import UpdateOne
 import os
+import re
 import uuid
 import logging
 import requests
@@ -38,6 +39,11 @@ kb_feedback = db["kb_feedback"]
 kb_settings = db["kb_settings"]
 # Phase 2:
 kb_article_versions = db["kb_article_versions"]
+# Phase 4: guarded slug changes (see "Slug change + redirects" section below).
+# One document per old_slug: {old_slug, new_slug, created_at}. old_slug is
+# the effective unique key (upserted on), so a slug's redirect always points
+# at wherever it last moved to.
+kb_redirects = db["kb_redirects"]
 
 # Trash retention window (help-doc-v3 parity): a soft-deleted article is kept
 # for 90 days, then lazily purged the next time GET /admin/trash is called.
@@ -491,7 +497,20 @@ async def get_public_data():
         "tabs_enabled": tabs_enabled,
     }
 
-    return {"project": project, "config": config, "documents": documents}
+    # Phase 4: redirects for old slugs, resolved to wherever they currently
+    # point (following any chain), included ONLY when the final target is a
+    # live published article. PublicDocs.jsx maps this the same way
+    # help-doc-v3's own PublicDocs.jsx maps its `redirects` field: if the
+    # URL slug isn't in `documents`, look it up here and navigate to
+    # `to_slug` — no new endpoint needed since this is the one call it
+    # already makes on every load.
+    redirects = []
+    for r in kb_redirects.find({}, {"_id": 0, "old_slug": 1}):
+        resolved = _resolve_redirect(r["old_slug"])
+        if resolved:
+            redirects.append({"from_slug": r["old_slug"], "to_slug": resolved})
+
+    return {"project": project, "config": config, "documents": documents, "redirects": redirects}
 
 
 @router.get("/sitemap.xml")
@@ -547,6 +566,18 @@ async def list_articles(nav_group: Optional[str] = None, section: Optional[str] 
 async def get_article(slug: str):
     article = kb_articles.find_one({"slug": slug, "published": True, **NOT_DELETED}, {"_id": 0})
     if not article:
+        # Phase 4: a slug miss might be a page that got renamed out from under
+        # this URL. Follow kb_redirects (written by update_article's guarded
+        # slug-change) to a currently-live article and hand the caller enough
+        # to redirect, instead of a bare 404. NOTE: the actual public site
+        # (PublicDocs.jsx) doesn't call this per-article endpoint at all today
+        # — it resolves everything from GET /public-data's `documents` list
+        # client-side — so this is mainly for API consumers hitting this
+        # route directly; PublicDocs.jsx's own redirect-following reads the
+        # `redirects` list added to get_public_data() below instead.
+        resolved = _resolve_redirect(slug)
+        if resolved:
+            return {"redirect_to": resolved}
         raise HTTPException(status_code=404, detail="Article not found")
     # Prefer the published snapshot; fall back to live content when absent
     # (keeps already-published articles rendering with zero backfill).
@@ -800,6 +831,152 @@ async def create_article(body: ArticleCreate, current_user: dict = Depends(get_c
     return kb_articles.find_one({"slug": body.slug}, {"_id": 0})
 
 
+# ── Slug change + redirects (Phase 4) ───────────────────────────
+#
+# Trinity's internal links are root-relative `/docs/{slug}` (confirmed
+# against frontend/src/components/docs/Cards.jsx's `navigate(href)` and
+# App.js's `<Route path="/docs/:slug">` — NOT help-doc-v3's bare `/{slug}`,
+# which has no `/docs` prefix in its own routing). The rewrite regex below
+# matches that real format.
+#
+# help-doc-v3 parity, adapted to Trinity's schema: a redirect is a single
+# `kb_redirects` doc keyed by `old_slug` (upserted, so re-renaming a page
+# just repoints its existing redirect rather than growing a chain of dead
+# entries), plus every *other* redirect whose target was the just-renamed
+# old slug gets repointed to the new slug so existing chains keep resolving
+# in one hop. Nav-tree repointing for the renamed page's OWN slug already
+# happened below this block (unchanged Phase-0-era logic) — redirects only
+# concern uncontrolled prose links in *other* articles' content.
+
+SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+
+def _internal_link_regex(slug: str) -> "re.Pattern":
+    """Match `/docs/{slug}` with a slug boundary — i.e. NOT as a prefix of a
+    longer slug (`/docs/deployment-types` must not match `/docs/deployment`).
+    Boundary chars mirror what can legally follow a path segment in Markdown/
+    MDX: a closing paren/quote (markdown link, href="..."), a `#` (anchor),
+    a `?` (query string), whitespace, or end of string."""
+    return re.compile(r"/docs/" + re.escape(slug) + r"(?=[)\"'#?\s]|$)")
+
+
+def _count_internal_links(old_slug: str, exclude_slug: str) -> tuple:
+    """Dry-run: how many OTHER live articles link to old_slug, and how many
+    total link occurrences. Never mutates. Checks both content_markdown (the
+    draft) and published_content_markdown (what the public site actually
+    serves) since either can carry stale links after a rename."""
+    pattern = _internal_link_regex(old_slug)
+    pages = 0
+    links = 0
+    for a in kb_articles.find({"slug": {"$ne": exclude_slug}, **NOT_DELETED},
+                               {"_id": 0, "slug": 1, "content_markdown": 1, "published_content_markdown": 1}):
+        cnt = len(pattern.findall(a.get("content_markdown") or "")) + \
+              len(pattern.findall(a.get("published_content_markdown") or ""))
+        if cnt:
+            pages += 1
+            links += cnt
+    return pages, links
+
+
+def _rewrite_internal_links(old_slug: str, new_slug: str, exclude_slug: str) -> tuple:
+    """Apply: rewrite `/docs/{old_slug}` -> `/docs/{new_slug}` across every
+    OTHER live article's content_markdown and published_content_markdown,
+    persisting via bulk_write. Returns (pages_touched, links_updated)."""
+    pattern = _internal_link_regex(old_slug)
+    replacement = f"/docs/{new_slug}"
+    ops = []
+    pages = 0
+    links = 0
+    for a in kb_articles.find({"slug": {"$ne": exclude_slug}, **NOT_DELETED},
+                               {"_id": 0, "slug": 1, "content_markdown": 1, "published_content_markdown": 1}):
+        update = {}
+        cm = a.get("content_markdown") or ""
+        new_cm, n1 = pattern.subn(replacement, cm)
+        if n1:
+            update["content_markdown"] = new_cm
+        pcm = a.get("published_content_markdown") or ""
+        new_pcm, n2 = pattern.subn(replacement, pcm)
+        if n2:
+            update["published_content_markdown"] = new_pcm
+        if update:
+            ops.append(UpdateOne({"slug": a["slug"]}, {"$set": update}))
+            pages += 1
+            links += n1 + n2
+    if ops:
+        kb_articles.bulk_write(ops, ordered=False)
+    return pages, links
+
+
+def _write_slug_redirect(old_slug: str, new_slug: str):
+    """Record old_slug -> new_slug, and keep any existing chain resolvable in
+    one hop: every other redirect whose target WAS old_slug now points at
+    new_slug instead. Drops any redirect that would become a self-loop
+    (a page renamed back to a slug it once redirected away from)."""
+    now = datetime.now(timezone.utc)
+    kb_redirects.update_many({"new_slug": old_slug}, {"$set": {"new_slug": new_slug, "updated_at": now}})
+    # Drop any redirect that's now a self-loop. Plain Python comparison
+    # rather than a Mongo-side {"$expr": {"$eq": [...]}} filter -- mongomock
+    # evaluates $expr against a dummy {} probe doc internally and raises
+    # KeyError on a missing field even with ignore_missing_keys, so $expr
+    # doesn't reliably work here across both mongomock and real MongoDB.
+    for doc in list(kb_redirects.find({}, {"_id": 0, "old_slug": 1, "new_slug": 1})):
+        if doc.get("old_slug") == doc.get("new_slug"):
+            kb_redirects.delete_one({"old_slug": doc["old_slug"]})
+    kb_redirects.update_one(
+        {"old_slug": old_slug},
+        {"$set": {"old_slug": old_slug, "new_slug": new_slug, "created_at": now}},
+        upsert=True,
+    )
+
+
+def _resolve_redirect(slug: str, max_hops: int = 10) -> Optional[str]:
+    """Follow the kb_redirects chain starting at `slug` to wherever it
+    currently resolves, but ONLY return a slug that is a live (published,
+    not deleted) article today — a redirect to a slug that was itself
+    deleted or never republished isn't useful to a caller. Bounded hop count
+    guards against a pathological cycle slipping past _write_slug_redirect's
+    self-loop cleanup (e.g. two independent renames racing each other)."""
+    current = slug
+    seen = {slug}
+    for _ in range(max_hops):
+        doc = kb_redirects.find_one({"old_slug": current}, {"_id": 0, "new_slug": 1})
+        if not doc:
+            return None
+        nxt = doc["new_slug"]
+        if nxt in seen:
+            return None  # cycle
+        seen.add(nxt)
+        live = kb_articles.find_one({"slug": nxt, "published": True, **NOT_DELETED}, {"_id": 0, "slug": 1})
+        if live:
+            return nxt
+        current = nxt
+    return None
+
+
+@router.get("/admin/articles/{slug}/slug-preview")
+async def preview_slug_change(slug: str, new_slug: str, current_user: dict = Depends(get_current_user)):
+    """Owner-only dry run for the guarded slug-change flow: how many other
+    pages link to the CURRENT slug (what update_article would rewrite), plus
+    whether new_slug is even available, without mutating anything. Powers
+    the frontend confirmation copy ("this will update N internal links")
+    before the user commits via PUT .../admin/articles/{slug}."""
+    _owner_only(current_user)
+    article = kb_articles.find_one({"slug": slug, **NOT_DELETED}, {"_id": 0, "slug": 1})
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    new_slug = (new_slug or "").strip().lower()
+    slug_valid = bool(SLUG_PATTERN.match(new_slug)) if new_slug else False
+    slug_available = slug_valid and (
+        new_slug == slug or kb_articles.find_one({"slug": new_slug}) is None
+    )
+    pages_count, links_count = (0, 0) if new_slug == slug else _count_internal_links(slug, exclude_slug=slug)
+    return {
+        "old_slug": slug, "new_slug": new_slug,
+        "slug_valid": slug_valid, "slug_available": slug_available,
+        "pages_count": pages_count, "links_count": links_count,
+    }
+
+
 @router.put("/admin/articles/{slug}")
 async def update_article(slug: str, body: ArticleUpdate, current_user: dict = Depends(get_current_user)):
     """Content edits (title/description/body of an EXISTING article) stay
@@ -808,13 +985,32 @@ async def update_article(slug: str, body: ArticleUpdate, current_user: dict = De
     reviewer_edited_by/reviewer_edited_at so there's an audit trail of who
     touched content that isn't the owner (kept regardless of role, so an
     owner's own edits are tracked the same way). A trashed article can't be
-    edited through this path — restore it first."""
+    edited through this path — restore it first.
+
+    Phase 4 extension: a slug change is a STRUCTURAL mutation (it changes
+    the page's public address and every other page's links to it), not a
+    content edit — so unlike every other field this endpoint accepts, a
+    request that changes `slug` is owner-gated (_owner_only), matching how
+    create/delete/navigation edits are already gated (Phase 1's own
+    philosophy: content vs. structure). When it IS a slug change, this also
+    performs the full safe-change: create/repoint a kb_redirects entry from
+    the old slug, and rewrite every other live article's internal
+    `/docs/{old_slug}` links to `/docs/{new_slug}` (content_markdown AND the
+    published snapshot) in the same request — one canonical implementation,
+    reused by both this endpoint and the dedicated
+    GET .../slug-preview dry-run above."""
     article = kb_articles.find_one({"slug": slug, **NOT_DELETED})
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
-    if "slug" in updates and updates["slug"] != slug:
-        conflict = kb_articles.find_one({"slug": updates["slug"]})
+    slug_changing = "slug" in updates and updates["slug"] != slug
+    if slug_changing:
+        _owner_only(current_user)
+        new_slug = updates["slug"].strip().lower()
+        if not SLUG_PATTERN.match(new_slug):
+            raise HTTPException(status_code=400, detail="Slug must be lowercase letters, numbers and hyphens only (e.g. my-page).")
+        updates["slug"] = new_slug
+        conflict = kb_articles.find_one({"slug": new_slug})
         if conflict:
             raise HTTPException(status_code=409, detail="Slug already in use")
     if updates:
@@ -834,10 +1030,11 @@ async def update_article(slug: str, body: ArticleUpdate, current_user: dict = De
             updates["published_at"] = datetime.now(timezone.utc).isoformat()
         kb_articles.update_one({"slug": slug}, {"$set": updates})
     final_slug = updates.get("slug", slug)
+    slug_change_result = None
     # A slug change needs the matching page node in the nav tree repointed too
     # (page nodes reference articles by slug), otherwise the page becomes
     # unreachable from the sidebar even though the article itself still exists.
-    if "slug" in updates and updates["slug"] != slug:
+    if slug_changing:
         nav_doc = kb_navigation.find_one({})
         if nav_doc:
             groups = nav_doc.get("groups", [])
@@ -845,7 +1042,14 @@ async def update_article(slug: str, body: ArticleUpdate, current_user: dict = De
                 if page_node.get("slug") == slug:
                     page_node["slug"] = final_slug
             kb_navigation.update_one({}, {"$set": {"groups": groups}})
-    return kb_articles.find_one({"slug": final_slug}, {"_id": 0})
+        pages_touched, links_updated = _rewrite_internal_links(slug, final_slug, exclude_slug=final_slug)
+        _write_slug_redirect(slug, final_slug)
+        slug_change_result = {"old_slug": slug, "new_slug": final_slug,
+                               "pages_touched": pages_touched, "links_updated": links_updated}
+    result = kb_articles.find_one({"slug": final_slug}, {"_id": 0})
+    if slug_change_result:
+        result["slug_change"] = slug_change_result
+    return result
 
 
 @router.delete("/admin/articles/{slug}")
@@ -1150,6 +1354,53 @@ async def upload_kb_image(file: UploadFile = File(...), current_user: dict = Dep
     })
 
     return {"filename": unique_name, "url": f"/api/kb/images/{unique_name}", "size": len(data)}
+
+
+@router.get("/admin/images/search-stock")
+async def search_stock_images(query: str = "", page: int = 1, per_page: int = 12,
+                                current_user: dict = Depends(get_current_user)):
+    """Image Picker (Phase 4) — Stock tab: proxy a search to Unsplash. Same
+    auth tier as POST /admin/images above (any signed-in user, not
+    owner-gated — this is a content-authoring tool, not a structural one).
+    Unsplash's key is server-side only (routes/kb.py never exposes it to the
+    client) via UNSPLASH_ACCESS_KEY (database.py), defaulting to the public
+    'demo' Client-ID exactly like help-doc-v3's server.py. On any failure
+    (rate-limited demo key, network error, bad key) this returns an empty
+    result with an `error` message rather than 500ing — a slow/unavailable
+    third party shouldn't break the editor."""
+    query = (query or "").strip()
+    if not query:
+        return {"images": [], "total": 0, "total_pages": 0, "page": page}
+    per_page = max(1, min(per_page, 30))
+    page = max(1, page)
+    try:
+        resp = requests.get(
+            "https://api.unsplash.com/search/photos",
+            params={"query": query, "page": page, "per_page": per_page, "orientation": "landscape"},
+            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+    except Exception as e:
+        logger.warning(f"[KB] Unsplash stock image search failed: {e}")
+        return {"images": [], "total": 0, "total_pages": 0, "page": page,
+                "error": "Stock image search is unavailable right now."}
+    images = []
+    for photo in result.get("results", []):
+        user = photo.get("user") or {}
+        images.append({
+            "id": photo.get("id"),
+            "url": (photo.get("urls") or {}).get("regular"),
+            "thumb": (photo.get("urls") or {}).get("thumb"),
+            "small": (photo.get("urls") or {}).get("small"),
+            "alt": photo.get("alt_description") or photo.get("description") or query,
+            "author": user.get("name", ""),
+            "author_url": (user.get("links") or {}).get("html", ""),
+            "source": "unsplash",
+        })
+    return {"images": images, "total": result.get("total", 0),
+            "total_pages": result.get("total_pages", 0), "page": page}
 
 
 @router.get("/admin/images")
