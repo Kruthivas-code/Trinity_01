@@ -607,6 +607,150 @@ async def sitemap_xml():
     return Response(content="\n".join(lines), media_type="application/xml")
 
 
+# ── Phase 6: robots.txt / llms.txt / llms-full.txt ───────────────
+#
+# All three live under /api/kb for the same reason sitemap.xml above does:
+# that prefix is guaranteed reachable in every environment, and trinity has
+# no ingress rule (unlike help-doc-v3's platform) that forwards bare
+# app-root paths like "/robots.txt" to the backend. help-doc-v3 duplicates
+# every SEO route at both an app-root path and an "/api/seo/..." path to
+# cover both cases; trinity doesn't need that duplication since the
+# root-level paths were never reachable here to begin with — /api/kb/* is
+# the one established convention (see sitemap_xml's docstring above).
+
+# AI / LLM crawlers and answer engines explicitly welcomed in robots.txt,
+# same list help-doc-v3 uses (kept in sync so both docs sites stay
+# consistently crawlable by the same bots).
+_AI_BOTS = [
+    "GPTBot", "OAI-SearchBot", "ChatGPT-User",
+    "ClaudeBot", "anthropic-ai", "Claude-Web",
+    "PerplexityBot", "Perplexity-User",
+    "Google-Extended", "Applebot-Extended",
+    "CCBot", "Amazonbot", "Meta-ExternalAgent",
+    "cohere-ai", "YouBot", "DuckAssistBot", "Bytespider",
+]
+
+
+def _kb_robots_body(site_url: str) -> str:
+    lines = [
+        "# Emergent Docs",
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /admin",
+        "Disallow: /admin/",
+        "",
+        "# AI / LLM crawlers and answer engines are explicitly allowed",
+    ]
+    for bot in _AI_BOTS:
+        lines += [f"User-agent: {bot}", "Allow: /", ""]
+    lines += [
+        "# LLM-friendly docs indexes (see https://llmstxt.org)",
+        f"# {site_url}/api/kb/llms.txt",
+        f"# {site_url}/api/kb/llms-full.txt",
+        f"Sitemap: {site_url}/api/kb/sitemap.xml",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _build_kb_llms_txt(site_url: str, full: bool = False) -> str:
+    """Generate an llms.txt (curated index) or llms-full.txt (full content
+    dump) per the https://llmstxt.org convention, ordered by the docs
+    navigation tree. Reuses _walk_pages() -- the same depth-first nav-tree
+    walker get_public_data() and _sync_articles_from_tree() already use --
+    instead of writing a second tree-walker, and the identical
+    {"published": True, **NOT_DELETED} filter every other public KB route
+    uses, so a trashed or unpublished article can never leak in here."""
+    nav_doc = kb_navigation.find_one({}, {"_id": 0})
+    nav_groups = (nav_doc or {}).get("groups", [])
+
+    all_articles = list(kb_articles.find({"published": True, **NOT_DELETED}, {"_id": 0}))
+    articles_by_slug = {a["slug"]: a for a in all_articles if a.get("slug")}
+
+    site_title = "Emergent Docs"
+    site_description = "Documentation and guides for building with Emergent"
+    out = [f"# {site_title}", "", f"> {site_description}", ""]
+
+    last_top_key = object()  # sentinel: never equals a real key or None
+    last_sub_key = None
+    seen_slugs = set()
+
+    for page_node, ancestors in _walk_pages(nav_groups):
+        slug = page_node.get("slug")
+        article = articles_by_slug.get(slug)
+        if not article or not slug or slug in seen_slugs:
+            continue
+        seen_slugs.add(slug)
+
+        top = ancestors[0] if ancestors else None
+        top_key = top.get("key") if top else None
+        if top_key != last_top_key:
+            out.append(f"## {top.get('label', top_key) if top else 'Docs'}")
+            out.append("")
+            last_top_key = top_key
+            last_sub_key = None
+
+        # A nested subgroup below the top-level tab, if any (mirrors
+        # _sync_articles_from_tree's top/immediate distinction).
+        immediate = ancestors[-1] if len(ancestors) > 1 else None
+        sub_key = immediate.get("key") if immediate else None
+        if immediate is not None and sub_key != last_sub_key:
+            out.append(f"**{immediate.get('label', sub_key)}**")
+            out.append("")
+        last_sub_key = sub_key
+
+        title = article.get("published_title") or article.get("title") or slug
+        url = f"{site_url}/docs/{slug}"
+
+        if full:
+            out.append(f"### {title}")
+            out.append(f"Source: {url}")
+            out.append("")
+            content = (article.get("published_content_markdown") or article.get("content_markdown") or "").strip()
+            out.append(content)
+            out.append("")
+            out.append("---")
+            out.append("")
+        else:
+            desc = (article.get("description") or "").strip().replace("\n", " ")
+            line = f"- [{title}]({url})"
+            if desc and desc.lower() != title.lower():
+                line += f": {desc}"
+            out.append(line)
+
+    return "\n".join(out).strip() + "\n"
+
+
+@router.get("/robots.txt", include_in_schema=False)
+async def kb_robots_txt():
+    """AI-bot-aware robots directives, public (no auth). Advertises the
+    llms.txt index and the sitemap."""
+    site_url = os.environ.get("SITE_URL", "").rstrip("/")
+    return Response(content=_kb_robots_body(site_url), media_type="text/plain")
+
+
+@router.get("/llms.txt", include_in_schema=False)
+async def kb_llms_txt():
+    """Curated markdown index of every published article, grouped by nav
+    section, per the llms.txt convention (https://llmstxt.org). Built live
+    from Mongo on every request -- not a static generated file."""
+    site_url = os.environ.get("SITE_URL", "").rstrip("/")
+    body = _build_kb_llms_txt(site_url, full=False)
+    return Response(content=body, media_type="text/plain; charset=utf-8")
+
+
+@router.get("/llms-full.txt", include_in_schema=False)
+async def kb_llms_full_txt():
+    """Same index as llms.txt but with each article's full published markdown
+    content concatenated under its heading -- the llms-full.txt variant of
+    the llmstxt.org convention. Built live from Mongo, in memory; trinity's
+    KB corpus is small enough (hundreds, not millions, of articles) that this
+    doesn't need streaming to stay within normal response patterns."""
+    site_url = os.environ.get("SITE_URL", "").rstrip("/")
+    body = _build_kb_llms_txt(site_url, full=True)
+    return Response(content=body, media_type="text/plain; charset=utf-8")
+
+
 @router.get("/articles")
 async def list_articles(nav_group: Optional[str] = None, section: Optional[str] = None):
     query = {"published": True, **NOT_DELETED}
