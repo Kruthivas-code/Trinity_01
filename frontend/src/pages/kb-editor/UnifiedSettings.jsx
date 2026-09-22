@@ -2,18 +2,20 @@
  * UnifiedSettings — Full-page settings panel with sidebar categories
  * Categories: Global, Navigation, Design Configuration, Social Links
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   ArrowLeft, Save, Loader2, Globe, Map, Palette, Share2,
-  Plus, Trash2, FolderOpen, ArrowRight, FileText, Image as ImageIcon,
-  ExternalLink
+  Image as ImageIcon, ExternalLink, Trash2, Upload
 } from 'lucide-react';
+import { NavManager } from './NavManager';
+import { TrashPanel } from './TrashPanel';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
 const TABS = [
   { key: 'global', label: 'Global', icon: Globe },
   { key: 'navigation', label: 'Navigation', icon: Map },
+  { key: 'trash', label: 'Trash', icon: Trash2 },
   { key: 'design', label: 'Design Configuration', icon: Palette },
   { key: 'social', label: 'Social Links', icon: Share2 },
 ];
@@ -29,7 +31,70 @@ const GLOBAL_FIELDS = [
   { key: 'custom_domain', label: 'Custom Domain', placeholder: 'docs.yourcompany.com', type: 'text' },
 ];
 
-const GlobalSection = ({ theme, isDark }) => {
+// Phase 4 (help-doc-v3 port, Configurations Panel gap): the three branding
+// fields that are image URLs. help-doc-v3's ConfigurationsPanel lets you
+// upload a logo/favicon/OG-image straight into these fields instead of only
+// pasting a URL — Trinity's docs-settings endpoints already HAD these
+// fields (meta_title/meta_description/favicon_url/og_image_url/logo_url/
+// footer_text/custom_domain, confirmed by reading get_docs_settings), the
+// genuine gap was only the upload affordance. Reuses the existing
+// POST /api/kb/admin/images endpoint (same one RichTextEditor's toolbar and
+// the Image Picker's Upload tab use) rather than adding a second upload path.
+const IMAGE_URL_FIELDS = new Set(['favicon_url', 'og_image_url', 'logo_url']);
+
+const OwnerOnlyNote = ({ theme }) => (
+  <p className={`text-xs ${theme.textMuted} mb-4 px-3 py-2 rounded-lg border ${theme.border} bg-amber-500/5`} data-testid="owner-only-note">
+    Only an owner (admin) can change this. You can look, but Save is disabled.
+  </p>
+);
+
+const UploadableUrlField = ({ value, onChange, placeholder, theme, disabled, testId }) => {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${API}/api/kb/admin/images`, { method: 'POST', credentials: 'include', body: formData });
+      if (!res.ok) throw new Error('Upload failed');
+      const { url } = await res.json();
+      onChange(url);
+    } catch (err) {
+      alert('Upload failed: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      {value && (
+        <img src={value} alt="" className={`w-9 h-9 object-contain rounded border flex-shrink-0 ${theme.inputBg} ${theme.inputBorder}`} style={theme.inputBgStyle} />
+      )}
+      <input
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={`flex-1 px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors disabled:opacity-50`}
+        style={theme.inputBgStyle} data-testid={testId} />
+      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={disabled || uploading}
+        title="Upload image"
+        className={`p-2.5 rounded-lg border transition-colors flex-shrink-0 disabled:opacity-50 ${theme.inputBg} ${theme.inputBorder} ${theme.textMuted} ${theme.hoverText}`}
+        data-testid={`${testId}-upload-btn`}>
+        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+      </button>
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+    </div>
+  );
+};
+
+const GlobalSection = ({ theme, isDark, isOwner }) => {
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,6 +124,7 @@ const GlobalSection = ({ theme, isDark }) => {
 
   return (
     <div className="space-y-5" data-testid="settings-global">
+      {!isOwner && <OwnerOnlyNote theme={theme} />}
       {GLOBAL_FIELDS.map(({ key, label, placeholder, type }) => (
         <div key={key}>
           <label className={`block text-xs font-medium ${theme.textMuted} mb-1.5`}>{label}</label>
@@ -67,6 +133,10 @@ const GlobalSection = ({ theme, isDark }) => {
               placeholder={placeholder} rows={3}
               className={`w-full px-3 py-2.5 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors resize-none`}
               style={theme.inputBgStyle} data-testid={`settings-${key}`} />
+          ) : IMAGE_URL_FIELDS.has(key) ? (
+            <UploadableUrlField
+              value={data[key]} onChange={v => setData(p => ({ ...p, [key]: v }))}
+              placeholder={placeholder} theme={theme} disabled={!isOwner} testId={`settings-${key}`} />
           ) : (
             <input value={data[key] || ''} onChange={e => setData(p => ({ ...p, [key]: e.target.value }))}
               placeholder={placeholder}
@@ -88,7 +158,7 @@ const GlobalSection = ({ theme, isDark }) => {
         </label>
       </div>
       <div className="flex justify-end pt-2">
-        <button onClick={handleSave} disabled={saving}
+        <button onClick={handleSave} disabled={saving || !isOwner}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#00A1B2] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity"
           data-testid="save-global-settings">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -100,130 +170,42 @@ const GlobalSection = ({ theme, isDark }) => {
 };
 
 // ── Navigation Section ───────────────────────────────────
-const NavigationSection = ({ navGroups, onSaveNav, onBulkMove, theme, isDark }) => {
-  const [groups, setGroups] = useState(JSON.parse(JSON.stringify(navGroups)));
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [moveTarget, setMoveTarget] = useState(null);
-
-  const addGroup = () => {
-    setGroups([...groups, { key: `group-${Date.now()}`, label: 'New Group', icon: 'file-text', sections: [{ key: 'default', label: 'Default' }] }]);
-  };
-  const removeGroup = (idx) => { if (window.confirm('Delete this nav group?')) setGroups(groups.filter((_, i) => i !== idx)); };
-  const updateGroup = (idx, field, val) => { const g = [...groups]; g[idx] = { ...g[idx], [field]: val }; setGroups(g); };
-  const addSection = (gIdx) => { const g = [...groups]; g[gIdx].sections = [...(g[gIdx].sections || []), { key: `section-${Date.now()}`, label: 'New Section' }]; setGroups(g); };
-  const removeSection = (gIdx, sIdx) => { const g = [...groups]; g[gIdx].sections = g[gIdx].sections.filter((_, i) => i !== sIdx); setGroups(g); };
-  const updateSection = (gIdx, sIdx, field, val) => { const g = [...groups]; g[gIdx].sections[sIdx] = { ...g[gIdx].sections[sIdx], [field]: val }; setGroups(g); };
-  const moveGroup = (idx, dir) => { const g = [...groups]; [g[idx], g[idx + dir]] = [g[idx + dir], g[idx]]; setGroups(g); };
-  const moveSection = (gIdx, sIdx, dir) => { const g = [...groups]; const s = [...g[gIdx].sections]; [s[sIdx], s[sIdx + dir]] = [s[sIdx + dir], s[sIdx]]; g[gIdx].sections = s; setGroups(g); };
-
-  const getMoveTargets = (gIdx, sIdx) => {
-    const targets = [];
-    groups.forEach((g, gi) => {
-      (g.sections || []).forEach((s, si) => {
-        if (gi !== gIdx || si !== sIdx) targets.push({ gIdx: gi, sIdx: si, groupKey: g.key, groupLabel: g.label, sectionKey: s.key, sectionLabel: s.label });
-      });
-    });
-    return targets;
-  };
-
-  const handleBulkMove = async (sourceGIdx, sourceSIdx, target) => {
-    const srcGroup = navGroups[sourceGIdx] || groups[sourceGIdx];
-    const srcSection = (srcGroup?.sections || [])[sourceSIdx] || groups[sourceGIdx]?.sections?.[sourceSIdx];
-    if (!srcGroup || !srcSection) return;
-    const count = await onBulkMove(srcGroup.key, srcSection.key, target.groupKey, target.groupLabel, target.sectionKey, target.sectionLabel);
-    setMoveTarget(null);
-    if (count > 0) alert(`Moved ${count} article(s) successfully.`);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    await onSaveNav(groups);
-    setSaving(false);
-    setSaved(true); setTimeout(() => setSaved(false), 2000);
-  };
-
-  return (
-    <div className="space-y-4" data-testid="settings-navigation">
-      <div className="flex items-center justify-between">
-        <p className={`text-xs ${theme.textSecondary}`}>Manage navigation tabs and sections for your documentation site.</p>
-        <button onClick={addGroup} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-[#00A1B2] hover:opacity-90 text-white rounded-lg transition-opacity" data-testid="add-group-btn">
-          <Plus className="w-3 h-3" /> Add Tab
-        </button>
+// The recursive drag-and-drop tree editor lives in NavManager — this section
+// just supplies the tree, the article list (for page titles) and the save
+// callback used by the whole nav-editing surface of the KB editor.
+// Editing the nav tree is owner-only (Phase 1): a non-owner gets a read-only
+// view (browse the structure) instead of the interactive editor, since
+// NavManager's every action (rename/reorder/move/delete) ends in the same
+// owner-gated PUT /api/kb/admin/navigation.
+const NavigationSection = ({ navGroups, articles, onSaveNav, theme, isOwner }) => (
+  <div data-testid="settings-navigation">
+    {!isOwner && <OwnerOnlyNote theme={theme} />}
+    {isOwner ? (
+      <NavManager groups={navGroups} articles={articles} onSave={onSaveNav} theme={theme} />
+    ) : (
+      <div className={`text-sm ${theme.textSecondary}`} data-testid="navigation-readonly">
+        Navigation editing is owner-only.
       </div>
+    )}
+  </div>
+);
 
-      <div className="space-y-3">
-        {groups.map((group, gIdx) => (
-          <div key={group.key} className={`border ${theme.border} rounded-xl overflow-hidden`} data-testid={`nav-group-${gIdx}`}>
-            <div className={`flex items-center gap-2 p-3 ${isDark ? 'bg-white/[0.02]' : 'bg-gray-50/80'}`}>
-              <div className="flex flex-col gap-0.5">
-                <button disabled={gIdx === 0} onClick={() => moveGroup(gIdx, -1)} className={`${theme.textTertiary} ${theme.hoverText} disabled:opacity-20 text-[10px] leading-none`}>&#9650;</button>
-                <button disabled={gIdx === groups.length - 1} onClick={() => moveGroup(gIdx, 1)} className={`${theme.textTertiary} ${theme.hoverText} disabled:opacity-20 text-[10px] leading-none`}>&#9660;</button>
-              </div>
-              <input value={group.label} onChange={e => updateGroup(gIdx, 'label', e.target.value)} placeholder="Tab name"
-                className={`flex-1 bg-transparent text-sm font-medium ${theme.text} ${theme.placeholder} outline-none border-b border-transparent focus:border-[#00A1B2] px-1 py-0.5`} />
-              <input value={group.key} onChange={e => updateGroup(gIdx, 'key', e.target.value)} placeholder="key"
-                className={`w-36 ${theme.inputBg} text-xs font-mono ${theme.textMuted} rounded px-2 py-1 border ${theme.inputBorder}`} style={theme.inputBgStyle} />
-              <button onClick={() => removeGroup(gIdx)} className={`p-1 ${theme.textTertiary} hover:text-red-400 rounded`}><Trash2 className="w-3.5 h-3.5" /></button>
-            </div>
-            <div className="p-3 space-y-2">
-              {(group.sections || []).map((sec, sIdx) => (
-                <div key={sec.key} data-testid={`nav-section-${gIdx}-${sIdx}`}>
-                  <div className="flex items-center gap-2 pl-4">
-                    <div className="flex flex-col gap-0.5">
-                      <button disabled={sIdx === 0} onClick={() => moveSection(gIdx, sIdx, -1)} className={`${theme.textTertiary} ${theme.hoverText} disabled:opacity-20 text-[10px] leading-none`}>&#9650;</button>
-                      <button disabled={sIdx === (group.sections || []).length - 1} onClick={() => moveSection(gIdx, sIdx, 1)} className={`${theme.textTertiary} ${theme.hoverText} disabled:opacity-20 text-[10px] leading-none`}>&#9660;</button>
-                    </div>
-                    <FolderOpen className={`w-3.5 h-3.5 ${theme.textTertiary} flex-shrink-0`} />
-                    <input value={sec.label} onChange={e => updateSection(gIdx, sIdx, 'label', e.target.value)} placeholder="Section name"
-                      className={`flex-1 bg-transparent text-sm ${theme.textMuted} ${theme.placeholder} outline-none border-b border-transparent focus:border-[#00A1B2] px-1 py-0.5`} />
-                    <input value={sec.key} onChange={e => updateSection(gIdx, sIdx, 'key', e.target.value)} placeholder="key"
-                      className={`w-28 ${theme.inputBg} text-xs font-mono ${theme.textMuted} rounded px-2 py-1 border ${theme.inputBorder}`} style={theme.inputBgStyle} />
-                    <button onClick={() => setMoveTarget(moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx ? null : { gIdx, sIdx })}
-                      className={`p-1 rounded transition-colors ${moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx ? 'text-[#00A1B2] bg-[#00A1B2]/10' : `${theme.textTertiary} hover:text-[#00A1B2]`}`}
-                      title="Move articles to another section" data-testid={`move-section-${gIdx}-${sIdx}`}>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                    <button onClick={() => removeSection(gIdx, sIdx)} className={`p-1 ${theme.textTertiary} hover:text-red-400 rounded`}><Trash2 className="w-3 h-3" /></button>
-                  </div>
-                  {moveTarget?.gIdx === gIdx && moveTarget?.sIdx === sIdx && (
-                    <div className={`ml-10 mt-2 p-2.5 border ${theme.border} rounded-lg ${isDark ? 'bg-white/[0.02]' : 'bg-gray-50'}`} data-testid="move-target-picker">
-                      <p className={`text-xs ${theme.textMuted} mb-2`}>Move all articles in <strong className={theme.text}>{sec.label}</strong> to:</p>
-                      <div className="space-y-1 max-h-32 overflow-y-auto">
-                        {getMoveTargets(gIdx, sIdx).map((t, i) => (
-                          <button key={i} onClick={() => handleBulkMove(gIdx, sIdx, t)}
-                            className={`w-full text-left px-2.5 py-1.5 text-xs rounded ${theme.hover} ${theme.textMuted} ${theme.hoverText} transition-colors flex items-center gap-2`}
-                            data-testid={`move-target-${i}`}>
-                            <ArrowRight className="w-3 h-3 text-[#00A1B2]" />
-                            <span className={theme.textSecondary}>{t.groupLabel}</span>
-                            <span className={theme.textTertiary}>/</span>
-                            <span>{t.sectionLabel}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-              <button onClick={() => addSection(gIdx)} className={`flex items-center gap-1.5 ml-4 px-2 py-1 text-xs ${theme.textSecondary} hover:text-[#00A1B2] rounded ${theme.hover} transition-colors`} data-testid={`add-section-${gIdx}`}>
-                <Plus className="w-3 h-3" /> Add Section
-              </button>
-            </div>
-          </div>
-        ))}
+// ── Trash Section ─────────────────────────────────────────
+// Phase 2 (help-doc-v3 port): soft-deleted pages. Owner-only server side
+// (GET/POST/DELETE /api/kb/admin/trash...), same as Navigation — a non-owner
+// gets the same read-only notice used there instead of the panel.
+const TrashSection = ({ theme, isOwner, onRefresh }) => (
+  <div data-testid="settings-trash">
+    {!isOwner && <OwnerOnlyNote theme={theme} />}
+    {isOwner ? (
+      <TrashPanel theme={theme} onRestored={onRefresh} />
+    ) : (
+      <div className={`text-sm ${theme.textSecondary}`} data-testid="trash-readonly">
+        Trash is owner-only.
       </div>
-
-      <div className="flex justify-end pt-2">
-        <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-2 px-5 py-2.5 bg-[#00A1B2] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity"
-          data-testid="save-nav-settings">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          {saved ? 'Saved!' : 'Save Navigation'}
-        </button>
-      </div>
-    </div>
-  );
-};
+    )}
+  </div>
+);
 
 // ── Design Configuration Section ─────────────────────────
 const ACCENT_PRESETS = [
@@ -258,7 +240,7 @@ const CODE_THEMES = [
   { key: 'nord', label: 'Nord' },
 ];
 
-const DesignSection = ({ theme, isDark }) => {
+const DesignSection = ({ theme, isDark, isOwner }) => {
   const [config, setConfig] = useState({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -288,6 +270,7 @@ const DesignSection = ({ theme, isDark }) => {
 
   return (
     <div className="space-y-6" data-testid="settings-design">
+      {!isOwner && <OwnerOnlyNote theme={theme} />}
       {/* Accent Color */}
       <div>
         <label className={`block text-xs font-medium ${theme.textMuted} mb-2`}>Accent Color</label>
@@ -379,7 +362,7 @@ const DesignSection = ({ theme, isDark }) => {
       </div>
 
       <div className="flex justify-end pt-2">
-        <button onClick={handleSave} disabled={saving}
+        <button onClick={handleSave} disabled={saving || !isOwner}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#00A1B2] hover:opacity-90 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-opacity"
           data-testid="save-design-settings">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -459,14 +442,17 @@ const SocialSection = ({ theme, isDark }) => {
 };
 
 // ── Main Settings Component ──────────────────────────────
-export const UnifiedSettings = ({ navGroups, onSaveNav, onBulkMove, onClose, theme, isDark }) => {
+export const UnifiedSettings = ({ navGroups, articles, onSaveNav, onClose, theme, isDark, isOwner, onRefresh }) => {
   const [activeTab, setActiveTab] = useState('global');
 
   const renderSection = () => {
     switch (activeTab) {
-      case 'global': return <GlobalSection theme={theme} isDark={isDark} />;
-      case 'navigation': return <NavigationSection navGroups={navGroups} onSaveNav={onSaveNav} onBulkMove={onBulkMove} theme={theme} isDark={isDark} />;
-      case 'design': return <DesignSection theme={theme} isDark={isDark} />;
+      case 'global': return <GlobalSection theme={theme} isDark={isDark} isOwner={isOwner} />;
+      case 'navigation': return <NavigationSection navGroups={navGroups} articles={articles} onSaveNav={onSaveNav} theme={theme} isDark={isDark} isOwner={isOwner} />;
+      case 'trash': return <TrashSection theme={theme} isOwner={isOwner} onRefresh={onRefresh} />;
+      case 'design': return <DesignSection theme={theme} isDark={isDark} isOwner={isOwner} />;
+      // Social links aren't owner-gated server side (open to any signed-in
+      // user, like content edits) — no restriction here either.
       case 'social': return <SocialSection theme={theme} isDark={isDark} />;
       default: return null;
     }
@@ -518,6 +504,7 @@ export const UnifiedSettings = ({ navGroups, onSaveNav, onBulkMove, onClose, the
             <p className={`text-xs mb-6 ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
               {activeTab === 'global' && 'Configure site-wide metadata for your documentation site.'}
               {activeTab === 'navigation' && 'Organize the sidebar navigation structure.'}
+              {activeTab === 'trash' && 'Restore a deleted page or remove it permanently.'}
               {activeTab === 'design' && 'Customize the visual appearance of your docs.'}
               {activeTab === 'social' && 'Add social media links shown across your docs.'}
             </p>

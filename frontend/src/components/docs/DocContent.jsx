@@ -12,6 +12,7 @@ import { Steps, Step } from './Steps';
 import { Card, CardGroup, Columns } from './Cards';
 import { Tabs, Tab } from './Tabs';
 import { Accordion, AccordionItem } from './Accordion';
+import { DocImage, YouTubeEmbed, LoomEmbed } from './Media';
 import { extractComponents, parseContent, generateTOC } from '../../lib/mdx/parser';
 
 const codeTheme = {
@@ -121,49 +122,11 @@ const Callout = ({ type, title, children }) => {
   );
 };
 
-const YouTubeEmbed = ({ id, title }) => {
-  if (!id) return null;
-  let videoId = id;
-  if (id.includes('youtube.com') || id.includes('youtu.be')) {
-    const match = id.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    if (match) videoId = match[1];
-    else { const short = id.match(/youtu\.be\/([a-zA-Z0-9_-]+)/); if (short) videoId = short[1].split('?')[0]; }
-  }
-  return (
-    <div className="my-6 relative z-10" data-testid="youtube-embed">
-      <div className="relative w-full rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800 shadow-lg bg-gray-50 dark:bg-slate-900" style={{ paddingBottom: '56.25%' }}>
-        <iframe className="absolute inset-0 w-full h-full" src={`https://www.youtube.com/embed/${videoId}`} title={title || 'Video'} frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-      </div>
-      {title && title.trim() && <p className="mt-2 text-sm text-gray-500 dark:text-[#999999] text-center">{title}</p>}
-    </div>
-  );
-};
-
-const LoomEmbed = ({ id, title }) => {
-  if (!id) return null;
-  let loomId = id;
-  if (id.includes('loom.com')) { const m = id.match(/loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/); if (m) loomId = m[1]; }
-  return (
-    <div className="my-6 relative z-10" data-testid="loom-embed">
-      <div className="relative w-full rounded-xl overflow-hidden border border-gray-200 dark:border-slate-800 shadow-lg bg-gray-50 dark:bg-slate-900" style={{ paddingBottom: '56.25%' }}>
-        <iframe className="absolute inset-0 w-full h-full" src={`https://www.loom.com/embed/${loomId}`} title={title || 'Video'} frameBorder="0" allowFullScreen />
-      </div>
-      {title && title.trim() && <p className="mt-2 text-sm text-gray-500 dark:text-[#999999] text-center">{title}</p>}
-    </div>
-  );
-};
-
-const Figure = ({ src, alt, caption }) => {
-  if (!src) return null;
-  return (
-    <figure className="my-6 relative z-10" data-testid="figure">
-      <img src={src} alt={alt || caption || 'Image'} className="rounded-lg max-w-full h-auto" loading="lazy" />
-      {caption && caption.trim() && (
-        <figcaption className="mt-2 text-sm text-gray-500 dark:text-[#999999] text-center">{caption}</figcaption>
-      )}
-    </figure>
-  );
-};
+// YouTubeEmbed, LoomEmbed (click-to-load) and DocImage (zoomable, responsive
+// srcset) are imported from ./Media -- see that file's header comment for
+// what changed and why. `<Figure src alt caption />` (COMPONENT_GUIDE's
+// component syntax, parsed above) and `<Video>`/plain markdown images all
+// render through the same DocImage below.
 
 const NestedContent = ({ content, mdComponents }) => {
   if (!content) return null;
@@ -215,9 +178,9 @@ const RenderComponent = ({ type, items, props, content, mdComponents }) => {
     case 'Loom':
       return <LoomEmbed id={props?.id} title={props?.title} />;
     case 'Figure':
-      return <Figure src={props?.src} alt={props?.alt} caption={props?.caption} />;
+      return <DocImage src={props?.src} alt={props?.alt} caption={props?.caption} />;
     case 'Video':
-      return props?.src ? <Figure src={props?.src} alt={props?.alt} caption={props?.caption || props?.title} /> : null;
+      return props?.src ? <DocImage src={props?.src} alt={props?.alt} caption={props?.caption || props?.title} /> : null;
     default: return null;
   }
 };
@@ -272,7 +235,7 @@ export const DocContent = ({ content, className = '', onHeadings }) => {
     th: ({ children }) => <th className="text-left px-4 py-2.5 text-sm font-semibold !text-gray-900 dark:!text-white border-b border-gray-200 dark:border-slate-800 whitespace-nowrap">{children}</th>,
     td: ({ children }) => <td className="px-4 py-2.5 text-sm !text-gray-700 dark:!text-[#999999] border-b border-gray-100 dark:border-slate-800/50 break-words">{children}</td>,
     a: ({ href, children }) => { const ext = href?.startsWith('http'); return <a href={href} target={ext ? '_blank' : undefined} rel={ext ? 'noopener noreferrer' : undefined} className="text-[#00A1B2] hover:text-[#00bdd0] underline-offset-2 hover:underline">{children}</a>; },
-    img: ({ src, alt }) => <img src={src} alt={alt || 'Documentation image'} className="rounded-lg my-4 max-w-full" loading="lazy" />,
+    img: ({ src, alt }) => <DocImage src={src} alt={alt || 'Documentation image'} />,
     hr: () => <hr className="border-gray-200 dark:border-slate-800 my-8" />,
     ul: ({ children }) => <ul className="my-4 ml-6 list-disc space-y-2 !text-gray-700 dark:!text-[#999999]">{children}</ul>,
     ol: ({ children }) => <ol className="my-4 ml-6 list-decimal space-y-2 !text-gray-700 dark:!text-[#999999]">{children}</ol>,

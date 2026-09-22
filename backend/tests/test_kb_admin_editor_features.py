@@ -29,23 +29,26 @@ class TestKBAdminAutoOrder:
         assert response.status_code == 200, f"Failed to get articles: {response.text}"
         data = response.json()
         assert 'articles' in data
-        assert 'nav_groups' in data
-        print(f"SUCCESS: Found {len(data['articles'])} articles and {len(data['nav_groups'])} nav groups")
+        assert 'groups' in data
+        print(f"SUCCESS: Found {len(data['articles'])} articles and {len(data['groups'])} top-level nav groups")
         return data
-    
+
     def test_create_article_auto_order_end_of_section(self):
         """Test that order is auto-set to end of section when order=0"""
         # First get existing articles to find a section
         data = self.test_get_existing_articles()
         articles = data['articles']
-        nav_groups = data['nav_groups']
-        
-        # Use an existing section
-        if nav_groups and nav_groups[0].get('sections'):
+        nav_groups = data['groups']
+
+        # Use an existing nested group ("section") from the tree
+        first_nested = None
+        if nav_groups:
+            first_nested = next((c for c in nav_groups[0].get('children', []) if c.get('type') == 'group'), None)
+        if first_nested:
             nav_group_key = nav_groups[0]['key']
             nav_group_label = nav_groups[0]['label']
-            section_key = nav_groups[0]['sections'][0]['key']
-            section_label = nav_groups[0]['sections'][0]['label']
+            section_key = first_nested['key']
+            section_label = first_nested['label']
         else:
             nav_group_key = 'beginners-guide'
             nav_group_label = "The Beginner's Guide"
@@ -172,12 +175,14 @@ class TestKBAdminNavAutoSync:
             cookies={'session_token': AUTH_TOKEN}
         )
         nav_data = nav_response.json()
-        nav_groups = nav_data.get('nav_groups', [])
-        
+        nav_groups = nav_data.get('groups', [])
+
         # Find the beginners-guide group
         bg_group = next((g for g in nav_groups if g['key'] == 'beginners-guide'), None)
         if bg_group:
-            section_exists = any(s['key'] == unique_key for s in bg_group.get('sections', []))
+            section_exists = any(
+                c.get('type') == 'group' and c['key'] == unique_key for c in bg_group.get('children', [])
+            )
             # Note: Auto-sync may or may not create the section depending on implementation
             print(f"INFO: Section '{unique_key}' in navigation: {section_exists}")
         
@@ -193,93 +198,98 @@ class TestKBAdminNavigationCRUD:
     """Test PUT /api/kb/admin/navigation for updating nav structure"""
     
     def test_get_current_navigation(self):
-        """Get current navigation structure"""
+        """Get current navigation structure (the recursive tree, under 'groups')"""
         response = requests.get(
             f"{BASE_URL}/api/kb/navigation",
             headers=HEADERS
         )
         assert response.status_code == 200, f"Failed: {response.text}"
         data = response.json()
-        assert 'nav_groups' in data
-        print(f"SUCCESS: Current navigation has {len(data['nav_groups'])} groups")
-        return data['nav_groups']
-    
+        assert 'groups' in data
+        print(f"SUCCESS: Current navigation has {len(data['groups'])} top-level groups")
+        return data['groups']
+
     def test_update_navigation_structure(self):
         """Test updating navigation structure via PUT"""
         # First get current navigation
         current = self.test_get_current_navigation()
-        
-        # Make a small modification - add a test section to the first group
+
+        # Make a small modification - add a nested test group (a "section")
+        # under the first top-level group's children.
         modified = [dict(g) for g in current]  # Deep copy
         if modified:
             modified[0] = dict(modified[0])
-            modified[0]['sections'] = list(modified[0].get('sections', []))
-            test_section = {"key": "test-section-temp", "label": "Temp Test Section"}
-            modified[0]['sections'].append(test_section)
-        
+            modified[0]['children'] = list(modified[0].get('children', []))
+            test_section = {"type": "group", "key": "test-section-temp", "label": "Temp Test Section",
+                             "icon": "", "published": True, "children": []}
+            modified[0]['children'].append(test_section)
+
         # Update navigation
         response = requests.put(
             f"{BASE_URL}/api/kb/admin/navigation",
-            json={"nav_groups": modified},
+            json={"groups": modified},
             headers=HEADERS,
             cookies={'session_token': AUTH_TOKEN}
         )
-        
+
         assert response.status_code == 200, f"Failed to update navigation: {response.text}"
         updated = response.json()
-        assert 'nav_groups' in updated
+        assert 'groups' in updated
         print(f"SUCCESS: Navigation updated")
-        
-        # Verify the section was added
-        if updated['nav_groups']:
-            sections = updated['nav_groups'][0].get('sections', [])
-            has_test = any(s['key'] == 'test-section-temp' for s in sections)
-            assert has_test, "Test section was not added"
-            print("SUCCESS: Test section added successfully")
-        
+
+        # Verify the nested group was added
+        if updated['groups']:
+            children = updated['groups'][0].get('children', [])
+            has_test = any(c.get('type') == 'group' and c['key'] == 'test-section-temp' for c in children)
+            assert has_test, "Test group was not added"
+            print("SUCCESS: Test group added successfully")
+
         # Restore original navigation
         response = requests.put(
             f"{BASE_URL}/api/kb/admin/navigation",
-            json={"nav_groups": current},
+            json={"groups": current},
             headers=HEADERS,
             cookies={'session_token': AUTH_TOKEN}
         )
         assert response.status_code == 200, "Failed to restore navigation"
         print("SUCCESS: Navigation restored to original")
-    
+
     def test_update_navigation_with_new_group(self):
-        """Test adding a completely new nav group"""
+        """Test adding a completely new top-level nav group"""
         current = self.test_get_current_navigation()
-        
+
         # Add a new test group
         modified = list(current)
         new_group = {
+            "type": "group",
             "key": f"test-group-{int(time.time())}",
             "label": "Test Navigation Group",
             "icon": "test-tube",
-            "sections": [{"key": "default", "label": "Default Section"}]
+            "published": True,
+            "children": [{"type": "group", "key": "default", "label": "Default Section",
+                          "icon": "", "published": True, "children": []}],
         }
         modified.append(new_group)
-        
+
         response = requests.put(
             f"{BASE_URL}/api/kb/admin/navigation",
-            json={"nav_groups": modified},
+            json={"groups": modified},
             headers=HEADERS,
             cookies={'session_token': AUTH_TOKEN}
         )
-        
+
         assert response.status_code == 200, f"Failed: {response.text}"
         data = response.json()
-        
+
         # Verify new group exists
-        group_exists = any(g['key'] == new_group['key'] for g in data['nav_groups'])
+        group_exists = any(g['key'] == new_group['key'] for g in data['groups'])
         assert group_exists, "New group was not added"
         print(f"SUCCESS: New nav group '{new_group['key']}' added")
-        
+
         # Restore original
         requests.put(
             f"{BASE_URL}/api/kb/admin/navigation",
-            json={"nav_groups": current},
+            json={"groups": current},
             headers=HEADERS,
             cookies={'session_token': AUTH_TOKEN}
         )

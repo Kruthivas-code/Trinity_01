@@ -58,9 +58,23 @@ def is_owner(user: dict) -> bool:
     return (user or {}).get("role") == "admin"
 
 
+def _owner_contact_emails() -> list:
+    """Every user who currently qualifies as an "owner" (admin role), for the
+    403 message below. No separate owner_invites-style collection exists (or
+    is needed) — this is a plain query against the existing users_collection."""
+    emails = {
+        _norm(u.get("email"))
+        for u in users_collection.find({"role": "admin"}, {"_id": 0, "email": 1})
+        if u.get("email")
+    }
+    return sorted(emails)
+
+
 def _owner_only(user: dict):
     if not is_owner(user):
-        raise HTTPException(status_code=403, detail="Only an admin can do this.")
+        owners = _owner_contact_emails()
+        contact = f" Please contact: {', '.join(owners)}" if owners else ""
+        raise HTTPException(status_code=403, detail=f"Only an admin can do this.{contact}")
 
 
 def count_images_missing_alt(content: str) -> int:
@@ -112,20 +126,84 @@ def _unassign_slugs(slugs, keep_id=None):
             review_assignments.delete_one({"id": a["id"]})
 
 
+def _find_group_node(nodes, key):
+    """Pure function: recursively find a "group" node by its `key` anywhere in
+    a kb_navigation tree (a list of NavNode dicts, see kb.py's module docstring
+    for the shape). Returns the node dict, or None if no group in the (sub)tree
+    has that key. No live DB needed to exercise this — it's a plain walk over
+    a tree dict, which is what makes flatten_scope_slugs below testable with a
+    hand-built tree fixture."""
+    for node in nodes or []:
+        if node.get("type") != "group":
+            continue
+        if node.get("key") == key:
+            return node
+        found = _find_group_node(node.get("children", []), key)
+        if found is not None:
+            return found
+    return None
+
+
+def _collect_node_slugs(node):
+    """Pure function: every page slug nested under one nav node (group or
+    page), walking descendant groups to any depth — no depth limit. A leaf
+    page node yields its own slug; a group yields the union of its children's
+    slugs, recursively."""
+    if node.get("type") == "page":
+        slug = node.get("slug")
+        return [slug] if slug else []
+    slugs = []
+    for child in node.get("children", []) or []:
+        slugs.extend(_collect_node_slugs(child))
+    return slugs
+
+
+def resolve_group_scope_slugs(nav_groups, scope_id):
+    """Pure function powering flatten_scope_slugs's "group"/"tab" case: given
+    the *whole* nav tree (nav_groups, i.e. kb_navigation's top-level `groups`
+    list) and a scope_id, find the target node anywhere in the tree — at any
+    depth, top-level "tab" group or a deeply nested subgroup alike — and
+    return every page slug filed under it, including everything under its
+    descendant subgroups, no depth limit.
+
+    scope_id is the target node's `key`. Phase 0's own tree code already
+    treats keys as unique across the whole tree (kb.py's _find_group and
+    bulk_move_articles both look a bare key up with no parent qualifier), so
+    that's the scheme this keeps: a scope_id is just that unique key. A
+    caller that still wants to write a qualified id such as
+    "top-key::nested-key" (e.g. to make an assignment's scope_id
+    self-documenting in a UI) may do so — only the last "::"-separated
+    segment (the deepest/target key) is actually used for the lookup, since
+    the qualifying prefix is redundant when keys are unique.
+
+    Returns [] when scope_id doesn't match any group in the tree, rather than
+    raising — an assignment on a deleted/renamed group should just end up
+    empty, not 500."""
+    key = (scope_id or "").rsplit("::", 1)[-1]
+    if not key:
+        return []
+    node = _find_group_node(nav_groups, key)
+    if node is None:
+        return []
+    return _collect_node_slugs(node)
+
+
 def flatten_scope_slugs(scope_type: str, scope_id: str):
-    """tab -> nav_group_key, group -> "tab_key::section_key" (or bare section_key), page -> itself."""
+    """page -> itself. tab/group -> every page slug nested anywhere under that
+    nav-tree node, walking nested subgroups to any depth (Phase 1: this used
+    to read the flat, immediate-parent-only nav_group_key/section_key cache on
+    kb_articles, which couldn't express "everything under this middle-depth
+    group including its subgroups" — now it walks the actual kb_navigation
+    tree, so a scope on a group at any depth also picks up its descendant
+    subgroups' pages). "tab" and "group" are the same lookup: Phase 0's tree
+    already treats a top-level group as a "tab" (see kb.py's get_public_data
+    docstring), so there's no separate flat lookup for it any more."""
     if scope_type == "page":
         return [scope_id]
-    if scope_type == "tab":
-        return [a["slug"] for a in kb_articles.find({"nav_group_key": scope_id}, {"_id": 0, "slug": 1})]
-    if scope_type == "group":
-        tab_key, sep, section_key = scope_id.partition("::")
-        if not sep:  # unqualified — match section_key alone
-            section_key = tab_key
-            query = {"section_key": section_key}
-        else:
-            query = {"nav_group_key": tab_key, "section_key": section_key}
-        return [a["slug"] for a in kb_articles.find(query, {"_id": 0, "slug": 1})]
+    if scope_type in ("tab", "group"):
+        nav_doc = kb_navigation.find_one({}, {"_id": 0, "groups": 1})
+        nav_groups = (nav_doc or {}).get("groups", [])
+        return resolve_group_scope_slugs(nav_groups, scope_id)
     return []
 
 
@@ -258,6 +336,11 @@ async def update_assignment(aid: str, req: AssignmentStatusReq, user: dict = Dep
         raise HTTPException(404, "Assignment not found")
     if not is_owner(user) and _norm(user.get("email")) != a.get("assignee_email"):
         raise HTTPException(403, "Only an admin or the assignee can update this")
+    if req.status == "done":
+        slugs = a.get("slugs") or []
+        open_ct = review_comments_col.count_documents({"doc_slug": {"$in": slugs}, "resolved": False}) if slugs else 0
+        if open_ct > 0:
+            raise HTTPException(400, f"Cannot mark done: {open_ct} unresolved comment(s) on this page")
     upd = {"status": req.status, "updated_at": _now()}
     if req.status == "done":
         upd["done_at"] = a.get("done_at") or _now()

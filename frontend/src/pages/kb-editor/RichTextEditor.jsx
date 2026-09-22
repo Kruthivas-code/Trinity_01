@@ -24,6 +24,7 @@ import {
   Columns, Youtube, Minus, TableIcon
 } from 'lucide-react';
 import { SlashCommand } from './extensions/SlashCommand';
+import { ImagePickerModal } from './ImagePickerModal';
 import { ColumnsBlockNode, ColumnCardNode } from './extensions/ColumnsBlock';
 import { IframeEmbed } from './extensions/IframeEmbed';
 import { StepsBlockNode, StepItemNode } from './extensions/StepsBlock';
@@ -448,6 +449,7 @@ const ToolBtn = ({ onClick, active, disabled, children, title, theme }) => (
 export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
   const [showInsert, setShowInsert] = useState(false);
   const [showHeading, setShowHeading] = useState(false);
+  const [showImagePicker, setShowImagePicker] = useState(false);
   const fileInputRef = useRef(null);
   const insertRef = useRef(null);
   const headingRef = useRef(null);
@@ -639,6 +641,18 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
     e.target.value = '';
   };
 
+  // Image Picker (Phase 4) — Stock/GIF/Upload modal hands back finished
+  // markdown (a `<Figure ... />` or `![alt](url)`, alt-text gate already
+  // enforced inside the modal), inserted the same way slash-command
+  // snippets are (insertSnippet above) rather than going through TipTap's
+  // Image node directly — that keeps a captioned <Figure> round-tripping
+  // through STANDALONE_TAGS like any other AI- or hand-authored one.
+  const insertImageMarkdown = useCallback((markdown) => {
+    if (!editor) return;
+    editor.chain().focus().insertContent('\n\n' + markdown + '\n\n').run();
+    setShowImagePicker(false);
+  }, [editor]);
+
   const setLink = useCallback(() => {
     if (!editor) return;
     const prev = editor.getAttributes('link').href;
@@ -740,7 +754,9 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
 
         <div className={`w-px h-5 ${theme.divider} mx-0.5`} />
 
-        <ToolBtn onClick={() => fileInputRef.current?.click()} title="Upload Image" theme={theme}><ImageIcon className="w-4 h-4" /></ToolBtn>
+        <ToolBtn onClick={() => setShowImagePicker(true)} title="Insert Image" theme={theme}><ImageIcon className="w-4 h-4" /></ToolBtn>
+        {/* Kept for any other caller of handleFileSelect's plumbing; no longer
+            wired to a toolbar button now that Insert Image opens the picker. */}
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
 
         <div className="ml-auto flex items-center gap-0.5">
@@ -839,6 +855,15 @@ export const RichTextEditor = ({ content, onChange, theme, onUploadImage }) => {
           margin: 1rem 0;
         }
       `}</style>
+
+      {/* Image Picker (Phase 4) */}
+      <ImagePickerModal
+        isOpen={showImagePicker}
+        onClose={() => setShowImagePicker(false)}
+        onInsert={insertImageMarkdown}
+        onUploadImage={onUploadImage}
+        theme={theme}
+      />
     </div>
   );
 };

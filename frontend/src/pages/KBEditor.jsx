@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronLeft, Save, Loader2, Settings,
-  Sun, Moon, Eye
+  Sun, Moon, Eye, History
 } from 'lucide-react';
 import { ArticleSidebar } from './kb-editor/ArticleSidebar';
 import { RichTextEditor } from './kb-editor/RichTextEditor';
@@ -17,7 +17,12 @@ import { EditorThemeProvider } from './kb-editor/EditorThemeContext';
 import { ArticlePreview } from './kb-editor/ArticlePreview';
 import { UnifiedSettings } from './kb-editor/UnifiedSettings';
 import { PageSettingsSlider } from './kb-editor/PageSettingsSlider';
-import { CategorySettingsSlider } from './kb-editor/CategorySettingsSlider';
+import { PageMetaDialog } from './kb-editor/PageMetaDialog';
+import { VersionHistoryPanel } from './kb-editor/VersionHistoryPanel';
+import { WritingAssistant, WritingAssistantTrigger } from './kb-editor/WritingAssistant';
+import { AnchorsMenu } from './kb-editor/AnchorsMenu';
+import { ValidationPanel } from './kb-editor/ValidationPanel';
+import { validateDocument } from '../lib/mdx/validation';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -27,6 +32,12 @@ const KBEditor = () => {
 
   const [articles, setArticles] = useState([]);
   const [navGroups, setNavGroups] = useState([]);
+  // Phase 7: redirect list for validateInternalLinks' redirect-aware link
+  // checking (a link to an old, redirected slug is a warning, not an
+  // error — see lib/mdx/validation.js). Same shape/endpoint PublicDocs.jsx
+  // already consumes (GET /api/kb/public-data's `redirects`); fetched once
+  // here since the editor has no other reason to call this public route.
+  const [redirects, setRedirects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(null);
   const [originalSlug, setOriginalSlug] = useState(null);
@@ -39,8 +50,30 @@ const KBEditor = () => {
   const [editMode, setEditMode] = useState('visual');
   const [showPreview, setShowPreview] = useState(false);
   const [showPageSettings, setShowPageSettings] = useState(false);
-  const [categorySettingsTarget, setCategorySettingsTarget] = useState(null); // { item, type, groupKey? }
+  const [showPageMeta, setShowPageMeta] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showAssistant, setShowAssistant] = useState(false);
+  // Tracks the markdown textarea's current text selection so Tweak mode can
+  // offer "rewrite just this" instead of always targeting the whole
+  // document. Only meaningful in Markdown edit mode -- the visual (TipTap)
+  // editor doesn't expose a plain-text offset selection, so Tweak always
+  // targets the whole document there.
+  const [mdSelection, setMdSelection] = useState(null);
   const pendingNewForm = useRef(null);
+
+  // Owner-gating (Phase 1): structural controls (delete a page, edit the nav
+  // tree, edit global docs settings/design config) are owner-only server
+  // side now — mirror that here so the UI doesn't show controls that would
+  // just 403. Same endpoint ReviewConsole.jsx already uses for this.
+  // Defaults to false (hide owner-only controls) until the check resolves,
+  // so a non-owner never sees a flash of controls they can't use.
+  const [isOwner, setIsOwner] = useState(false);
+  useEffect(() => {
+    fetch(`${API}/api/review/roles/me`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setIsOwner(!!d.is_owner); })
+      .catch(() => {});
+  }, []);
 
   // Theme — follow system preference if no stored preference
   const [editorTheme, setEditorTheme] = useState(() => {
@@ -81,13 +114,7 @@ const KBEditor = () => {
       if (res.ok) {
         const data = await res.json();
         setArticles(data.articles || []);
-        setNavGroups(data.nav_groups || []);
-        const exp = {};
-        (data.nav_groups || []).forEach(g => {
-          exp[`group-${g.key}`] = true;
-          g.sections?.forEach(s => { exp[`${g.key}-${s.key}`] = true; });
-        });
-        setExpanded(prev => ({ ...exp, ...prev }));
+        setNavGroups(data.groups || []);
         return data;
       }
     } catch (e) { console.error(e); }
@@ -96,6 +123,16 @@ const KBEditor = () => {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // Phase 7: fetch redirects once for validation's redirect-aware link
+  // checking. Best-effort — an empty list just means every unresolved link
+  // is treated as a plain broken link (still correct, just less precise).
+  useEffect(() => {
+    fetch(`${API}/api/kb/public-data`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setRedirects(d.redirects || []); })
+      .catch(() => {});
+  }, []);
 
   // Auto-select first article when no slug is specified
   useEffect(() => {
@@ -150,12 +187,36 @@ const KBEditor = () => {
       const payload = { ...form, slug };
       delete payload.created_at; delete payload.updated_at; delete payload.source_url;
       delete payload.feedback_total; delete payload.feedback_helpful;
+      // Phase 4: for an EXISTING article, a slug change goes exclusively
+      // through the guarded PageMetaDialog flow (redirect + internal-link
+      // rewrite + owner gate + explicit confirmation) — never as a silent
+      // side effect of the regular Save button. Strip slug from this
+      // payload entirely so a stray local form.slug (there shouldn't be
+      // one now that PageSettingsSlider no longer edits it directly, but
+      // better to guard the payload itself than rely on that) can never
+      // trigger update_article's slug-change path from here. New articles
+      // are unaffected — slug is part of the initial POST, no redirect
+      // needed for a page that doesn't exist yet.
+      if (!isNew) delete payload.slug;
       const url = isNew ? `${API}/api/kb/admin/articles` : `${API}/api/kb/admin/articles/${originalSlug}`;
       const method = isNew ? 'POST' : 'PUT';
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload) });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `Save failed (${res.status})`); }
       setLastSaved(new Date());
-      if (isNew || slug !== originalSlug) {
+      // Phase 7: run validation as part of the save flow, non-blocking —
+      // this is a linting aid, never a save gate (help-doc-v3's own
+      // intent for this module). The result only feeds the existing
+      // Validate button's live badge (recomputed from `form` anyway); this
+      // just also logs a console summary so an author who never opens the
+      // panel still gets a signal after saving.
+      const saveValidation = validateDocument(payload, { documents: articles, redirects });
+      if (saveValidation.errors.length || saveValidation.warnings.length) {
+        console.warn(
+          `[KB validate] ${slug}: ${saveValidation.errors.length} error(s), ${saveValidation.warnings.length} warning(s) — see the Validate button.`,
+          saveValidation
+        );
+      }
+      if (isNew) {
         setIsNew(false);
         setOriginalSlug(slug);
         navigate(`/dashboard/kb-editor/${slug}`, { replace: true });
@@ -163,7 +224,26 @@ const KBEditor = () => {
       await fetchAll();
     } catch (e) { console.error(e); alert(e.message); }
     finally { setSaving(false); }
-  }, [form, isNew, originalSlug, navigate, fetchAll, canSave]);
+  }, [form, isNew, originalSlug, navigate, fetchAll, canSave, articles, redirects]);
+
+  // Page Meta Dialog (Phase 4) — the ONLY path that can change an existing
+  // article's slug. Merges the server's response (which may include title/
+  // icon/description AND, on a slug change, the new slug + a slug_change
+  // summary) back into local form state and, if the slug moved, updates
+  // originalSlug and the URL to match.
+  const handleMetaSaved = useCallback((updated) => {
+    setForm(f => (f ? { ...f, ...updated } : f));
+    if (updated.slug_change) {
+      const { new_slug, pages_touched, links_updated } = updated.slug_change;
+      setOriginalSlug(new_slug);
+      navigate(`/dashboard/kb-editor/${new_slug}`, { replace: true });
+      if (links_updated > 0) {
+        alert(`Slug changed. ${links_updated} internal link${links_updated === 1 ? '' : 's'} updated across ${pages_touched} page${pages_touched === 1 ? '' : 's'}, and a redirect from the old URL was created.`);
+      }
+    }
+    setLastSaved(new Date());
+    fetchAll();
+  }, [fetchAll, navigate]);
 
   // Cmd+S
   useEffect(() => {
@@ -200,33 +280,21 @@ const KBEditor = () => {
 
   const saveNavigation = async (newGroups) => {
     try {
-      const res = await fetch(`${API}/api/kb/admin/navigation`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nav_groups: newGroups }) });
+      const res = await fetch(`${API}/api/kb/admin/navigation`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ groups: newGroups }) });
       if (!res.ok) throw new Error('Failed to save');
       await fetchAll();
     } catch (e) { alert('Failed to save navigation: ' + e.message); }
   };
 
-  const bulkMoveArticles = async (srcGroupKey, srcSectionKey, tgtGroupKey, tgtGroupLabel, tgtSectionKey, tgtSectionLabel) => {
-    try {
-      const res = await fetch(`${API}/api/kb/admin/articles/bulk-move`, {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source_group_key: srcGroupKey, source_section_key: srcSectionKey, target_group_key: tgtGroupKey, target_group_label: tgtGroupLabel, target_section_key: tgtSectionKey, target_section_label: tgtSectionLabel })
-      });
-      if (!res.ok) throw new Error('Failed to move');
-      const data = await res.json();
-      await fetchAll();
-      return data.moved;
-    } catch (e) { alert('Failed to move articles: ' + e.message); return 0; }
-  };
-
-  // Build sidebar tree
-  const tree = useMemo(() => navGroups.map(group => ({
-    ...group,
-    sections: (group.sections || []).map(sec => ({
-      ...sec,
-      articles: articles.filter(a => a.section_key === sec.key && a.nav_group_key === group.key),
-    })),
-  })), [navGroups, articles]);
+  // Build the sidebar's display tree: the raw nav tree (groups referencing
+  // pages by slug) annotated with each page's resolved article, recursively.
+  const articlesBySlug = useMemo(() => new Map(articles.map(a => [a.slug, a])), [articles]);
+  const buildDisplayTree = useCallback((nodes) => (nodes || []).map(node => (
+    node.type === 'page'
+      ? { type: 'page', slug: node.slug, article: articlesBySlug.get(node.slug) || null }
+      : { type: 'group', key: node.key, label: node.label, icon: node.icon, published: node.published, children: buildDisplayTree(node.children || []) }
+  )), [articlesBySlug]);
+  const tree = useMemo(() => buildDisplayTree(navGroups), [navGroups, buildDisplayTree]);
 
   // Open settings slider for a specific article
   const handleOpenSettings = useCallback((article) => {
@@ -237,32 +305,18 @@ const KBEditor = () => {
     setTimeout(() => setShowPageSettings(true), article.slug !== paramSlug ? 200 : 0);
   }, [paramSlug, navigate]);
 
-  // Create page under a specific group (first section)
-  const handleCreateInGroup = useCallback((group) => {
-    const firstSection = group.sections?.[0];
+  // Create a page directly inside a specific nav-tree group, wherever it
+  // lives in the tree. `topGroupKey` is the top-level ancestor group's key
+  // (nav_group_key); `group` is the exact group node the "+" was clicked on
+  // (section_key) — which may be that same top-level group itself.
+  const handleCreatePage = useCallback((topGroupKey, group) => {
+    const topGroup = navGroups.find(g => g.key === topGroupKey);
     setIsNew(true);
     setOriginalSlug(null);
     const newForm = {
       title: '', slug: '', description: '', content_markdown: '',
-      nav_group_key: group.key, nav_group_label: group.label,
-      section_key: firstSection?.key || '', section_label: firstSection?.label || '',
-      published: false, order: articles.length,
-      sidebar_title: '', keywords: [], tags: []
-    };
-    pendingNewForm.current = newForm;
-    setForm(newForm);
-    navigate('/dashboard/kb-editor/new', { replace: true });
-  }, [articles, navigate]);
-
-  // Create page under a specific section
-  const handleCreateInSection = useCallback((groupKey, section) => {
-    const group = navGroups.find(g => g.key === groupKey);
-    setIsNew(true);
-    setOriginalSlug(null);
-    const newForm = {
-      title: '', slug: '', description: '', content_markdown: '',
-      nav_group_key: groupKey, nav_group_label: group?.label || '',
-      section_key: section.key, section_label: section.label,
+      nav_group_key: topGroupKey, nav_group_label: topGroup?.label || '',
+      section_key: group.key, section_label: group.label,
       published: false, order: articles.length,
       sidebar_title: '', keywords: [], tags: []
     };
@@ -271,55 +325,46 @@ const KBEditor = () => {
     navigate('/dashboard/kb-editor/new', { replace: true });
   }, [articles, navGroups, navigate]);
 
-  // Create new category (tab) via NavManager/UnifiedSettings
+  // Create new top-level group — done from Settings > Navigation (NavManager)
   const handleNewCategory = useCallback(() => {
     setShowSettings(true);
   }, []);
 
-  // Open settings slider for a category or subcategory
-  const handleOpenCategorySettings = useCallback((item, type, groupKey) => {
-    setCategorySettingsTarget({ item, type, groupKey });
+  // Writing Assistant — Tweak mode applies its proposal straight onto the
+  // in-memory form; nothing is saved until the existing Save button is
+  // pressed, same as any other content edit.
+  const applyAssistantContent = useCallback((markdown) => {
+    setForm((f) => (f ? { ...f, content_markdown: markdown } : f));
+  }, []);
+  const applyAssistantSelection = useCallback((replacement, start, end) => {
+    setForm((f) => {
+      if (!f) return f;
+      const cm = f.content_markdown || '';
+      return { ...f, content_markdown: cm.slice(0, start) + replacement + cm.slice(end) };
+    });
+    setMdSelection(null);
   }, []);
 
-  // Save category/subcategory settings (rename, visibility)
-  const handleSaveCategorySettings = useCallback(async (updatedItem) => {
-    const nav = [...navGroups];
-    const { type, groupKey } = categorySettingsTarget || {};
-
-    if (type === 'category') {
-      const idx = nav.findIndex(g => g.key === updatedItem.key);
-      if (idx !== -1) {
-        nav[idx] = { ...nav[idx], label: updatedItem.label, published: updatedItem.published };
-      }
-    } else if (type === 'subcategory' && groupKey) {
-      const group = nav.find(g => g.key === groupKey);
-      if (group) {
-        const secIdx = (group.sections || []).findIndex(s => s.key === updatedItem.key);
-        if (secIdx !== -1) {
-          group.sections[secIdx] = { ...group.sections[secIdx], label: updatedItem.label, published: updatedItem.published };
-        }
-      }
-    }
-    await saveNavigation(nav);
-  }, [navGroups, categorySettingsTarget, saveNavigation]);
-
-  // Delete a category or subcategory
-  const handleDeleteCategory = useCallback(async (item, type) => {
-    const nav = [...navGroups];
-
-    if (type === 'category') {
-      const idx = nav.findIndex(g => g.key === item.key);
-      if (idx !== -1) nav.splice(idx, 1);
-    } else if (type === 'subcategory') {
-      const { groupKey } = categorySettingsTarget || {};
-      const group = nav.find(g => g.key === groupKey);
-      if (group) {
-        group.sections = (group.sections || []).filter(s => s.key !== item.key);
-      }
-    }
-    await saveNavigation(nav);
-    setCategorySettingsTarget(null);
-  }, [navGroups, categorySettingsTarget, saveNavigation]);
+  // Writing Assistant — New Page mode never creates a page itself (see
+  // WritingAssistant.jsx's header comment). It hands back a fully-formed
+  // draft, and this does exactly what handleCreatePage above does for the
+  // sidebar's own "+" button: pre-fill the new-page form and route to
+  // /dashboard/kb-editor/new. Saving from there is the same, unmodified,
+  // owner-gated POST /api/kb/admin/articles.
+  const handleAssistantNewPage = useCallback((draft) => {
+    setIsNew(true);
+    setOriginalSlug(null);
+    const newForm = {
+      title: draft.title, slug: draft.slug, description: '', content_markdown: draft.content_markdown,
+      nav_group_key: draft.nav_group_key, nav_group_label: draft.nav_group_label,
+      section_key: draft.section_key, section_label: draft.section_label,
+      published: false, order: articles.length,
+      sidebar_title: '', keywords: [], tags: []
+    };
+    pendingNewForm.current = newForm;
+    setForm(newForm);
+    navigate('/dashboard/kb-editor/new', { replace: true });
+  }, [articles, navigate]);
 
   if (loading) {
     return <div className={`h-screen flex items-center justify-center ${theme.bg}`}><Loader2 className="w-6 h-6 animate-spin text-[#00A1B2]" /></div>;
@@ -377,6 +422,41 @@ const KBEditor = () => {
               <span className="hidden sm:inline">Preview</span>
             </button>
           )}
+          {/* Anchors Menu (Phase 4) — deep-link headings/anchors, content-level
+              like the writing assistant, not owner-gated. */}
+          {form && !isNew && (
+            <AnchorsMenu
+              content={form.content_markdown || ''}
+              onContentChange={(md) => setForm(f => ({ ...f, content_markdown: md }))}
+              slug={originalSlug || form.slug}
+              theme={theme}
+            />
+          )}
+          {/* AI Writing Assistant (Phase 3) — content-level AI help stays
+              open to any signed-in user, same as content edits themselves
+              (Phase 1 philosophy). Not owner-gated. */}
+          {form && (
+            <WritingAssistantTrigger onOpen={() => setShowAssistant(true)} isDark={isDark} />
+          )}
+          {/* Validate (Phase 7) — content-level lint (links, component
+              vocabulary, required fields), same non-owner-gated tier as the
+              assistant/anchors above: advisory only, never blocks Save. */}
+          {form && (
+            <ValidationPanel article={form} documents={articles} redirects={redirects} theme={theme} />
+          )}
+          {/* Version History — owner-only (Phase 2), matches the backend's
+              owner-gated GET/POST/DELETE /api/kb/admin/articles/{slug}/versions... */}
+          {form && !isNew && isOwner && (
+            <button
+              onClick={() => setShowVersionHistory(true)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700' : 'bg-gray-100 text-gray-600 hover:text-gray-900 hover:bg-gray-200'}`}
+              title="Version history"
+              data-testid="version-history-btn"
+            >
+              <History className="w-4 h-4" />
+              <span className="hidden sm:inline">History</span>
+            </button>
+          )}
           <div className={`w-px h-6 ${theme.divider}`} />
           {lastSaved && <span className={`text-xs ${theme.textSecondary} hidden sm:block`}>Saved {lastSaved.toLocaleTimeString()}</span>}
           <button onClick={handleSave} disabled={saving || !canSave}
@@ -398,10 +478,9 @@ const KBEditor = () => {
           setExpanded={setExpanded}
           onNewCategory={handleNewCategory}
           onOpenSettings={handleOpenSettings}
-          onCreateInSection={handleCreateInSection}
-          onCreateInGroup={handleCreateInGroup}
-          onOpenCategorySettings={handleOpenCategorySettings}
+          onCreatePage={handleCreatePage}
           theme={theme}
+          isOwner={isOwner}
         />
 
         {/* Main Content — Editor Only */}
@@ -416,7 +495,14 @@ const KBEditor = () => {
                     const title = e.target.value;
                     setForm(f => ({
                       ...f, title,
-                      slug: isNew || f.slug === slugify(f.title || '') ? slugify(title) : f.slug
+                      // Phase 4: only auto-derive the slug from the title for
+                      // a brand-new, unsaved page. For an EXISTING article,
+                      // form.slug must stay pinned to originalSlug between
+                      // saves — the guarded PageMetaDialog flow (redirect +
+                      // link rewrite + confirmation) is the only way its
+                      // slug is allowed to change, and handleSave() also
+                      // strips slug from the save payload as a second guard.
+                      slug: isNew ? slugify(title) : f.slug
                     }));
                   }}
                   placeholder="Untitled page"
@@ -440,6 +526,17 @@ const KBEditor = () => {
                   <textarea
                     value={form.content_markdown || ''}
                     onChange={(e) => setForm(f => ({ ...f, content_markdown: e.target.value }))}
+                    onSelect={(e) => {
+                      const { selectionStart, selectionEnd } = e.target;
+                      if (selectionEnd > selectionStart) {
+                        setMdSelection({
+                          text: (form.content_markdown || '').slice(selectionStart, selectionEnd),
+                          start: selectionStart, end: selectionEnd,
+                        });
+                      } else {
+                        setMdSelection(null);
+                      }
+                    }}
                     className={`w-full flex-1 px-4 py-3 ${theme.inputBg} border ${theme.inputBorder} rounded-lg text-sm font-mono ${theme.inputText} ${theme.placeholder} focus:border-[#00A1B2] focus:outline-none transition-colors resize-none leading-relaxed`}
                     style={theme.inputBgStyle}
                     placeholder="Write your article content in Markdown..."
@@ -472,11 +569,45 @@ const KBEditor = () => {
       {showSettings && (
         <UnifiedSettings
           navGroups={navGroups}
+          articles={articles}
           onSaveNav={saveNavigation}
-          onBulkMove={bulkMoveArticles}
           onClose={() => setShowSettings(false)}
           theme={theme}
           isDark={isDark}
+          isOwner={isOwner}
+          onRefresh={fetchAll}
+        />
+      )}
+
+      {/* Version History Panel */}
+      {showVersionHistory && form && !isNew && (
+        <VersionHistoryPanel
+          slug={originalSlug || form.slug}
+          articleTitle={form.title}
+          isDark={isDark}
+          onClose={() => setShowVersionHistory(false)}
+          onRestore={(restoredArticle) => {
+            if (restoredArticle) {
+              setForm(f => ({ ...f, ...restoredArticle, keywords: restoredArticle.keywords || [], tags: restoredArticle.tags || [] }));
+            }
+            fetchAll();
+          }}
+        />
+      )}
+
+      {/* AI Writing Assistant (Phase 3) */}
+      {showAssistant && form && (
+        <WritingAssistant
+          open={showAssistant}
+          onClose={() => setShowAssistant(false)}
+          isDark={isDark}
+          content={form.content_markdown || ''}
+          selection={editMode === 'markdown' ? mdSelection : null}
+          onApplyContent={applyAssistantContent}
+          onApplySelection={applyAssistantSelection}
+          navGroups={navGroups}
+          articlesCount={articles.length}
+          onDraftNewPage={handleAssistantNewPage}
         />
       )}
 
@@ -489,18 +620,21 @@ const KBEditor = () => {
           onDelete={handleDelete}
           onClose={() => setShowPageSettings(false)}
           isDark={isDark}
+          isOwner={isOwner}
+          onOpenMeta={!isNew ? () => setShowPageMeta(true) : undefined}
         />
       )}
 
-      {/* Category/Subcategory Settings Slider */}
-      {categorySettingsTarget && (
-        <CategorySettingsSlider
-          item={categorySettingsTarget.item}
-          type={categorySettingsTarget.type}
-          onSave={handleSaveCategorySettings}
-          onDelete={handleDeleteCategory}
-          onClose={() => setCategorySettingsTarget(null)}
+      {/* Page Meta Dialog (Phase 4) — title/slug/icon/description, guarded
+          slug change. Only meaningful for an already-saved article. */}
+      {showPageMeta && form && !isNew && (
+        <PageMetaDialog
+          open={showPageMeta}
+          article={{ slug: originalSlug, title: form.title, icon: form.icon, description: form.description }}
+          isOwner={isOwner}
           isDark={isDark}
+          onClose={() => setShowPageMeta(false)}
+          onSaved={handleMetaSaved}
         />
       )}
     </div>

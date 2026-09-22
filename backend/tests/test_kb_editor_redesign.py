@@ -30,7 +30,7 @@ class TestKBAdminArticles:
         
         data = response.json()
         assert "articles" in data
-        assert "nav_groups" in data
+        assert "groups" in data
         assert len(data["articles"]) > 0, "Expected at least one article"
         print(f"Found {len(data['articles'])} articles")
     
@@ -199,26 +199,26 @@ class TestKBNavigation:
     """Test KB Navigation endpoints"""
     
     def test_get_navigation(self, auth_session):
-        """Test GET /api/kb/navigation returns nav groups"""
+        """Test GET /api/kb/navigation returns the nav tree under 'groups'"""
         response = auth_session.get(f"{BASE_URL}/api/kb/navigation")
         assert response.status_code == 200
-        
+
         data = response.json()
-        assert "nav_groups" in data
-        assert len(data["nav_groups"]) > 0, "Expected at least one nav group"
-        print(f"Found {len(data['nav_groups'])} navigation groups")
-    
+        assert "groups" in data
+        assert len(data["groups"]) > 0, "Expected at least one top-level nav group"
+        print(f"Found {len(data['groups'])} navigation groups")
+
     def test_update_navigation(self, auth_session):
         """Test PUT /api/kb/admin/navigation"""
         # Get current navigation
         get_resp = auth_session.get(f"{BASE_URL}/api/kb/navigation")
         assert get_resp.status_code == 200
-        current_nav = get_resp.json()["nav_groups"]
-        
+        current_nav = get_resp.json()["groups"]
+
         # Update navigation (just re-save the same)
         update_resp = auth_session.put(
             f"{BASE_URL}/api/kb/admin/navigation",
-            json={"nav_groups": current_nav}
+            json={"groups": current_nav}
         )
         assert update_resp.status_code == 200
         print("Navigation update successful")

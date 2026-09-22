@@ -1,88 +1,25 @@
 /**
- * ArticleSidebar — Left sidebar with navigation tree
- * - Hover on category/subcategory shows "+" and settings gear
- * - Chevron click only toggles expand/collapse
- * - Hover on page shows settings gear icon (via CSS group-hover)
- * - Main "+" in header opens settings to create new tabs (categories)
- * - No page icons, no feedback metrics
+ * ArticleSidebar — Left sidebar with the (read/browse) navigation tree.
+ * - Recursive: a group can nest further groups to any depth, each with its
+ *   own expand/collapse state.
+ * - Hover on a group shows "+" (new page in that exact group).
+ * - Hover on a page shows its settings gear (via CSS group-hover).
+ * - Structural edits (rename/delete/reorder/move/visibility) live in
+ *   Settings > Navigation (NavManager) — this sidebar is for browsing and
+ *   quickly adding a page to a specific group, not for restructuring.
  */
 import {
   ChevronDown, ChevronRight, Plus, Settings, FolderOpen
 } from 'lucide-react';
 
-/* ---------- Section (subcategory) ---------- */
-const NavSection = ({ section, groupKey, sectionKey, articles, selectedSlug, onSelect, expanded, setExpanded, onOpenSettings, onCreateInSection, onOpenCategorySettings, theme }) => {
-  const expKey = `${groupKey}-${sectionKey}`;
-  const isExpanded = expanded[expKey] !== false;
-  const isHidden = section.published === false;
-
-  return (
-    <div>
-      <div className={`group/sec flex items-center gap-1 px-2 py-1.5 rounded-md transition-colors ${theme.textMuted} ${theme.hover}`}>
-        {/* Chevron — only this toggles */}
-        <button
-          onClick={() => setExpanded(prev => ({ ...prev, [expKey]: !prev[expKey] }))}
-          className={`p-0.5 rounded transition-colors ${theme.hoverText}`}
-          data-testid={`toggle-section-${sectionKey}`}
-        >
-          {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-        </button>
-
-        <FolderOpen className={`w-3.5 h-3.5 ${theme.textSecondary} flex-shrink-0`} />
-        <span className={`text-xs font-medium truncate flex-1 ${isHidden ? 'opacity-50' : ''}`}>{section.label}</span>
-
-        {/* Hidden tag — visible when NOT hovered */}
-        {isHidden && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-400 flex-shrink-0 group-hover/sec:hidden" data-testid={`hidden-tag-section-${sectionKey}`}>
-            hidden
-          </span>
-        )}
-
-        {/* Action icons on hover */}
-        <div className="flex items-center gap-0.5 opacity-0 group-hover/sec:opacity-100 transition-all">
-          <button
-            onClick={(e) => { e.stopPropagation(); onCreateInSection(groupKey, section); }}
-            className={`p-0.5 rounded transition-colors ${theme.textSecondary} hover:text-[#00A1B2]`}
-            title={`New page in ${section.label}`}
-            data-testid={`add-page-in-section-${sectionKey}`}
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onOpenCategorySettings(section, 'subcategory', groupKey); }}
-            className={`p-0.5 rounded transition-colors ${theme.textSecondary} hover:text-[#00A1B2]`}
-            title={`${section.label} settings`}
-            data-testid={`settings-section-${sectionKey}`}
-          >
-            <Settings className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
-      {isExpanded && (
-        <div className="ml-5 space-y-0.5">
-          {articles.map(art => (
-            <ArticleItem
-              key={art.slug}
-              article={art}
-              selectedSlug={selectedSlug}
-              onSelect={onSelect}
-              onOpenSettings={onOpenSettings}
-              theme={theme}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
 /* ---------- Single article item ---------- */
-const ArticleItem = ({ article, selectedSlug, onSelect, onOpenSettings, theme }) => {
+const ArticleItem = ({ article, depth, selectedSlug, onSelect, onOpenSettings, theme }) => {
   const isActive = article.slug === selectedSlug;
 
   return (
     <div
       className={`group/art flex items-center gap-1 rounded-lg transition-colors ${isActive ? theme.activeItem : `${theme.textMuted} ${theme.hover} ${theme.hoverText}`}`}
+      style={{ paddingLeft: `${depth * 0.9}rem` }}
     >
       <button
         onClick={() => onSelect(article.slug)}
@@ -112,71 +49,79 @@ const ArticleItem = ({ article, selectedSlug, onSelect, onOpenSettings, theme })
   );
 };
 
-/* ---------- Group (top-level category) ---------- */
-const GroupItem = ({ group, selectedSlug, onSelect, expanded, setExpanded, onOpenSettings, onCreateInSection, onCreateInGroup, onOpenCategorySettings, theme }) => {
-  const expKey = `group-${group.key}`;
+/* ---------- One tree node, rendered recursively (group or page) ---------- */
+const NavTreeNode = ({ node, topGroupKey, depth, selectedSlug, onSelect, onOpenSettings, onCreatePage, expanded, setExpanded, theme, isOwner }) => {
+  if (node.type === 'page') {
+    // A page whose article couldn't be resolved (e.g. deleted out from under
+    // the tree) is simply skipped here — structural cleanup is NavManager's job.
+    if (!node.article) return null;
+    return (
+      <ArticleItem article={node.article} depth={depth} selectedSlug={selectedSlug} onSelect={onSelect} onOpenSettings={onOpenSettings} theme={theme} />
+    );
+  }
+
+  const expKey = `${topGroupKey}::${node.key}`;
   const isExpanded = expanded[expKey] !== false;
-  const isHidden = group.published === false;
+  const isHidden = node.published === false;
+  const isTop = depth === 0;
+  const children = node.children || [];
 
   return (
-    <div className="mb-3">
-      <div className={`group/grp flex items-center gap-1 px-2 py-1 rounded-md transition-colors ${theme.hover}`}>
+    <div className={isTop ? 'mb-3' : 'mb-0.5'}>
+      <div
+        className={`group/grp flex items-center gap-1 rounded-md transition-colors ${theme.hover}`}
+        style={{ paddingLeft: `${depth * 0.9}rem` }}
+      >
         <button
           onClick={() => setExpanded(prev => ({ ...prev, [expKey]: !prev[expKey] }))}
           className={`p-0.5 rounded transition-colors ${theme.textSecondary} ${theme.hoverText}`}
-          data-testid={`toggle-group-${group.key}`}
+          data-testid={`toggle-group-${node.key}`}
         >
           {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
         </button>
-        <span className={`text-[11px] font-semibold uppercase tracking-wider flex-1 truncate ${isHidden ? 'opacity-50' : ''} ${theme.id === 'dark' ? 'text-[#00A1B2]/70' : 'text-[#00A1B2]'}`}>
-          {group.label}
+        {!isTop && <FolderOpen className={`w-3.5 h-3.5 ${theme.textSecondary} flex-shrink-0`} />}
+        <span className={`flex-1 truncate ${isHidden ? 'opacity-50' : ''} ${isTop ? `text-[11px] font-semibold uppercase tracking-wider ${theme.id === 'dark' ? 'text-[#00A1B2]/70' : 'text-[#00A1B2]'}` : `text-xs font-medium ${theme.textMuted}`}`}>
+          {node.label}
         </span>
 
-        {/* Hidden tag — visible when NOT hovered */}
         {isHidden && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-400 flex-shrink-0 group-hover/grp:hidden" data-testid={`hidden-tag-group-${group.key}`}>
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-400 flex-shrink-0 group-hover/grp:hidden" data-testid={`hidden-tag-group-${node.key}`}>
             hidden
           </span>
         )}
 
-        {/* Action icons on hover */}
-        <div className="flex items-center gap-0.5 opacity-0 group-hover/grp:opacity-100 transition-all">
-          <button
-            onClick={(e) => { e.stopPropagation(); onCreateInGroup(group); }}
-            className={`p-0.5 rounded transition-colors ${theme.textSecondary} hover:text-[#00A1B2]`}
-            title={`New page in ${group.label}`}
-            data-testid={`add-page-in-group-${group.key}`}
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); onOpenCategorySettings(group, 'category'); }}
-            className={`p-0.5 rounded transition-colors ${theme.textSecondary} hover:text-[#00A1B2]`}
-            title={`${group.label} settings`}
-            data-testid={`settings-group-${group.key}`}
-          >
-            <Settings className="w-3 h-3" />
-          </button>
-        </div>
+        {/* Creating a page is owner-only (Phase 1) — hide the control
+            rather than let a non-owner hit a 403 on click. */}
+        {isOwner && (
+          <div className="flex items-center gap-0.5 opacity-0 group-hover/grp:opacity-100 transition-all">
+            <button
+              onClick={(e) => { e.stopPropagation(); onCreatePage(topGroupKey, node); }}
+              className={`p-0.5 rounded transition-colors ${theme.textSecondary} hover:text-[#00A1B2]`}
+              title={`New page in ${node.label}`}
+              data-testid={`add-page-in-group-${node.key}`}
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
-      {isExpanded && (
-        <div className="mt-0.5">
-          {group.sections.map(sec => (
-            <NavSection
-              key={sec.key}
-              section={sec}
-              groupKey={group.key}
-              sectionKey={sec.key}
-              articles={sec.articles || []}
+      {isExpanded && children.length > 0 && (
+        <div className={isTop ? 'mt-0.5' : ''}>
+          {children.map((child, i) => (
+            <NavTreeNode
+              key={i}
+              node={child}
+              topGroupKey={topGroupKey}
+              depth={depth + 1}
               selectedSlug={selectedSlug}
               onSelect={onSelect}
+              onOpenSettings={onOpenSettings}
+              onCreatePage={onCreatePage}
               expanded={expanded}
               setExpanded={setExpanded}
-              onOpenSettings={onOpenSettings}
-              onCreateInSection={onCreateInSection}
-              onOpenCategorySettings={onOpenCategorySettings}
               theme={theme}
+              isOwner={isOwner}
             />
           ))}
         </div>
@@ -194,10 +139,9 @@ export const ArticleSidebar = ({
   setExpanded,
   onNewCategory,
   onOpenSettings,
-  onCreateInSection,
-  onCreateInGroup,
-  onOpenCategorySettings,
-  theme
+  onCreatePage,
+  theme,
+  isOwner
 }) => (
   <aside
     className={`w-64 flex-shrink-0 border-r ${theme.border} ${theme.panelBg} flex flex-col overflow-hidden relative z-30`}
@@ -206,29 +150,33 @@ export const ArticleSidebar = ({
   >
     <div className={`px-3 py-3 flex items-center justify-between border-b ${theme.border}`}>
       <span className={`text-xs font-semibold ${theme.textSecondary} uppercase tracking-wider`}>Navigation</span>
-      <button
-        onClick={onNewCategory}
-        className={`p-1 ${theme.textSecondary} hover:text-[#00A1B2] rounded transition-colors`}
-        title="New category"
-        data-testid="new-category-btn"
-      >
-        <Plus className="w-4 h-4" />
-      </button>
+      {/* Adding a top-level category means editing the nav tree — owner-only (Phase 1). */}
+      {isOwner && (
+        <button
+          onClick={onNewCategory}
+          className={`p-1 ${theme.textSecondary} hover:text-[#00A1B2] rounded transition-colors`}
+          title="New category"
+          data-testid="new-category-btn"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      )}
     </div>
     <div className="flex-1 overflow-y-auto scrollbar-on-hover px-2 py-2">
       {tree.map(group => (
-        <GroupItem
+        <NavTreeNode
           key={group.key}
-          group={group}
+          node={group}
+          topGroupKey={group.key}
+          depth={0}
           selectedSlug={selectedSlug}
           onSelect={onSelect}
+          onOpenSettings={onOpenSettings}
+          onCreatePage={onCreatePage}
           expanded={expanded}
           setExpanded={setExpanded}
-          onOpenSettings={onOpenSettings}
-          onCreateInSection={onCreateInSection}
-          onCreateInGroup={onCreateInGroup}
-          onOpenCategorySettings={onOpenCategorySettings}
           theme={theme}
+          isOwner={isOwner}
         />
       ))}
     </div>
