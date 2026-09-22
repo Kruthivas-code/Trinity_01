@@ -21,6 +21,8 @@ import { PageMetaDialog } from './kb-editor/PageMetaDialog';
 import { VersionHistoryPanel } from './kb-editor/VersionHistoryPanel';
 import { WritingAssistant, WritingAssistantTrigger } from './kb-editor/WritingAssistant';
 import { AnchorsMenu } from './kb-editor/AnchorsMenu';
+import { ValidationPanel } from './kb-editor/ValidationPanel';
+import { validateDocument } from '../lib/mdx/validation';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -30,6 +32,12 @@ const KBEditor = () => {
 
   const [articles, setArticles] = useState([]);
   const [navGroups, setNavGroups] = useState([]);
+  // Phase 7: redirect list for validateInternalLinks' redirect-aware link
+  // checking (a link to an old, redirected slug is a warning, not an
+  // error — see lib/mdx/validation.js). Same shape/endpoint PublicDocs.jsx
+  // already consumes (GET /api/kb/public-data's `redirects`); fetched once
+  // here since the editor has no other reason to call this public route.
+  const [redirects, setRedirects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(null);
   const [originalSlug, setOriginalSlug] = useState(null);
@@ -116,6 +124,16 @@ const KBEditor = () => {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  // Phase 7: fetch redirects once for validation's redirect-aware link
+  // checking. Best-effort — an empty list just means every unresolved link
+  // is treated as a plain broken link (still correct, just less precise).
+  useEffect(() => {
+    fetch(`${API}/api/kb/public-data`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setRedirects(d.redirects || []); })
+      .catch(() => {});
+  }, []);
+
   // Auto-select first article when no slug is specified
   useEffect(() => {
     if (!paramSlug && !form && articles.length > 0) {
@@ -185,6 +203,19 @@ const KBEditor = () => {
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(payload) });
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `Save failed (${res.status})`); }
       setLastSaved(new Date());
+      // Phase 7: run validation as part of the save flow, non-blocking —
+      // this is a linting aid, never a save gate (help-doc-v3's own
+      // intent for this module). The result only feeds the existing
+      // Validate button's live badge (recomputed from `form` anyway); this
+      // just also logs a console summary so an author who never opens the
+      // panel still gets a signal after saving.
+      const saveValidation = validateDocument(payload, { documents: articles, redirects });
+      if (saveValidation.errors.length || saveValidation.warnings.length) {
+        console.warn(
+          `[KB validate] ${slug}: ${saveValidation.errors.length} error(s), ${saveValidation.warnings.length} warning(s) — see the Validate button.`,
+          saveValidation
+        );
+      }
       if (isNew) {
         setIsNew(false);
         setOriginalSlug(slug);
@@ -193,7 +224,7 @@ const KBEditor = () => {
       await fetchAll();
     } catch (e) { console.error(e); alert(e.message); }
     finally { setSaving(false); }
-  }, [form, isNew, originalSlug, navigate, fetchAll, canSave]);
+  }, [form, isNew, originalSlug, navigate, fetchAll, canSave, articles, redirects]);
 
   // Page Meta Dialog (Phase 4) — the ONLY path that can change an existing
   // article's slug. Merges the server's response (which may include title/
@@ -406,6 +437,12 @@ const KBEditor = () => {
               (Phase 1 philosophy). Not owner-gated. */}
           {form && (
             <WritingAssistantTrigger onOpen={() => setShowAssistant(true)} isDark={isDark} />
+          )}
+          {/* Validate (Phase 7) — content-level lint (links, component
+              vocabulary, required fields), same non-owner-gated tier as the
+              assistant/anchors above: advisory only, never blocks Save. */}
+          {form && (
+            <ValidationPanel article={form} documents={articles} redirects={redirects} theme={theme} />
           )}
           {/* Version History — owner-only (Phase 2), matches the backend's
               owner-gated GET/POST/DELETE /api/kb/admin/articles/{slug}/versions... */}
