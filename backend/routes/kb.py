@@ -13,9 +13,15 @@ from pymongo import UpdateOne
 import os
 import re
 import uuid
+import io
 import logging
 import requests
 from xml.sax.saxutils import escape
+
+# Phase 5: cheap server-side resize for the public image endpoint's `?w=`
+# param (see get_kb_image below). Pillow is already a pinned dependency
+# (requirements.txt) for other image handling, so this doesn't add new infra.
+from PIL import Image
 
 # Owner-gating (Phase 1): reuse review.py's is_owner()/_owner_only() rather
 # than a second, parallel privilege check — "owner" here means the exact
@@ -358,15 +364,59 @@ def _parse_api_date(val) -> datetime:
 
 # ── Image serving ─────────────────────────────────────────────
 
+MAX_IMAGE_TRANSFORM_WIDTH = 2400
+_TRANSFORM_FORMATS = {"jpeg": "JPEG", "jpg": "JPEG", "png": "PNG", "webp": "WEBP"}
+
+
+def _transform_image(data: bytes, content_type: str, w: Optional[int], fmt: Optional[str]):
+    """Resize/re-encode raw image bytes for the `?w=`/`?format=` responsive
+    image support (Phase 5). Best-effort: on any failure (corrupt image,
+    unsupported mode, etc.) the caller falls back to serving the original
+    bytes untouched, so a bad transform request never breaks the image.
+    Resizes per-request -- no cache beyond the browser's own (the querystring
+    is stable per filename+w+format so browser/CDN caching still works)."""
+    img = Image.open(io.BytesIO(data))
+    img.load()
+
+    if w:
+        target_w = max(16, min(int(w), MAX_IMAGE_TRANSFORM_WIDTH))
+        if target_w < img.width:
+            ratio = target_w / float(img.width)
+            target_h = max(1, round(img.height * ratio))
+            img = img.resize((target_w, target_h), Image.LANCZOS)
+
+    out_format = _TRANSFORM_FORMATS.get((fmt or "").lower()) or img.format or "PNG"
+    if out_format == "JPEG" and img.mode in ("RGBA", "P", "LA"):
+        img = img.convert("RGB")
+
+    buf = io.BytesIO()
+    img.save(buf, format=out_format)
+    return buf.getvalue(), f"image/{out_format.lower()}"
+
+
 @router.get("/images/{filename}")
-async def get_kb_image(filename: str):
-    """Serve KB images from MongoDB."""
+async def get_kb_image(filename: str, w: Optional[int] = None, format: Optional[str] = None):
+    """Serve KB images from MongoDB. Optional `?w=<px>` and/or
+    `?format=webp|jpeg|png` (Phase 5) resize/re-encode server-side on the fly
+    for responsive `srcset` support -- see frontend/src/components/docs/
+    Media.jsx's DocImage."""
     doc = kb_image_files.find_one({"filename": filename}, {"_id": 0})
     if not doc or "data" not in doc:
         raise HTTPException(404, detail="Image not found")
+
+    data = doc["data"]
+    content_type = doc.get("content_type", "application/octet-stream")
+    if w or format:
+        try:
+            data, content_type = _transform_image(data, content_type, w, format)
+        except Exception:
+            logger.warning(f"[KB] Image transform failed for {filename} (w={w}, format={format}); serving original", exc_info=True)
+            data = doc["data"]
+            content_type = doc.get("content_type", "application/octet-stream")
+
     return Response(
-        content=doc["data"],
-        media_type=doc.get("content_type", "application/octet-stream"),
+        content=data,
+        media_type=content_type,
         headers={"Cache-Control": "public, max-age=31536000, immutable"},
     )
 
@@ -474,6 +524,10 @@ async def get_public_data():
         })
 
     # Build documents list
+    # Phase 5: nav_group_key/section_key/keywords/tags are included so the
+    # frontend's "Related pages" section (RelatedPages.jsx) can compute
+    # same-group / shared-tag relatedness client-side without another
+    # round trip -- see ArticleUpdate's fields in this file.
     documents = []
     for a in all_articles:
         documents.append({
@@ -483,6 +537,10 @@ async def get_public_data():
             "content": a.get("published_content_markdown") or a.get("content_markdown", ""),
             "order": a.get("order", 0),
             "icon": None,
+            "nav_group_key": a.get("nav_group_key", ""),
+            "section_key": a.get("section_key", ""),
+            "keywords": a.get("keywords") or [],
+            "tags": a.get("tags") or [],
         })
 
     project = {"id": "trinity-kb", "name": "Emergent", "slug": "emergent"}

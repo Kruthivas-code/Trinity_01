@@ -8,9 +8,12 @@ import {
   Search, Menu, X, ChevronDown,
   ExternalLink, Copy, Check,
   ArrowLeft, ArrowRight, Sparkles,
-  ThumbsUp, ThumbsDown, Sun, Moon
+  ThumbsUp, ThumbsDown,
 } from 'lucide-react';
 import { DocContent } from '../../components/docs/DocContent';
+import { ThemeToggle } from '../../components/docs/ThemeToggle';
+import { RelatedPages } from '../../components/docs/RelatedPages';
+import { initializeSearch, search as searchIndex } from '../../lib/search';
 import './PublicDocs.css';
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -149,14 +152,7 @@ const TopNavigation = ({ theme, onThemeToggle, isDark, onSearchOpen }) => {
             <span>Try Emergent</span>
             <ArrowRight className="w-4 h-4" />
           </a>
-          <button
-            onClick={onThemeToggle}
-            className={`p-2 rounded-lg ${theme.textMuted} ${theme.hoverText} ${theme.hover} transition-colors`}
-            data-testid="kb-theme-toggle"
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+          <ThemeToggle isDark={isDark} onToggle={onThemeToggle} theme={theme} />
         </div>
       </div>
     </header>
@@ -284,22 +280,38 @@ const BreadcrumbBar = ({ breadcrumb, theme, isDark, onMobileMenuToggle, mobileMe
 // groups, or both, at any depth. Each depth gets its own collapse state and
 // extra indentation.
 const NavGroupNode = ({ group, depth, groupKey, documents, selectedDocSlug, onDocSelect, onMobileClose, collapsedGroups, toggleGroup, theme }) => {
-  const isCollapsed = collapsedGroups[groupKey] === true;
   const pages = group.pages || [];
   const subgroups = group.groups || [];
+
+  // Nav-rendering audit (Phase 5): does this group (at any depth) contain
+  // the currently open page? If the reader manually collapsed this group
+  // earlier and then landed on a page inside it (via search, prev/next, or
+  // a direct link), it used to stay collapsed with no indication the open
+  // page was even in the tree. Force it open and accent its label so the
+  // active path is visible all the way up through nested parent groups,
+  // matching help-doc-v3's MintlifyNav Anchor auto-expand-on-active
+  // behavior -- everything else about the tree walk is unchanged from
+  // Phase 0.
+  const containsActive = useMemo(() => {
+    if (!selectedDocSlug) return false;
+    return flattenGroupPages(group).some(p => (typeof p === 'string' ? p : p.page)?.toLowerCase() === selectedDocSlug.toLowerCase());
+  }, [group, selectedDocSlug]);
+  const isCollapsed = collapsedGroups[groupKey] === true && !containsActive;
   if (pages.length === 0 && subgroups.length === 0) return null;
 
   return (
     <div className="mb-1">
       <button
         onClick={() => toggleGroup(groupKey)}
-        className={`w-full flex items-center justify-between py-2 pr-3 rounded-lg font-medium transition-colors ${theme.textMuted} ${theme.hoverText} ${theme.hover}`}
-        style={{ fontSize: '14px', lineHeight: '20px', paddingLeft: `${0.75 + depth * 0.75}rem` }}
+        className={`w-full flex items-center justify-between py-2 pr-3 rounded-lg transition-colors ${
+          containsActive ? `${theme.activeAccent} font-semibold` : `font-medium ${theme.textMuted} ${theme.hoverText} ${theme.hover}`
+        }`}
+        style={{ fontSize: depth === 0 ? '14px' : '13px', lineHeight: '20px', paddingLeft: `${0.75 + depth * 0.75}rem` }}
         aria-expanded={!isCollapsed}
         data-testid={`sidebar-group-toggle-${groupKey}`}
       >
         <span className="truncate">{group.group}</span>
-        <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 ${theme.textSecondary} transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 ${containsActive ? theme.activeAccent : theme.textSecondary} transition-transform duration-200 ${isCollapsed ? '-rotate-90' : ''}`} />
       </button>
 
       {!isCollapsed && (
@@ -518,9 +530,15 @@ const HighlightMatch = ({ text, query }) => {
 };
 
 // ============= SEARCH DIALOG =============
+// Phase 5: instant, fully client-side (FlexSearch, see lib/search/index.js)
+// instead of the old debounced GET /api/kb/search fetch — the index is
+// built once in the parent (PublicDocs's fetchData) as soon as public-data
+// loads, and every keystroke here just queries it in-memory. Keyboard nav
+// (up/down/enter) added on top of the existing click-to-select UI.
 const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ documents: [], headings: [] });
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef(null);
   const tabs = config?.navigation?.tabs || [];
 
@@ -542,7 +560,7 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
 
   useEffect(() => {
     if (open) {
-      setQuery(''); setResults({ documents: [], headings: [] });
+      setQuery(''); setResults({ documents: [], headings: [] }); setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 100);
       document.body.style.overflow = 'hidden';
     } else {
@@ -550,29 +568,50 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
     }
     return () => { document.body.style.overflow = ''; };
   }, [open]);
+
+  // Instant, in-memory — no debounce/network needed. Guarded so it's a
+  // no-op (empty results, not a crash) if the index hasn't been built yet
+  // (documents still loading) or the query is too short.
   useEffect(() => {
-    if (query.length < 2) { setResults({ documents: [], headings: [] }); return; }
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      fetch(`${API}/api/kb/search?q=${encodeURIComponent(query)}`, { signal: controller.signal })
-        .then(r => r.json())
-        .then(data => {
-          const docs = (data.results || []).map(r => ({ slug: r.slug, title: r.title, snippet: r.snippet }));
-          setResults({ documents: docs, headings: [] });
-        })
-        .catch(() => {});
-    }, 200);
-    return () => { clearTimeout(timer); controller.abort(); };
-  }, [query]);
+    setResults(searchIndex(query, { limit: 8 }));
+    setSelectedIndex(0);
+  }, [query, documents]);
+
+  const totalResults = results.documents.length + results.headings.length;
+
+  const selectResult = useCallback((index) => {
+    const { documents: docs, headings } = results;
+    if (index < docs.length) {
+      onSelect(docs[index].slug);
+    } else {
+      const heading = headings[index - docs.length];
+      if (heading) {
+        onSelect(heading.slug);
+        setTimeout(() => { const el = document.getElementById(heading.anchor); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 300);
+      }
+    }
+    onClose();
+  }, [results, onSelect, onClose]);
+
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape' && open) onClose(); };
+    const handler = (e) => {
+      if (!open) return;
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'ArrowDown' && totalResults > 0) { e.preventDefault(); setSelectedIndex(prev => (prev + 1) % totalResults); return; }
+      if (e.key === 'ArrowUp' && totalResults > 0) { e.preventDefault(); setSelectedIndex(prev => (prev - 1 + totalResults) % totalResults); return; }
+      if (e.key === 'Enter' && totalResults > 0) { e.preventDefault(); selectResult(selectedIndex); }
+    };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [open, onClose]);
+  }, [open, onClose, totalResults, selectedIndex, selectResult]);
 
   if (!open) return null;
-  const hasResults = results.documents?.length > 0 || results.headings?.length > 0;
+  const hasResults = totalResults > 0;
   const isDark = theme.id === 'dark';
+  const resultRowClass = (isSelected) =>
+    `w-full text-left px-5 py-3.5 transition-colors border-b ${isDark ? 'border-white/5' : 'border-gray-50'} last:border-0 ${
+      isSelected ? (isDark ? 'bg-white/10' : 'bg-gray-100') : (isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50')
+    }`;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh]">
@@ -598,8 +637,8 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
                   const tabLabel = getTabLabel(r.slug);
                   const snippet = r.snippet || '';
                   return (
-                    <button key={`d-${i}`} onClick={() => { onSelect(r.slug); onClose(); }}
-                      className={`w-full text-left px-5 py-3.5 ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'} transition-colors border-b ${isDark ? 'border-white/5' : 'border-gray-50'} last:border-0`}>
+                    <button key={`d-${i}`} onClick={() => selectResult(i)} onMouseEnter={() => setSelectedIndex(i)}
+                      className={resultRowClass(selectedIndex === i)} data-testid={`search-result-doc-${r.slug}`}>
                       {bc && <div className={`text-[11px] uppercase tracking-wider mb-1.5 ${isDark ? 'text-[#787878]' : 'text-gray-400'}`}>{bc.tab} &gt; {bc.group}</div>}
                       <div className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <HighlightMatch text={r.title} query={query} />
@@ -610,10 +649,11 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
                   );
                 })}
                 {results.headings?.map((r, i) => {
+                  const idx = results.documents.length + i;
                   const bc = getBreadcrumb(r.slug);
                   return (
-                    <button key={`h-${i}`} onClick={() => { onSelect(r.slug); onClose(); setTimeout(() => { const el = document.getElementById(r.anchor); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 300); }}
-                      className={`w-full text-left px-5 py-3.5 ${isDark ? 'hover:bg-white/5' : 'hover:bg-gray-50'} transition-colors border-b ${isDark ? 'border-white/5' : 'border-gray-50'} last:border-0`}>
+                    <button key={`h-${i}`} onClick={() => selectResult(idx)} onMouseEnter={() => setSelectedIndex(idx)}
+                      className={resultRowClass(selectedIndex === idx)} data-testid={`search-result-heading-${r.slug}-${i}`}>
                       {bc && <div className={`text-[11px] uppercase tracking-wider mb-1.5 ${isDark ? 'text-[#787878]' : 'text-gray-400'}`}>{bc.tab} &gt; {r.docTitle || bc.group}</div>}
                       <div className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         <HighlightMatch text={r.text} query={query} />
@@ -628,6 +668,12 @@ const SearchDialog = ({ open, onClose, documents, onSelect, theme, config }) => 
                 <div className={`text-xs mt-1 ${isDark ? 'text-[#787878]' : 'text-gray-400'}`}>Try different keywords</div>
               </div>
             )}
+          </div>
+        )}
+        {hasResults && (
+          <div className={`px-5 py-2 border-t ${isDark ? 'border-white/10' : 'border-gray-100'} flex items-center gap-4 text-[11px] ${isDark ? 'text-[#787878]' : 'text-gray-400'}`}>
+            <span className="flex items-center gap-1"><kbd className={`px-1.5 py-0.5 rounded ${isDark ? 'bg-white/10' : 'bg-gray-100'}`}>&uarr;</kbd><kbd className={`px-1.5 py-0.5 rounded ${isDark ? 'bg-white/10' : 'bg-gray-100'}`}>&darr;</kbd> Navigate</span>
+            <span className="flex items-center gap-1"><kbd className={`px-1.5 py-0.5 rounded ${isDark ? 'bg-white/10' : 'bg-gray-100'}`}>&crarr;</kbd> Select</span>
           </div>
         )}
       </div>
@@ -975,9 +1021,11 @@ const PublicDocs = () => {
       setRedirects(data.redirects || []);
       const navTabs = data.config?.navigation?.tabs;
       if (navTabs?.length > 0) setActiveTab(navTabs[0].id);
-      if (data.documents.length > 0) {
-        // Documents loaded — no client-side index needed (search uses backend API)
-      }
+      // Phase 5: build the client-side FlexSearch index (page + heading
+      // level) as soon as public-data's documents are in. SearchDialog
+      // below just queries this in-memory index instead of hitting the
+      // backend per keystroke.
+      if (data.documents?.length > 0) initializeSearch(data.documents);
     } catch (e) { console.error('Failed to fetch:', e); }
     finally { setLoading(false); }
   }, []);
@@ -1201,6 +1249,7 @@ const PublicDocs = () => {
                 </button>
               )}
             </div>
+            <RelatedPages currentDoc={selectedDoc} documents={documents} onSelect={handleDocSelect} theme={theme} />
             <SocialLinks theme={theme} />
           </article>
         ) : (
